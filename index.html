@@ -266,29 +266,6 @@
       flex: 0 0 auto;
     }
 
-    .hero-facts {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 34px;
-      max-width: 680px;
-    }
-
-    .fact {
-      border-top: 2px solid var(--teal);
-      padding-top: 10px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .fact strong {
-      display: block;
-      color: var(--text);
-      font-size: 24px;
-      line-height: 1.2;
-      margin-bottom: 4px;
-    }
-
     .affiliation-card {
       border: 1px solid #d7e1dc;
       border-radius: 8px;
@@ -386,12 +363,12 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 22px;
-      min-height: 300px;
+      min-height: 350px;
     }
 
     .focus-icon {
       width: 100%;
-      height: 112px;
+      height: clamp(168px, 16vw, 198px);
       border: 1px solid #d9e2de;
       border-radius: 7px;
       background: #fff;
@@ -399,6 +376,7 @@
       display: grid;
       place-items: center;
       overflow: hidden;
+      padding: 8px;
     }
 
     .focus-icon img {
@@ -710,8 +688,8 @@
         width: min(100% - 22px, var(--max));
       }
 
-      .hero-facts {
-        grid-template-columns: 1fr;
+      .focus-icon {
+        height: 188px;
       }
 
       .paper-card,
@@ -764,11 +742,6 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9 8v8"></path><path d="M12 8h2.2c2.2 0 3.8 1.6 3.8 4s-1.6 4-3.8 4H12z"></path><path d="M7 8h0"></path></svg>
               ORCID
             </a>
-          </div>
-          <div class="hero-facts">
-            <div class="fact"><strong>6</strong>论文与会议论文</div>
-            <div class="fact"><strong>4</strong>专利与专利申请</div>
-            <div class="fact"><strong>3</strong>研究主线</div>
           </div>
         </div>
 
@@ -887,14 +860,14 @@
           </ul>
         </article>
         <article class="info-panel">
-          <h3>Selected Honors</h3>
+          <h3>Honors</h3>
           <ul class="info-list">
-            <li>北京市工程设计表达竞赛一等奖 2019</li>
-            <li>北航优秀研究生 2022</li>
-            <li>北航优秀毕业生 2021</li>
-            <li>北航优秀学生干部 2020</li>
-            <li>北航优秀生 2019</li>
-            <li>北航三好学生 2018</li>
+            <li>北京市工程设计表达竞赛一等奖</li>
+            <li>北航优秀研究生</li>
+            <li>北航优秀毕业生</li>
+            <li>北航优秀学生干部</li>
+            <li>北航优秀生</li>
+            <li>北航三好学生</li>
           </ul>
         </article>
       </div>
