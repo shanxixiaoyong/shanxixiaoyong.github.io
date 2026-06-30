@@ -19,11 +19,30 @@
     "alternateName": "刘勇",
     "url": "https://shanxixiaoyong.github.io/",
     "email": "mailto:yongliu@buaa.edu.cn",
-    "affiliation": {
-      "@type": "CollegeOrUniversity",
-      "name": "Beihang University",
-      "url": "https://www.buaa.edu.cn/"
-    },
+    "affiliation": [
+      {
+        "@type": "Organization",
+        "name": "National Key Laboratory of Land and Air Based Information Perception and Control",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Xi'an",
+          "addressRegion": "Shaanxi",
+          "postalCode": "710065",
+          "addressCountry": "China"
+        }
+      },
+      {
+        "@type": "Organization",
+        "name": "Xi'an Modern Control Technology Research Institute",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Xi'an",
+          "addressRegion": "Shaanxi",
+          "postalCode": "710065",
+          "addressCountry": "China"
+        }
+      }
+    ],
     "sameAs": [
       "https://github.com/shanxixiaoyong",
       "https://orcid.org/0000-0002-7584-2953"
@@ -270,113 +289,56 @@
       margin-bottom: 4px;
     }
 
-    .research-map {
-      min-height: 420px;
+    .affiliation-card {
       border: 1px solid #d7e1dc;
       border-radius: 8px;
       background: #fbfcfb;
       box-shadow: var(--shadow);
-      padding: 24px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .map-title {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 20px;
-    }
-
-    .map-grid {
+      padding: 28px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 22px;
     }
 
-    .visual-cell {
-      border: 1px solid #d9e1dc;
-      border-radius: 7px;
-      padding: 14px;
-      background: #fff;
-      min-height: 132px;
+    .affiliation-card h2 {
+      font-size: 26px;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    .affiliation-block {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+
+    .affiliation-block strong {
+      display: block;
+      color: #24313a;
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 7px;
+    }
+
+    .affiliation-block span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .research-tags {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .visual-cell.wide {
-      grid-column: 1 / -1;
-    }
-
-    .visual-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #29343c;
-    }
-
-    .visual-desc {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 4px;
-    }
-
-    .retina {
-      width: 88px;
-      height: 88px;
-      border-radius: 50%;
-      border: 2px solid #c78555;
-      background:
-        radial-gradient(circle at 52% 50%, #f2c28b 0 7%, transparent 8%),
-        radial-gradient(circle, #f5a15e 0 30%, #b55e49 31% 58%, #723b4a 59% 100%);
-      position: relative;
-      margin-bottom: 12px;
-    }
-
-    .retina::before,
-    .retina::after {
-      content: "";
-      position: absolute;
-      left: 48%;
-      top: 48%;
-      width: 36px;
-      height: 2px;
-      background: rgba(255, 228, 174, 0.72);
-      transform-origin: left center;
-      border-radius: 3px;
-    }
-
-    .retina::before {
-      transform: rotate(28deg);
-    }
-
-    .retina::after {
-      transform: rotate(-38deg);
-    }
-
-    .waveform {
-      height: 72px;
-      margin-bottom: 12px;
-    }
-
-    .wearable-loop {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 12px;
     }
 
-    .loop-node {
-      min-height: 54px;
-      border: 1px solid #cadae2;
-      background: #f5f9fa;
-      border-radius: 6px;
-      display: grid;
-      place-items: center;
-      color: var(--blue);
+    .research-tags span {
+      border: 1px solid #d4dfda;
+      border-radius: 5px;
+      padding: 5px 8px;
+      color: #2f5559;
+      background: #fff;
       font-size: 12px;
-      font-weight: 700;
-      text-align: center;
-      padding: 6px;
+      font-weight: 650;
     }
 
     section {
@@ -432,11 +394,18 @@
       height: 112px;
       border: 1px solid #d9e2de;
       border-radius: 7px;
-      background: #f9fbfa;
+      background: #fff;
       margin-bottom: 18px;
       display: grid;
       place-items: center;
       overflow: hidden;
+    }
+
+    .focus-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
 
     .focus-item h3 {
@@ -486,11 +455,19 @@
       min-height: 188px;
       border: 1px solid #d9e2de;
       border-radius: 7px;
-      background: #f9fbfa;
+      background: #fff;
       overflow: hidden;
       display: grid;
       place-items: center;
-      padding: 12px;
+      padding: 0;
+    }
+
+    .paper-visual img {
+      width: 100%;
+      height: 100%;
+      min-height: 188px;
+      object-fit: contain;
+      display: block;
     }
 
     .paper-meta {
@@ -677,20 +654,6 @@
       font-size: 13px;
     }
 
-    .source-note {
-      margin-top: 20px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .mini-network svg,
-    .encoder-diagram svg,
-    .wave-diagram svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
     @media (max-width: 920px) {
       .nav {
         align-items: flex-start;
@@ -706,10 +669,6 @@
         grid-template-columns: 1fr;
         min-height: auto;
         padding: 56px 0 44px;
-      }
-
-      .research-map {
-        min-height: auto;
       }
 
       .section-head,
@@ -755,18 +714,6 @@
         grid-template-columns: 1fr;
       }
 
-      .map-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .visual-cell.wide {
-        grid-column: auto;
-      }
-
-      .wearable-loop {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
       .paper-card,
       .focus-item,
       .patent-card,
@@ -798,7 +745,7 @@
     <section class="hero" id="top" aria-label="Hero">
       <div class="hero-inner">
         <div>
-          <p class="eyebrow">Beihang University · AI for Sensing and Medicine</p>
+          <p class="eyebrow">National Key Laboratory · Xi’an Modern Control Technology Research Institute</p>
           <h1>刘勇<span class="name-en">Yong Liu</span></h1>
           <p class="hero-copy">
             研究兴趣集中在医学影像自监督学习、眼底疾病智能诊断、压电触摸力感知与可穿戴健康系统。工作横跨视觉模型、传感器信号建模与智能人机交互，目标是让有限标签、复杂信号和真实场景中的健康评估更可靠。
@@ -819,44 +766,26 @@
             </a>
           </div>
           <div class="hero-facts">
-            <div class="fact"><strong>7</strong>论文、会议论文与稿件</div>
+            <div class="fact"><strong>6</strong>论文与会议论文</div>
             <div class="fact"><strong>4</strong>专利与专利申请</div>
             <div class="fact"><strong>3</strong>研究主线</div>
           </div>
         </div>
 
-        <div class="research-map" aria-label="Research visual map">
-          <div class="map-title">Visual map: sensing data, learned representations, and health decisions</div>
-          <div class="map-grid">
-            <div class="visual-cell">
-              <div class="retina" aria-hidden="true"></div>
-              <div>
-                <div class="visual-label">Fundus AI</div>
-                <div class="visual-desc">Self-supervised retinal representations for multiple disease screening.</div>
-              </div>
-            </div>
-            <div class="visual-cell">
-              <svg class="waveform" viewBox="0 0 180 72" aria-hidden="true">
-                <path d="M4 48 C22 48 20 18 36 18 C52 18 48 58 66 58 C86 58 80 28 98 28 C118 28 112 48 130 48 C150 48 148 16 176 16" fill="none" stroke="#256b6d" stroke-width="4" stroke-linecap="round"></path>
-                <path d="M4 60 H176" stroke="#d9e2de" stroke-width="2"></path>
-              </svg>
-              <div>
-                <div class="visual-label">Force Sensing</div>
-                <div class="visual-desc">Piezoelectric signals, feature learning, and force classification.</div>
-              </div>
-            </div>
-            <div class="visual-cell wide">
-              <div class="wearable-loop" aria-hidden="true">
-                <div class="loop-node">Sensor</div>
-                <div class="loop-node">Signal</div>
-                <div class="loop-node">Model</div>
-                <div class="loop-node">Health</div>
-              </div>
-              <div>
-                <div class="visual-label">Wearable Health Systems</div>
-                <div class="visual-desc">Closed-loop assessment for myopia risk, rehabilitation, and child physical-function development.</div>
-              </div>
-            </div>
+        <div class="affiliation-card" aria-label="Current affiliation">
+          <h2>Current Affiliation</h2>
+          <div class="affiliation-block">
+            <strong>陆空基信息感知与控制全国重点实验室，陕西西安 710065</strong>
+            <span>National Key Laboratory of Land and Air Based Information Perception and Control, Xi’an 710065, Shaanxi, China</span>
+          </div>
+          <div class="affiliation-block">
+            <strong>西安现代控制技术研究所，陕西西安 710065</strong>
+            <span>Xi’an Modern Control Technology Research Institute, Xi’an 710065, Shaanxi, China</span>
+          </div>
+          <div class="research-tags" aria-label="Research keywords">
+            <span>Medical Vision</span>
+            <span>Piezoelectric Sensing</span>
+            <span>Wearable Health</span>
           </div>
         </div>
       </div>
@@ -869,23 +798,13 @@
           <h2>从医学图像到触觉传感的智能健康系统</h2>
         </div>
         <p class="section-intro">
-          主页采用图文研究型结构：每条主线配合简洁图示，强调问题、数据、模型和应用场景，而不是堆叠履历文本。
+          研究围绕有限标签医学图像、压电触摸信号和可穿戴健康数据展开，关注模型在真实健康评估场景中的可靠性与可迁移性。
         </p>
       </div>
       <div class="focus-grid">
         <article class="focus-item">
-          <div class="focus-icon encoder-diagram" aria-hidden="true">
-            <svg viewBox="0 0 260 112">
-              <rect x="16" y="22" width="44" height="44" rx="6" fill="#f0d0a6" stroke="#b87956"></rect>
-              <rect x="34" y="46" width="44" height="44" rx="6" fill="#d98e68" stroke="#9b5c4f"></rect>
-              <path d="M86 56 H122" stroke="#6c837e" stroke-width="3" stroke-linecap="round"></path>
-              <rect x="128" y="26" width="52" height="60" rx="7" fill="#eef6f4" stroke="#8db7b1"></rect>
-              <path d="M142 44 H166M142 56H166M142 68H156" stroke="#256b6d" stroke-width="3" stroke-linecap="round"></path>
-              <path d="M186 56 H218" stroke="#6c837e" stroke-width="3" stroke-linecap="round"></path>
-              <circle cx="232" cy="39" r="8" fill="#315f8a"></circle>
-              <circle cx="236" cy="58" r="8" fill="#47725f"></circle>
-              <circle cx="225" cy="73" r="8" fill="#a36f3e"></circle>
-            </svg>
+          <div class="focus-icon" aria-hidden="true">
+            <img src="assets/papers/fundus-disorders.png" alt="">
           </div>
           <h3>眼底医学影像 AI</h3>
           <p>利用自监督视觉模型从少标签眼底图像中学习可复用表征，服务多疾病筛查、风险预测和跨来源泛化。</p>
@@ -896,14 +815,8 @@
           </div>
         </article>
         <article class="focus-item">
-          <div class="focus-icon wave-diagram" aria-hidden="true">
-            <svg viewBox="0 0 260 112">
-              <path d="M18 72 C40 72 36 28 58 28 C82 28 72 84 98 84 C124 84 114 40 140 40 C166 40 158 72 184 72 C210 72 210 30 242 30" fill="none" stroke="#256b6d" stroke-width="5" stroke-linecap="round"></path>
-              <path d="M34 92H226" stroke="#d8e1dd" stroke-width="3"></path>
-              <rect x="42" y="18" width="28" height="14" rx="3" fill="#e8f0f6" stroke="#789ab7"></rect>
-              <rect x="124" y="30" width="28" height="14" rx="3" fill="#e8f3ee" stroke="#85a996"></rect>
-              <rect x="208" y="20" width="28" height="14" rx="3" fill="#f2eadc" stroke="#bb9261"></rect>
-            </svg>
+          <div class="focus-icon" aria-hidden="true">
+            <img src="assets/papers/force-touch.png" alt="">
           </div>
           <h3>压电触摸力感知</h3>
           <p>围绕压电触摸屏信号的长期稳定、力级分类和交互显示，设计机器学习方法提升低数据量场景下的识别可靠性。</p>
@@ -914,18 +827,8 @@
           </div>
         </article>
         <article class="focus-item">
-          <div class="focus-icon mini-network" aria-hidden="true">
-            <svg viewBox="0 0 260 112">
-              <circle cx="48" cy="56" r="19" fill="#eef6f4" stroke="#83aca8" stroke-width="2"></circle>
-              <circle cx="130" cy="34" r="18" fill="#eef2f7" stroke="#7e9aba" stroke-width="2"></circle>
-              <circle cx="130" cy="78" r="18" fill="#f4eee2" stroke="#b99768" stroke-width="2"></circle>
-              <circle cx="212" cy="56" r="19" fill="#eef5ef" stroke="#87a992" stroke-width="2"></circle>
-              <path d="M67 52 L112 38M67 60 L112 74M148 38 L194 52M148 74 L194 60M130 52V60" stroke="#6f817b" stroke-width="3" stroke-linecap="round"></path>
-              <text x="48" y="60" text-anchor="middle" font-size="10" fill="#256b6d">wear</text>
-              <text x="130" y="38" text-anchor="middle" font-size="10" fill="#315f8a">gait</text>
-              <text x="130" y="82" text-anchor="middle" font-size="10" fill="#8a6c2f">eye</text>
-              <text x="212" y="60" text-anchor="middle" font-size="10" fill="#47725f">risk</text>
-            </svg>
+          <div class="focus-icon" aria-hidden="true">
+            <img src="assets/papers/multimodal-stroke.jpg" alt="">
           </div>
           <h3>可穿戴健康与评估</h3>
           <p>结合传感器、模型和人机系统，面向近视风险、步态康复、儿童身体机能发育等健康评估问题。</p>
@@ -942,14 +845,13 @@
       <div class="section-head">
         <div>
           <p class="section-kicker">Publications</p>
-          <h2>论文、会议论文与稿件</h2>
+          <h2>论文与会议论文</h2>
         </div>
         <p class="section-intro">
-          全部成果按状态展示。已发表条目附 DOI 或出版方链接；在审稿件保留清晰状态标签，不混同为已接收论文。
+          研究成果覆盖医学影像自监督学习、眼底疾病诊断、压电触摸力感知、可穿戴传感与康复评估等方向。
         </p>
       </div>
       <div class="paper-list" id="publication-list"></div>
-      <p class="source-note">Publication metadata was cross-checked from DOI/Crossref, publisher pages, Beihang research portal snippets, and user-provided CV information.</p>
     </section>
 
     <section id="patents">
@@ -959,7 +861,7 @@
           <h2>专利与知识产权</h2>
         </div>
         <p class="section-intro">
-          已授权、已公开和已受理条目全部列出，并用状态标签区分。公开链接优先指向 Google Patents；暂未查到公开记录的条目标明来源。
+          专利工作面向智能触摸交互、可穿戴健康风险评估、肌力检测与儿童身体机能发育评估等应用。
         </p>
       </div>
       <div class="patent-grid" id="patent-list"></div>
@@ -972,24 +874,27 @@
           <h2>教育背景与荣誉</h2>
         </div>
         <p class="section-intro">
-          这里只展示适合公开主页的信息；简历中的手机号、住址和二维码不进入网站。
+          个人经历以教育背景、代表性课程和主要荣誉为主。
         </p>
       </div>
       <div class="compact-section">
         <article class="info-panel">
-          <h3>Education</h3>
+          <h3>Education & Courses</h3>
           <ul class="info-list">
             <li>北京航空航天大学，硕士研究生，研究方向覆盖医学影像 AI、智能传感与健康评估。</li>
             <li>北京航空航天大学，本科阶段成绩排名前列，推免进入研究生阶段学习。</li>
-            <li>课程背景覆盖数学、信号处理、机器学习、嵌入式系统、控制与传感器技术。</li>
+            <li>满分课程：工科数学分析、线性代数、复变函数、概率统计、电路分析、大学物理。</li>
           </ul>
         </article>
         <article class="info-panel">
-          <h3>Selected Honors & Skills</h3>
+          <h3>Selected Honors</h3>
           <ul class="info-list">
-            <li>获北京市工程设计表达竞赛一等奖、北京市数学建模竞赛二等奖、美国大学生数学建模竞赛 H 奖等。</li>
-            <li>北航励志成长成才表率、优秀研究生、优秀毕业生、优秀学生干部等校级荣誉。</li>
-            <li>熟悉 Python、PyTorch、C/C++、Qt、Linux、MATLAB、嵌入式系统与计算机视觉方法。</li>
+            <li>北京市工程设计表达竞赛一等奖 2019</li>
+            <li>北航优秀研究生 2022</li>
+            <li>北航优秀毕业生 2021</li>
+            <li>北航优秀学生干部 2020</li>
+            <li>北航优秀生 2019</li>
+            <li>北航三好学生 2018</li>
           </ul>
         </article>
       </div>
@@ -1020,7 +925,8 @@
         authors: ["Yong Liu", "Xuemeng Li", "Weihao Ma", "Hongbei Meng", "Shuo Gao"],
         summaryZh: "提出面向压电触摸屏长期力感知的修正神经网络方法，针对长期使用和响应漂移导致的识别不稳定问题，提升触摸力估计与分类的可靠性。",
         summaryEn: "Rectified neural models for long-term piezoelectric force sensing under drift and device variation.",
-        visual: "wave",
+        image: "assets/papers/rectified-ann.jpg",
+        imageAlt: "Figure from the rectified artificial neural network force-sensing paper",
         links: [
           { label: "DOI", url: "https://doi.org/10.3390/electronics14102081" },
           { label: "Publisher", url: "https://www.mdpi.com/2079-9292/14/10/2081" },
@@ -1036,7 +942,8 @@
         authors: ["Yong Liu", "Mengtian Kang", "Shuo Gao", "Chi Zhang", "Ying Liu", "Shiming Li", "Yue Qi", "Arokia Nathan", "Wenjun Xu", "Chenyu Tang", "Edoardo Occhipinti", "Mayinuer Yusufu", "Ningli Wang", "Weiling Bai", "Luigi Occhipinti"],
         summaryZh: "面向眼底专科医生稀缺与标签数据有限的问题，利用自监督机器学习建立多眼底疾病诊断框架，强调跨人群、跨图像来源的可迁移诊断能力。",
         summaryEn: "Self-supervised fundus representation learning for multi-disorder diagnosis when expert annotation is scarce.",
-        visual: "retina",
+        image: "assets/papers/fundus-disorders.png",
+        imageAlt: "Figure from the multiple fundus disorders self-supervised learning paper",
         links: [
           { label: "DOI", url: "https://doi.org/10.1109/JIOT.2024.3463185" },
           { label: "IEEE Xplore", url: "https://ieeexplore.ieee.org/document/10684157/" }
@@ -1051,7 +958,8 @@
         authors: ["Jiaqi Wang", "Mengtian Kang", "Yong Liu", "Chi Zhang", "Ying Liu", "Shiming Li", "Yue Qi", "Wenjun Xu", "Chenyu Tang", "Edoardo Occhipinti", "Mayinuer Yusufu", "Ningli Wang", "Weiling Bai", "Shuo Gao", "Luigi G. Occhipinti"],
         summaryZh: "构建面向眼底疾病诊断的自监督视觉 Transformer，利用无标签或弱标签图像学习眼底语义表征，为后续多疾病识别提供基础模型能力。",
         summaryEn: "A self-supervised vision transformer for fundus-image eye disease diagnosis.",
-        visual: "retina",
+        image: "assets/papers/ssvt.png",
+        imageAlt: "Figure from the SSVT fundus image diagnosis paper",
         links: [
           { label: "DOI", url: "https://doi.org/10.1109/ISBI56570.2024.10635531" },
           { label: "IEEE Xplore", url: "https://ieeexplore.ieee.org/document/10635531/" },
@@ -1067,7 +975,8 @@
         authors: ["Zihe Zhao", "Jiaqi Wang", "Shengbo Wang", "Rui Wang", "Yao Lu", "Yan Yuan", "Junliang Chen", "Yanning Dai", "Yong Liu", "Xiaomeng Wang", "Yu Pan", "Shuo Gao"],
         summaryZh: "综述脑卒中运动康复中的多模态传感技术，覆盖可穿戴传感、运动信号采集、康复评估与智能反馈系统，为智慧医疗辅助诊断系统提供技术背景。",
         summaryEn: "A review of multimodal sensing technologies for post-stroke motor rehabilitation and feedback systems.",
-        visual: "network",
+        image: "assets/papers/multimodal-stroke.jpg",
+        imageAlt: "Graphical abstract from the multimodal sensing in stroke motor rehabilitation review",
         links: [
           { label: "DOI", url: "https://doi.org/10.1002/adsr.202200055" },
           { label: "Publisher", url: "https://advanced.onlinelibrary.wiley.com/doi/10.1002/adsr.202200055" }
@@ -1082,7 +991,8 @@
         authors: ["Shuo Gao", "Yanning Dai", "Junliang Chen", "Anbiao Huang", "Yong Liu"],
         summaryZh: "围绕交互显示中的力触控功能，讨论压电力感知与机器学习在智能显示交互中的应用，是触摸力识别研究线的显示技术扩展。",
         summaryEn: "An invited overview of force touch and machine-learning sensing techniques for interactive displays.",
-        visual: "wave",
+        image: "assets/papers/force-touch.png",
+        imageAlt: "Force-touch preprocessing flow from the piezoelectric force-sensing research line",
         links: [
           { label: "DOI", url: "https://doi.org/10.1002/sdtp.14367" },
           { label: "Publisher", url: "https://sid.onlinelibrary.wiley.com/doi/10.1002/sdtp.14367" }
@@ -1097,24 +1007,11 @@
         authors: ["Yong Liu", "Shuo Gao", "Anbiao Huang", "Jie Zhu", "Lijun Xu", "Arokia Nathan"],
         summaryZh: "针对压电触摸屏中力电压响应不均一、少量数据下分类精度不足等问题，提出集成学习力级分类方法，实现多触摸力等级的高精度识别。",
         summaryEn: "An ensemble learning approach for force-level classification in piezoelectric touch panels.",
-        visual: "wave",
+        image: "assets/papers/ensemble-force.png",
+        imageAlt: "Force classification network figure from the piezoelectric force-sensing research line",
         links: [
           { label: "DOI", url: "https://doi.org/10.1109/JSEN.2020.2987768" },
           { label: "IEEE Xplore", url: "https://ieeexplore.ieee.org/document/9064844/" }
-        ]
-      },
-      {
-        title: "Detecting multiple fundus diseases across diverse populations and image sources via a label-free self-supervised vision transformer model",
-        status: "Under Review",
-        statusClass: "review",
-        venue: "Nature Biomedical Engineering manuscript",
-        year: "CV listed",
-        authors: ["Yong Liu", "collaborators"],
-        summaryZh: "简历列出的在审稿件，聚焦跨人群、跨图像来源的多眼底疾病检测和 label-free 自监督视觉 Transformer。公开主页中保留为在审状态，不作为已发表论文表述。",
-        summaryEn: "A manuscript listed as under review; shown with non-final status for transparency.",
-        visual: "retina",
-        links: [
-          { label: "Source: CV listed item", url: "" }
         ]
       }
     ];
@@ -1159,24 +1056,12 @@
         title: "一种儿童身体机能发育评估系统及其评估模型的训练方法",
         status: "Filed / 已受理",
         statusClass: "review",
-        numbers: "Public number to verify",
+        numbers: "公开编号待更新",
         role: "学生一作；儿童身体机能发育评估相关",
-        summary: "面向儿童身体机能发育状态评估，结合评估系统和模型训练方法；当前按简历来源展示为已受理。",
-        links: [
-          { label: "Source: CV listed item", url: "" }
-        ]
+        summary: "面向儿童身体机能发育状态评估，结合评估系统和模型训练方法。",
+        links: []
       }
     ];
-
-    function visualMarkup(type) {
-      if (type === "retina") {
-        return '<div class="retina" aria-hidden="true"></div>';
-      }
-      if (type === "network") {
-        return '<div class="wearable-loop" aria-hidden="true"><div class="loop-node">Sensor</div><div class="loop-node">Motion</div><div class="loop-node">Model</div><div class="loop-node">Care</div></div>';
-      }
-      return '<svg class="waveform" viewBox="0 0 180 72" aria-hidden="true"><path d="M4 48 C22 48 20 18 36 18 C52 18 48 58 66 58 C86 58 80 28 98 28 C118 28 112 48 130 48 C150 48 148 16 176 16" fill="none" stroke="#256b6d" stroke-width="4" stroke-linecap="round"></path><path d="M4 60 H176" stroke="#d9e2de" stroke-width="2"></path></svg>';
-    }
 
     function renderAuthors(authors) {
       return authors.map((author) => author === "Yong Liu" ? "<strong>Yong Liu</strong>" : author).join(", ");
@@ -1194,7 +1079,7 @@
     function renderPublication(item) {
       return `
         <article class="paper-card">
-          <div class="paper-visual">${visualMarkup(item.visual)}</div>
+          <div class="paper-visual"><img src="${item.image}" alt="${item.imageAlt}"></div>
           <div>
             <div class="paper-meta">
               <span class="status ${item.statusClass}">${item.status}</span>
@@ -1204,7 +1089,7 @@
             <p class="authors">${renderAuthors(item.authors)}</p>
             <p class="summary">${item.summaryZh}</p>
             <p class="summary-en">${item.summaryEn}</p>
-            <div class="card-links">${renderLinks(item.links)}</div>
+            ${item.links.length ? `<div class="card-links">${renderLinks(item.links)}</div>` : ""}
           </div>
         </article>
       `;
@@ -1218,7 +1103,7 @@
           <p class="patent-info"><strong>编号：</strong>${item.numbers}</p>
           <p class="patent-info"><strong>角色：</strong>${item.role}</p>
           <p class="summary">${item.summary}</p>
-          <div class="card-links">${renderLinks(item.links)}</div>
+          ${item.links.length ? `<div class="card-links">${renderLinks(item.links)}</div>` : ""}
         </article>
       `;
     }

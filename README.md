@@ -9,7 +9,12 @@ The site is a framework-free GitHub Pages page focused on:
 - self-supervised fundus image analysis and medical vision;
 - piezoelectric touch and force sensing;
 - wearable health sensing and intelligent assessment systems;
-- publications, manuscripts, patents, and selected profile information.
+- publications, conference papers, patents, and selected profile information.
+
+Current affiliations:
+
+- National Key Laboratory of Land and Air Based Information Perception and Control, Xi’an 710065, Shaanxi, China
+- Xi’an Modern Control Technology Research Institute, Xi’an 710065, Shaanxi, China
 
 Public profile links:
 

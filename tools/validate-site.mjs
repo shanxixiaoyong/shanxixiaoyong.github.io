@@ -11,6 +11,17 @@ const required = [
   "SSVT: Self-Supervised Vision Transformer",
   "Rectified Artificial Neural Networks",
   "Ensemble Learning-Based Technique",
+  "陆空基信息感知与控制全国重点实验室",
+  "National Key Laboratory of Land and Air Based Information Perception and Control",
+  "西安现代控制技术研究所",
+  "Xi’an Modern Control Technology Research Institute",
+  "满分课程：工科数学分析、线性代数、复变函数、概率统计、电路分析、大学物理",
+  "北京市工程设计表达竞赛一等奖 2019",
+  "北航优秀研究生 2022",
+  "北航优秀毕业生 2021",
+  "北航优秀学生干部 2020",
+  "北航优秀生 2019",
+  "北航三好学生 2018",
   "触摸力度识别方法",
   "近视风险评估方法",
   "一种基于肌力检测的手部动作识别方法",
@@ -21,9 +32,30 @@ const required = [
 const forbidden = [
   "AWS S3 Bucket Browser",
   "www.asdzlab.top",
+  "Nature Biomedical",
+  "Detecting multiple fundus diseases",
+  "Under Review",
+  "Source:",
+  "CV listed",
+  "Publication metadata",
+  "Visual map",
+  "主页采用",
+  "全部成果",
+  "专业技能",
+  "熟悉 Python",
+  "manuscripts",
   "15229069670",
   "北京市海淀区花园路街道大运村公寓",
   "扫描二维码"
+];
+
+const requiredAssets = [
+  "assets/papers/rectified-ann.jpg",
+  "assets/papers/fundus-disorders.png",
+  "assets/papers/ssvt.png",
+  "assets/papers/multimodal-stroke.jpg",
+  "assets/papers/force-touch.png",
+  "assets/papers/ensemble-force.png"
 ];
 
 const requiredLinks = [
@@ -65,8 +97,26 @@ if (existsSync("CNAME")) {
   failures.push("CNAME must be removed for github.io-only deployment");
 }
 
+for (const asset of requiredAssets) {
+  if (!html.includes(asset)) {
+    failures.push(`Missing required asset reference: ${asset}`);
+  }
+  if (!existsSync(asset)) {
+    failures.push(`Missing required asset file: ${asset}`);
+  }
+}
+
+if (existsSync("assets/papers/multimodal-stroke.png")) {
+  failures.push("Cloudflare challenge screenshot asset must not be kept");
+}
+
 if (!html.includes('<script type="application/ld+json">')) {
   failures.push("Missing JSON-LD Person metadata");
+}
+
+const externalImageMatch = html.match(/<img\b[^>]*\bsrc=["']https?:\/\//i);
+if (externalImageMatch) {
+  failures.push("Images must be served from local repository assets, not external image URLs");
 }
 
 if (failures.length) {
