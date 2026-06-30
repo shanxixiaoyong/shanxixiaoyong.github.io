@@ -10,8 +10,9 @@
   <meta property="og:description" content="Academic portfolio of Yong Liu: fundus AI, piezoelectric force sensing, wearable health, publications, and patents.">
   <meta property="og:type" content="profile">
   <meta property="og:url" content="https://shanxixiaoyong.github.io/">
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -723,48 +724,44 @@
       .hero-inner,
       section,
       .footer-inner {
-        width: min(100% - 50px, var(--max));
-        margin-left: 12px;
-        margin-right: auto;
+        width: min(100% - 22px, var(--max));
       }
 
       .mobile-section-rail {
         position: fixed;
-        right: 7px;
-        top: 50%;
-        z-index: 30;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        align-items: center;
-        padding: 10px 5px;
-        border: 1px solid rgba(202, 214, 209, 0.92);
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.88);
-        box-shadow: 0 8px 22px rgba(24, 39, 52, 0.12);
-        transform: translateY(-50%);
-        backdrop-filter: blur(12px);
-      }
-
-      .mobile-section-rail::before {
-        content: "";
-        position: absolute;
-        top: 18px;
-        bottom: 18px;
         left: 50%;
-        width: 1px;
-        background: #d7e1dc;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        z-index: 30;
+        width: min(100% - 32px, 360px);
+        min-height: 44px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 2px;
+        align-items: center;
+        padding: 5px;
+        border: 1px solid rgba(192, 207, 202, 0.78);
+        border-radius: 999px;
+        background: rgba(250, 252, 251, 0.78);
+        box-shadow: 0 12px 34px rgba(24, 39, 52, 0.16);
         transform: translateX(-50%);
+        backdrop-filter: blur(18px);
       }
 
       .mobile-section-rail a {
         position: relative;
-        z-index: 1;
-        width: 22px;
-        height: 20px;
         display: grid;
+        grid-template-columns: auto minmax(0, auto);
+        gap: 4px;
         place-items: center;
-        border-radius: 50%;
+        justify-content: center;
+        min-width: 0;
+        min-height: 34px;
+        border-radius: 999px;
+        color: #52636b;
+        font-size: 11px;
+        font-weight: 720;
+        line-height: 1;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .mobile-section-rail a:hover {
@@ -772,23 +769,19 @@
       }
 
       .rail-dot {
-        width: 7px;
-        height: 7px;
-        border: 1px solid #b9c7c3;
-        border-radius: 50%;
-        background: #fff;
-        transition: width 160ms ease, height 160ms ease, border-color 160ms ease, background 160ms ease;
+        width: 5px;
+        height: 5px;
+        border: 1px solid #a8b9b4;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.74);
+        transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
       }
 
       .rail-label {
-        display: none;
-        color: var(--teal-dark);
-        font-size: 10px;
-        font-weight: 760;
-        line-height: 1;
-        text-align: center;
-        writing-mode: vertical-rl;
-        text-orientation: upright;
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
         pointer-events: none;
       }
 
@@ -797,20 +790,43 @@
         background: var(--teal);
       }
 
+      .mobile-section-rail a.is-active {
+        color: var(--teal-dark);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 4px 12px rgba(24, 39, 52, 0.1);
+      }
+
       .mobile-section-rail a.is-active .rail-dot {
-        display: none;
+        width: 6px;
+        height: 6px;
+        border: 2px solid var(--teal-dark);
+        background: #fff;
       }
 
       .mobile-section-rail a.is-active .rail-label {
-        display: block;
+        font-weight: 800;
       }
 
-      .mobile-section-rail a.is-active {
-        height: 36px;
-        border: 1px solid #9eb6b1;
-        border-radius: 999px;
-        background: #fff;
-        box-shadow: 0 4px 12px rgba(24, 39, 52, 0.12);
+      .mobile-section-rail a:focus-visible {
+        outline: 2px solid var(--teal-dark);
+        outline-offset: 2px;
+      }
+
+      .site-footer {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
+      }
+
+      @media (max-width: 374px) {
+        .mobile-section-rail {
+          width: min(100% - 24px, 344px);
+          min-height: 40px;
+          padding: 4px;
+        }
+
+        .mobile-section-rail a {
+          min-height: 32px;
+          font-size: 10px;
+        }
       }
 
       .hero-inner {

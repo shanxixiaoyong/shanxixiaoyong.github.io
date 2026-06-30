@@ -15,7 +15,8 @@ const required = [
   "National Key Laboratory of Land and Air Based Information Perception and Control",
   "西安现代控制技术研究所",
   "Xi’an Modern Control Technology Research Institute",
-  '<link rel="icon" type="image/png" href="favicon.png">',
+  '<link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">',
+  '<link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">',
   "mobile-section-rail",
   "本科：北京航空航天大学",
   "硕士：北京航空航天大学",
@@ -58,6 +59,7 @@ const forbidden = [
 ];
 
 const requiredAssets = [
+  "favicon.svg",
   "favicon.png",
   "favicon.ico",
   "assets/papers/rectified-ann.jpg",
