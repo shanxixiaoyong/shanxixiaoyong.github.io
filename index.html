@@ -10,7 +10,8 @@
   <meta property="og:description" content="Academic portfolio of Yong Liu: fundus AI, piezoelectric force sensing, wearable health, publications, and patents.">
   <meta property="og:type" content="profile">
   <meta property="og:url" content="https://shanxixiaoyong.github.io/">
-  <link rel="icon" href="favicon.ico">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="shortcut icon" href="favicon.ico">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -632,6 +633,10 @@
       font-size: 13px;
     }
 
+    .mobile-section-rail {
+      display: none;
+    }
+
     @media (max-width: 920px) {
       .nav {
         align-items: flex-start;
@@ -669,34 +674,362 @@
     }
 
     @media (max-width: 620px) {
+      body {
+        line-height: 1.55;
+      }
+
+      .site-header {
+        position: static;
+      }
+
       .nav {
         width: min(100% - 22px, var(--max));
+        min-height: auto;
+        gap: 8px;
+        padding: 10px 0 8px;
+      }
+
+      .brand {
+        gap: 8px;
+        font-size: 13px;
+      }
+
+      .brand-mark {
+        width: 25px;
+        height: 25px;
+        border-radius: 5px;
+        font-size: 11px;
       }
 
       .nav-links {
-        gap: 0;
+        width: 100%;
+        gap: 8px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+      }
+
+      .nav-links::-webkit-scrollbar {
+        display: none;
       }
 
       .nav-links a {
-        padding: 7px 8px;
-        font-size: 13px;
+        flex: 0 0 auto;
+        padding: 5px 0;
+        font-size: 11px;
       }
 
       .hero-inner,
       section,
       .footer-inner {
-        width: min(100% - 22px, var(--max));
+        width: min(100% - 50px, var(--max));
+        margin-left: 12px;
+        margin-right: auto;
+      }
+
+      .mobile-section-rail {
+        position: fixed;
+        right: 7px;
+        top: 50%;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 5px;
+        border: 1px solid rgba(202, 214, 209, 0.92);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 8px 22px rgba(24, 39, 52, 0.12);
+        transform: translateY(-50%);
+        backdrop-filter: blur(12px);
+      }
+
+      .mobile-section-rail::before {
+        content: "";
+        position: absolute;
+        top: 18px;
+        bottom: 18px;
+        left: 50%;
+        width: 1px;
+        background: #d7e1dc;
+        transform: translateX(-50%);
+      }
+
+      .mobile-section-rail a {
+        position: relative;
+        z-index: 1;
+        width: 22px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+      }
+
+      .mobile-section-rail a:hover {
+        text-decoration: none;
+      }
+
+      .rail-dot {
+        width: 7px;
+        height: 7px;
+        border: 1px solid #b9c7c3;
+        border-radius: 50%;
+        background: #fff;
+        transition: width 160ms ease, height 160ms ease, border-color 160ms ease, background 160ms ease;
+      }
+
+      .rail-label {
+        display: none;
+        color: var(--teal-dark);
+        font-size: 10px;
+        font-weight: 760;
+        line-height: 1;
+        text-align: center;
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        pointer-events: none;
+      }
+
+      .mobile-section-rail a.is-past .rail-dot {
+        border-color: var(--teal);
+        background: var(--teal);
+      }
+
+      .mobile-section-rail a.is-active .rail-dot {
+        display: none;
+      }
+
+      .mobile-section-rail a.is-active .rail-label {
+        display: block;
+      }
+
+      .mobile-section-rail a.is-active {
+        height: 36px;
+        border: 1px solid #9eb6b1;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(24, 39, 52, 0.12);
+      }
+
+      .hero-inner {
+        gap: 20px;
+        padding: 34px 0 30px;
+      }
+
+      .eyebrow {
+        font-size: 10px;
+        line-height: 1.45;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        font-size: 38px;
+      }
+
+      .name-en {
+        font-size: 25px;
+        margin-top: 5px;
+      }
+
+      .hero-copy {
+        font-size: 14px;
+        margin-top: 18px;
+      }
+
+      .hero-copy .en {
+        font-size: 12px;
+        margin-top: 8px;
+      }
+
+      .link-row {
+        gap: 7px;
+        margin-top: 18px;
+      }
+
+      .link-button {
+        min-height: 34px;
+        padding: 6px 9px;
+        font-size: 12px;
+      }
+
+      .affiliation-card {
+        padding: 16px;
+        gap: 14px;
+        box-shadow: 0 8px 20px rgba(24, 39, 52, 0.06);
+      }
+
+      .affiliation-card h2 {
+        font-size: 19px;
+      }
+
+      .affiliation-block {
+        padding-top: 12px;
+      }
+
+      .affiliation-block strong {
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+
+      .affiliation-block span {
+        font-size: 11px;
+      }
+
+      .research-tags {
+        gap: 6px;
+      }
+
+      .research-tags span {
+        font-size: 10px;
+        padding: 4px 6px;
+      }
+
+      section {
+        padding: 44px 0;
+      }
+
+      .section-head {
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .section-kicker {
+        font-size: 11px;
+        margin-bottom: 6px;
+      }
+
+      h2 {
+        font-size: 27px;
+      }
+
+      .section-intro {
+        font-size: 12px;
+      }
+
+      .focus-grid,
+      .paper-list,
+      .patent-grid,
+      .compact-section {
+        gap: 10px;
+      }
+
+      .focus-item {
+        display: grid;
+        grid-template-columns: 116px minmax(0, 1fr);
+        gap: 10px 12px;
+        align-items: start;
+        min-height: 0;
       }
 
       .focus-icon {
-        height: 188px;
+        grid-row: 1 / span 3;
+        height: 108px;
+        margin-bottom: 0;
+        padding: 6px;
+      }
+
+      .focus-item h3 {
+        margin-bottom: 6px;
+        font-size: 15px;
+      }
+
+      .focus-item p {
+        font-size: 12px;
+      }
+
+      .keywords {
+        gap: 5px;
+        margin-top: 0;
+      }
+
+      .keywords span {
+        font-size: 10px;
+        padding: 3px 5px;
+      }
+
+      .paper-card {
+        grid-template-columns: 104px minmax(0, 1fr);
+        gap: 12px;
+        box-shadow: 0 5px 13px rgba(24, 39, 52, 0.035);
+      }
+
+      .paper-visual {
+        min-height: 112px;
+        align-self: start;
+      }
+
+      .paper-visual img {
+        min-height: 112px;
+      }
+
+      .paper-meta {
+        gap: 5px;
+        margin-bottom: 6px;
+      }
+
+      .status {
+        min-height: 20px;
+        padding: 2px 6px;
+        font-size: 10px;
+      }
+
+      .venue {
+        font-size: 10.5px;
+      }
+
+      .paper-card h3 {
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .authors {
+        font-size: 11px;
+        line-height: 1.45;
+        margin-top: 7px;
+      }
+
+      .summary {
+        font-size: 12px;
+        margin-top: 9px;
+      }
+
+      .summary-en {
+        display: none;
+      }
+
+      .card-links {
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .card-links a,
+      .card-links span {
+        font-size: 10px;
+        padding: 4px 6px;
       }
 
       .paper-card,
       .focus-item,
       .patent-card,
       .info-panel {
-        padding: 16px;
+        padding: 12px;
+      }
+
+      .patent-card h3,
+      .info-panel h3 {
+        font-size: 15px;
+      }
+
+      .patent-info,
+      .info-list {
+        font-size: 12px;
+      }
+
+      .footer-inner {
+        padding: 24px 0;
+        font-size: 11px;
       }
     }
   </style>
@@ -718,6 +1051,28 @@
       </div>
     </nav>
   </header>
+  <nav class="mobile-section-rail" aria-label="Mobile section progress">
+    <a href="#top" data-section-target="top" aria-label="首页">
+      <span class="rail-dot" aria-hidden="true"></span>
+      <span class="rail-label">首页</span>
+    </a>
+    <a href="#focus" data-section-target="focus" aria-label="研究方向">
+      <span class="rail-dot" aria-hidden="true"></span>
+      <span class="rail-label">方向</span>
+    </a>
+    <a href="#publications" data-section-target="publications" aria-label="论文">
+      <span class="rail-dot" aria-hidden="true"></span>
+      <span class="rail-label">论文</span>
+    </a>
+    <a href="#patents" data-section-target="patents" aria-label="专利">
+      <span class="rail-dot" aria-hidden="true"></span>
+      <span class="rail-label">专利</span>
+    </a>
+    <a href="#profile" data-section-target="profile" aria-label="经历">
+      <span class="rail-dot" aria-hidden="true"></span>
+      <span class="rail-label">经历</span>
+    </a>
+  </nav>
 
   <main id="main">
     <section class="hero" id="top" aria-label="Hero">
@@ -854,8 +1209,9 @@
         <article class="info-panel">
           <h3>Education & Courses</h3>
           <ul class="info-list">
-            <li>北京航空航天大学，硕士研究生，研究方向覆盖医学影像 AI、智能传感与健康评估。</li>
-            <li>北京航空航天大学，本科阶段成绩排名前列，推免进入研究生阶段学习。</li>
+            <li>本科：北京航空航天大学。</li>
+            <li>硕士：北京航空航天大学，研究方向覆盖医学影像 AI、智能传感与健康评估。</li>
+            <li>毕业后进入陆空基信息感知与控制全国重点实验室、西安现代控制技术研究所工作。</li>
             <li>满分课程：工科数学分析、线性代数、复变函数、概率统计、电路分析、大学物理。</li>
           </ul>
         </article>
@@ -1083,6 +1439,50 @@
 
     document.getElementById("publication-list").innerHTML = publications.map(renderPublication).join("");
     document.getElementById("patent-list").innerHTML = patents.map(renderPatent).join("");
+
+    const progressLinks = Array.from(document.querySelectorAll(".mobile-section-rail a"));
+    const progressSections = progressLinks
+      .map((link) => ({
+        link,
+        target: document.getElementById(link.dataset.sectionTarget)
+      }))
+      .filter((item) => item.target);
+
+    let progressFrame = null;
+
+    function updateSectionProgress() {
+      const marker = window.scrollY + window.innerHeight * 0.42;
+      let activeIndex = 0;
+
+      progressSections.forEach((item, index) => {
+        if (item.target.offsetTop <= marker) {
+          activeIndex = index;
+        }
+      });
+
+      progressSections.forEach((item, index) => {
+        const isActive = index === activeIndex;
+        item.link.classList.toggle("is-active", isActive);
+        item.link.classList.toggle("is-past", index < activeIndex);
+        if (isActive) {
+          item.link.setAttribute("aria-current", "location");
+        } else {
+          item.link.removeAttribute("aria-current");
+        }
+      });
+
+      progressFrame = null;
+    }
+
+    function requestSectionProgressUpdate() {
+      if (progressFrame === null) {
+        progressFrame = window.requestAnimationFrame(updateSectionProgress);
+      }
+    }
+
+    updateSectionProgress();
+    window.addEventListener("scroll", requestSectionProgressUpdate, { passive: true });
+    window.addEventListener("resize", requestSectionProgressUpdate);
   </script>
 </body>
 </html>
