@@ -146,6 +146,19 @@
       font-weight: 720;
     }
 
+    .brand-text {
+      display: grid;
+      gap: 0;
+      line-height: 1.15;
+    }
+
+    .brand-subtitle {
+      display: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
     .brand-mark {
       width: 30px;
       height: 30px;
@@ -681,44 +694,43 @@
 
       .site-header {
         position: static;
+        background: rgba(251, 252, 251, 0.94);
       }
 
       .nav {
         width: min(100% - 22px, var(--max));
         min-height: auto;
-        gap: 8px;
-        padding: 10px 0 8px;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0;
+        padding: 10px 0;
       }
 
       .brand {
-        gap: 8px;
+        gap: 9px;
         font-size: 13px;
       }
 
       .brand-mark {
-        width: 25px;
-        height: 25px;
-        border-radius: 5px;
+        width: 32px;
+        height: 32px;
+        border-color: #94aaa5;
+        border-radius: 8px;
+        box-shadow: 0 5px 13px rgba(24, 39, 52, 0.08);
         font-size: 11px;
+      }
+
+      .brand-text > span:first-child {
+        font-size: 14px;
+      }
+
+      .brand-subtitle {
+        display: block;
       }
 
       .nav-links {
-        width: 100%;
-        gap: 8px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding-bottom: 2px;
-        scrollbar-width: none;
-      }
-
-      .nav-links::-webkit-scrollbar {
         display: none;
-      }
-
-      .nav-links a {
-        flex: 0 0 auto;
-        padding: 5px 0;
-        font-size: 11px;
       }
 
       .hero-inner,
@@ -928,6 +940,9 @@
       .paper-list,
       .patent-grid,
       .compact-section {
+        width: calc(100% - 22px);
+        margin-left: auto;
+        margin-right: auto;
         gap: 10px;
       }
 
@@ -1056,7 +1071,10 @@
     <nav class="nav" aria-label="Main navigation">
       <a class="brand" href="#top" aria-label="Back to top">
         <span class="brand-mark">YL</span>
-        <span>Yong Liu</span>
+        <span class="brand-text">
+          <span>Yong Liu</span>
+          <span class="brand-subtitle">Academic Homepage</span>
+        </span>
       </a>
       <div class="nav-links">
         <a href="#focus">Research</a>
