@@ -1,504 +1,1230 @@
-﻿  <!DOCTYPE html>
-<html lang="en">
-
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-  <script>
-    const config = {
-      // bucketUrl defaults to this file location
-      //   ensure it's on bucket root leve level (e.g. key: 'index.html')
-      // bucketUrl: https://s3.eu-central-1.amazonaws.com/example-bucket
-      keyExcludePattern: /^index\.html$/,
-      pageSize: 50,
-      title: 'AWS S3 Bucket Browser',
-      subtitle: 'made with ♥ by qoomon',
-      logo: 'logo.png',
-      favicon: 'favicon.ico'
-    }
-  </script>
-  
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link id="favicon" rel="shortcut icon"/>
-  <script src="https://unpkg.com/vue@2.6.10"></script><script>Vue.config.productionTip = false;</script>
-  <script src="https://unpkg.com/buefy@0.8.6/dist/buefy.min.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/buefy@0.8.6/dist/buefy.min.css">
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
-  <link rel="stylesheet" href="https://cdn.materialdesignicons.com/2.5.94/css/materialdesignicons.min.css">
-  <script src="https://unpkg.com/moment@2.14.1/min/moment.min.js"></script>
-</head>
+  <title>刘勇 / Yong Liu - Academic Homepage</title>
+  <meta name="description" content="刘勇 / Yong Liu 的个人学术主页，展示医学影像自监督学习、压电触摸力感知、可穿戴健康与智能系统方向的论文和专利。">
+  <meta name="author" content="Yong Liu">
+  <meta property="og:title" content="刘勇 / Yong Liu - Academic Homepage">
+  <meta property="og:description" content="Academic portfolio of Yong Liu: fundus AI, piezoelectric force sensing, wearable health, publications, and patents.">
+  <meta property="og:type" content="profile">
+  <meta property="og:url" content="https://shanxixiaoyong.github.io/">
+  <link rel="icon" href="favicon.ico">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Yong Liu",
+    "alternateName": "刘勇",
+    "url": "https://shanxixiaoyong.github.io/",
+    "email": "mailto:yongliu@buaa.edu.cn",
+    "affiliation": {
+      "@type": "CollegeOrUniversity",
+      "name": "Beihang University",
+      "url": "https://www.buaa.edu.cn/"
+    },
+    "sameAs": [
+      "https://github.com/shanxixiaoyong",
+      "https://orcid.org/0000-0002-7584-2953"
+    ],
+    "knowsAbout": [
+      "Self-supervised learning",
+      "Fundus image analysis",
+      "Piezoelectric force sensing",
+      "Wearable health sensing",
+      "Machine learning"
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f5;
+      --surface: #ffffff;
+      --surface-soft: #eef3f1;
+      --text: #17202a;
+      --muted: #5f6f7a;
+      --line: #dce3df;
+      --teal: #256b6d;
+      --teal-dark: #184d52;
+      --copper: #a36f3e;
+      --blue: #315f8a;
+      --green: #47725f;
+      --yellow: #8a6c2f;
+      --shadow: 0 18px 42px rgba(24, 39, 52, 0.08);
+      --max: 1160px;
+    }
 
-<body class="notification" style="width: 100vw; min-height: 100vh;">
-  
-  <div id="app">
-  
-    <div class="container">
-      <div class="level">
-        <div class="level-left">
-          <figure class="level-item image is-128x128" style="margin-right: 1.5rem;">
-            <img :src="config.logo"/>
-          </figure>
-          <div>
-            <h1 class="title">{{config.title}}</h1>
-            <h2 class="subtitle">{{config.subtitle}}</h2>
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: var(--teal-dark);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: -60px;
+      z-index: 20;
+      background: var(--text);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+
+    .skip-link:focus {
+      top: 12px;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246, 247, 245, 0.92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav {
+      width: min(100% - 32px, var(--max));
+      margin: 0 auto;
+      min-height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      font-weight: 720;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #b7c8c5;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: var(--teal-dark);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #35424a;
+      font-size: 14px;
+      padding: 8px 10px;
+      border-radius: 4px;
+    }
+
+    .nav-links a:hover {
+      background: #e9efec;
+      text-decoration: none;
+    }
+
+    .hero {
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f7f8f5 100%);
+    }
+
+    .hero-inner {
+      width: min(100% - 32px, var(--max));
+      min-height: 580px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(360px, 0.96fr);
+      align-items: center;
+      gap: 44px;
+      padding: 74px 0 58px;
+    }
+
+    .eyebrow {
+      color: var(--teal-dark);
+      font-size: 13px;
+      font-weight: 720;
+      text-transform: uppercase;
+      margin: 0 0 16px;
+    }
+
+    h1 {
+      font-size: clamp(42px, 5.3vw, 72px);
+      line-height: 1.04;
+      margin: 0;
+      font-weight: 780;
+    }
+
+    .name-en {
+      display: block;
+      color: #35424a;
+      font-weight: 640;
+      font-size: clamp(26px, 3.2vw, 44px);
+      margin-top: 8px;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      color: #3d4b55;
+      font-size: 18px;
+      margin: 24px 0 0;
+    }
+
+    .hero-copy .en {
+      display: block;
+      color: var(--muted);
+      font-size: 15px;
+      margin-top: 10px;
+    }
+
+    .link-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .link-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid #c8d4d2;
+      border-radius: 6px;
+      background: #fff;
+      color: #24313a;
+      font-size: 14px;
+      box-shadow: 0 1px 0 rgba(24, 39, 52, 0.04);
+    }
+
+    .link-button:hover {
+      border-color: #8fb3af;
+      background: #f7fbfa;
+      text-decoration: none;
+    }
+
+    .link-button svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      flex: 0 0 auto;
+    }
+
+    .hero-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 34px;
+      max-width: 680px;
+    }
+
+    .fact {
+      border-top: 2px solid var(--teal);
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .fact strong {
+      display: block;
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .research-map {
+      min-height: 420px;
+      border: 1px solid #d7e1dc;
+      border-radius: 8px;
+      background: #fbfcfb;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .visual-cell {
+      border: 1px solid #d9e1dc;
+      border-radius: 7px;
+      padding: 14px;
+      background: #fff;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .visual-cell.wide {
+      grid-column: 1 / -1;
+    }
+
+    .visual-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #29343c;
+    }
+
+    .visual-desc {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .retina {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      border: 2px solid #c78555;
+      background:
+        radial-gradient(circle at 52% 50%, #f2c28b 0 7%, transparent 8%),
+        radial-gradient(circle, #f5a15e 0 30%, #b55e49 31% 58%, #723b4a 59% 100%);
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .retina::before,
+    .retina::after {
+      content: "";
+      position: absolute;
+      left: 48%;
+      top: 48%;
+      width: 36px;
+      height: 2px;
+      background: rgba(255, 228, 174, 0.72);
+      transform-origin: left center;
+      border-radius: 3px;
+    }
+
+    .retina::before {
+      transform: rotate(28deg);
+    }
+
+    .retina::after {
+      transform: rotate(-38deg);
+    }
+
+    .waveform {
+      height: 72px;
+      margin-bottom: 12px;
+    }
+
+    .wearable-loop {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .loop-node {
+      min-height: 54px;
+      border: 1px solid #cadae2;
+      background: #f5f9fa;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      padding: 6px;
+    }
+
+    section {
+      width: min(100% - 32px, var(--max));
+      margin: 0 auto;
+      padding: 70px 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 32px;
+    }
+
+    .section-kicker {
+      color: var(--teal-dark);
+      font-size: 13px;
+      font-weight: 760;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.16;
+      margin: 0;
+    }
+
+    .section-intro {
+      color: var(--muted);
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .focus-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .focus-item {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      min-height: 300px;
+    }
+
+    .focus-icon {
+      width: 100%;
+      height: 112px;
+      border: 1px solid #d9e2de;
+      border-radius: 7px;
+      background: #f9fbfa;
+      margin-bottom: 18px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .focus-item h3 {
+      margin: 0 0 10px;
+      font-size: 19px;
+    }
+
+    .focus-item p {
+      color: #4e5c65;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 18px;
+    }
+
+    .keywords span {
+      border: 1px solid #d4dfda;
+      border-radius: 4px;
+      padding: 4px 7px;
+      font-size: 12px;
+      color: #50606b;
+      background: #fbfcfb;
+    }
+
+    .paper-list {
+      display: grid;
+      gap: 18px;
+    }
+
+    .paper-card {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 22px;
+      padding: 22px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(24, 39, 52, 0.04);
+    }
+
+    .paper-visual {
+      min-height: 188px;
+      border: 1px solid #d9e2de;
+      border-radius: 7px;
+      background: #f9fbfa;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+
+    .paper-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .status.published {
+      color: #184d52;
+      background: #dfecea;
+    }
+
+    .status.conference {
+      color: #315f8a;
+      background: #e2edf6;
+    }
+
+    .status.preprint {
+      color: #7a5c20;
+      background: #f2ead6;
+    }
+
+    .status.review {
+      color: #724526;
+      background: #f2e4d7;
+    }
+
+    .venue {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .paper-card h3 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.35;
+    }
+
+    .authors {
+      color: #4f5e67;
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+
+    .authors strong {
+      color: #8a4f2b;
+      font-weight: 760;
+    }
+
+    .summary {
+      color: #3e4d56;
+      margin: 14px 0 0;
+      font-size: 14px;
+    }
+
+    .summary-en {
+      color: var(--muted);
+      margin: 7px 0 0;
+      font-size: 13px;
+    }
+
+    .card-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .card-links a,
+    .card-links span {
+      border: 1px solid #d4dfda;
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 12px;
+      color: #2a5156;
+      background: #fbfcfb;
+    }
+
+    .card-links a:hover {
+      background: #eef6f4;
+      text-decoration: none;
+    }
+
+    .patent-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .patent-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .patent-card h3 {
+      margin: 12px 0 10px;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    .patent-info {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .patent-info strong {
+      color: #394851;
+    }
+
+    .compact-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .info-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+    }
+
+    .info-panel h3 {
+      margin: 0 0 12px;
+      font-size: 19px;
+    }
+
+    .info-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+      color: #4d5b64;
+      font-size: 14px;
+    }
+
+    .info-list li {
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .info-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.72em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .site-footer {
+      border-top: 1px solid var(--line);
+      background: #eef2ef;
+    }
+
+    .footer-inner {
+      width: min(100% - 32px, var(--max));
+      margin: 0 auto;
+      padding: 34px 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      color: #50616b;
+      font-size: 13px;
+    }
+
+    .source-note {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-network svg,
+    .encoder-diagram svg,
+    .wave-diagram svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    @media (max-width: 920px) {
+      .nav {
+        align-items: flex-start;
+        padding: 12px 0;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        justify-content: flex-start;
+      }
+
+      .hero-inner {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding: 56px 0 44px;
+      }
+
+      .research-map {
+        min-height: auto;
+      }
+
+      .section-head,
+      .compact-section {
+        grid-template-columns: 1fr;
+      }
+
+      .focus-grid,
+      .patent-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .paper-card {
+        grid-template-columns: 1fr;
+      }
+
+      .paper-visual {
+        min-height: 170px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .nav {
+        width: min(100% - 22px, var(--max));
+      }
+
+      .nav-links {
+        gap: 0;
+      }
+
+      .nav-links a {
+        padding: 7px 8px;
+        font-size: 13px;
+      }
+
+      .hero-inner,
+      section,
+      .footer-inner {
+        width: min(100% - 22px, var(--max));
+      }
+
+      .hero-facts {
+        grid-template-columns: 1fr;
+      }
+
+      .map-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .visual-cell.wide {
+        grid-column: auto;
+      }
+
+      .wearable-loop {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .paper-card,
+      .focus-item,
+      .patent-card,
+      .info-panel {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Back to top">
+        <span class="brand-mark">YL</span>
+        <span>Yong Liu</span>
+      </a>
+      <div class="nav-links">
+        <a href="#focus">Research</a>
+        <a href="#publications">Publications</a>
+        <a href="#patents">Patents</a>
+        <a href="#profile">Profile</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-label="Hero">
+      <div class="hero-inner">
+        <div>
+          <p class="eyebrow">Beihang University · AI for Sensing and Medicine</p>
+          <h1>刘勇<span class="name-en">Yong Liu</span></h1>
+          <p class="hero-copy">
+            研究兴趣集中在医学影像自监督学习、眼底疾病智能诊断、压电触摸力感知与可穿戴健康系统。工作横跨视觉模型、传感器信号建模与智能人机交互，目标是让有限标签、复杂信号和真实场景中的健康评估更可靠。
+            <span class="en">Research at the intersection of self-supervised medical vision, piezoelectric force sensing, and wearable health intelligence.</span>
+          </p>
+          <div class="link-row" id="contact" aria-label="Contact links">
+            <a class="link-button" href="mailto:yongliu@buaa.edu.cn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"></path><path d="m4 7 8 6 8-6"></path></svg>
+              yongliu@buaa.edu.cn
+            </a>
+            <a class="link-button" href="https://github.com/shanxixiaoyong" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.5-4-2.5-6-3m12 5v-3.4c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6A4.6 4.6 0 0 0 18.7 6c.1-.4.6-1.8-.1-3.6 0 0-1-.3-3.4 1.3a11.7 11.7 0 0 0-6.2 0C6.6 2.1 5.6 2.4 5.6 2.4 4.9 4.2 5.4 5.6 5.5 6A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"></path></svg>
+              GitHub
+            </a>
+            <a class="link-button" href="https://orcid.org/0000-0002-7584-2953" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9 8v8"></path><path d="M12 8h2.2c2.2 0 3.8 1.6 3.8 4s-1.6 4-3.8 4H12z"></path><path d="M7 8h0"></path></svg>
+              ORCID
+            </a>
+          </div>
+          <div class="hero-facts">
+            <div class="fact"><strong>7</strong>论文、会议论文与稿件</div>
+            <div class="fact"><strong>4</strong>专利与专利申请</div>
+            <div class="fact"><strong>3</strong>研究主线</div>
+          </div>
+        </div>
+
+        <div class="research-map" aria-label="Research visual map">
+          <div class="map-title">Visual map: sensing data, learned representations, and health decisions</div>
+          <div class="map-grid">
+            <div class="visual-cell">
+              <div class="retina" aria-hidden="true"></div>
+              <div>
+                <div class="visual-label">Fundus AI</div>
+                <div class="visual-desc">Self-supervised retinal representations for multiple disease screening.</div>
+              </div>
+            </div>
+            <div class="visual-cell">
+              <svg class="waveform" viewBox="0 0 180 72" aria-hidden="true">
+                <path d="M4 48 C22 48 20 18 36 18 C52 18 48 58 66 58 C86 58 80 28 98 28 C118 28 112 48 130 48 C150 48 148 16 176 16" fill="none" stroke="#256b6d" stroke-width="4" stroke-linecap="round"></path>
+                <path d="M4 60 H176" stroke="#d9e2de" stroke-width="2"></path>
+              </svg>
+              <div>
+                <div class="visual-label">Force Sensing</div>
+                <div class="visual-desc">Piezoelectric signals, feature learning, and force classification.</div>
+              </div>
+            </div>
+            <div class="visual-cell wide">
+              <div class="wearable-loop" aria-hidden="true">
+                <div class="loop-node">Sensor</div>
+                <div class="loop-node">Signal</div>
+                <div class="loop-node">Model</div>
+                <div class="loop-node">Health</div>
+              </div>
+              <div>
+                <div class="visual-label">Wearable Health Systems</div>
+                <div class="visual-desc">Closed-loop assessment for myopia risk, rehabilitation, and child physical-function development.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      
-      <div class="container is-clearfix">
-        <div class="buttons is-pulled-left">
-          <b-button v-for="(breadcrump, index) in pathBreadcrumps" v-bind:key="breadcrump.url" 
-            type="is-info" rounded
-            tag="a" 
-            :href="breadcrump.url" 
-            icon-pack="fas"
-            :icon-left="index == 0 ? 'folder' : ''"
-            target=""
-            :style="{ fontWeight: index == 0 ? 'bolder': ''}"
-            >
-            <template v-if="index == 0">/</template>
-            <template v-else="index > 0">{{breadcrump.name}}</template>
-          </b-button>
-        </div>
-        <div v-show="nextContinuationToken || previousContinuationTokens.length > 0"
-          class="buttons is-pulled-right">
-          <b-button
-            type="is-info" rounded
-            icon-pack="fas"
-            icon-left="angle-left"
-            @click="previousPage"
-            :disabled="previousContinuationTokens.length === 0"
-            >
-          </b-button>
-          <b-button
-            type="is-info" rounded
-            icon-pack="fas"
-            icon-right="angle-right"
-            @click="nextPage"
-            :disabled="!nextContinuationToken"
-            >
-          </b-button>
-        </div>
-      </div>
+    </section>
 
-      <b-table 
-        v-if="!isMobileBreakoint"
-        :data="pathContentTableData" 
-        >
-        <template slot-scope="props">
-          <b-table-column 
-            field="name"
-            label="Name"
-            sortable :custom-sort="sortTableData('name')"
-            >
-            <b-icon 
-              class="row-title-icon"
-              pack="far" 
-              :icon="props.row.type === 'prefix' ? 'folder' : 'file-alt'"
-              >
-            </b-icon>
-            <b-button 
-              type="is-info is-text" inverted rounded 
-              tag="a" 
-              :href="props.row.type === 'content' ? props.row.url : `#${props.row.prefix}`" 
-              style="text-align: left;"
-              >
-              {{ props.row.name }}
-            </b-button>
-          </b-table-column>
-          <b-table-column
-            field="size" numeric 
-            label="Size"
-            sortable :custom-sort="sortTableData('size')"
-            centered width="128"
-            >
-            {{ props.row.size | formatBytes}}
-          </b-table-column>
-          <b-table-column 
-              field="dateModified" 
-              label="Date Modified"
-              sortable :custom-sort="sortTableData('dateModified')"
-              centered width="256"
-              >
-              <b-tooltip
-                type="is-light"
-                size="is-small"
-                position="is-left"
-                animated
-                :label="props.row.dateModified | formatDate"
-                >
-                {{ props.row.dateModified | formatDateRelative }}
-              </b-tooltip>
-          </b-table-column>
-        </template>
-      </b-table>
-      
-      <b-table 
-        v-if="isMobileBreakoint"
-        :data="pathContentTableData"
-        >
-        <template slot-scope="props">
-          <b-table-column 
-            class="mobile-row"
-            >
-            <b-icon 
-              class="row-title-icon"
-              pack="far" 
-              :icon="props.row.type === 'prefix' ? 'folder' : 'file-alt'"
-              >
-            </b-icon>
-            
-            <div class="mobile-row-title">
-              <b-button 
-                type="is-info is-text" inverted rounded 
-                tag="a" 
-                :href="props.row.type === 'content' ? props.row.url : `#${props.row.prefix}`" 
-                style="text-align: left"
-                >
-                {{ props.row.name }}
-              </b-button>
-            </div>
-            
-            <div 
-              v-if="props.row.size || props.row.dateModified"
-              class="mobile-row-subtitle"
-              >
-              <div>
-                {{ props.row.size | formatBytes}}
-              </div>
-              <b-tooltip
-                type="is-light"
-                position="is-left"
-                animated
-                :label="props.row.dateModified | formatDate"
-                class="mobile-date-tooltip"
-                >
-                {{ props.row.dateModified | formatDateRelative }}
-              </b-tooltip>
-            </div>
-          </b-table-column>
-          
-          <!-- dummy colums to make mobile rows sortable -->
-          <b-table-column 
-            field="name"
-            label="Name"
-            sortable :custom-sort="sortTableData('name')"
-            >
-          </b-table-column>
-          <b-table-column v-show='false' 
-            field="size"
-            label="Size"
-            sortable :custom-sort="sortTableData('size')"
-            >
-          </b-table-column>
-          <b-table-column v-show='false' 
-            field="dateModified" 
-            label="Date Modified"
-            sortable :custom-sort="sortTableData('dateModified')"
-            >
-          </b-table-column>
-        </template>
-      </b-table>
-      
-      <div class="container is-clearfix" style="margin-top: 1rem;">
-        <div v-show="nextContinuationToken || previousContinuationTokens.length > 0"
-          class="buttons is-pulled-right">
-          <b-button
-            type="is-info" rounded
-            icon-pack="fas"
-            icon-left="angle-left"
-            @click="previousPage"
-            :disabled="previousContinuationTokens.length === 0"
-            >
-          </b-button>
-          <b-button
-            type="is-info" rounded
-            icon-pack="fas"
-            icon-right="angle-right"
-            @click="nextPage"
-            :disabled="!nextContinuationToken"
-            >
-          </b-button>
+    <section id="focus">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Research Focus</p>
+          <h2>从医学图像到触觉传感的智能健康系统</h2>
         </div>
+        <p class="section-intro">
+          主页采用图文研究型结构：每条主线配合简洁图示，强调问题、数据、模型和应用场景，而不是堆叠履历文本。
+        </p>
+      </div>
+      <div class="focus-grid">
+        <article class="focus-item">
+          <div class="focus-icon encoder-diagram" aria-hidden="true">
+            <svg viewBox="0 0 260 112">
+              <rect x="16" y="22" width="44" height="44" rx="6" fill="#f0d0a6" stroke="#b87956"></rect>
+              <rect x="34" y="46" width="44" height="44" rx="6" fill="#d98e68" stroke="#9b5c4f"></rect>
+              <path d="M86 56 H122" stroke="#6c837e" stroke-width="3" stroke-linecap="round"></path>
+              <rect x="128" y="26" width="52" height="60" rx="7" fill="#eef6f4" stroke="#8db7b1"></rect>
+              <path d="M142 44 H166M142 56H166M142 68H156" stroke="#256b6d" stroke-width="3" stroke-linecap="round"></path>
+              <path d="M186 56 H218" stroke="#6c837e" stroke-width="3" stroke-linecap="round"></path>
+              <circle cx="232" cy="39" r="8" fill="#315f8a"></circle>
+              <circle cx="236" cy="58" r="8" fill="#47725f"></circle>
+              <circle cx="225" cy="73" r="8" fill="#a36f3e"></circle>
+            </svg>
+          </div>
+          <h3>眼底医学影像 AI</h3>
+          <p>利用自监督视觉模型从少标签眼底图像中学习可复用表征，服务多疾病筛查、风险预测和跨来源泛化。</p>
+          <div class="keywords">
+            <span>Self-supervised vision</span>
+            <span>Fundus images</span>
+            <span>Multi-disease diagnosis</span>
+          </div>
+        </article>
+        <article class="focus-item">
+          <div class="focus-icon wave-diagram" aria-hidden="true">
+            <svg viewBox="0 0 260 112">
+              <path d="M18 72 C40 72 36 28 58 28 C82 28 72 84 98 84 C124 84 114 40 140 40 C166 40 158 72 184 72 C210 72 210 30 242 30" fill="none" stroke="#256b6d" stroke-width="5" stroke-linecap="round"></path>
+              <path d="M34 92H226" stroke="#d8e1dd" stroke-width="3"></path>
+              <rect x="42" y="18" width="28" height="14" rx="3" fill="#e8f0f6" stroke="#789ab7"></rect>
+              <rect x="124" y="30" width="28" height="14" rx="3" fill="#e8f3ee" stroke="#85a996"></rect>
+              <rect x="208" y="20" width="28" height="14" rx="3" fill="#f2eadc" stroke="#bb9261"></rect>
+            </svg>
+          </div>
+          <h3>压电触摸力感知</h3>
+          <p>围绕压电触摸屏信号的长期稳定、力级分类和交互显示，设计机器学习方法提升低数据量场景下的识别可靠性。</p>
+          <div class="keywords">
+            <span>Piezoelectric sensing</span>
+            <span>Force classification</span>
+            <span>Interactive displays</span>
+          </div>
+        </article>
+        <article class="focus-item">
+          <div class="focus-icon mini-network" aria-hidden="true">
+            <svg viewBox="0 0 260 112">
+              <circle cx="48" cy="56" r="19" fill="#eef6f4" stroke="#83aca8" stroke-width="2"></circle>
+              <circle cx="130" cy="34" r="18" fill="#eef2f7" stroke="#7e9aba" stroke-width="2"></circle>
+              <circle cx="130" cy="78" r="18" fill="#f4eee2" stroke="#b99768" stroke-width="2"></circle>
+              <circle cx="212" cy="56" r="19" fill="#eef5ef" stroke="#87a992" stroke-width="2"></circle>
+              <path d="M67 52 L112 38M67 60 L112 74M148 38 L194 52M148 74 L194 60M130 52V60" stroke="#6f817b" stroke-width="3" stroke-linecap="round"></path>
+              <text x="48" y="60" text-anchor="middle" font-size="10" fill="#256b6d">wear</text>
+              <text x="130" y="38" text-anchor="middle" font-size="10" fill="#315f8a">gait</text>
+              <text x="130" y="82" text-anchor="middle" font-size="10" fill="#8a6c2f">eye</text>
+              <text x="212" y="60" text-anchor="middle" font-size="10" fill="#47725f">risk</text>
+            </svg>
+          </div>
+          <h3>可穿戴健康与评估</h3>
+          <p>结合传感器、模型和人机系统，面向近视风险、步态康复、儿童身体机能发育等健康评估问题。</p>
+          <div class="keywords">
+            <span>Wearable health</span>
+            <span>Rehabilitation</span>
+            <span>Risk assessment</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="publications">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Publications</p>
+          <h2>论文、会议论文与稿件</h2>
+        </div>
+        <p class="section-intro">
+          全部成果按状态展示。已发表条目附 DOI 或出版方链接；在审稿件保留清晰状态标签，不混同为已接收论文。
+        </p>
+      </div>
+      <div class="paper-list" id="publication-list"></div>
+      <p class="source-note">Publication metadata was cross-checked from DOI/Crossref, publisher pages, Beihang research portal snippets, and user-provided CV information.</p>
+    </section>
+
+    <section id="patents">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Patents</p>
+          <h2>专利与知识产权</h2>
+        </div>
+        <p class="section-intro">
+          已授权、已公开和已受理条目全部列出，并用状态标签区分。公开链接优先指向 Google Patents；暂未查到公开记录的条目标明来源。
+        </p>
+      </div>
+      <div class="patent-grid" id="patent-list"></div>
+    </section>
+
+    <section id="profile">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Profile</p>
+          <h2>教育背景与荣誉</h2>
+        </div>
+        <p class="section-intro">
+          这里只展示适合公开主页的信息；简历中的手机号、住址和二维码不进入网站。
+        </p>
+      </div>
+      <div class="compact-section">
+        <article class="info-panel">
+          <h3>Education</h3>
+          <ul class="info-list">
+            <li>北京航空航天大学，硕士研究生，研究方向覆盖医学影像 AI、智能传感与健康评估。</li>
+            <li>北京航空航天大学，本科阶段成绩排名前列，推免进入研究生阶段学习。</li>
+            <li>课程背景覆盖数学、信号处理、机器学习、嵌入式系统、控制与传感器技术。</li>
+          </ul>
+        </article>
+        <article class="info-panel">
+          <h3>Selected Honors & Skills</h3>
+          <ul class="info-list">
+            <li>获北京市工程设计表达竞赛一等奖、北京市数学建模竞赛二等奖、美国大学生数学建模竞赛 H 奖等。</li>
+            <li>北航励志成长成才表率、优秀研究生、优秀毕业生、优秀学生干部等校级荣誉。</li>
+            <li>熟悉 Python、PyTorch、C/C++、Qt、Linux、MATLAB、嵌入式系统与计算机视觉方法。</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong>刘勇 / Yong Liu</strong><br>
+        Academic homepage on GitHub Pages.
+      </div>
+      <div>
+        <a href="https://shanxixiaoyong.github.io/">https://shanxixiaoyong.github.io/</a><br>
+        Last updated: 2026-06-30
       </div>
     </div>
-    <div class="footer-bucket-url">Bucket: {{ config.bucketUrl }}</div>    
-  </div>
-  
+  </footer>
+
   <script>
-    
-    if(!config.bucketUrl){
-      let searchParams = new URL(window.location).searchParams;
-      config.bucketUrl = searchParams.get('bucket') 
-        // assume this file is located ar root level of the bucket
-        // e.g. https://s3.eu-central-1.amazonaws.com/example-bucket/index.html
-        || window.location.href.split(/[?#]/)[0].replace(/\/[^\/]+$/, '')
-    }
-  
-  
-    document.title = config.title;
-    document.getElementById('favicon').href = config.favicon;
-
-    Vue.use(Buefy.default, {
-    	defaultIconPack: 'fa'
-    });
-    
-    new Vue({
-      el: '#app',
-      data: {
-        windowWidth: window.innerWidth,
-        config, // defined in <head> section
-        pathPrefix: null,
-        
-        pathContentTableData: [],
-        
-        previousContinuationTokens: [],
-        continuationToken: undefined,
-        nextContinuationToken: undefined
+    const publications = [
+      {
+        title: "Rectified Artificial Neural Networks for Long-Term Force Sensing in Piezoelectric Touch Panels",
+        status: "Published",
+        statusClass: "published",
+        venue: "Electronics, 14(10), 2081",
+        year: "2025",
+        authors: ["Yong Liu", "Xuemeng Li", "Weihao Ma", "Hongbei Meng", "Shuo Gao"],
+        summaryZh: "提出面向压电触摸屏长期力感知的修正神经网络方法，针对长期使用和响应漂移导致的识别不稳定问题，提升触摸力估计与分类的可靠性。",
+        summaryEn: "Rectified neural models for long-term piezoelectric force sensing under drift and device variation.",
+        visual: "wave",
+        links: [
+          { label: "DOI", url: "https://doi.org/10.3390/electronics14102081" },
+          { label: "Publisher", url: "https://www.mdpi.com/2079-9292/14/10/2081" },
+          { label: "Preprint", url: "https://doi.org/10.21203/rs.3.rs-3115583/v1" }
+        ]
       },
-      computed: {
-        pathBreadcrumps() {
-          return `/${this.pathPrefix}`.match(/(?=[/])|[^/]+[/]?/g)
-            .map((pathPrefixPart, index, pathPrefixParts) => ({
-              name: pathPrefixPart,
-              url: '#' + pathPrefixParts.slice(0, index).join('') + pathPrefixPart
-            }));
-        },
-        isMobileBreakoint(){
-          return this.windowWidth <= 768
-        }
+      {
+        title: "Diagnosis of Multiple Fundus Disorders Amidst a Scarcity of Medical Experts Via Self-Supervised Machine Learning",
+        status: "Published",
+        statusClass: "published",
+        venue: "IEEE Internet of Things Journal",
+        year: "2025",
+        authors: ["Yong Liu", "Mengtian Kang", "Shuo Gao", "Chi Zhang", "Ying Liu", "Shiming Li", "Yue Qi", "Arokia Nathan", "Wenjun Xu", "Chenyu Tang", "Edoardo Occhipinti", "Mayinuer Yusufu", "Ningli Wang", "Weiling Bai", "Luigi Occhipinti"],
+        summaryZh: "面向眼底专科医生稀缺与标签数据有限的问题，利用自监督机器学习建立多眼底疾病诊断框架，强调跨人群、跨图像来源的可迁移诊断能力。",
+        summaryEn: "Self-supervised fundus representation learning for multi-disorder diagnosis when expert annotation is scarce.",
+        visual: "retina",
+        links: [
+          { label: "DOI", url: "https://doi.org/10.1109/JIOT.2024.3463185" },
+          { label: "IEEE Xplore", url: "https://ieeexplore.ieee.org/document/10684157/" }
+        ]
       },
-      watch: {
-        pathPrefix() {
-          this.previousContinuationTokens = [];
-          this.continuationToken = undefined;
-          this.nextContinuationToken = undefined;
-          this.refresh();
-        }
+      {
+        title: "SSVT: Self-Supervised Vision Transformer For Eye Disease Diagnosis Based On Fundus Images",
+        status: "Conference",
+        statusClass: "conference",
+        venue: "IEEE ISBI 2024",
+        year: "2024",
+        authors: ["Jiaqi Wang", "Mengtian Kang", "Yong Liu", "Chi Zhang", "Ying Liu", "Shiming Li", "Yue Qi", "Wenjun Xu", "Chenyu Tang", "Edoardo Occhipinti", "Mayinuer Yusufu", "Ningli Wang", "Weiling Bai", "Shuo Gao", "Luigi G. Occhipinti"],
+        summaryZh: "构建面向眼底疾病诊断的自监督视觉 Transformer，利用无标签或弱标签图像学习眼底语义表征，为后续多疾病识别提供基础模型能力。",
+        summaryEn: "A self-supervised vision transformer for fundus-image eye disease diagnosis.",
+        visual: "retina",
+        links: [
+          { label: "DOI", url: "https://doi.org/10.1109/ISBI56570.2024.10635531" },
+          { label: "IEEE Xplore", url: "https://ieeexplore.ieee.org/document/10635531/" },
+          { label: "arXiv", url: "https://doi.org/10.48550/arXiv.2404.13386" }
+        ]
       },
-      methods: {
-        moment: moment,
-        previousPage(){
-          if(this.previousContinuationTokens.length > 0){
-            this.continuationToken = this.previousContinuationTokens.pop();
-            this.refresh();
-          }
-        },
-        nextPage(){
-          if(this.nextContinuationToken){
-            this.previousContinuationTokens.push(this.continuationToken);
-            this.continuationToken = this.nextContinuationToken;
-            this.refresh();
-          }
-        },
-        async refresh() {
-          let listBucketResult;
-          try {
-            let bucketListApiUrl = `${this.config.bucketUrl}?list-type=2`;
-            bucketListApiUrl += `&delimiter=/`;
-            bucketListApiUrl += `&prefix=${this.pathPrefix}`;
-            
-            if(this.config.pageSize){
-              bucketListApiUrl += `&max-keys=${this.config.pageSize}`;
-            }
-            if(this.continuationToken){
-              bucketListApiUrl += `&continuation-token=${encodeURIComponent(this.continuationToken)}`;
-            }
-            let listBucketResultResponse = await fetch(bucketListApiUrl);
-            let listBucketResultXml = await listBucketResultResponse.text();
-            
-            listBucketResult = new DOMParser().parseFromString(listBucketResultXml, "text/xml");
-            if (!listBucketResult.querySelector('ListBucketResult')){
-              throw Error("List bucket response does not contain <ListBucketResult> tag!");
-            }
-          } catch (error) {
-            this.$buefy.notification.open({
-                    message: escapeHTML(error.message),
-                    type: 'is-danger',
-                    duration: 60000,
-                    position: 'is-bottom'
-                });
-            throw error;
-          }
-          let nextContinuationTokenTag = listBucketResult.querySelector("NextContinuationToken");
-          this.nextContinuationToken =  nextContinuationTokenTag && nextContinuationTokenTag.textContent;
-          let commonPrefixes = [...listBucketResult.querySelectorAll("ListBucketResult > CommonPrefixes")].map(tag => ({
-            prefix: tag.querySelector('Prefix').textContent
-          }));
-          let contents = [...listBucketResult.querySelectorAll("ListBucketResult > Contents")].map(tag => ({
-            key: tag.querySelector('Key').textContent,
-            size: parseInt(tag.querySelector('Size').textContent),
-            dateModified: new Date(tag.querySelector('LastModified').textContent)
-          }));
-
-          this.pathContentTableData = [];
-          commonPrefixes
-            .forEach(prefix => {
-              this.pathContentTableData.push({
-                type: 'prefix',
-                name: prefix.prefix.replace(/^.*\/(?=.+)/, ''),
-                
-                prefix: prefix.prefix
-              })
-            });
-          contents
-            .filter(content => !content.key.endsWith('/')) // exclude folder entries
-            .filter(content => !config.keyExcludePattern || !content.key.match(config.keyExcludePattern))
-            .forEach(content => {
-              this.pathContentTableData.push({
-                type: 'content',
-                name: content.key.replace(/^.*\//, ''),
-                size: content.size,
-                dateModified: content.dateModified,
-
-                key: content.key,
-                url: `${this.config.bucketUrl}/${content.key}`
-              })
-            });
-        },
-        sortTableData(columnName) {          
-          return (rowA, rowB, isAsc) => {
-            if(rowA.type != rowB.type){
-              return rowA.type === 'prefix' ? -1 :1
-            }
-            
-            const valueA = rowA[columnName];
-            const valueB = rowB[columnName];
-            if(valueA != valueB){
-              if(valueA === undefined){
-                return isAsc ? -1 :  1;
-              }
-              if(valueB === undefined){
-                return isAsc ?  1 : -1;
-              }
-              return isAsc 
-                ? (valueA < valueB ? -1 :  1) 
-                : (valueA < valueB ?  1 : -1);
-            }
-            
-            return 0;
-          };
-        }
+      {
+        title: "Multimodal Sensing in Stroke Motor Rehabilitation",
+        status: "Published Review",
+        statusClass: "published",
+        venue: "Advanced Sensor Research, 2(9), 2200055",
+        year: "2023",
+        authors: ["Zihe Zhao", "Jiaqi Wang", "Shengbo Wang", "Rui Wang", "Yao Lu", "Yan Yuan", "Junliang Chen", "Yanning Dai", "Yong Liu", "Xiaomeng Wang", "Yu Pan", "Shuo Gao"],
+        summaryZh: "综述脑卒中运动康复中的多模态传感技术，覆盖可穿戴传感、运动信号采集、康复评估与智能反馈系统，为智慧医疗辅助诊断系统提供技术背景。",
+        summaryEn: "A review of multimodal sensing technologies for post-stroke motor rehabilitation and feedback systems.",
+        visual: "network",
+        links: [
+          { label: "DOI", url: "https://doi.org/10.1002/adsr.202200055" },
+          { label: "Publisher", url: "https://advanced.onlinelibrary.wiley.com/doi/10.1002/adsr.202200055" }
+        ]
       },
-      async mounted() {
-        window.onhashchange = () => {
-          let locationHash = window.location.hash.replace(/^#/, '');
-          this.pathPrefix = locationHash.replace(/^\//, '');
-        };
-        window.onhashchange();
-
-        
-        window.addEventListener('resize', () => {
-          this.windowWidth = window.innerWidth;
-        });
+      {
+        title: "Force Touch and Machine Learning Based Smart Sensing Techniques for Interactive Displays",
+        status: "Invited Paper",
+        statusClass: "conference",
+        venue: "SID Symposium Digest of Technical Papers, 52(S1), 26-29",
+        year: "2021",
+        authors: ["Shuo Gao", "Yanning Dai", "Junliang Chen", "Anbiao Huang", "Yong Liu"],
+        summaryZh: "围绕交互显示中的力触控功能，讨论压电力感知与机器学习在智能显示交互中的应用，是触摸力识别研究线的显示技术扩展。",
+        summaryEn: "An invited overview of force touch and machine-learning sensing techniques for interactive displays.",
+        visual: "wave",
+        links: [
+          { label: "DOI", url: "https://doi.org/10.1002/sdtp.14367" },
+          { label: "Publisher", url: "https://sid.onlinelibrary.wiley.com/doi/10.1002/sdtp.14367" }
+        ]
       },
-      async beforeDestroy() {
-        window.removeEventListener('resize');
+      {
+        title: "Ensemble Learning-Based Technique for Force Classifications in Piezoelectric Touch Panels",
+        status: "Published",
+        statusClass: "published",
+        venue: "IEEE Sensors Journal, 20(18), 10927-10934",
+        year: "2020",
+        authors: ["Yong Liu", "Shuo Gao", "Anbiao Huang", "Jie Zhu", "Lijun Xu", "Arokia Nathan"],
+        summaryZh: "针对压电触摸屏中力电压响应不均一、少量数据下分类精度不足等问题，提出集成学习力级分类方法，实现多触摸力等级的高精度识别。",
+        summaryEn: "An ensemble learning approach for force-level classification in piezoelectric touch panels.",
+        visual: "wave",
+        links: [
+          { label: "DOI", url: "https://doi.org/10.1109/JSEN.2020.2987768" },
+          { label: "IEEE Xplore", url: "https://ieeexplore.ieee.org/document/9064844/" }
+        ]
       },
-      filters: {
-        formatBytes(size) {
-          if(!size){
-            return '-'
-          }
-          const KB = 1024;
-          if (size < KB) {
-              return size + '  B';
-          }
-          const MB = 1000000;
-          if (size < MB) {
-              return (size / KB).toFixed(0) + ' KB';
-          } 
-          const GB = 1000000000;
-          if (size < GB) {
-              return (size / MB).toFixed(2) + ' MB';
-          }
-          return (size / GB).toFixed(2) + ' GB';
-        },
-        formatDate(date) {
-          if(!date){
-            return '-'
-          }
-          return moment(date).format('dddd, MMMM Do, YYYY • hh:mm:ss')
-        },
-        formatDateRelative(date) {
-          if(!date){
-            return '-'
-          }
-          return moment(date).fromNow()
-        }
+      {
+        title: "Detecting multiple fundus diseases across diverse populations and image sources via a label-free self-supervised vision transformer model",
+        status: "Under Review",
+        statusClass: "review",
+        venue: "Nature Biomedical Engineering manuscript",
+        year: "CV listed",
+        authors: ["Yong Liu", "collaborators"],
+        summaryZh: "简历列出的在审稿件，聚焦跨人群、跨图像来源的多眼底疾病检测和 label-free 自监督视觉 Transformer。公开主页中保留为在审状态，不作为已发表论文表述。",
+        summaryEn: "A manuscript listed as under review; shown with non-final status for transparency.",
+        visual: "retina",
+        links: [
+          { label: "Source: CV listed item", url: "" }
+        ]
       }
-    });
-    
-    function escapeHTML(unsafeText) {
-        let div = document.createElement('div');
-        div.innerText = unsafeText;
-        return div.innerHTML;
+    ];
+
+    const patents = [
+      {
+        title: "触摸力度识别方法及其模型的训练方法、装置和电子系统",
+        status: "Granted / 已授权",
+        statusClass: "published",
+        numbers: "CN111061394A / CN111061394B",
+        role: "学生一作；压电触摸力识别相关",
+        summary: "围绕触摸力度识别模型训练、装置与电子系统，支撑压电触摸屏力级分类研究成果转化。",
+        links: [
+          { label: "CN111061394B", url: "https://patents.google.com/patent/CN111061394B/zh" },
+          { label: "CN111061394A", url: "https://patents.google.com/patent/CN111061394A/zh" }
+        ]
+      },
+      {
+        title: "近视风险评估方法、装置及穿戴设备",
+        status: "Granted / 已授权",
+        statusClass: "published",
+        numbers: "CN115137314A / CN115137314B",
+        role: "学生一作；可穿戴近视风险评估相关",
+        summary: "面向儿童/青少年近视风险评估，将眼部或行为相关数据转化为风险指标并结合穿戴设备实现评估。",
+        links: [
+          { label: "CN115137314B", url: "https://patents.google.com/patent/CN115137314B/zh" },
+          { label: "CN115137314A", url: "https://patents.google.com/patent/CN115137314A/zh" }
+        ]
+      },
+      {
+        title: "一种基于肌力检测的手部动作识别方法及其模型的训练方法、装置和电子系统",
+        status: "Published / 已公开",
+        statusClass: "conference",
+        numbers: "CN115905803A",
+        role: "学生一作；肌力检测与动作识别相关",
+        summary: "利用肌力检测信息训练手部动作识别模型，关联可穿戴传感、动作识别和辅助康复场景。",
+        links: [
+          { label: "CN115905803A", url: "https://patents.google.com/patent/CN115905803A/zh" }
+        ]
+      },
+      {
+        title: "一种儿童身体机能发育评估系统及其评估模型的训练方法",
+        status: "Filed / 已受理",
+        statusClass: "review",
+        numbers: "Public number to verify",
+        role: "学生一作；儿童身体机能发育评估相关",
+        summary: "面向儿童身体机能发育状态评估，结合评估系统和模型训练方法；当前按简历来源展示为已受理。",
+        links: [
+          { label: "Source: CV listed item", url: "" }
+        ]
+      }
+    ];
+
+    function visualMarkup(type) {
+      if (type === "retina") {
+        return '<div class="retina" aria-hidden="true"></div>';
+      }
+      if (type === "network") {
+        return '<div class="wearable-loop" aria-hidden="true"><div class="loop-node">Sensor</div><div class="loop-node">Motion</div><div class="loop-node">Model</div><div class="loop-node">Care</div></div>';
+      }
+      return '<svg class="waveform" viewBox="0 0 180 72" aria-hidden="true"><path d="M4 48 C22 48 20 18 36 18 C52 18 48 58 66 58 C86 58 80 28 98 28 C118 28 112 48 130 48 C150 48 148 16 176 16" fill="none" stroke="#256b6d" stroke-width="4" stroke-linecap="round"></path><path d="M4 60 H176" stroke="#d9e2de" stroke-width="2"></path></svg>';
     }
+
+    function renderAuthors(authors) {
+      return authors.map((author) => author === "Yong Liu" ? "<strong>Yong Liu</strong>" : author).join(", ");
+    }
+
+    function renderLinks(links) {
+      return links.map((link) => {
+        if (!link.url) {
+          return `<span>${link.label}</span>`;
+        }
+        return `<a href="${link.url}" target="_blank" rel="noopener">${link.label}</a>`;
+      }).join("");
+    }
+
+    function renderPublication(item) {
+      return `
+        <article class="paper-card">
+          <div class="paper-visual">${visualMarkup(item.visual)}</div>
+          <div>
+            <div class="paper-meta">
+              <span class="status ${item.statusClass}">${item.status}</span>
+              <span class="venue">${item.venue} · ${item.year}</span>
+            </div>
+            <h3>${item.title}</h3>
+            <p class="authors">${renderAuthors(item.authors)}</p>
+            <p class="summary">${item.summaryZh}</p>
+            <p class="summary-en">${item.summaryEn}</p>
+            <div class="card-links">${renderLinks(item.links)}</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderPatent(item) {
+      return `
+        <article class="patent-card">
+          <span class="status ${item.statusClass}">${item.status}</span>
+          <h3>${item.title}</h3>
+          <p class="patent-info"><strong>编号：</strong>${item.numbers}</p>
+          <p class="patent-info"><strong>角色：</strong>${item.role}</p>
+          <p class="summary">${item.summary}</p>
+          <div class="card-links">${renderLinks(item.links)}</div>
+        </article>
+      `;
+    }
+
+    document.getElementById("publication-list").innerHTML = publications.map(renderPublication).join("");
+    document.getElementById("patent-list").innerHTML = patents.map(renderPatent).join("");
   </script>
-  
-  <style>
-    .table {
-      background-color: transparent;
-    }
-    .table > tbody > tr {
-      background-color: #fff !important;
-    }
-    .button.is-text {
-      height: auto !important;
-      user-select: text !important;
-      box-shadow: none !important;
-      white-space: unset !important;
-      background: none !important;
-      background-color: transparent !important;
-      text-decoration: none !important;
-      padding: 0 !important;
-    }
-    
-    .table td {
-      vertical-align: middle !important;
-      align-items: center;
-      color: dimgray;
-    }
-    
-    .row-title-icon {
-      margin-right: 1rem;
-    }
-    
-    .mobile-row {
-      justify-content: flex-start !important;
-    }
-    .mobile-row::before {
-      display: none !important;
-    }
-    .mobile-row-title {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-    }
-    .mobile-row-subtitle {
-      flex: 1;
-      height: 3rem;
-      flex-basis: 6rem;
-      flex-shrink: 0;
-      font-size: 0.85rem;
-      line-height: 1.5rem;
-    }
-    .mobile-date-tooltip::after {
-      padding: .25rem .55rem;
-    }
-    .footer-bucket-url {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      margin-bottom: 0.5rem;
-      font-size: small;
-      text-align: center;
-      color: darkgray;
-    }
-  </style>
-  
-  <a href="https://github.com/shanxixiaoyong/HelloWorld" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
-
 </body>
-
 </html>

@@ -82,12 +82,26 @@ This list is the starting dataset for implementation and final verification.
    - DOI: `10.1109/JSEN.2020.2987768`
    - Authors from Crossref: Yong Liu, Shuo Gao, Anbiao Huang, Jie Zhu, Lijun Xu, Arokia Nathan
 
-5. **Detecting multiple fundus diseases across diverse populations and image sources via a label-free self-supervised vision transformer model**
+5. **Multimodal Sensing in Stroke Motor Rehabilitation**
+   - Status: Published Review
+   - Venue: Advanced Sensor Research
+   - Year: 2023
+   - DOI: `10.1002/adsr.202200055`
+   - Authors from Crossref: Zihe Zhao, Jiaqi Wang, Shengbo Wang, Rui Wang, Yao Lu, Yan Yuan, Junliang Chen, Yanning Dai, Yong Liu, Xiaomeng Wang, Yu Pan, Shuo Gao
+
+6. **Force Touch and Machine Learning Based Smart Sensing Techniques for Interactive Displays**
+   - Status: Invited Paper
+   - Venue: SID Symposium Digest of Technical Papers
+   - Year: 2021
+   - DOI: `10.1002/sdtp.14367`
+   - Authors from Crossref: Shuo Gao, Yanning Dai, Junliang Chen, Anbiao Huang, Yong Liu
+
+7. **Detecting multiple fundus diseases across diverse populations and image sources via a label-free self-supervised vision transformer model**
    - Status: Under Review, unless implementation-time verification finds a public accepted version.
    - Source: CV.
    - Handling: include with clear `Under Review` status unless a more final public status is verified.
 
-Additional publications outside the CV should be searched using combinations of name, BUAA/Beihang affiliation, email, coauthors, and research topics. Add only after a source-quality check.
+Additional publications outside the CV should be searched using combinations of name, BUAA/Beihang affiliation, email, coauthors, advisor/coauthor Shuo Gao, and research topics. Add only after a source-quality check.
 
 ## Seed Patent List
 
