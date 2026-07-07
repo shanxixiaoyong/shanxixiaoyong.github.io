@@ -1508,6 +1508,17 @@
       zh: {
         title: "刘勇 / Yong Liu - Academic Homepage",
         description: "刘勇 / Yong Liu 的个人学术主页，展示医学影像自监督学习、压电触摸力感知、可穿戴健康与智能系统方向的论文和专利。",
+        skip: "跳到正文",
+        controlsLabel: "显示设置",
+        themeLabel: "选择视觉风格",
+        languageLabel: "语言",
+        themeOptions: {
+          classic: "当前",
+          journal: "期刊",
+          minimal: "极简",
+          lab: "实验室",
+          gallery: "图文"
+        },
         brandSubtitle: "个人学术主页",
         nav: ["研究", "论文", "专利", "经历", "联系"],
         rail: [
@@ -1522,7 +1533,7 @@
         nameSecondary: "Yong Liu",
         heroCopy: "研究兴趣集中在医学影像自监督学习、眼底疾病智能诊断、压电触摸力感知与可穿戴健康系统。工作横跨视觉模型、传感器信号建模与智能人机交互，目标是让有限标签、复杂信号和真实场景中的健康评估更可靠。",
         heroCopySub: "Research at the intersection of self-supervised medical vision, piezoelectric force sensing, and wearable health intelligence.",
-        affiliationTitle: "Current Affiliation",
+        affiliationTitle: "当前单位",
         affiliations: [
           {
             name: "陆空基信息感知与控制全国重点实验室，陕西西安 710065",
@@ -1536,22 +1547,22 @@
         tags: ["医学视觉", "压电传感", "可穿戴健康"],
         sections: {
           focus: {
-            kicker: "Research Focus",
+            kicker: "研究方向",
             title: "从医学图像到触觉传感的智能健康系统",
             intro: "研究围绕有限标签医学图像、压电触摸信号和可穿戴健康数据展开，关注模型在真实健康评估场景中的可靠性与可迁移性。"
           },
           publications: {
-            kicker: "Publications",
+            kicker: "论文",
             title: "论文与会议论文",
             intro: "研究成果覆盖医学影像自监督学习、眼底疾病诊断、压电触摸力感知、可穿戴传感与康复评估等方向。"
           },
           patents: {
-            kicker: "Patents",
+            kicker: "专利",
             title: "专利与知识产权",
             intro: "专利工作面向智能触摸交互、可穿戴健康风险评估、肌力检测与儿童身体机能发育评估等应用。"
           },
           profile: {
-            kicker: "Profile",
+            kicker: "个人经历",
             title: "教育背景与荣誉",
             intro: "个人经历以教育背景、代表性课程和主要荣誉为主。"
           }
@@ -1574,7 +1585,7 @@
           }
         ],
         profile: {
-          educationTitle: "Education & Courses",
+          educationTitle: "教育与课程",
           education: [
             "本科：北京航空航天大学。",
             "硕士：北京航空航天大学，研究方向覆盖医学影像 AI、智能传感与健康评估。",
@@ -1586,11 +1597,16 @@
         },
         patentLabels: { number: "编号：", role: "角色：" },
         footerText: "GitHub Pages 个人学术主页。",
-        lastUpdated: "Last updated: 2026-06-30"
+        lastUpdated: "更新日期：2026-06-30"
       },
       en: {
         title: "Yong Liu / 刘勇 - Academic Homepage",
         description: "Academic homepage of Yong Liu, featuring publications and patents in self-supervised medical imaging, piezoelectric force sensing, wearable health, and intelligent systems.",
+        skip: "Skip to content",
+        controlsLabel: "Display controls",
+        themeLabel: "Select visual style",
+        languageLabel: "Language",
+        themeOptions: themeLabels,
         brandSubtitle: "Academic Homepage",
         nav: ["Research", "Publications", "Patents", "Profile", "Contact"],
         rail: [
@@ -1859,8 +1875,25 @@
       lang: "homepage-language"
     };
 
-    let currentTheme = localStorage.getItem(storageKeys.theme) || "classic";
-    let currentLanguage = localStorage.getItem(storageKeys.lang) || "zh";
+    function readPreference(key, fallback) {
+      try {
+        return localStorage.getItem(key) || fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function writePreference(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        return false;
+      }
+      return true;
+    }
+
+    let currentTheme = readPreference(storageKeys.theme, "classic");
+    let currentLanguage = readPreference(storageKeys.lang, "zh");
 
     if (!themeLabels[currentTheme]) {
       currentTheme = "classic";
@@ -1950,7 +1983,7 @@
       currentTheme = theme;
       document.body.dataset.theme = theme;
       document.getElementById("theme-select").value = theme;
-      localStorage.setItem(storageKeys.theme, theme);
+      writePreference(storageKeys.theme, theme);
     }
 
     function applyLanguage(lang) {
@@ -1965,6 +1998,14 @@
       document.querySelector('meta[name="description"]').setAttribute("content", text.description);
       document.querySelector('meta[property="og:title"]').setAttribute("content", text.title);
       document.querySelector('meta[property="og:description"]').setAttribute("content", text.description);
+
+      setText(".skip-link", text.skip);
+      document.querySelector(".site-controls").setAttribute("aria-label", text.controlsLabel);
+      document.getElementById("theme-select").setAttribute("aria-label", text.themeLabel);
+      document.querySelector(".lang-toggle").setAttribute("aria-label", text.languageLabel);
+      document.querySelectorAll("#theme-select option").forEach((option) => {
+        option.textContent = text.themeOptions[option.value] || themeLabels[option.value];
+      });
 
       setText(".brand-subtitle", text.brandSubtitle);
       document.querySelectorAll(".nav-links a").forEach((link, index) => {
@@ -2024,7 +2065,7 @@
         button.setAttribute("aria-pressed", String(isActive));
       });
 
-      localStorage.setItem(storageKeys.lang, lang);
+      writePreference(storageKeys.lang, lang);
       renderDynamicLists();
     }
 
