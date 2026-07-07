@@ -74,7 +74,137 @@
       --green: #47725f;
       --yellow: #8a6c2f;
       --shadow: 0 18px 42px rgba(24, 39, 52, 0.08);
+      --header-bg: rgba(246, 247, 245, 0.92);
+      --hero-bg: linear-gradient(180deg, #ffffff 0%, #f7f8f5 100%);
+      --footer-bg: #eef2ef;
+      --button-bg: #ffffff;
+      --button-hover: #f7fbfa;
+      --nav-hover: #e9efec;
+      --mark-bg: #ffffff;
+      --card-shadow: 0 8px 18px rgba(24, 39, 52, 0.04);
+      --radius: 8px;
       --max: 1160px;
+    }
+
+    body[data-theme="journal"] {
+      --bg: #f7f4ee;
+      --surface: #fffdf8;
+      --surface-soft: #f0ebe1;
+      --text: #1f2422;
+      --muted: #6a6258;
+      --line: #ded5c7;
+      --teal: #6e4c35;
+      --teal-dark: #3e3328;
+      --copper: #9a6a42;
+      --blue: #4f6476;
+      --green: #65724f;
+      --yellow: #8a6c2f;
+      --header-bg: rgba(247, 244, 238, 0.94);
+      --hero-bg: linear-gradient(180deg, #fffdf8 0%, #f7f4ee 100%);
+      --footer-bg: #eee8dc;
+      --button-bg: #fffdf8;
+      --button-hover: #f4efe5;
+      --nav-hover: #eee8dc;
+      --mark-bg: #fffdf8;
+      --card-shadow: 0 10px 22px rgba(77, 62, 43, 0.07);
+      --radius: 4px;
+    }
+
+    body[data-theme="minimal"] {
+      --bg: #f7f7f7;
+      --surface: #ffffff;
+      --surface-soft: #eeeeee;
+      --text: #111111;
+      --muted: #666666;
+      --line: #dddddd;
+      --teal: #333333;
+      --teal-dark: #111111;
+      --copper: #4f4f4f;
+      --blue: #333333;
+      --green: #444444;
+      --yellow: #555555;
+      --header-bg: rgba(247, 247, 247, 0.94);
+      --hero-bg: linear-gradient(180deg, #ffffff 0%, #f7f7f7 100%);
+      --footer-bg: #eeeeee;
+      --button-bg: #ffffff;
+      --button-hover: #f0f0f0;
+      --nav-hover: #eeeeee;
+      --mark-bg: #ffffff;
+      --card-shadow: none;
+      --radius: 2px;
+    }
+
+    body[data-theme="lab"] {
+      --bg: #f3f7f8;
+      --surface: #ffffff;
+      --surface-soft: #e8f0f3;
+      --text: #142129;
+      --muted: #5c6c76;
+      --line: #d6e3e7;
+      --teal: #0c7489;
+      --teal-dark: #084f5c;
+      --copper: #8f5f32;
+      --blue: #2267a5;
+      --green: #2d7669;
+      --yellow: #8a7228;
+      --header-bg: rgba(243, 247, 248, 0.94);
+      --hero-bg: linear-gradient(180deg, #ffffff 0%, #eef6f8 100%);
+      --footer-bg: #e8f0f3;
+      --button-bg: #ffffff;
+      --button-hover: #edf8fa;
+      --nav-hover: #e4f0f3;
+      --mark-bg: #ffffff;
+      --card-shadow: 0 12px 28px rgba(16, 60, 72, 0.08);
+      --radius: 6px;
+    }
+
+    body[data-theme="gallery"] {
+      --bg: #f8f6f2;
+      --surface: #fffefb;
+      --surface-soft: #f0eee7;
+      --text: #1f242a;
+      --muted: #667074;
+      --line: #ddd8cf;
+      --teal: #2c6a5c;
+      --teal-dark: #1e5147;
+      --copper: #9b6b45;
+      --blue: #355f83;
+      --green: #52735b;
+      --yellow: #8a6c2f;
+      --header-bg: rgba(248, 246, 242, 0.94);
+      --hero-bg: linear-gradient(180deg, #fffefb 0%, #f4f0e8 100%);
+      --footer-bg: #eee9df;
+      --button-bg: #fffefb;
+      --button-hover: #f4f0e8;
+      --nav-hover: #eee9df;
+      --mark-bg: #fffefb;
+      --card-shadow: 0 16px 34px rgba(56, 47, 35, 0.08);
+      --radius: 8px;
+    }
+
+    body[data-theme="journal"] h1,
+    body[data-theme="journal"] h2,
+    body[data-theme="journal"] .paper-card h3 {
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-weight: 700;
+    }
+
+    body[data-theme="minimal"] .paper-card,
+    body[data-theme="minimal"] .focus-item,
+    body[data-theme="minimal"] .patent-card,
+    body[data-theme="minimal"] .info-panel,
+    body[data-theme="minimal"] .affiliation-card {
+      box-shadow: none;
+    }
+
+    body[data-theme="lab"] .section-kicker,
+    body[data-theme="lab"] .eyebrow {
+      font-weight: 820;
+    }
+
+    body[data-theme="gallery"] .paper-visual,
+    body[data-theme="gallery"] .focus-icon {
+      background: #fffaf0;
     }
 
     * {
@@ -123,7 +253,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background: rgba(246, 247, 245, 0.92);
+      background: var(--header-bg);
       border-bottom: 1px solid var(--line);
       backdrop-filter: blur(16px);
     }
@@ -167,7 +297,7 @@
       display: grid;
       place-items: center;
       color: var(--teal-dark);
-      background: #fff;
+      background: var(--mark-bg);
       font-size: 13px;
     }
 
@@ -187,14 +317,63 @@
     }
 
     .nav-links a:hover {
-      background: #e9efec;
+      background: var(--nav-hover);
       text-decoration: none;
+    }
+
+    .site-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .theme-select,
+    .lang-toggle {
+      min-height: 34px;
+      border: 1px solid #c8d4d2;
+      border-radius: 6px;
+      background: var(--button-bg);
+      color: #24313a;
+      font: inherit;
+      font-size: 13px;
+      box-shadow: 0 1px 0 rgba(24, 39, 52, 0.04);
+    }
+
+    .theme-select {
+      max-width: 132px;
+      padding: 6px 8px;
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+    }
+
+    .lang-toggle button {
+      min-width: 34px;
+      min-height: 24px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 720;
+      cursor: pointer;
+    }
+
+    .lang-toggle button.is-active {
+      background: var(--surface-soft);
+      color: var(--teal-dark);
     }
 
     .hero {
       border-bottom: 1px solid var(--line);
-      background:
-        linear-gradient(180deg, #ffffff 0%, #f7f8f5 100%);
+      background: var(--hero-bg);
     }
 
     .hero-inner {
@@ -259,8 +438,8 @@
       min-height: 40px;
       padding: 8px 12px;
       border: 1px solid #c8d4d2;
-      border-radius: 6px;
-      background: #fff;
+      border-radius: calc(var(--radius) - 2px);
+      background: var(--button-bg);
       color: #24313a;
       font-size: 14px;
       box-shadow: 0 1px 0 rgba(24, 39, 52, 0.04);
@@ -268,7 +447,7 @@
 
     .link-button:hover {
       border-color: #8fb3af;
-      background: #f7fbfa;
+      background: var(--button-hover);
       text-decoration: none;
     }
 
@@ -283,8 +462,8 @@
 
     .affiliation-card {
       border: 1px solid #d7e1dc;
-      border-radius: 8px;
-      background: #fbfcfb;
+      border-radius: var(--radius);
+      background: var(--surface);
       box-shadow: var(--shadow);
       padding: 28px;
       display: grid;
@@ -376,7 +555,7 @@
     .focus-item {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius);
       padding: 22px;
       min-height: 350px;
     }
@@ -385,8 +564,8 @@
       width: 100%;
       height: clamp(168px, 16vw, 198px);
       border: 1px solid #d9e2de;
-      border-radius: 7px;
-      background: #fff;
+      border-radius: calc(var(--radius) - 1px);
+      background: var(--button-bg);
       margin-bottom: 18px;
       display: grid;
       place-items: center;
@@ -425,7 +604,7 @@
       padding: 4px 7px;
       font-size: 12px;
       color: #50606b;
-      background: #fbfcfb;
+      background: var(--button-bg);
     }
 
     .paper-list {
@@ -440,15 +619,15 @@
       padding: 22px;
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: 0 8px 18px rgba(24, 39, 52, 0.04);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
     }
 
     .paper-visual {
       min-height: 188px;
       border: 1px solid #d9e2de;
-      border-radius: 7px;
-      background: #fff;
+      border-radius: calc(var(--radius) - 1px);
+      background: var(--button-bg);
       overflow: hidden;
       display: grid;
       place-items: center;
@@ -545,15 +724,15 @@
     .card-links a,
     .card-links span {
       border: 1px solid #d4dfda;
-      border-radius: 5px;
+      border-radius: calc(var(--radius) - 3px);
       padding: 5px 8px;
       font-size: 12px;
       color: #2a5156;
-      background: #fbfcfb;
+      background: var(--button-bg);
     }
 
     .card-links a:hover {
-      background: #eef6f4;
+      background: var(--button-hover);
       text-decoration: none;
     }
 
@@ -566,7 +745,7 @@
     .patent-card {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius);
       padding: 20px;
     }
 
@@ -595,7 +774,7 @@
     .info-panel {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius);
       padding: 22px;
     }
 
@@ -632,7 +811,7 @@
 
     .site-footer {
       border-top: 1px solid var(--line);
-      background: #eef2ef;
+      background: var(--footer-bg);
     }
 
     .footer-inner {
@@ -702,8 +881,8 @@
         min-height: auto;
         flex-direction: row;
         align-items: center;
-        justify-content: flex-start;
-        gap: 0;
+        justify-content: space-between;
+        gap: 8px;
         padding: 10px 0;
       }
 
@@ -731,6 +910,28 @@
 
       .nav-links {
         display: none;
+      }
+
+      .site-controls {
+        gap: 5px;
+        flex: 0 0 auto;
+      }
+
+      .theme-select {
+        max-width: 94px;
+        min-height: 32px;
+        padding: 5px 6px;
+        font-size: 11px;
+      }
+
+      .lang-toggle {
+        min-height: 32px;
+      }
+
+      .lang-toggle button {
+        min-width: 28px;
+        min-height: 22px;
+        font-size: 11px;
       }
 
       .hero-inner,
@@ -1069,7 +1270,7 @@
     }
   </style>
 </head>
-<body>
+<body data-theme="classic">
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <nav class="nav" aria-label="Main navigation">
@@ -1086,6 +1287,19 @@
         <a href="#patents">Patents</a>
         <a href="#profile">Profile</a>
         <a href="#contact">Contact</a>
+      </div>
+      <div class="site-controls" aria-label="Display controls">
+        <select class="theme-select" id="theme-select" aria-label="Select visual style">
+          <option value="classic">Classic</option>
+          <option value="journal">Journal</option>
+          <option value="minimal">Minimal</option>
+          <option value="lab">Lab</option>
+          <option value="gallery">Gallery</option>
+        </select>
+        <div class="lang-toggle" aria-label="Language">
+          <button type="button" data-lang="zh" class="is-active" aria-pressed="true">中</button>
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        </div>
       </div>
     </nav>
   </header>
@@ -1282,6 +1496,183 @@
   </footer>
 
   <script>
+    const themeLabels = {
+      classic: "Classic",
+      journal: "Journal",
+      minimal: "Minimal",
+      lab: "Lab",
+      gallery: "Gallery"
+    };
+
+    const uiText = {
+      zh: {
+        title: "刘勇 / Yong Liu - Academic Homepage",
+        description: "刘勇 / Yong Liu 的个人学术主页，展示医学影像自监督学习、压电触摸力感知、可穿戴健康与智能系统方向的论文和专利。",
+        brandSubtitle: "个人学术主页",
+        nav: ["研究", "论文", "专利", "经历", "联系"],
+        rail: [
+          { label: "首页", aria: "首页" },
+          { label: "方向", aria: "研究方向" },
+          { label: "论文", aria: "论文" },
+          { label: "专利", aria: "专利" },
+          { label: "经历", aria: "经历" }
+        ],
+        heroEyebrow: "陆空基信息感知与控制全国重点实验室 · 西安现代控制技术研究所",
+        namePrimary: "刘勇",
+        nameSecondary: "Yong Liu",
+        heroCopy: "研究兴趣集中在医学影像自监督学习、眼底疾病智能诊断、压电触摸力感知与可穿戴健康系统。工作横跨视觉模型、传感器信号建模与智能人机交互，目标是让有限标签、复杂信号和真实场景中的健康评估更可靠。",
+        heroCopySub: "Research at the intersection of self-supervised medical vision, piezoelectric force sensing, and wearable health intelligence.",
+        affiliationTitle: "Current Affiliation",
+        affiliations: [
+          {
+            name: "陆空基信息感知与控制全国重点实验室，陕西西安 710065",
+            sub: "National Key Laboratory of Land and Air Based Information Perception and Control, Xi’an 710065, Shaanxi, China"
+          },
+          {
+            name: "西安现代控制技术研究所，陕西西安 710065",
+            sub: "Xi’an Modern Control Technology Research Institute, Xi’an 710065, Shaanxi, China"
+          }
+        ],
+        tags: ["医学视觉", "压电传感", "可穿戴健康"],
+        sections: {
+          focus: {
+            kicker: "Research Focus",
+            title: "从医学图像到触觉传感的智能健康系统",
+            intro: "研究围绕有限标签医学图像、压电触摸信号和可穿戴健康数据展开，关注模型在真实健康评估场景中的可靠性与可迁移性。"
+          },
+          publications: {
+            kicker: "Publications",
+            title: "论文与会议论文",
+            intro: "研究成果覆盖医学影像自监督学习、眼底疾病诊断、压电触摸力感知、可穿戴传感与康复评估等方向。"
+          },
+          patents: {
+            kicker: "Patents",
+            title: "专利与知识产权",
+            intro: "专利工作面向智能触摸交互、可穿戴健康风险评估、肌力检测与儿童身体机能发育评估等应用。"
+          },
+          profile: {
+            kicker: "Profile",
+            title: "教育背景与荣誉",
+            intro: "个人经历以教育背景、代表性课程和主要荣誉为主。"
+          }
+        },
+        focusItems: [
+          {
+            title: "眼底医学影像 AI",
+            text: "利用自监督视觉模型从少标签眼底图像中学习可复用表征，服务多疾病筛查、风险预测和跨来源泛化。",
+            keywords: ["自监督视觉", "眼底图像", "多疾病诊断"]
+          },
+          {
+            title: "压电触摸力感知",
+            text: "围绕压电触摸屏信号的长期稳定、力级分类和交互显示，设计机器学习方法提升低数据量场景下的识别可靠性。",
+            keywords: ["压电传感", "力度分类", "交互显示"]
+          },
+          {
+            title: "可穿戴健康与评估",
+            text: "结合传感器、模型和人机系统，面向近视风险、步态康复、儿童身体机能发育等健康评估问题。",
+            keywords: ["可穿戴健康", "康复评估", "风险评估"]
+          }
+        ],
+        profile: {
+          educationTitle: "Education & Courses",
+          education: [
+            "本科：北京航空航天大学。",
+            "硕士：北京航空航天大学，研究方向覆盖医学影像 AI、智能传感与健康评估。",
+            "毕业后进入陆空基信息感知与控制全国重点实验室、西安现代控制技术研究所工作。",
+            "满分课程：工科数学分析、线性代数、复变函数、概率统计、电路分析、大学物理。"
+          ],
+          honorsTitle: "Honors",
+          honors: ["北京市工程设计表达竞赛一等奖", "北航优秀研究生", "北航优秀毕业生", "北航优秀学生干部", "北航优秀生", "北航三好学生"]
+        },
+        patentLabels: { number: "编号：", role: "角色：" },
+        footerText: "GitHub Pages 个人学术主页。",
+        lastUpdated: "Last updated: 2026-06-30"
+      },
+      en: {
+        title: "Yong Liu / 刘勇 - Academic Homepage",
+        description: "Academic homepage of Yong Liu, featuring publications and patents in self-supervised medical imaging, piezoelectric force sensing, wearable health, and intelligent systems.",
+        brandSubtitle: "Academic Homepage",
+        nav: ["Research", "Publications", "Patents", "Profile", "Contact"],
+        rail: [
+          { label: "Top", aria: "Top" },
+          { label: "Focus", aria: "Research focus" },
+          { label: "Papers", aria: "Publications" },
+          { label: "Patents", aria: "Patents" },
+          { label: "Profile", aria: "Profile" }
+        ],
+        heroEyebrow: "National Key Laboratory · Xi’an Modern Control Technology Research Institute",
+        namePrimary: "Yong Liu",
+        nameSecondary: "刘勇",
+        heroCopy: "My research focuses on self-supervised medical imaging, intelligent fundus disease diagnosis, piezoelectric force sensing, and wearable health systems. The work connects visual models, sensor-signal modeling, and human-machine interaction for more reliable health assessment in real-world settings.",
+        heroCopySub: "Research at the intersection of self-supervised medical vision, piezoelectric force sensing, and wearable health intelligence.",
+        affiliationTitle: "Current Affiliation",
+        affiliations: [
+          {
+            name: "National Key Laboratory of Land and Air Based Information Perception and Control, Xi’an 710065, Shaanxi, China",
+            sub: "陆空基信息感知与控制全国重点实验室，陕西西安 710065"
+          },
+          {
+            name: "Xi’an Modern Control Technology Research Institute, Xi’an 710065, Shaanxi, China",
+            sub: "西安现代控制技术研究所，陕西西安 710065"
+          }
+        ],
+        tags: ["Medical Vision", "Piezoelectric Sensing", "Wearable Health"],
+        sections: {
+          focus: {
+            kicker: "Research Focus",
+            title: "Intelligent Health Systems From Medical Imaging to Tactile Sensing",
+            intro: "The research spans label-efficient medical imaging, piezoelectric touch signals, and wearable health data, with emphasis on reliability and transferability in practical assessment scenarios."
+          },
+          publications: {
+            kicker: "Publications",
+            title: "Journal and Conference Publications",
+            intro: "Selected work covers self-supervised medical imaging, fundus disease diagnosis, piezoelectric force sensing, wearable sensing, and rehabilitation assessment."
+          },
+          patents: {
+            kicker: "Patents",
+            title: "Patents and Intellectual Property",
+            intro: "Patent work focuses on intelligent touch interaction, wearable health-risk assessment, muscle-force detection, and children’s physical-function development assessment."
+          },
+          profile: {
+            kicker: "Profile",
+            title: "Education and Honors",
+            intro: "Selected background information includes education, representative full-score courses, and honors."
+          }
+        },
+        focusItems: [
+          {
+            title: "Fundus Medical Imaging AI",
+            text: "Self-supervised visual models learn reusable representations from limited-label fundus images for multi-disease screening, risk prediction, and cross-source generalization.",
+            keywords: ["Self-supervised vision", "Fundus images", "Multi-disease diagnosis"]
+          },
+          {
+            title: "Piezoelectric Force Sensing",
+            text: "Machine-learning methods improve long-term stability, force-level classification, and interaction reliability for piezoelectric touch-screen signals under limited data.",
+            keywords: ["Piezoelectric sensing", "Force classification", "Interactive displays"]
+          },
+          {
+            title: "Wearable Health Assessment",
+            text: "Sensor, model, and human-system research supports health-assessment problems including myopia risk, gait rehabilitation, and children’s physical-function development.",
+            keywords: ["Wearable health", "Rehabilitation", "Risk assessment"]
+          }
+        ],
+        profile: {
+          educationTitle: "Education & Courses",
+          education: [
+            "B.Eng.: Beihang University.",
+            "M.Eng.: Beihang University, with research across medical imaging AI, intelligent sensing, and health assessment.",
+            "After graduation, joined the National Key Laboratory of Land and Air Based Information Perception and Control and Xi’an Modern Control Technology Research Institute.",
+            "Full-score courses: Engineering Mathematical Analysis, Linear Algebra, Complex Variables, Probability and Statistics, Circuit Analysis, and College Physics."
+          ],
+          honorsTitle: "Honors",
+          honors: ["First Prize, Beijing Engineering Design Expression Competition", "Outstanding Graduate Student, Beihang University", "Outstanding Graduate, Beihang University", "Outstanding Student Cadre, Beihang University", "Outstanding Student, Beihang University", "Merit Student, Beihang University"]
+        },
+        patentLabels: { number: "No.: ", role: "Role: " },
+        footerText: "Academic homepage on GitHub Pages.",
+        lastUpdated: "Last updated: 2026-06-30"
+      }
+    };
+
     const publications = [
       {
         title: "Rectified Artificial Neural Networks for Long-Term Force Sensing in Piezoelectric Touch Panels",
@@ -1386,11 +1777,14 @@
     const patents = [
       {
         title: "触摸力度识别方法及其模型的训练方法、装置和电子系统",
+        titleEn: "Touch Force Recognition Method, Model Training Method, Apparatus, and Electronic System",
         status: "Granted / 已授权",
         statusClass: "published",
         numbers: "CN111061394A / CN111061394B",
         role: "学生一作；压电触摸力识别相关",
+        roleEn: "Student first author; related to piezoelectric touch-force recognition",
         summary: "围绕触摸力度识别模型训练、装置与电子系统，支撑压电触摸屏力级分类研究成果转化。",
+        summaryEn: "Covers model training, apparatus, and electronic-system implementation for touch-force recognition, supporting translation of piezoelectric touch-panel force classification research.",
         links: [
           { label: "CN111061394B", url: "https://patents.google.com/patent/CN111061394B/zh" },
           { label: "CN111061394A", url: "https://patents.google.com/patent/CN111061394A/zh" }
@@ -1398,11 +1792,14 @@
       },
       {
         title: "近视风险评估方法、装置及穿戴设备",
+        titleEn: "Myopia Risk Assessment Method, Apparatus, and Wearable Device",
         status: "Granted / 已授权",
         statusClass: "published",
         numbers: "CN115137314A / CN115137314B",
         role: "学生一作；可穿戴近视风险评估相关",
+        roleEn: "Student first author; related to wearable myopia-risk assessment",
         summary: "面向儿童/青少年近视风险评估，将眼部或行为相关数据转化为风险指标并结合穿戴设备实现评估。",
+        summaryEn: "Transforms eye- or behavior-related data into risk indicators for children and adolescents, with assessment implemented through wearable devices.",
         links: [
           { label: "CN115137314B", url: "https://patents.google.com/patent/CN115137314B/zh" },
           { label: "CN115137314A", url: "https://patents.google.com/patent/CN115137314A/zh" }
@@ -1410,25 +1807,68 @@
       },
       {
         title: "一种基于肌力检测的手部动作识别方法及其模型的训练方法、装置和电子系统",
+        titleEn: "Hand Gesture Recognition Method Based on Muscle Force Detection, Model Training Method, Apparatus, and Electronic System",
         status: "Published / 已公开",
         statusClass: "conference",
         numbers: "CN115905803A",
         role: "学生一作；肌力检测与动作识别相关",
+        roleEn: "Student first author; related to muscle-force detection and gesture recognition",
         summary: "利用肌力检测信息训练手部动作识别模型，关联可穿戴传感、动作识别和辅助康复场景。",
+        summaryEn: "Uses muscle-force detection information to train hand gesture-recognition models for wearable sensing, motion recognition, and assistive rehabilitation scenarios.",
         links: [
           { label: "CN115905803A", url: "https://patents.google.com/patent/CN115905803A/zh" }
         ]
       },
       {
         title: "一种儿童身体机能发育评估系统及其评估模型的训练方法",
+        titleEn: "Children's Physical Function Development Assessment System and Model Training Method",
         status: "Filed / 已受理",
         statusClass: "review",
         numbers: "公开编号待更新",
         role: "学生一作；儿童身体机能发育评估相关",
+        roleEn: "Student first author; related to children's physical-function development assessment",
         summary: "面向儿童身体机能发育状态评估，结合评估系统和模型训练方法。",
+        summaryEn: "Combines an assessment system and model-training method for evaluating children's physical-function development status.",
         links: []
       }
     ];
+
+    const statusText = {
+      zh: {
+        "Published": "已发表",
+        "Conference": "会议论文",
+        "Published Review": "已发表综述",
+        "Invited Paper": "特邀论文",
+        "Granted / 已授权": "已授权",
+        "Published / 已公开": "已公开",
+        "Filed / 已受理": "已受理"
+      },
+      en: {
+        "Published": "Published",
+        "Conference": "Conference",
+        "Published Review": "Published Review",
+        "Invited Paper": "Invited Paper",
+        "Granted / 已授权": "Granted",
+        "Published / 已公开": "Published",
+        "Filed / 已受理": "Filed"
+      }
+    };
+
+    const storageKeys = {
+      theme: "homepage-theme",
+      lang: "homepage-language"
+    };
+
+    let currentTheme = localStorage.getItem(storageKeys.theme) || "classic";
+    let currentLanguage = localStorage.getItem(storageKeys.lang) || "zh";
+
+    if (!themeLabels[currentTheme]) {
+      currentTheme = "classic";
+    }
+
+    if (!uiText[currentLanguage]) {
+      currentLanguage = "zh";
+    }
 
     function renderAuthors(authors) {
       return authors.map((author) => author === "Yong Liu" ? "<strong>Yong Liu</strong>" : author).join(", ");
@@ -1444,18 +1884,20 @@
     }
 
     function renderPublication(item) {
+      const lang = currentLanguage;
+      const summary = lang === "en" ? item.summaryEn : item.summaryZh;
+      const status = statusText[lang][item.status] || item.status;
       return `
         <article class="paper-card">
           <div class="paper-visual"><img src="${item.image}" alt="${item.imageAlt}"></div>
           <div>
             <div class="paper-meta">
-              <span class="status ${item.statusClass}">${item.status}</span>
+              <span class="status ${item.statusClass}">${status}</span>
               <span class="venue">${item.venue} · ${item.year}</span>
             </div>
             <h3>${item.title}</h3>
             <p class="authors">${renderAuthors(item.authors)}</p>
-            <p class="summary">${item.summaryZh}</p>
-            <p class="summary-en">${item.summaryEn}</p>
+            <p class="summary">${summary}</p>
             ${item.links.length ? `<div class="card-links">${renderLinks(item.links)}</div>` : ""}
           </div>
         </article>
@@ -1463,20 +1905,128 @@
     }
 
     function renderPatent(item) {
+      const lang = currentLanguage;
+      const text = uiText[lang];
+      const status = statusText[lang][item.status] || item.status;
+      const title = lang === "en" ? item.titleEn : item.title;
+      const role = lang === "en" ? item.roleEn : item.role;
+      const summary = lang === "en" ? item.summaryEn : item.summary;
+      const numbers = lang === "en" && item.numbers === "公开编号待更新" ? "Publication number pending" : item.numbers;
       return `
         <article class="patent-card">
-          <span class="status ${item.statusClass}">${item.status}</span>
-          <h3>${item.title}</h3>
-          <p class="patent-info"><strong>编号：</strong>${item.numbers}</p>
-          <p class="patent-info"><strong>角色：</strong>${item.role}</p>
-          <p class="summary">${item.summary}</p>
+          <span class="status ${item.statusClass}">${status}</span>
+          <h3>${title}</h3>
+          <p class="patent-info"><strong>${text.patentLabels.number}</strong>${numbers}</p>
+          <p class="patent-info"><strong>${text.patentLabels.role}</strong>${role}</p>
+          <p class="summary">${summary}</p>
           ${item.links.length ? `<div class="card-links">${renderLinks(item.links)}</div>` : ""}
         </article>
       `;
     }
 
-    document.getElementById("publication-list").innerHTML = publications.map(renderPublication).join("");
-    document.getElementById("patent-list").innerHTML = patents.map(renderPatent).join("");
+    function renderDynamicLists() {
+      document.getElementById("publication-list").innerHTML = publications.map(renderPublication).join("");
+      document.getElementById("patent-list").innerHTML = patents.map(renderPatent).join("");
+    }
+
+    function setText(selector, value) {
+      const element = document.querySelector(selector);
+      if (element) {
+        element.textContent = value;
+      }
+    }
+
+    function setListItems(selector, items) {
+      const element = document.querySelector(selector);
+      if (element) {
+        element.innerHTML = items.map((item) => `<li>${item}</li>`).join("");
+      }
+    }
+
+    function applyTheme(theme) {
+      if (!themeLabels[theme]) {
+        return;
+      }
+      currentTheme = theme;
+      document.body.dataset.theme = theme;
+      document.getElementById("theme-select").value = theme;
+      localStorage.setItem(storageKeys.theme, theme);
+    }
+
+    function applyLanguage(lang) {
+      if (!uiText[lang]) {
+        return;
+      }
+
+      currentLanguage = lang;
+      const text = uiText[lang];
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.title = text.title;
+      document.querySelector('meta[name="description"]').setAttribute("content", text.description);
+      document.querySelector('meta[property="og:title"]').setAttribute("content", text.title);
+      document.querySelector('meta[property="og:description"]').setAttribute("content", text.description);
+
+      setText(".brand-subtitle", text.brandSubtitle);
+      document.querySelectorAll(".nav-links a").forEach((link, index) => {
+        link.textContent = text.nav[index];
+      });
+
+      document.querySelectorAll(".mobile-section-rail a").forEach((link, index) => {
+        const item = text.rail[index];
+        link.setAttribute("aria-label", item.aria);
+        link.querySelector(".rail-label").textContent = item.label;
+      });
+
+      setText(".eyebrow", text.heroEyebrow);
+      const heading = document.querySelector("h1");
+      heading.childNodes[0].nodeValue = text.namePrimary;
+      setText(".name-en", text.nameSecondary);
+      const heroCopy = document.querySelector(".hero-copy");
+      heroCopy.childNodes[0].nodeValue = `${text.heroCopy} `;
+      setText(".hero-copy .en", text.heroCopySub);
+
+      setText(".affiliation-card h2", text.affiliationTitle);
+      document.querySelectorAll(".affiliation-block").forEach((block, index) => {
+        block.querySelector("strong").textContent = text.affiliations[index].name;
+        block.querySelector("span").textContent = text.affiliations[index].sub;
+      });
+      document.querySelectorAll(".research-tags span").forEach((tag, index) => {
+        tag.textContent = text.tags[index];
+      });
+
+      for (const id of ["focus", "publications", "patents", "profile"]) {
+        const section = document.getElementById(id);
+        const sectionText = text.sections[id];
+        section.querySelector(".section-kicker").textContent = sectionText.kicker;
+        section.querySelector("h2").textContent = sectionText.title;
+        section.querySelector(".section-intro").textContent = sectionText.intro;
+      }
+
+      document.querySelectorAll(".focus-item").forEach((item, index) => {
+        const focus = text.focusItems[index];
+        item.querySelector("h3").textContent = focus.title;
+        item.querySelector("p").textContent = focus.text;
+        item.querySelector(".keywords").innerHTML = focus.keywords.map((keyword) => `<span>${keyword}</span>`).join("");
+      });
+
+      const panels = document.querySelectorAll(".info-panel");
+      panels[0].querySelector("h3").textContent = text.profile.educationTitle;
+      setListItems(".info-panel:first-child .info-list", text.profile.education);
+      panels[1].querySelector("h3").textContent = text.profile.honorsTitle;
+      setListItems(".info-panel:nth-child(2) .info-list", text.profile.honors);
+
+      document.querySelector(".footer-inner > div:first-child").innerHTML = `<strong>刘勇 / Yong Liu</strong><br>${text.footerText}`;
+      document.querySelector(".footer-inner > div:nth-child(2)").innerHTML = `<a href="https://shanxixiaoyong.github.io/">https://shanxixiaoyong.github.io/</a><br>${text.lastUpdated}`;
+
+      document.querySelectorAll(".lang-toggle button").forEach((button) => {
+        const isActive = button.dataset.lang === lang;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+
+      localStorage.setItem(storageKeys.lang, lang);
+      renderDynamicLists();
+    }
 
     const progressLinks = Array.from(document.querySelectorAll(".mobile-section-rail a"));
     const progressSections = progressLinks
@@ -1521,6 +2071,21 @@
     updateSectionProgress();
     window.addEventListener("scroll", requestSectionProgressUpdate, { passive: true });
     window.addEventListener("resize", requestSectionProgressUpdate);
+
+    document.getElementById("theme-select").addEventListener("change", (event) => {
+      applyTheme(event.target.value);
+    });
+
+    document.querySelectorAll(".lang-toggle button").forEach((button) => {
+      button.addEventListener("click", () => {
+        applyLanguage(button.dataset.lang);
+        requestSectionProgressUpdate();
+      });
+    });
+
+    applyTheme(currentTheme);
+    applyLanguage(currentLanguage);
+    updateSectionProgress();
   </script>
 </body>
 </html>
