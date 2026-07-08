@@ -64,6 +64,19 @@ function groupFromPath(path, text) {
   return "research";
 }
 
+function isPublicNote(note) {
+  const type = String(note.type || "");
+  const path = String(note.path || "");
+  const haystack = `${note.title || ""} ${type} ${note.source || ""} ${path} ${note.excerpt || ""}`.toLowerCase();
+
+  if (/^source[\s-]?(note|index)$/i.test(type)) return false;
+  if (/^(00-home|40-tools-and-automations|90-sources|_templates)(\/|$)/i.test(path)) return false;
+  if (/codex|chatgpt|personal academic homepage|yong liu academic homepage|github pages|template|software unit|peach blossom|welcome home|automation 4 memory/.test(haystack)) return false;
+  if (/implementation plan|requirements?|需求|要求|实现计划|实现规格/.test(haystack)) return false;
+
+  return true;
+}
+
 const notes = walk(vault)
   .map((file) => {
     const raw = readFileSync(file, "utf8");
@@ -89,6 +102,7 @@ const notes = walk(vault)
     };
   })
   .filter((note) => note.excerpt)
+  .filter(isPublicNote)
   .sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
 
 mkdirSync(output.split("/").slice(0, -1).join("/") || ".", { recursive: true });

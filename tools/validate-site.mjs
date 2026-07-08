@@ -150,6 +150,36 @@ const forbidden = [
   "根页面只承担"
 ];
 
+const forbiddenPageOnly = [
+  "面向公开访问",
+  "个人入口",
+  "从本地 Obsidian",
+  "本地 Markdown",
+  "公开索引",
+  "适合公开浏览",
+  "原始私有工作区",
+  "打开页面即可",
+  "即时需求",
+  "GitHub Pages 个人学术主页",
+  "Academic homepage on GitHub Pages",
+  "Vault Index"
+];
+
+const forbiddenKnowledge = [
+  "source-note",
+  "source-index",
+  "Implementation Plan",
+  "Personal Academic Homepage",
+  "Yong Liu Academic Homepage",
+  "GitHub Pages",
+  "Codex",
+  "ChatGPT",
+  "需求",
+  "要求",
+  "实现计划",
+  "实现规格"
+];
+
 const requiredAssets = [
   "favicon.svg",
   "favicon.png",
@@ -199,8 +229,21 @@ for (const text of forbidden) {
   }
 }
 
-if (!Array.isArray(knowledge) || knowledge.length < 50) {
-  failures.push("Knowledge base must be generated from the local Obsidian markdown vault");
+for (const text of forbiddenPageOnly) {
+  if (pageHtml.includes(text)) {
+    failures.push(`Frontend implementation/request copy still present: ${text}`);
+  }
+}
+
+if (!Array.isArray(knowledge) || knowledge.length < 25) {
+  failures.push("Public knowledge base must include a meaningful set of curated notes");
+}
+
+const knowledgeText = JSON.stringify(knowledge);
+for (const text of forbiddenKnowledge) {
+  if (knowledgeText.includes(text)) {
+    failures.push(`Internal knowledge-base text still present: ${text}`);
+  }
 }
 
 for (const link of requiredLinks) {

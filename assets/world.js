@@ -54,6 +54,16 @@ function setupKnowledgeSearch() {
     return note.group || "research";
   }
 
+  function publicTypeLabel(value) {
+    const text = String(value || "").toLowerCase();
+    if (/paper|review/.test(text)) return "论文";
+    if (/project|moc/.test(text)) return "项目";
+    if (/method|experiment|dataset|results|question/.test(text)) return "研究";
+    if (/tool/.test(text)) return "工具";
+    if (/guide/.test(text)) return "导览";
+    return "笔记";
+  }
+
   function renderCards(items) {
     if (!items.length) {
       list.innerHTML = `
@@ -73,7 +83,7 @@ function setupKnowledgeSearch() {
         <article class="content-card knowledge-card" data-group="${escapeHtml(group)}">
           <div class="knowledge-meta">
             <span>${escapeHtml(groupLabel(group))}</span>
-            <span>${escapeHtml(note.type || note.source || "Note")}</span>
+            <span>${escapeHtml(publicTypeLabel(note.type || note.source))}</span>
             <span>${escapeHtml(note.updated || "")}</span>
           </div>
           <h3>${escapeHtml(note.title)}</h3>
@@ -135,8 +145,8 @@ function setupKnowledgeSearch() {
     .catch(() => {
       list.innerHTML = `
         <article class="content-card knowledge-card">
-          <div class="knowledge-meta"><span>Index</span><span>Unavailable</span></div>
-          <h3>知识库索引暂不可用</h3>
+          <div class="knowledge-meta"><span>Notes</span><span>Unavailable</span></div>
+          <h3>笔记暂不可用</h3>
           <p>请稍后再试。</p>
         </article>
       `;
