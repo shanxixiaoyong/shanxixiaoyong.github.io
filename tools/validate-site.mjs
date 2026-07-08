@@ -7,7 +7,9 @@ const siteFiles = [
   "tools.html",
   "games.html",
   "assets/world.css",
-  "assets/world.js"
+  "assets/world.js",
+  "data/knowledge.json",
+  "tools/sync-obsidian.mjs"
 ];
 
 for (const file of siteFiles) {
@@ -18,6 +20,10 @@ for (const file of siteFiles) {
 }
 
 const html = siteFiles.map((file) => readFileSync(file, "utf8")).join("\n");
+const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "games.html"]
+  .map((file) => readFileSync(file, "utf8"))
+  .join("\n");
+const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
 
 const required = [
@@ -36,6 +42,11 @@ const required = [
   "citation-form",
   "memory-board",
   "reaction-pad",
+  "number-board",
+  "unit-output",
+  "log-output",
+  "data/knowledge.json",
+  "sync-obsidian",
   "assets/world.css",
   "assets/world.js",
   "0000-0002-7584-2953",
@@ -122,7 +133,21 @@ const forbidden = [
   "manuscripts",
   "15229069670",
   "北京市海淀区花园路街道大运村公寓",
-  "扫描二维码"
+  "扫描二维码",
+  "后续可以",
+  "后续新增",
+  "全部前端",
+  "不需要后端",
+  "不需要登录",
+  "无登录",
+  "无网络请求",
+  "页面加载后",
+  "GitHub Pages 静态托管",
+  "刷新页面即可",
+  "不追踪数据",
+  "不替代正式",
+  "只需要按",
+  "根页面只承担"
 ];
 
 const requiredAssets = [
@@ -161,9 +186,13 @@ for (const text of required) {
 }
 
 for (const text of forbidden) {
-  if (html.includes(text) || readme.includes(text)) {
+  if (pageHtml.includes(text) || readme.includes(text)) {
     failures.push(`Forbidden text still present: ${text}`);
   }
+}
+
+if (!Array.isArray(knowledge) || knowledge.length < 50) {
+  failures.push("Knowledge base must be generated from the local Obsidian markdown vault");
 }
 
 for (const link of requiredLinks) {

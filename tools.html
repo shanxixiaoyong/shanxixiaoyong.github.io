@@ -36,12 +36,12 @@
       <div>
         <p class="kicker">Small Toolbox</p>
         <h1>个人小工具箱</h1>
-        <p class="lead">一些不需要后端、不需要登录的轻量工具。页面加载后即可使用，所有计算都在本地浏览器完成。</p>
+        <p class="lead">围绕写作、时间、换算和整理的轻量工具集合。打开页面即可处理常见小任务。</p>
       </div>
       <div class="content-card">
-        <span>Local First</span>
-        <h2>短平快的日常处理</h2>
-        <p>文本统计、引用草稿、日期倒计时和专注计时放在同一个页面，适合写作和整理资料时顺手使用。</p>
+        <span>Workbench</span>
+        <h2>写作和整理的工作台</h2>
+        <p>摘要统计、引用草稿、倒计时、专注计时和单位换算放在同一处，减少来回切换。</p>
         <div class="image-strip" aria-hidden="true">
           <img src="assets/papers/rectified-ann.jpg" alt="">
           <img src="assets/papers/fundus-disorders.png" alt="">
@@ -56,7 +56,7 @@
           <p class="kicker">Tools</p>
           <h2>可用工具</h2>
         </div>
-        <p class="sublead">这些工具不追求复杂，重点是打开即用。后续可以继续添加 DOI 查询、单位换算、实验日志生成等模块。</p>
+        <p class="sublead">工具以清晰、稳定、低干扰为主，覆盖写作和资料整理时最常见的即时需求。</p>
       </div>
 
       <div class="tool-grid">
@@ -96,6 +96,33 @@
             <button id="focus-start" class="primary" type="button">开始</button>
             <button id="focus-reset" type="button">重置</button>
           </div>
+        </article>
+
+        <article class="tool-card">
+          <h3>单位换算</h3>
+          <div class="form-grid">
+            <label>数值<input id="unit-value" type="number" value="10" step="0.01"></label>
+            <label>类型
+              <select id="unit-type">
+                <option value="mm-inch">毫米 ↔ 英寸</option>
+                <option value="cm-inch">厘米 ↔ 英寸</option>
+                <option value="px-mm">300 dpi 像素 ↔ 毫米</option>
+              </select>
+            </label>
+          </div>
+          <div id="unit-output" class="output-box" aria-live="polite"></div>
+        </article>
+
+        <article class="tool-card">
+          <h3>实验日志片段</h3>
+          <div class="form-grid">
+            <label>任务<input id="log-task" value="模型对比实验"></label>
+            <label>数据<input id="log-data" value="validation split"></label>
+            <label>指标<input id="log-metric" value="AUC / F1"></label>
+            <label>结论<input id="log-finding" value="主模型在稳定性上更好"></label>
+          </div>
+          <div id="log-output" class="output-box" aria-live="polite"></div>
+          <button id="copy-log" type="button">复制片段</button>
         </article>
       </div>
     </section>

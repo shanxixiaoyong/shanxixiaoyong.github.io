@@ -36,12 +36,12 @@
       <div>
         <p class="kicker">Mini Games</p>
         <h1>小游戏</h1>
-        <p class="lead">轻量、无登录、无网络请求。当前放两个短时小游戏：记忆翻牌和反应速度测试。</p>
+        <p class="lead">短时间可完成的轻量互动。记忆、反应和节奏类小游戏放在一起，适合短暂切换注意力。</p>
       </div>
       <div class="content-card">
         <span>Break</span>
         <h2>短暂切换注意力</h2>
-        <p>小游戏保持简单，不覆盖浏览器存档，不追踪数据，刷新页面即可重新开始。</p>
+        <p>每个游戏都控制在几分钟以内，规则直接，反馈明确。</p>
         <div class="image-strip" aria-hidden="true">
           <img src="assets/papers/ensemble-force.png" alt="">
           <img src="assets/papers/multimodal-stroke.jpg" alt="">
@@ -56,7 +56,7 @@
           <p class="kicker">Play</p>
           <h2>游戏入口</h2>
         </div>
-        <p class="sublead">两个游戏都支持桌面和手机触控，规则保持直观。</p>
+        <p class="sublead">翻牌训练短时记忆，反应测试训练注意力，数字滑块适合做一次轻量的顺序整理。</p>
       </div>
 
       <div class="game-grid">
@@ -75,6 +75,15 @@
           <div class="hero-actions">
             <button id="reaction-start" class="primary" type="button">开始</button>
             <span id="reaction-output" class="button-link" aria-live="polite">尚无成绩</span>
+          </div>
+        </article>
+
+        <article class="game-card">
+          <h3>数字滑块</h3>
+          <div id="number-board" class="number-board" aria-label="数字滑块棋盘"></div>
+          <div class="hero-actions">
+            <button id="number-reset" class="primary" type="button">打乱</button>
+            <span id="number-status" class="button-link" aria-live="polite">目标 1-8</span>
           </div>
         </article>
       </div>

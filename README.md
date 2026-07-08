@@ -7,7 +7,7 @@ https://shanxixiaoyong.github.io/
 The root page is a framework-free GitHub Pages portal with four public entries:
 
 - personal academic homepage: `home.html`
-- personal knowledge base: `knowledge.html`
+- personal knowledge base: `knowledge.html`, generated from `data/knowledge.json`
 - small toolbox: `tools.html`
 - mini games: `games.html`
 
@@ -32,6 +32,12 @@ Public profile links:
 ## Maintenance
 
 The site is implemented as static HTML, CSS, and JavaScript. Publication and patent records are stored as structured JavaScript arrays in `home.html`, so academic updates only require editing the relevant data entries and pushing to `master`.
+
+The knowledge base index can be regenerated from the local Obsidian-style markdown vault:
+
+```bash
+node tools/sync-obsidian.mjs /Users/yong/Documents/Codex/codex-knowledge-base/vault data/knowledge.json
+```
 
 Run the local smoke check before publishing:
 

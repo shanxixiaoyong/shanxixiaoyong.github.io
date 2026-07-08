@@ -3,23 +3,113 @@ const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(sel
 
 $("#year")?.replaceChildren(String(new Date().getFullYear()));
 
+function setText(selector, value) {
+  const element = $(selector);
+  if (element) element.textContent = value;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function asTags(value) {
+  if (Array.isArray(value)) return value;
+  return String(value || "")
+    .split(/[,\s]+/)
+    .map((item) => item.replace(/^#/, "").trim())
+    .filter(Boolean);
+}
+
 function setupKnowledgeSearch() {
   const input = $("#knowledge-search");
   const buttons = $$(".knowledge-filter");
-  const cards = $$(".knowledge-card");
-  if (!input || !cards.length) return;
+  const list = $("#knowledge-list");
+  if (!input || !list) return;
 
   let active = "all";
+  let notes = [];
+
+  function groupLabel(group) {
+    return {
+      research: "研究",
+      method: "方法",
+      writing: "写作",
+      reading: "阅读",
+      tools: "工具",
+      project: "项目"
+    }[group] || "笔记";
+  }
+
+  function normalizeGroup(note) {
+    const text = `${note.group || ""} ${note.path || ""} ${note.source || ""} ${asTags(note.tags).join(" ")}`.toLowerCase();
+    if (/tool|automation|script|工具|自动化|codex|skill/.test(text)) return "tools";
+    if (/project|vpos|项目/.test(text)) return "project";
+    if (/read|reading|literature|文献|阅读|survey/.test(text)) return "reading";
+    if (/paper|writing|论文|写作|submission|review/.test(text)) return "writing";
+    if (/method|experiment|算法|方法|实验|metric|model/.test(text)) return "method";
+    return note.group || "research";
+  }
+
+  function renderCards(items) {
+    if (!items.length) {
+      list.innerHTML = `
+        <article class="content-card knowledge-card">
+          <div class="knowledge-meta"><span>Empty</span><span>Search</span></div>
+          <h3>没有匹配条目</h3>
+          <p>换一个关键词或主题筛选。</p>
+        </article>
+      `;
+      return;
+    }
+
+    list.innerHTML = items.slice(0, 80).map((note) => {
+      const group = normalizeGroup(note);
+      const tags = asTags(note.tags).slice(0, 5);
+      return `
+        <article class="content-card knowledge-card" data-group="${escapeHtml(group)}">
+          <div class="knowledge-meta">
+            <span>${escapeHtml(groupLabel(group))}</span>
+            <span>${escapeHtml(note.type || note.source || "Note")}</span>
+            <span>${escapeHtml(note.updated || "")}</span>
+          </div>
+          <h3>${escapeHtml(note.title)}</h3>
+          <p>${escapeHtml(note.excerpt)}</p>
+          <div class="knowledge-path">${escapeHtml(note.path || note.source || "")}</div>
+          <div class="tag-row">${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function updateStats(visible) {
+    setText("#knowledge-total", String(notes.length));
+    setText("#knowledge-visible", String(visible));
+    setText("#knowledge-groups", String(new Set(notes.map(normalizeGroup)).size));
+    setText("#knowledge-updated", notes[0]?.updated || "-");
+  }
 
   function apply() {
     const query = input.value.trim().toLowerCase();
-    cards.forEach((card) => {
-      const text = card.textContent.toLowerCase();
-      const group = card.dataset.group || "";
+    const visible = notes.filter((note) => {
+      const group = normalizeGroup(note);
+      const text = [
+        note.title,
+        note.excerpt,
+        note.type,
+        note.source,
+        note.path,
+        ...asTags(note.tags)
+      ].join(" ").toLowerCase();
       const matchesQuery = !query || text.includes(query);
       const matchesGroup = active === "all" || group === active;
-      card.hidden = !(matchesQuery && matchesGroup);
+      return matchesQuery && matchesGroup;
     });
+    renderCards(visible);
+    updateStats(visible.length);
     buttons.forEach((button) => {
       button.classList.toggle("primary", button.dataset.group === active);
     });
@@ -32,7 +122,25 @@ function setupKnowledgeSearch() {
       apply();
     });
   });
-  apply();
+
+  fetch("data/knowledge.json")
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      notes = Array.isArray(data) ? data : [];
+      apply();
+    })
+    .catch(() => {
+      list.innerHTML = `
+        <article class="content-card knowledge-card">
+          <div class="knowledge-meta"><span>Index</span><span>Unavailable</span></div>
+          <h3>知识库索引暂不可用</h3>
+          <p>请稍后再试。</p>
+        </article>
+      `;
+    });
 }
 
 function setupTextAnalyzer() {
@@ -163,6 +271,60 @@ function setupFocusTimer() {
   render();
 }
 
+function setupUnitConverter() {
+  const value = $("#unit-value");
+  const type = $("#unit-type");
+  const output = $("#unit-output");
+  if (!value || !type || !output) return;
+
+  function render() {
+    const n = Number(value.value || 0);
+    const mode = type.value;
+    if (mode === "mm-inch") {
+      output.textContent = `${n} mm = ${(n / 25.4).toFixed(4)} in\n${n} in = ${(n * 25.4).toFixed(2)} mm`;
+    } else if (mode === "cm-inch") {
+      output.textContent = `${n} cm = ${(n / 2.54).toFixed(4)} in\n${n} in = ${(n * 2.54).toFixed(2)} cm`;
+    } else {
+      const pxToMm = n / 300 * 25.4;
+      const mmToPx = n / 25.4 * 300;
+      output.textContent = `${n} px @300dpi = ${pxToMm.toFixed(2)} mm\n${n} mm @300dpi = ${Math.round(mmToPx)} px`;
+    }
+  }
+
+  value.addEventListener("input", render);
+  type.addEventListener("change", render);
+  render();
+}
+
+function setupExperimentLog() {
+  const task = $("#log-task");
+  const data = $("#log-data");
+  const metric = $("#log-metric");
+  const finding = $("#log-finding");
+  const output = $("#log-output");
+  const copy = $("#copy-log");
+  if (!task || !data || !metric || !finding || !output) return;
+
+  function render() {
+    output.textContent = [
+      `Task: ${task.value.trim() || "-"}`,
+      `Data: ${data.value.trim() || "-"}`,
+      `Metric: ${metric.value.trim() || "-"}`,
+      `Finding: ${finding.value.trim() || "-"}`
+    ].join("\n");
+  }
+
+  [task, data, metric, finding].forEach((input) => input.addEventListener("input", render));
+  copy?.addEventListener("click", async () => {
+    await navigator.clipboard?.writeText(output.textContent);
+    copy.textContent = "已复制";
+    setTimeout(() => {
+      copy.textContent = "复制片段";
+    }, 1200);
+  });
+  render();
+}
+
 function setupMemoryGame() {
   const board = $("#memory-board");
   const movesOut = $("#memory-moves");
@@ -286,10 +448,74 @@ function setupReactionGame() {
   reset();
 }
 
+function setupNumberGame() {
+  const board = $("#number-board");
+  const reset = $("#number-reset");
+  const status = $("#number-status");
+  if (!board || !reset || !status) return;
+
+  let tiles = [];
+  let moves = 0;
+
+  function isSolved(values) {
+    return values.slice(0, 8).every((value, index) => value === index + 1) && values[8] === 0;
+  }
+
+  function neighbors(index) {
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    return [
+      row > 0 ? index - 3 : -1,
+      row < 2 ? index + 3 : -1,
+      col > 0 ? index - 1 : -1,
+      col < 2 ? index + 1 : -1
+    ].filter((item) => item >= 0);
+  }
+
+  function render() {
+    board.innerHTML = "";
+    tiles.forEach((value, index) => {
+      const button = document.createElement("button");
+      button.className = value === 0 ? "number-tile is-empty" : "number-tile";
+      button.type = "button";
+      button.textContent = value === 0 ? "" : String(value);
+      button.setAttribute("aria-label", value === 0 ? "empty" : `tile ${value}`);
+      button.addEventListener("click", () => move(index));
+      board.append(button);
+    });
+    status.textContent = isSolved(tiles) ? `完成，用步 ${moves}` : `步数 ${moves}`;
+  }
+
+  function move(index) {
+    const empty = tiles.indexOf(0);
+    if (!neighbors(index).includes(empty)) return;
+    [tiles[index], tiles[empty]] = [tiles[empty], tiles[index]];
+    moves += 1;
+    render();
+  }
+
+  function shuffleBoard() {
+    tiles = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+    moves = 0;
+    for (let i = 0; i < 80; i += 1) {
+      const empty = tiles.indexOf(0);
+      const next = neighbors(empty)[Math.floor(Math.random() * neighbors(empty).length)];
+      [tiles[next], tiles[empty]] = [tiles[empty], tiles[next]];
+    }
+    render();
+  }
+
+  reset.addEventListener("click", shuffleBoard);
+  shuffleBoard();
+}
+
 setupKnowledgeSearch();
 setupTextAnalyzer();
 setupCitationBuilder();
 setupCountdown();
 setupFocusTimer();
+setupUnitConverter();
+setupExperimentLog();
 setupMemoryGame();
 setupReactionGame();
+setupNumberGame();
