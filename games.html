@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>小游戏 - 刘勇 / Yong Liu</title>
-  <meta name="description" content="刘勇 / Yong Liu 的小游戏：记忆翻牌、反应速度和数字滑块。">
+  <title>游戏厅 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="刘勇 / Yong Liu 的游戏厅：俄罗斯方块、2048、扫雷、数独、贪吃蛇、泡泡龙、合成、跳跃、塔防和卡牌。">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
@@ -18,7 +18,7 @@
         <span class="brand-mark">YL</span>
         <span class="brand-copy">
           <span>Yong Liu</span>
-          <span>小游戏</span>
+          <span>游戏厅</span>
         </span>
       </a>
       <div class="world-links">
@@ -26,7 +26,7 @@
         <a href="home.html">主页</a>
         <a href="knowledge.html">知识库</a>
         <a href="tools.html">工具箱</a>
-        <a class="is-active" href="games.html">小游戏</a>
+        <a class="is-active" href="games.html">游戏厅</a>
       </div>
     </nav>
   </header>
@@ -34,14 +34,14 @@
   <main id="main">
     <section class="world-hero">
       <div>
-        <p class="kicker">Mini Games</p>
-        <h1>小游戏</h1>
-        <p class="lead">记忆、反应与数字节奏。</p>
+        <p class="kicker">Arcade</p>
+        <h1>游戏厅</h1>
+        <p class="lead">俄罗斯方块、2048、扫雷、数独、贪吃蛇、泡泡龙、合成、跳跃、塔防和卡牌。</p>
       </div>
       <div class="content-card">
-        <span>Play</span>
-        <h2>轻量游戏</h2>
-        <p>记忆翻牌、反应速度和数字滑块。</p>
+        <span>Now Playing</span>
+        <h2>经典合集</h2>
+        <p>方块、数字、棋盘、弹珠、肉鸽与塔防。</p>
         <div class="image-strip" aria-hidden="true">
           <img src="assets/world/game-board.svg" alt="">
           <img src="assets/world/portal-games.svg" alt="">
@@ -53,38 +53,25 @@
     <section class="world-section">
       <div class="section-head">
         <div>
-          <p class="kicker">Play</p>
-          <h2>小游戏</h2>
+          <p class="kicker">Games</p>
+          <h2>选择游戏</h2>
         </div>
-        <p class="sublead">记忆翻牌、反应速度、数字滑块。</p>
+        <p class="sublead">键盘、鼠标和触屏均可操作。</p>
       </div>
 
-      <div class="game-grid">
-        <article class="game-card">
-          <h3>记忆翻牌</h3>
-          <div id="memory-board" class="memory-board" aria-label="记忆翻牌棋盘"></div>
-          <div class="hero-actions">
-            <button id="memory-reset" class="primary" type="button">重新开始</button>
-            <span id="memory-moves" class="button-link" aria-live="polite">步数 0</span>
+      <div class="arcade-shell" id="game-hub">
+        <div class="arcade-menu" id="game-menu" aria-label="游戏列表"></div>
+        <article class="arcade-stage">
+          <div class="arcade-titlebar">
+            <div>
+              <span id="game-kind">Arcade</span>
+              <h3 id="game-title">游戏厅</h3>
+            </div>
+            <strong id="game-score">0</strong>
           </div>
-        </article>
-
-        <article class="game-card">
-          <h3>反应速度</h3>
-          <button id="reaction-pad" class="reaction-pad" type="button">准备区</button>
-          <div class="hero-actions">
-            <button id="reaction-start" class="primary" type="button">开始</button>
-            <span id="reaction-output" class="button-link" aria-live="polite">尚无成绩</span>
-          </div>
-        </article>
-
-        <article class="game-card">
-          <h3>数字滑块</h3>
-          <div id="number-board" class="number-board" aria-label="数字滑块棋盘"></div>
-          <div class="hero-actions">
-            <button id="number-reset" class="primary" type="button">打乱</button>
-            <span id="number-status" class="button-link" aria-live="polite">目标 1-8</span>
-          </div>
+          <div id="game-status" class="arcade-status" aria-live="polite"></div>
+          <div id="game-board" class="arcade-board" tabindex="0" aria-label="游戏区域"></div>
+          <div id="game-controls" class="arcade-controls" aria-label="游戏控制"></div>
         </article>
       </div>
     </section>
@@ -96,5 +83,6 @@
   </footer>
 
   <script src="assets/world.js"></script>
+  <script src="assets/games.js"></script>
 </body>
 </html>

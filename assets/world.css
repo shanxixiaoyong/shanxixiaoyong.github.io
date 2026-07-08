@@ -588,6 +588,330 @@ label {
   color: var(--green-dark);
 }
 
+.arcade-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.arcade-menu {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.arcade-menu button {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: left;
+  white-space: normal;
+}
+
+.arcade-menu button span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 720;
+  text-transform: uppercase;
+}
+
+.arcade-menu button strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.arcade-menu button.is-active {
+  border-color: var(--green-dark);
+  background: var(--green-dark);
+}
+
+.arcade-menu button.is-active span,
+.arcade-menu button.is-active strong {
+  color: #fff;
+}
+
+.arcade-stage {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  overflow: hidden;
+}
+
+.arcade-titlebar {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.arcade-titlebar span,
+.arcade-status {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.arcade-titlebar h3 {
+  margin-bottom: 0;
+}
+
+.arcade-titlebar strong {
+  min-width: 64px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8faf8;
+  padding: 8px 10px;
+  color: var(--green-dark);
+  text-align: center;
+}
+
+.arcade-status {
+  min-height: 20px;
+  margin-bottom: 12px;
+}
+
+.arcade-board {
+  --cols: 4;
+  --rows: 4;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 5px;
+  width: min(100%, 520px);
+  min-height: 360px;
+  margin: 0 auto;
+  outline: none;
+  touch-action: manipulation;
+}
+
+.arcade-cell,
+.merge-cell,
+.mine-cell,
+.sudoku-cell,
+.snake-cell,
+.bubble-cell,
+.bubble-launch,
+.fruit-cell,
+.tower-cell {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--cell, #f2f5f1);
+  color: var(--ink);
+  font-weight: 820;
+}
+
+.arcade-cell[style],
+.bubble-cell[style],
+.bubble-launch[style],
+.fruit-cell[style] {
+  color: #fff;
+}
+
+.is-tetris {
+  aspect-ratio: 1 / 2;
+  max-height: 560px;
+}
+
+.merge-cell {
+  min-height: 82px;
+  background: #eef2ef;
+  color: var(--green-dark);
+  font-size: clamp(18px, 4vw, 32px);
+}
+
+.merge-cell.v2,
+.merge-cell.v4 {
+  background: #f7f0df;
+}
+
+.merge-cell.v8,
+.merge-cell.v16,
+.merge-cell.v32 {
+  background: #dfecec;
+}
+
+.merge-cell.v64,
+.merge-cell.v128,
+.merge-cell.v256,
+.merge-cell.v512,
+.merge-cell.v1024,
+.merge-cell.v2048 {
+  background: var(--green-dark);
+  color: #fff;
+}
+
+.mine-cell {
+  min-height: 46px;
+  background: #dfe9e5;
+}
+
+.mine-cell.is-open {
+  background: #fff;
+}
+
+.sudoku-cell {
+  min-height: 42px;
+  background: #fff;
+  font-size: 18px;
+}
+
+.sudoku-cell:nth-child(3n) {
+  border-right-color: #9fb2aa;
+}
+
+.sudoku-cell:nth-child(n+19):nth-child(-n+27),
+.sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+  border-bottom-color: #9fb2aa;
+}
+
+.sudoku-cell.is-fixed {
+  background: #edf4ef;
+  color: var(--green-dark);
+}
+
+.sudoku-cell.is-selected {
+  outline: 2px solid var(--copper);
+}
+
+.snake-cell {
+  border-radius: 4px;
+  background: #eef2ef;
+}
+
+.snake-cell.is-snake {
+  background: var(--green-dark);
+}
+
+.snake-cell.is-food {
+  background: var(--copper);
+}
+
+.bubble-cell,
+.bubble-launch,
+.fruit-cell {
+  border-radius: 999px;
+}
+
+.bubble-cell:not([style]) {
+  background: transparent;
+  border-color: transparent;
+}
+
+.bubble-launch {
+  background: var(--cell, #fff);
+}
+
+.fruit-cell {
+  min-height: 44px;
+  background: var(--cell, #f7faf7);
+}
+
+.jump-board {
+  display: block;
+  min-height: 240px;
+}
+
+.jump-track {
+  position: relative;
+  height: 240px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #f7faf7, #e6eee8);
+  overflow: hidden;
+}
+
+.jump-player,
+.jump-target {
+  position: absolute;
+  bottom: 68px;
+  display: block;
+  transform: translateX(-50%);
+}
+
+.jump-player {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--green-dark);
+}
+
+.jump-target {
+  width: 92px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--copper);
+}
+
+.tower-cell {
+  min-height: 50px;
+  background: #eff3f0;
+}
+
+.tower-cell.is-path {
+  background: #e6dccd;
+}
+
+.tower-cell.is-tower {
+  background: var(--green-dark);
+  color: #fff;
+}
+
+.tower-cell.is-enemy {
+  background: var(--copper);
+  color: #fff;
+}
+
+.card-battle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-battle div {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8faf8;
+  padding: 14px;
+}
+
+.card-battle strong,
+.card-battle span {
+  display: block;
+}
+
+.card-hand {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rogue-card {
+  min-height: 128px;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #fff, #edf4ef);
+  color: var(--green-dark);
+  font-weight: 840;
+  white-space: normal;
+}
+
+.arcade-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .world-footer {
   display: flex;
   justify-content: space-between;
@@ -608,8 +932,13 @@ label {
   .section-head,
   .knowledge-layout,
   .tool-grid,
-  .game-grid {
+  .game-grid,
+  .arcade-shell {
     grid-template-columns: 1fr;
+  }
+
+  .arcade-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .world-hero {
@@ -697,5 +1026,26 @@ label {
   .world-footer {
     display: grid;
     padding-bottom: 28px;
+  }
+
+  .arcade-stage {
+    padding: 12px;
+  }
+
+  .arcade-board {
+    min-height: 300px;
+  }
+
+  .arcade-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .merge-cell {
+    min-height: 64px;
+  }
+
+  .card-hand,
+  .card-battle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
