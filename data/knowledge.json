@@ -1,18 +1,5 @@
 [
   {
-    "title": "MOC - VPOS2",
-    "group": "research",
-    "type": "moc",
-    "source": "10-Projects/VPOS2/00-Overview",
-    "excerpt": "MOC VPOS2 Summary Layered navigation for the current VPOS2 RK3588 runtime. Read this slice as an engineering wiki: start with the accepted runtime bou",
-    "tags": [
-      "vpos2",
-      "moc"
-    ],
-    "updated": "2026-07-07",
-    "path": "10-Projects/VPOS2/00-Overview/MOC - VPOS2.md"
-  },
-  {
     "title": "RK3588 YOLO eLoFTR Project Profile",
     "group": "research",
     "type": "project",
@@ -21,16 +8,6 @@
     "tags": [],
     "updated": "2026-07-07",
     "path": "10-Projects/VPOS2/RK3588 YOLO eLoFTR Project Profile.md"
-  },
-  {
-    "title": "VPOS2 - Current State and Guardrails",
-    "group": "research",
-    "type": "project",
-    "source": "10-Projects/VPOS2",
-    "excerpt": "Summary VPOS2 is the current C++20 runtime stack for RK3588 Buildroot Linux. The accepted operating model is a reusable vpos2 runtime plus a project l",
-    "tags": [],
-    "updated": "2026-07-07",
-    "path": "10-Projects/VPOS2/VPOS2 - Current State and Guardrails.md"
   },
   {
     "title": "VPOS2 - Matching Model Feasibility",
@@ -111,19 +88,6 @@
     "tags": [],
     "updated": "2026-07-07",
     "path": "10-Projects/VPOS2/VPOS2 - mipid Runtime Shared Library.md"
-  },
-  {
-    "title": "MOC - Remote Sensing Matching",
-    "group": "research",
-    "type": "moc",
-    "source": "20-Research/Remote-Sensing-Matching/00-Overview",
-    "excerpt": "MOC Remote Sensing Matching Summary Layered navigation for remote sensing image matching research. Why it matters This note makes Remote Sensing Match",
-    "tags": [
-      "remote-sensing",
-      "moc"
-    ],
-    "updated": "2026-07-07",
-    "path": "20-Research/Remote-Sensing-Matching/00-Overview/MOC - Remote Sensing Matching.md"
   },
   {
     "title": "Dataset - Remote Sensing Matching Benchmark Landscape",
@@ -254,22 +218,6 @@
     "path": "20-Research/Remote-Sensing-Matching/Experiment - Phase D-E Strong Baseline Correction.md"
   },
   {
-    "title": "MOC - Remote Sensing Matching",
-    "group": "research",
-    "type": "moc",
-    "source": "20-Research/Remote-Sensing-Matching",
-    "excerpt": "MOC Remote Sensing Matching Summary This map of content organizes the remote sensing matching slice as four linked threads: the same GSD query in refe",
-    "tags": [
-      "remote-sensing",
-      "matching",
-      "research",
-      "gsa-match",
-      "satmatch"
-    ],
-    "updated": "2026-07-07",
-    "path": "20-Research/Remote-Sensing-Matching/MOC - Remote Sensing Matching.md"
-  },
-  {
     "title": "Method - C2F-NCC Corr-TopK",
     "group": "method",
     "type": "method",
@@ -333,19 +281,6 @@
     "path": "20-Research/Remote-Sensing-Matching/RQ - Same-GSD Query Footprint Localization.md"
   },
   {
-    "title": "MOC - NYC 311 Audit",
-    "group": "writing",
-    "type": "moc",
-    "source": "30-Papers/NYC-311-Audit/00-Overview",
-    "excerpt": "MOC NYC 311 Audit Summary Layered entry point for the NYC 311 audit line: initial UrbanAI pitch, longer BDA route, final UrbanAI short paper revision,",
-    "tags": [
-      "nyc-311",
-      "moc"
-    ],
-    "updated": "2026-07-07",
-    "path": "30-Papers/NYC-311-Audit/00-Overview/MOC - NYC 311 Audit.md"
-  },
-  {
     "title": "Audit Metrics - Descriptor Dependency",
     "group": "writing",
     "type": "method",
@@ -394,22 +329,6 @@
     "path": "30-Papers/NYC-311-Audit/Initial UrbanAI Zero Cost Leakage Audit.md"
   },
   {
-    "title": "NYC 311 Administrative Taxonomy Audit - Hub",
-    "group": "writing",
-    "type": "moc",
-    "source": "30-Papers/NYC-311-Audit",
-    "excerpt": "NYC 311 Administrative Taxonomy Audit Hub Summary This cluster covers one line of work that started as a quick UrbanAI leakage audit, expanded into a ",
-    "tags": [
-      "nyc-311",
-      "urbanai",
-      "bda",
-      "audit",
-      "taxonomy"
-    ],
-    "updated": "2026-07-07",
-    "path": "30-Papers/NYC-311-Audit/NYC 311 Administrative Taxonomy Audit - Hub.md"
-  },
-  {
     "title": "RK3588 Buildroot Cross Compilation Manual",
     "group": "writing",
     "type": "tool",
@@ -424,22 +343,6 @@
     ],
     "updated": "2026-07-07",
     "path": "30-Papers/NYC-311-Audit/RK3588 Buildroot Cross Compilation Manual.md"
-  },
-  {
-    "title": "Review Log - NYC 311 Audit",
-    "group": "writing",
-    "type": "review-log",
-    "source": "30-Papers/NYC-311-Audit",
-    "excerpt": "Review Log NYC 311 Audit Summary The review trail is the best explanation of why the note family now emphasizes documented hierarchy, exact lookup, Th",
-    "tags": [
-      "nyc-311",
-      "review",
-      "revisions",
-      "urbanai",
-      "bda"
-    ],
-    "updated": "2026-07-07",
-    "path": "30-Papers/NYC-311-Audit/Review Log - NYC 311 Audit.md"
   },
   {
     "title": "UrbanAI 2026 311 Taxonomy Shortcut Audit",

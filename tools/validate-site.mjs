@@ -162,7 +162,17 @@ const forbiddenPageOnly = [
   "即时需求",
   "GitHub Pages 个人学术主页",
   "Academic homepage on GitHub Pages",
-  "Vault Index"
+  "Vault Index",
+  "四个入口",
+  "各司其职",
+  "空间结构",
+  "展示面",
+  "积累面",
+  "交互面",
+  "快速回到",
+  "分区呈现",
+  "在这里各自成区",
+  "可探索"
 ];
 
 const forbiddenKnowledge = [
@@ -174,6 +184,10 @@ const forbiddenKnowledge = [
   "GitHub Pages",
   "Codex",
   "ChatGPT",
+  "MOC -",
+  "Current State",
+  "Guardrails",
+  "Review Log",
   "需求",
   "要求",
   "实现计划",
@@ -235,7 +249,7 @@ for (const text of forbiddenPageOnly) {
   }
 }
 
-if (!Array.isArray(knowledge) || knowledge.length < 25) {
+if (!Array.isArray(knowledge) || knowledge.length < 20) {
   failures.push("Public knowledge base must include a meaningful set of curated notes");
 }
 

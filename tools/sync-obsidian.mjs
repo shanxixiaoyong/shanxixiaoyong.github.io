@@ -71,6 +71,7 @@ function isPublicNote(note) {
 
   if (/^source[\s-]?(note|index)$/i.test(type)) return false;
   if (/^(00-home|40-tools-and-automations|90-sources|_templates)(\/|$)/i.test(path)) return false;
+  if (/\bmoc\b|current state|guardrails|review log/.test(haystack)) return false;
   if (/codex|chatgpt|personal academic homepage|yong liu academic homepage|github pages|template|software unit|peach blossom|welcome home|automation 4 memory/.test(haystack)) return false;
   if (/implementation plan|requirements?|需求|要求|实现计划|实现规格/.test(haystack)) return false;
 
