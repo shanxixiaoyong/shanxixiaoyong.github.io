@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img" aria-label="">
+  <defs>
+    <linearGradient id="bg-console" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5fbfb"/>
+      <stop offset="1" stop-color="#dce9ec"/>
+    </linearGradient>
+    <filter id="soft-console" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#182734" flood-opacity="0.12"/>
+    </filter>
+    <pattern id="grid-console" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0v42" fill="none" stroke="#17202a" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="640" fill="url(#bg-console)"/>
+  <rect width="960" height="640" fill="url(#grid-console)"/>
+  <circle cx="128" cy="106" r="92" fill="#9a6a42" opacity="0.10"/>
+  <circle cx="820" cy="500" r="132" fill="#2f6b58" opacity="0.12"/>
+  
+  <g filter="url(#soft-console)">
+    <rect x="166" y="128" width="628" height="384" rx="18" fill="#fffdf8" stroke="#dce3dc"/>
+    <rect x="206" y="174" width="548" height="72" rx="12" fill="#315f8a" opacity="0.13"/>
+    <circle cx="244" cy="210" r="11" fill="#2f6b58"/>
+    <circle cx="280" cy="210" r="11" fill="#9a6a42"/>
+    <circle cx="316" cy="210" r="11" fill="#315f8a"/>
+    <path d="M226 304h180M226 346h292M226 388h128M516 388h152" stroke="#17202a" stroke-opacity="0.24" stroke-width="12" stroke-linecap="round"/>
+    <path d="M548 302h128v52H548z" fill="#2f6b58" opacity="0.18"/>
+  </g>
+</svg>

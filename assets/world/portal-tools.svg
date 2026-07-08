@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img" aria-label="">
+  <defs>
+    <linearGradient id="bg-tools" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5fafb"/>
+      <stop offset="1" stop-color="#dfecef"/>
+    </linearGradient>
+    <filter id="soft-tools" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#182734" flood-opacity="0.12"/>
+    </filter>
+    <pattern id="grid-tools" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0v42" fill="none" stroke="#17202a" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="640" fill="url(#bg-tools)"/>
+  <rect width="960" height="640" fill="url(#grid-tools)"/>
+  <circle cx="128" cy="106" r="92" fill="#9a6a42" opacity="0.10"/>
+  <circle cx="820" cy="500" r="132" fill="#2f6b58" opacity="0.12"/>
+  
+  <g filter="url(#soft-tools)">
+    <rect x="188" y="132" width="584" height="376" rx="18" fill="#fffdf8" stroke="#dce3dc"/>
+    <rect x="224" y="176" width="512" height="70" rx="12" fill="#315f8a" opacity="0.13"/>
+    <path d="M254 211h148M628 211h74" stroke="#315f8a" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="578" cy="211" r="22" fill="#2f6b58" opacity="0.82"/>
+    <rect x="224" y="286" width="214" height="132" rx="12" fill="#9a6a42" opacity="0.15"/>
+    <rect x="480" y="286" width="256" height="132" rx="12" fill="#2f6b58" opacity="0.14"/>
+    <path d="M254 328h114M254 360h78M510 328h152M510 360h104" stroke="#17202a" stroke-width="10" stroke-linecap="round" opacity="0.25"/>
+  </g>
+</svg>

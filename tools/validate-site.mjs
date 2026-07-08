@@ -154,6 +154,14 @@ const requiredAssets = [
   "favicon.svg",
   "favicon.png",
   "favicon.ico",
+  "assets/world/portal-home.svg",
+  "assets/world/portal-knowledge.svg",
+  "assets/world/portal-tools.svg",
+  "assets/world/portal-games.svg",
+  "assets/world/workspace-grid.svg",
+  "assets/world/vault-map.svg",
+  "assets/world/tool-console.svg",
+  "assets/world/game-board.svg",
   "assets/papers/rectified-ann.jpg",
   "assets/papers/fundus-disorders.png",
   "assets/papers/ssvt.png",
@@ -206,11 +214,20 @@ if (existsSync("CNAME")) {
 }
 
 for (const asset of requiredAssets) {
-  if (!html.includes(asset)) {
+  const referencedInPages = html.includes(asset);
+  const isPaperAsset = asset.startsWith("assets/papers/");
+  if (!referencedInPages && !isPaperAsset) {
     failures.push(`Missing required asset reference: ${asset}`);
   }
   if (!existsSync(asset)) {
     failures.push(`Missing required asset file: ${asset}`);
+  }
+}
+
+for (const file of ["index.html", "knowledge.html", "tools.html", "games.html"]) {
+  const fileHtml = readFileSync(file, "utf8");
+  if (fileHtml.includes("assets/papers/")) {
+    failures.push(`${file} must not use paper figures outside the academic homepage`);
   }
 }
 
