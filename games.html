@@ -10,57 +10,44 @@
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="stylesheet" href="assets/world.css">
 </head>
-<body>
+<body class="arcade-page">
   <a class="skip-link" href="#main">Skip to content</a>
-  <header class="world-header">
-    <nav class="world-nav" aria-label="Main navigation">
-      <a class="world-brand" href="index.html" aria-label="个人天地首页">
+  <main id="main" class="arcade-app">
+    <header class="arcade-appbar">
+      <a class="arcade-back" href="index.html" aria-label="返回个人天地">
         <span class="brand-mark">YL</span>
-        <span class="brand-copy">
-          <span>Yong Liu</span>
-          <span>游戏厅</span>
-        </span>
       </a>
-      <div class="world-links">
-        <a href="index.html">首页</a>
-        <a href="home.html">主页</a>
-        <a href="knowledge.html">知识库</a>
-        <a href="tools.html">工具箱</a>
-        <a class="is-active" href="games.html">游戏厅</a>
-      </div>
-    </nav>
-  </header>
-
-  <main id="main">
-    <section class="world-hero">
       <div>
         <p class="kicker">Arcade</p>
         <h1>游戏厅</h1>
-        <p class="lead">俄罗斯方块、2048、扫雷、数独、贪吃蛇、泡泡龙、合成、跳跃、塔防和卡牌。</p>
       </div>
-      <div class="content-card">
-        <span>Now Playing</span>
-        <h2>经典合集</h2>
-        <p>方块、数字、棋盘、弹珠、肉鸽与塔防。</p>
-        <div class="image-strip" aria-hidden="true">
-          <img src="assets/world/game-board.svg" alt="">
-          <img src="assets/world/portal-games.svg" alt="">
-          <img src="assets/world/workspace-grid.svg" alt="">
-        </div>
+      <nav class="arcade-jump" aria-label="Arcade navigation">
+        <a href="home.html">主页</a>
+        <a href="knowledge.html">知识库</a>
+        <a href="tools.html">工具箱</a>
+      </nav>
+    </header>
+
+    <section class="arcade-hero" aria-label="游戏厅">
+      <div class="arcade-copy">
+        <h2>经典游戏合集</h2>
+        <p>方块、数字、棋盘、弹珠、合成、跳跃、塔防和卡牌。</p>
+      </div>
+      <div class="arcade-mini-dashboard" aria-label="游戏状态">
+        <span>Touch</span>
+        <span>Keys</span>
+        <span>Best</span>
       </div>
     </section>
 
-    <section class="world-section">
-      <div class="section-head">
+    <section class="arcade-zone" aria-label="Arcade">
         <div>
-          <p class="kicker">Games</p>
-          <h2>选择游戏</h2>
+          <p class="kicker">Now Playing</p>
+          <h2 id="arcade-heading">选择游戏</h2>
         </div>
-        <p class="sublead">键盘、鼠标和触屏均可操作。</p>
-      </div>
 
       <div class="arcade-shell" id="game-hub">
-        <div class="arcade-menu" id="game-menu" aria-label="游戏列表"></div>
+        <aside class="arcade-menu" id="game-menu" aria-label="游戏列表"></aside>
         <article class="arcade-stage">
           <div class="arcade-titlebar">
             <div>
@@ -70,17 +57,24 @@
             <strong id="game-score">0</strong>
           </div>
           <div id="game-status" class="arcade-status" aria-live="polite"></div>
-          <div id="game-board" class="arcade-board" tabindex="0" aria-label="游戏区域"></div>
-          <div id="game-controls" class="arcade-controls" aria-label="游戏控制"></div>
+          <div class="arcade-playfield">
+            <div id="game-board" class="arcade-board" tabindex="0" aria-label="游戏区域"></div>
+          </div>
+          <div class="arcade-hud">
+            <div id="game-meta" class="arcade-meta"></div>
+            <div id="game-controls" class="arcade-controls" aria-label="游戏控制"></div>
+          </div>
         </article>
+        <aside class="touch-pad" id="touch-pad" aria-label="触屏控制器">
+          <button type="button" data-touch="up">上</button>
+          <button type="button" data-touch="left">左</button>
+          <button type="button" data-touch="action" class="is-action">动作</button>
+          <button type="button" data-touch="right">右</button>
+          <button type="button" data-touch="down">下</button>
+        </aside>
       </div>
     </section>
   </main>
-
-  <footer class="world-footer">
-    <span>© <span id="year">2026</span> Yong Liu</span>
-    <span><a href="index.html">个人天地</a> · <a href="tools.html">工具箱</a></span>
-  </footer>
 
   <script src="assets/world.js"></script>
   <script src="assets/games.js"></script>

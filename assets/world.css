@@ -686,7 +686,7 @@ label {
   min-height: 360px;
   margin: 0 auto;
   outline: none;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 .arcade-cell,
@@ -912,6 +912,495 @@ label {
   margin-top: 16px;
 }
 
+body.arcade-page {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(42, 180, 155, 0.24), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(238, 160, 78, 0.22), transparent 32%),
+    linear-gradient(135deg, #151b1b 0%, #232822 38%, #342c25 100%);
+  color: #f7f3e8;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+body.arcade-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 88%);
+}
+
+body.arcade-page .skip-link {
+  background: #f7f3e8;
+}
+
+.arcade-app {
+  position: relative;
+  width: min(100% - 32px, 1420px);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: max(18px, env(safe-area-inset-top)) 0 max(18px, env(safe-area-inset-bottom));
+}
+
+.arcade-appbar {
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(247, 243, 232, 0.16);
+  border-radius: 18px;
+  background: rgba(16, 22, 22, 0.68);
+  padding: 12px 14px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(20px);
+}
+
+.arcade-back:hover,
+.arcade-jump a:hover {
+  text-decoration: none;
+}
+
+.arcade-appbar .brand-mark {
+  border-color: rgba(247, 243, 232, 0.3);
+  background: rgba(247, 243, 232, 0.12);
+  color: #f7f3e8;
+}
+
+.arcade-appbar .kicker,
+.arcade-zone .kicker {
+  margin-bottom: 2px;
+  color: #75d7bd;
+}
+
+.arcade-appbar h1 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 38px);
+  line-height: 1;
+}
+
+.arcade-jump {
+  display: flex;
+  gap: 8px;
+}
+
+.arcade-jump a {
+  border: 1px solid rgba(247, 243, 232, 0.18);
+  border-radius: 999px;
+  background: rgba(247, 243, 232, 0.08);
+  padding: 8px 12px;
+  color: #f7f3e8;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.arcade-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  padding: 24px 4px 18px;
+  min-width: 0;
+}
+
+.arcade-copy {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.arcade-copy h2 {
+  max-width: 760px;
+  margin-bottom: 10px;
+  font-size: clamp(30px, 5vw, 56px);
+  line-height: 1.02;
+  color: #fffaf0;
+  overflow-wrap: anywhere;
+}
+
+.arcade-copy p {
+  max-width: 860px;
+  margin-bottom: 0;
+  color: rgba(247, 243, 232, 0.74);
+  font-size: clamp(15px, 2vw, 19px);
+}
+
+.arcade-mini-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+}
+
+.arcade-mini-dashboard span {
+  border: 1px solid rgba(247, 243, 232, 0.18);
+  border-radius: 999px;
+  background: rgba(247, 243, 232, 0.08);
+  padding: 9px 11px;
+  color: rgba(247, 243, 232, 0.78);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.arcade-zone {
+  padding: 10px 0 0;
+}
+
+.arcade-zone > div:first-child {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.arcade-zone h2 {
+  margin-bottom: 0;
+  color: #fffaf0;
+  font-size: clamp(24px, 3.5vw, 44px);
+}
+
+body.arcade-page .arcade-shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 140px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+body.arcade-page .arcade-menu {
+  display: grid;
+  gap: 8px;
+  max-height: calc(100svh - 230px);
+  overflow: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+body.arcade-page .arcade-menu button,
+body.arcade-page .arcade-controls button,
+body.arcade-page .touch-pad button {
+  border-color: rgba(247, 243, 232, 0.18);
+  background: rgba(247, 243, 232, 0.08);
+  color: #f7f3e8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.arcade-page .arcade-menu button {
+  position: relative;
+  min-height: 68px;
+  border-radius: 16px;
+  padding: 13px 14px;
+}
+
+body.arcade-page .arcade-menu button::before {
+  content: "";
+  position: absolute;
+  inset: 8px auto 8px 8px;
+  width: 5px;
+  border-radius: 999px;
+  background: #75d7bd;
+  opacity: 0;
+}
+
+body.arcade-page .arcade-menu button span {
+  color: rgba(247, 243, 232, 0.58);
+}
+
+body.arcade-page .arcade-menu button strong {
+  color: #fffaf0;
+}
+
+body.arcade-page .arcade-menu button.is-active {
+  border-color: rgba(117, 215, 189, 0.76);
+  background: linear-gradient(135deg, rgba(47, 107, 88, 0.82), rgba(49, 95, 138, 0.58));
+}
+
+body.arcade-page .arcade-menu button.is-active::before {
+  opacity: 1;
+}
+
+body.arcade-page .arcade-stage {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  min-height: min(74svh, 760px);
+  border: 1px solid rgba(247, 243, 232, 0.18);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.1), rgba(255, 250, 240, 0.03)),
+    rgba(13, 19, 19, 0.72);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.32);
+  padding: clamp(14px, 2vw, 24px);
+  backdrop-filter: blur(22px);
+}
+
+body.arcade-page .arcade-titlebar {
+  margin-bottom: 6px;
+}
+
+body.arcade-page .arcade-titlebar span,
+body.arcade-page .arcade-status {
+  color: rgba(247, 243, 232, 0.62);
+}
+
+body.arcade-page .arcade-titlebar h3 {
+  color: #fffaf0;
+  font-size: clamp(22px, 3vw, 34px);
+}
+
+body.arcade-page .arcade-titlebar strong {
+  min-width: 92px;
+  border-color: rgba(238, 160, 78, 0.38);
+  background: rgba(238, 160, 78, 0.14);
+  color: #ffd69a;
+  font-size: 18px;
+}
+
+.arcade-playfield {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  border: 1px solid rgba(247, 243, 232, 0.12);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(117, 215, 189, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(255, 255, 255, 0.03));
+  padding: clamp(10px, 2vw, 22px);
+  overflow: hidden;
+}
+
+body.arcade-page .arcade-board {
+  width: min(100%, 620px);
+  min-height: 0;
+  height: min(62svh, 620px);
+  gap: clamp(4px, 0.7vw, 8px);
+}
+
+body.arcade-page .arcade-board.is-tetris {
+  width: min(100%, 330px);
+  height: min(62svh, 660px);
+  aspect-ratio: 1 / 2;
+}
+
+body.arcade-page .arcade-board.is-merge2048,
+body.arcade-page .arcade-board.is-mines,
+body.arcade-page .arcade-board.is-sudoku,
+body.arcade-page .arcade-board.is-snake {
+  width: min(100%, 600px);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+body.arcade-page .arcade-cell,
+body.arcade-page .merge-cell,
+body.arcade-page .mine-cell,
+body.arcade-page .sudoku-cell,
+body.arcade-page .snake-cell,
+body.arcade-page .bubble-cell,
+body.arcade-page .bubble-launch,
+body.arcade-page .fruit-cell,
+body.arcade-page .tower-cell {
+  border-color: rgba(247, 243, 232, 0.14);
+  background: var(--cell, rgba(247, 243, 232, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.arcade-page .arcade-cell[style],
+body.arcade-page .bubble-cell[style],
+body.arcade-page .bubble-launch[style],
+body.arcade-page .fruit-cell[style] {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+body.arcade-page .merge-cell {
+  min-height: auto;
+  border-radius: 16px;
+  background: rgba(247, 243, 232, 0.09);
+  color: #fffaf0;
+}
+
+body.arcade-page .merge-cell.v2,
+body.arcade-page .merge-cell.v4 {
+  background: #ebd8a8;
+  color: #342c25;
+}
+
+body.arcade-page .merge-cell.v8,
+body.arcade-page .merge-cell.v16,
+body.arcade-page .merge-cell.v32 {
+  background: #75d7bd;
+  color: #13201d;
+}
+
+body.arcade-page .merge-cell.v64,
+body.arcade-page .merge-cell.v128,
+body.arcade-page .merge-cell.v256,
+body.arcade-page .merge-cell.v512,
+body.arcade-page .merge-cell.v1024,
+body.arcade-page .merge-cell.v2048 {
+  background: #eea04e;
+  color: #1f1712;
+}
+
+body.arcade-page .mine-cell,
+body.arcade-page .sudoku-cell,
+body.arcade-page .tower-cell {
+  color: #fffaf0;
+}
+
+body.arcade-page .mine-cell.is-open,
+body.arcade-page .sudoku-cell.is-fixed {
+  background: rgba(247, 243, 232, 0.18);
+}
+
+body.arcade-page .sudoku-cell.is-selected {
+  outline: 3px solid #eea04e;
+}
+
+body.arcade-page .snake-cell.is-snake {
+  background: #75d7bd;
+}
+
+body.arcade-page .snake-cell.is-food,
+body.arcade-page .tower-cell.is-enemy {
+  background: #eea04e;
+}
+
+body.arcade-page .tower-cell.is-path {
+  background: rgba(238, 160, 78, 0.22);
+}
+
+body.arcade-page .tower-cell.is-tower {
+  background: #75d7bd;
+  color: #13201d;
+}
+
+body.arcade-page .jump-track {
+  height: min(48svh, 360px);
+  border-color: rgba(247, 243, 232, 0.14);
+  background:
+    linear-gradient(180deg, rgba(117, 215, 189, 0.16), rgba(238, 160, 78, 0.14)),
+    rgba(247, 243, 232, 0.06);
+}
+
+body.arcade-page .jump-player {
+  background: #75d7bd;
+  box-shadow: 0 12px 34px rgba(117, 215, 189, 0.35);
+}
+
+body.arcade-page .jump-target {
+  background: #eea04e;
+}
+
+body.arcade-page .card-battle div,
+body.arcade-page .rogue-card {
+  border-color: rgba(247, 243, 232, 0.16);
+  background: rgba(247, 243, 232, 0.09);
+  color: #fffaf0;
+}
+
+.arcade-hud {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.arcade-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.arcade-meta span {
+  border: 1px solid rgba(247, 243, 232, 0.14);
+  border-radius: 999px;
+  background: rgba(247, 243, 232, 0.08);
+  padding: 5px 9px;
+  color: rgba(247, 243, 232, 0.72);
+  font-size: 12px;
+  font-weight: 740;
+}
+
+body.arcade-page .arcade-controls {
+  margin-top: 0;
+}
+
+body.arcade-page .arcade-controls button {
+  min-height: 42px;
+  border-radius: 999px;
+  padding: 10px 16px;
+}
+
+body.arcade-page .arcade-controls button.primary,
+body.arcade-page .touch-pad button.is-action {
+  border-color: rgba(117, 215, 189, 0.6);
+  background: linear-gradient(135deg, #75d7bd, #4fa991);
+  color: #101616;
+}
+
+body.arcade-page .arcade-controls button:active,
+body.arcade-page .touch-pad button:active,
+body.arcade-page .arcade-menu button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+body.arcade-page .touch-pad button.is-disabled {
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+body.arcade-page .bubble-launch.is-aim,
+body.arcade-page .fruit-cell.is-aim {
+  outline: 3px solid rgba(238, 160, 78, 0.72);
+  outline-offset: -3px;
+}
+
+.touch-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  align-self: end;
+}
+
+.touch-pad button {
+  min-width: 0;
+  min-height: 58px;
+  border-radius: 18px;
+  padding: 0;
+  font-weight: 840;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.touch-pad [data-touch="up"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.touch-pad [data-touch="left"] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.touch-pad [data-touch="action"] {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.touch-pad [data-touch="right"] {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.touch-pad [data-touch="down"] {
+  grid-column: 2;
+  grid-row: 3;
+}
+
 .world-footer {
   display: flex;
   justify-content: space-between;
@@ -948,6 +1437,41 @@ label {
   .portal-grid,
   .content-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.arcade-page .arcade-shell {
+    grid-template-columns: 1fr;
+  }
+
+  body.arcade-page .arcade-menu {
+    grid-template-columns: repeat(5, minmax(126px, 1fr));
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 4px;
+    scroll-snap-type: x mandatory;
+  }
+
+  body.arcade-page .arcade-menu button {
+    scroll-snap-align: start;
+  }
+
+  .touch-pad {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+    position: sticky;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 18;
+    border: 1px solid rgba(247, 243, 232, 0.14);
+    border-radius: 22px;
+    background: rgba(16, 22, 22, 0.72);
+    padding: 8px;
+    backdrop-filter: blur(18px);
+  }
+
+  .touch-pad [data-touch] {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 
@@ -1047,5 +1571,116 @@ label {
   .card-hand,
   .card-battle {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arcade-app {
+    width: min(100% - 18px, 1420px);
+    padding-top: 10px;
+  }
+
+  .arcade-appbar {
+    top: 8px;
+    grid-template-columns: auto minmax(0, 1fr);
+    border-radius: 16px;
+  }
+
+  .arcade-jump {
+    grid-column: 1 / -1;
+    overflow-x: auto;
+  }
+
+  .arcade-hero {
+    grid-template-columns: 1fr;
+    padding: 24px 2px 16px;
+  }
+
+  .arcade-copy h2 {
+    font-size: clamp(28px, 8vw, 34px);
+    max-width: 100%;
+    line-height: 1.06;
+    word-break: break-all;
+  }
+
+  .arcade-copy p {
+    font-size: 14px;
+  }
+
+  .arcade-mini-dashboard {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .arcade-mini-dashboard span {
+    padding: 8px 6px;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  body.arcade-page .arcade-stage {
+    min-height: auto;
+    border-radius: 22px;
+    padding: 12px;
+  }
+
+  body.arcade-page .arcade-menu {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  body.arcade-page .arcade-menu button {
+    flex: 0 0 126px;
+  }
+
+  .arcade-playfield {
+    border-radius: 18px;
+    padding: 10px;
+  }
+
+  body.arcade-page .arcade-board {
+    width: 100%;
+    height: min(58svh, 560px);
+  }
+
+  body.arcade-page .arcade-board.is-tetris {
+    width: min(78vw, 300px);
+    height: min(56svh, 600px);
+  }
+
+  .touch-pad button {
+    min-height: 48px;
+    border-radius: 16px;
+    font-size: 12px;
+  }
+
+  .touch-pad {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, 1fr);
+  }
+
+  .touch-pad [data-touch="up"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .touch-pad [data-touch="down"] {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .touch-pad [data-touch="left"] {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .touch-pad [data-touch="action"] {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .touch-pad [data-touch="right"] {
+    grid-column: 3;
+    grid-row: 2;
   }
 }

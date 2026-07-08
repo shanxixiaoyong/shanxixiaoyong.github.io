@@ -8,8 +8,12 @@ if (gameHub) {
   const status = document.querySelector("#game-status");
   const board = document.querySelector("#game-board");
   const controls = document.querySelector("#game-controls");
+  const meta = document.querySelector("#game-meta");
+  const touchPad = document.querySelector("#touch-pad");
   let cleanup = () => {};
   let activeId = "";
+  let touchActions = {};
+  let metaItems = [];
 
   const games = [
     { id: "tetris", name: "俄罗斯方块", kind: "Blocks", run: runTetris },
@@ -28,10 +32,72 @@ if (gameHub) {
 
   function setScore(value) {
     score.textContent = String(value);
+    const numeric = Number.parseInt(String(value), 10);
+    if (!activeId || !Number.isFinite(numeric)) return;
+    const key = `yl-arcade-best-${activeId}`;
+    const best = Number(localStorage.getItem(key) || 0);
+    if (numeric > best) localStorage.setItem(key, String(numeric));
+    renderMeta();
   }
 
   function setStatus(value) {
     status.textContent = value;
+  }
+
+  function renderMeta() {
+    if (!meta) return;
+    const best = activeId ? Number(localStorage.getItem(`yl-arcade-best-${activeId}`) || 0) : 0;
+    const items = best ? [`Best ${best}`, ...metaItems] : metaItems;
+    meta.innerHTML = items.map((item) => `<span>${escapeText(item)}</span>`).join("");
+  }
+
+  function setMeta(items = []) {
+    metaItems = items;
+    renderMeta();
+  }
+
+  function escapeText(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function setTouchActions(actions = {}) {
+    touchActions = actions;
+    touchPad?.querySelectorAll("button").forEach((item) => {
+      item.disabled = !touchActions[item.dataset.touch];
+      item.classList.toggle("is-disabled", item.disabled);
+    });
+  }
+
+  touchPad?.addEventListener("pointerdown", (event) => {
+    const item = event.target.closest("button[data-touch]");
+    if (!item || item.disabled) return;
+    event.preventDefault();
+    touchActions[item.dataset.touch]?.();
+  });
+
+  function enableSwipe(actions) {
+    let startX = 0;
+    let startY = 0;
+    const down = (event) => {
+      startX = event.clientX;
+      startY = event.clientY;
+    };
+    const up = (event) => {
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 28) return;
+      if (Math.abs(dx) > Math.abs(dy)) (dx > 0 ? actions.right : actions.left)?.();
+      else (dy > 0 ? actions.down : actions.up)?.();
+    };
+    board.addEventListener("pointerdown", down);
+    board.addEventListener("pointerup", up);
+    return () => {
+      board.removeEventListener("pointerdown", down);
+      board.removeEventListener("pointerup", up);
+    };
   }
 
   function button(label, action, primary = false) {
@@ -76,6 +142,8 @@ if (gameHub) {
     kind.textContent = game.kind;
     setScore(0);
     setStatus("");
+    setMeta([]);
+    setTouchActions({});
     board.innerHTML = "";
     controls.innerHTML = "";
     board.className = `arcade-board is-${game.id}`;
@@ -113,6 +181,7 @@ if (gameHub) {
     let piece;
     let points = 0;
     let over = false;
+    let paused = false;
 
     board.style.setProperty("--cols", width);
     board.style.setProperty("--rows", height);
@@ -175,27 +244,37 @@ if (gameHub) {
     }
 
     function tick() {
-      if (!over) move(0, 1);
+      if (!over && !paused) move(0, 1);
     }
 
     function restart() {
       grid = Array.from({ length: height }, () => Array(width).fill(0));
       points = 0;
       over = false;
+      paused = false;
       piece = makePiece();
-      setStatus("← → 移动，↑ 旋转，↓ 加速");
+      setStatus("Swipe / Tap");
+      setMeta(["Swipe", "Rotate", "Drop"]);
       render();
+    }
+
+    function pause() {
+      paused = !paused;
+      setStatus(paused ? "Paused" : "Swipe / Tap");
     }
 
     button("左", () => move(-1, 0));
     button("旋转", rotate, true);
     button("右", () => move(1, 0));
     button("下落", () => move(0, 1));
+    button("暂停", pause);
     button("重开", restart);
     restart();
-    const offKey = keyHandler({ ArrowLeft: () => move(-1, 0), ArrowRight: () => move(1, 0), ArrowDown: () => move(0, 1), ArrowUp: rotate });
+    setTouchActions({ left: () => move(-1, 0), right: () => move(1, 0), down: () => move(0, 1), up: rotate, action: rotate });
+    const offKey = keyHandler({ ArrowLeft: () => move(-1, 0), ArrowRight: () => move(1, 0), ArrowDown: () => move(0, 1), ArrowUp: rotate, " ": pause });
+    const offSwipe = enableSwipe({ left: () => move(-1, 0), right: () => move(1, 0), down: () => move(0, 1), up: rotate });
     const offTimer = interval(tick, 560);
-    return () => { offKey(); offTimer(); };
+    return () => { offKey(); offSwipe(); offTimer(); };
   }
 
   function run2048() {
@@ -253,7 +332,8 @@ if (gameHub) {
       points = 0;
       add();
       add();
-      setStatus("方向键或按钮合成");
+      setStatus("Swipe");
+      setMeta(["Swipe", "Merge", "Best saved"]);
       render();
     }
 
@@ -263,7 +343,10 @@ if (gameHub) {
     button("右", () => move("right"));
     button("重开", restart);
     restart();
-    return keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
+    setTouchActions({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
+    const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
+    const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
+    return () => { offKey(); offSwipe(); };
   }
 
   function runMines() {
@@ -334,6 +417,7 @@ if (gameHub) {
       }
       cells.forEach((c, i) => c.near = neighbors(i).filter((n) => cells[n].mine).length);
       setStatus("扫雷");
+      setMeta(["Tap open", "Action flag", `${mines} mines`]);
       render();
     }
 
@@ -341,6 +425,7 @@ if (gameHub) {
     button("旗子", () => { flagMode = true; setStatus("旗子"); });
     button("重开", restart);
     restart();
+    setTouchActions({ action: () => { flagMode = !flagMode; setStatus(flagMode ? "旗子" : "翻开"); } });
     return () => {};
   }
 
@@ -369,16 +454,29 @@ if (gameHub) {
       render();
     }
 
+    function select(dx, dy) {
+      const x = selected % 9;
+      const y = Math.floor(selected / 9);
+      selected = Math.max(0, Math.min(8, y + dy)) * 9 + Math.max(0, Math.min(8, x + dx));
+      render();
+    }
+
     for (let i = 1; i <= 9; i += 1) button(String(i), () => put(i), i === 1);
     button("清空", () => put(0));
     button("重开", () => { values = puzzle.split("").map(Number); selected = 0; setStatus("数独"); render(); });
     setStatus("数独");
+    setMeta(["Select", "Number pad", "Classic"]);
     render();
+    setTouchActions({ left: () => select(-1, 0), right: () => select(1, 0), up: () => select(0, -1), down: () => select(0, 1), action: () => put(0) });
     return keyHandler({
       ...Object.fromEntries(Array.from({ length: 9 }, (_, i) => [String(i + 1), () => put(i + 1)])),
       "0": () => put(0),
       Backspace: () => put(0),
-      Delete: () => put(0)
+      Delete: () => put(0),
+      ArrowLeft: () => select(-1, 0),
+      ArrowRight: () => select(1, 0),
+      ArrowUp: () => select(0, -1),
+      ArrowDown: () => select(0, 1)
     });
   }
 
@@ -389,6 +487,7 @@ if (gameHub) {
     let food;
     let points;
     let dead;
+    let paused;
     board.style.setProperty("--cols", size);
     board.style.setProperty("--rows", size);
 
@@ -403,7 +502,7 @@ if (gameHub) {
     }
 
     function tick() {
-      if (dead) return;
+      if (dead || paused) return;
       const head = snake[0];
       const x = head % size;
       const y = Math.floor(head / size);
@@ -434,20 +533,30 @@ if (gameHub) {
       dir = "right";
       points = 0;
       dead = false;
+      paused = false;
       placeFood();
-      setStatus("贪吃蛇");
+      setStatus("Swipe");
+      setMeta(["Swipe", "Food +10", "No walls"]);
       render();
+    }
+
+    function pause() {
+      paused = !paused;
+      setStatus(paused ? "Paused" : "Swipe");
     }
 
     button("左", () => turn("left"));
     button("上", () => turn("up"), true);
     button("下", () => turn("down"));
     button("右", () => turn("right"));
+    button("暂停", pause);
     button("重开", restart);
     restart();
-    const offKey = keyHandler({ ArrowLeft: () => turn("left"), ArrowRight: () => turn("right"), ArrowUp: () => turn("up"), ArrowDown: () => turn("down") });
+    setTouchActions({ left: () => turn("left"), right: () => turn("right"), up: () => turn("up"), down: () => turn("down"), action: pause });
+    const offKey = keyHandler({ ArrowLeft: () => turn("left"), ArrowRight: () => turn("right"), ArrowUp: () => turn("up"), ArrowDown: () => turn("down"), " ": pause });
+    const offSwipe = enableSwipe({ left: () => turn("left"), right: () => turn("right"), up: () => turn("up"), down: () => turn("down") });
     const offTimer = interval(tick, 180);
-    return () => { offKey(); offTimer(); };
+    return () => { offKey(); offSwipe(); offTimer(); };
   }
 
   function runBubble() {
@@ -456,6 +565,7 @@ if (gameHub) {
     let bubbles = [];
     let current = 0;
     let points = 0;
+    let aim = 4;
     board.style.setProperty("--cols", cols);
     board.style.setProperty("--rows", rows + 1);
 
@@ -468,7 +578,7 @@ if (gameHub) {
       return seen;
     }
 
-    function shoot(col) {
+    function shoot(col = aim) {
       for (let r = rows - 1; r >= 0; r -= 1) {
         const i = r * cols + col;
         if (!bubbles[i]) {
@@ -486,17 +596,23 @@ if (gameHub) {
       setStatus("Blocked");
     }
 
+    function moveAim(delta) {
+      aim = Math.max(0, Math.min(cols - 1, aim + delta));
+      render();
+    }
+
     function render() {
       board.innerHTML = "";
       bubbles.forEach((value) => board.insertAdjacentHTML("beforeend", `<span class="bubble-cell" style="${value ? `--cell:${colors[value]}` : ""}"></span>`));
       for (let c = 0; c < cols; c += 1) {
-        const b = cell("bubble-launch", c === 4 ? "●" : "");
+        const b = cell(`bubble-launch ${c === aim ? "is-aim" : ""}`, c === aim ? "●" : "");
         b.style.setProperty("--cell", colors[current]);
         b.addEventListener("click", () => shoot(c));
         board.append(b);
       }
       setScore(points);
-      setStatus("点击底部列发射");
+      setStatus(`Aim ${aim + 1}`);
+      setMeta(["Match 3", "Aim", "Shoot"]);
     }
 
     function restart() {
@@ -506,9 +622,13 @@ if (gameHub) {
       render();
     }
 
-    button("重开", restart, true);
+    button("左", () => moveAim(-1));
+    button("发射", () => shoot(), true);
+    button("右", () => moveAim(1));
+    button("重开", restart);
     restart();
-    return () => {};
+    setTouchActions({ left: () => moveAim(-1), right: () => moveAim(1), action: () => shoot() });
+    return keyHandler({ ArrowLeft: () => moveAim(-1), ArrowRight: () => moveAim(1), " ": () => shoot(), Enter: () => shoot() });
   }
 
   function runSuika() {
@@ -517,6 +637,7 @@ if (gameHub) {
     let grid = [];
     let next = 1;
     let points = 0;
+    let aim = 2;
     board.style.setProperty("--cols", cols);
     board.style.setProperty("--rows", rows);
 
@@ -556,24 +677,35 @@ if (gameHub) {
       render();
     }
 
+    function moveAim(delta) {
+      aim = Math.max(0, Math.min(cols - 1, aim + delta));
+      render();
+    }
+
     function render() {
       board.innerHTML = "";
-      grid.flat().forEach((value) => board.insertAdjacentHTML("beforeend", `<button class="fruit-cell" style="${value ? `--cell:${colors[value % colors.length]}` : ""}">${value ? "●" : ""}</button>`));
+      grid.flat().forEach((value, index) => board.insertAdjacentHTML("beforeend", `<button class="fruit-cell ${index % cols === aim ? "is-aim" : ""}" style="${value ? `--cell:${colors[value % colors.length]}` : ""}">${value ? "●" : ""}</button>`));
       board.querySelectorAll(".fruit-cell").forEach((item, i) => item.addEventListener("click", () => drop(i % cols)));
       setScore(points);
-      setStatus(`Next ${next}`);
+      setStatus(`Next ${next} · Col ${aim + 1}`);
+      setMeta(["Merge", "Drop", "Chain"]);
     }
 
     function restart() {
       grid = Array.from({ length: rows }, () => Array(cols).fill(0));
       points = 0;
       next = 1;
+      aim = 2;
       render();
     }
 
-    button("重开", restart, true);
+    button("左", () => moveAim(-1));
+    button("投放", () => drop(aim), true);
+    button("右", () => moveAim(1));
+    button("重开", restart);
     restart();
-    return keyHandler({ "1": () => drop(0), "2": () => drop(1), "3": () => drop(2), "4": () => drop(3), "5": () => drop(4), "6": () => drop(5) });
+    setTouchActions({ left: () => moveAim(-1), right: () => moveAim(1), action: () => drop(aim) });
+    return keyHandler({ ArrowLeft: () => moveAim(-1), ArrowRight: () => moveAim(1), " ": () => drop(aim), Enter: () => drop(aim), "1": () => drop(0), "2": () => drop(1), "3": () => drop(2), "4": () => drop(3), "5": () => drop(4), "6": () => drop(5) });
   }
 
   function runJump() {
@@ -581,12 +713,14 @@ if (gameHub) {
     let power = 0;
     let points = 0;
     let charging = false;
+    let chargeTimer = null;
     board.classList.add("jump-board");
 
     function render() {
       board.innerHTML = `<div class="jump-track"><span class="jump-player" style="left:${platform}px"></span><span class="jump-target" style="left:${300 + (points % 4) * 48}px"></span></div>`;
       setScore(points);
       setStatus(`Power ${power}`);
+      setMeta(["Hold", "Release", "Streak"]);
     }
 
     function charge() {
@@ -595,7 +729,15 @@ if (gameHub) {
       render();
     }
 
+    function startCharge() {
+      clearInterval(chargeTimer);
+      charge();
+      chargeTimer = setInterval(charge, 90);
+    }
+
     function jump() {
+      clearInterval(chargeTimer);
+      chargeTimer = null;
       const target = 300 + (points % 4) * 48;
       const landing = platform + power * 2.15;
       const hit = Math.abs(landing - target) < 42;
@@ -606,12 +748,20 @@ if (gameHub) {
       render();
     }
 
-    button("蓄力", charge, true);
+    button("蓄力", startCharge, true);
     button("跳", jump);
     button("重开", () => { platform = 110; power = 0; points = 0; render(); });
+    board.addEventListener("pointerdown", startCharge);
+    board.addEventListener("pointerup", jump);
+    setTouchActions({ action: () => (power > 70 ? jump() : charge()), up: charge, down: jump });
     render();
     const offKey = keyHandler({ " ": () => charging ? jump() : charge(), Enter: jump });
-    return offKey;
+    return () => {
+      clearInterval(chargeTimer);
+      board.removeEventListener("pointerdown", startCharge);
+      board.removeEventListener("pointerup", jump);
+      offKey();
+    };
   }
 
   function runTower() {
@@ -675,6 +825,7 @@ if (gameHub) {
       }
       setScore(`${coins} / ${lives}`);
       setStatus(`Wave ${wave}`);
+      setMeta(["Place towers", "Wave", "Lives"]);
     }
 
     function restart() {
@@ -689,6 +840,7 @@ if (gameHub) {
     button("出怪", spawn, true);
     button("重开", restart);
     restart();
+    setTouchActions({ action: spawn });
     const offTimer = interval(tick, 850);
     return offTimer;
   }
@@ -711,6 +863,7 @@ if (gameHub) {
     function draw() {
       hand = Array.from({ length: 4 }, () => deck[Math.floor(Math.random() * deck.length)]);
       block = 0;
+      setMeta(["Tap cards", "Block", "Enemy turn"]);
       render();
     }
 
@@ -747,6 +900,7 @@ if (gameHub) {
 
     button("结束回合", enemyTurn, true);
     button("重开", () => { hp = 30; enemy = 24; enemyAtk = 6; points = 0; draw(); });
+    setTouchActions({ action: enemyTurn });
     draw();
     return () => {};
   }
