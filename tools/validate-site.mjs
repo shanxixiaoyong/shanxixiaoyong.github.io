@@ -45,7 +45,6 @@ const required = [
   "game-menu",
   "game-board",
   "game-controls",
-  "touch-pad",
   "arcade-app",
   "arcade-playfield",
   "arcade-hud",
@@ -189,7 +188,9 @@ const forbiddenPageOnly = [
   "快速回到",
   "分区呈现",
   "在这里各自成区",
-  "可探索"
+  "可探索",
+  'id="touch-pad"',
+  "data-touch"
 ];
 
 const forbiddenKnowledge = [

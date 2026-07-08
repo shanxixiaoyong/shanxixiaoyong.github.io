@@ -1064,7 +1064,7 @@ body.arcade-page .skip-link {
 
 body.arcade-page .arcade-shell {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 140px;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
 }
@@ -1079,8 +1079,7 @@ body.arcade-page .arcade-menu {
 }
 
 body.arcade-page .arcade-menu button,
-body.arcade-page .arcade-controls button,
-body.arcade-page .touch-pad button {
+body.arcade-page .arcade-controls button {
   border-color: rgba(247, 243, 232, 0.18);
   background: rgba(247, 243, 232, 0.08);
   color: #f7f3e8;
@@ -1334,71 +1333,21 @@ body.arcade-page .arcade-controls button {
   padding: 10px 16px;
 }
 
-body.arcade-page .arcade-controls button.primary,
-body.arcade-page .touch-pad button.is-action {
+body.arcade-page .arcade-controls button.primary {
   border-color: rgba(117, 215, 189, 0.6);
   background: linear-gradient(135deg, #75d7bd, #4fa991);
   color: #101616;
 }
 
 body.arcade-page .arcade-controls button:active,
-body.arcade-page .touch-pad button:active,
 body.arcade-page .arcade-menu button:active {
   transform: translateY(1px) scale(0.985);
-}
-
-body.arcade-page .touch-pad button.is-disabled {
-  opacity: 0.32;
-  pointer-events: none;
 }
 
 body.arcade-page .bubble-launch.is-aim,
 body.arcade-page .fruit-cell.is-aim {
   outline: 3px solid rgba(238, 160, 78, 0.72);
   outline-offset: -3px;
-}
-
-.touch-pad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 8px;
-  align-self: end;
-}
-
-.touch-pad button {
-  min-width: 0;
-  min-height: 58px;
-  border-radius: 18px;
-  padding: 0;
-  font-weight: 840;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-.touch-pad [data-touch="up"] {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.touch-pad [data-touch="left"] {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.touch-pad [data-touch="action"] {
-  grid-column: 2;
-  grid-row: 2;
-}
-
-.touch-pad [data-touch="right"] {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.touch-pad [data-touch="down"] {
-  grid-column: 2;
-  grid-row: 3;
 }
 
 .world-footer {
@@ -1456,23 +1405,6 @@ body.arcade-page .fruit-cell.is-aim {
     scroll-snap-align: start;
   }
 
-  .touch-pad {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: 1fr;
-    position: sticky;
-    bottom: max(10px, env(safe-area-inset-bottom));
-    z-index: 18;
-    border: 1px solid rgba(247, 243, 232, 0.14);
-    border-radius: 22px;
-    background: rgba(16, 22, 22, 0.72);
-    padding: 8px;
-    backdrop-filter: blur(18px);
-  }
-
-  .touch-pad [data-touch] {
-    grid-column: auto;
-    grid-row: auto;
-  }
 }
 
 @media (max-width: 620px) {
@@ -1648,39 +1580,4 @@ body.arcade-page .fruit-cell.is-aim {
     height: min(56svh, 600px);
   }
 
-  .touch-pad button {
-    min-height: 48px;
-    border-radius: 16px;
-    font-size: 12px;
-  }
-
-  .touch-pad {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, 1fr);
-  }
-
-  .touch-pad [data-touch="up"] {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .touch-pad [data-touch="down"] {
-    grid-column: 3;
-    grid-row: 1;
-  }
-
-  .touch-pad [data-touch="left"] {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .touch-pad [data-touch="action"] {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  .touch-pad [data-touch="right"] {
-    grid-column: 3;
-    grid-row: 2;
-  }
 }

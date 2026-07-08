@@ -9,10 +9,8 @@ if (gameHub) {
   const board = document.querySelector("#game-board");
   const controls = document.querySelector("#game-controls");
   const meta = document.querySelector("#game-meta");
-  const touchPad = document.querySelector("#touch-pad");
   let cleanup = () => {};
   let activeId = "";
-  let touchActions = {};
   let metaItems = [];
 
   const games = [
@@ -63,21 +61,6 @@ if (gameHub) {
       .replace(/>/g, "&gt;");
   }
 
-  function setTouchActions(actions = {}) {
-    touchActions = actions;
-    touchPad?.querySelectorAll("button").forEach((item) => {
-      item.disabled = !touchActions[item.dataset.touch];
-      item.classList.toggle("is-disabled", item.disabled);
-    });
-  }
-
-  touchPad?.addEventListener("pointerdown", (event) => {
-    const item = event.target.closest("button[data-touch]");
-    if (!item || item.disabled) return;
-    event.preventDefault();
-    touchActions[item.dataset.touch]?.();
-  });
-
   function enableSwipe(actions) {
     let startX = 0;
     let startY = 0;
@@ -91,6 +74,24 @@ if (gameHub) {
       if (Math.max(Math.abs(dx), Math.abs(dy)) < 28) return;
       if (Math.abs(dx) > Math.abs(dy)) (dx > 0 ? actions.right : actions.left)?.();
       else (dy > 0 ? actions.down : actions.up)?.();
+    };
+    board.addEventListener("pointerdown", down);
+    board.addEventListener("pointerup", up);
+    return () => {
+      board.removeEventListener("pointerdown", down);
+      board.removeEventListener("pointerup", up);
+    };
+  }
+
+  function enableTap(action) {
+    let startX = 0;
+    let startY = 0;
+    const down = (event) => {
+      startX = event.clientX;
+      startY = event.clientY;
+    };
+    const up = (event) => {
+      if (Math.hypot(event.clientX - startX, event.clientY - startY) < 18) action(event);
     };
     board.addEventListener("pointerdown", down);
     board.addEventListener("pointerup", up);
@@ -143,7 +144,6 @@ if (gameHub) {
     setScore(0);
     setStatus("");
     setMeta([]);
-    setTouchActions({});
     board.innerHTML = "";
     controls.innerHTML = "";
     board.className = `arcade-board is-${game.id}`;
@@ -254,7 +254,7 @@ if (gameHub) {
       paused = false;
       piece = makePiece();
       setStatus("Swipe / Tap");
-      setMeta(["Swipe", "Rotate", "Drop"]);
+      setMeta(["Swipe move", "Tap rotate", "Down drop"]);
       render();
     }
 
@@ -263,18 +263,14 @@ if (gameHub) {
       setStatus(paused ? "Paused" : "Swipe / Tap");
     }
 
-    button("左", () => move(-1, 0));
-    button("旋转", rotate, true);
-    button("右", () => move(1, 0));
-    button("下落", () => move(0, 1));
-    button("暂停", pause);
+    button("暂停", pause, true);
     button("重开", restart);
     restart();
-    setTouchActions({ left: () => move(-1, 0), right: () => move(1, 0), down: () => move(0, 1), up: rotate, action: rotate });
     const offKey = keyHandler({ ArrowLeft: () => move(-1, 0), ArrowRight: () => move(1, 0), ArrowDown: () => move(0, 1), ArrowUp: rotate, " ": pause });
     const offSwipe = enableSwipe({ left: () => move(-1, 0), right: () => move(1, 0), down: () => move(0, 1), up: rotate });
+    const offTap = enableTap(rotate);
     const offTimer = interval(tick, 560);
-    return () => { offKey(); offSwipe(); offTimer(); };
+    return () => { offKey(); offSwipe(); offTap(); offTimer(); };
   }
 
   function run2048() {
@@ -337,13 +333,8 @@ if (gameHub) {
       render();
     }
 
-    button("左", () => move("left"));
-    button("上", () => move("up"), true);
-    button("下", () => move("down"));
-    button("右", () => move("right"));
-    button("重开", restart);
+    button("重开", restart, true);
     restart();
-    setTouchActions({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
     return () => { offKey(); offSwipe(); };
@@ -398,7 +389,27 @@ if (gameHub) {
       board.innerHTML = "";
       cells.forEach((item, i) => {
         const b = cell(`mine-cell ${item.open ? "is-open" : ""}`, item.open ? (item.mine ? "×" : item.near || "") : item.flag ? "⚑" : "");
-        b.addEventListener("click", () => click(i));
+        let longPress = false;
+        let timer = null;
+        b.addEventListener("pointerdown", () => {
+          longPress = false;
+          timer = setTimeout(() => {
+            longPress = true;
+            if (!cells[i].open) cells[i].flag = !cells[i].flag;
+            render();
+          }, 420);
+        });
+        b.addEventListener("pointerup", (event) => {
+          clearTimeout(timer);
+          if (longPress) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        });
+        b.addEventListener("contextmenu", (event) => event.preventDefault());
+        b.addEventListener("click", () => {
+          if (!longPress) click(i);
+        });
         board.append(b);
       });
       setScore(cells.filter((c) => c.flag).length);
@@ -425,7 +436,6 @@ if (gameHub) {
     button("旗子", () => { flagMode = true; setStatus("旗子"); });
     button("重开", restart);
     restart();
-    setTouchActions({ action: () => { flagMode = !flagMode; setStatus(flagMode ? "旗子" : "翻开"); } });
     return () => {};
   }
 
@@ -467,7 +477,6 @@ if (gameHub) {
     setStatus("数独");
     setMeta(["Select", "Number pad", "Classic"]);
     render();
-    setTouchActions({ left: () => select(-1, 0), right: () => select(1, 0), up: () => select(0, -1), down: () => select(0, 1), action: () => put(0) });
     return keyHandler({
       ...Object.fromEntries(Array.from({ length: 9 }, (_, i) => [String(i + 1), () => put(i + 1)])),
       "0": () => put(0),
@@ -545,14 +554,9 @@ if (gameHub) {
       setStatus(paused ? "Paused" : "Swipe");
     }
 
-    button("左", () => turn("left"));
-    button("上", () => turn("up"), true);
-    button("下", () => turn("down"));
-    button("右", () => turn("right"));
-    button("暂停", pause);
+    button("暂停", pause, true);
     button("重开", restart);
     restart();
-    setTouchActions({ left: () => turn("left"), right: () => turn("right"), up: () => turn("up"), down: () => turn("down"), action: pause });
     const offKey = keyHandler({ ArrowLeft: () => turn("left"), ArrowRight: () => turn("right"), ArrowUp: () => turn("up"), ArrowDown: () => turn("down"), " ": pause });
     const offSwipe = enableSwipe({ left: () => turn("left"), right: () => turn("right"), up: () => turn("up"), down: () => turn("down") });
     const offTimer = interval(tick, 180);
@@ -622,12 +626,8 @@ if (gameHub) {
       render();
     }
 
-    button("左", () => moveAim(-1));
-    button("发射", () => shoot(), true);
-    button("右", () => moveAim(1));
-    button("重开", restart);
+    button("重开", restart, true);
     restart();
-    setTouchActions({ left: () => moveAim(-1), right: () => moveAim(1), action: () => shoot() });
     return keyHandler({ ArrowLeft: () => moveAim(-1), ArrowRight: () => moveAim(1), " ": () => shoot(), Enter: () => shoot() });
   }
 
@@ -699,12 +699,8 @@ if (gameHub) {
       render();
     }
 
-    button("左", () => moveAim(-1));
-    button("投放", () => drop(aim), true);
-    button("右", () => moveAim(1));
-    button("重开", restart);
+    button("重开", restart, true);
     restart();
-    setTouchActions({ left: () => moveAim(-1), right: () => moveAim(1), action: () => drop(aim) });
     return keyHandler({ ArrowLeft: () => moveAim(-1), ArrowRight: () => moveAim(1), " ": () => drop(aim), Enter: () => drop(aim), "1": () => drop(0), "2": () => drop(1), "3": () => drop(2), "4": () => drop(3), "5": () => drop(4), "6": () => drop(5) });
   }
 
@@ -748,12 +744,9 @@ if (gameHub) {
       render();
     }
 
-    button("蓄力", startCharge, true);
-    button("跳", jump);
-    button("重开", () => { platform = 110; power = 0; points = 0; render(); });
+    button("重开", () => { platform = 110; power = 0; points = 0; render(); }, true);
     board.addEventListener("pointerdown", startCharge);
     board.addEventListener("pointerup", jump);
-    setTouchActions({ action: () => (power > 70 ? jump() : charge()), up: charge, down: jump });
     render();
     const offKey = keyHandler({ " ": () => charging ? jump() : charge(), Enter: jump });
     return () => {
@@ -840,7 +833,6 @@ if (gameHub) {
     button("出怪", spawn, true);
     button("重开", restart);
     restart();
-    setTouchActions({ action: spawn });
     const offTimer = interval(tick, 850);
     return offTimer;
   }
@@ -900,7 +892,6 @@ if (gameHub) {
 
     button("结束回合", enemyTurn, true);
     button("重开", () => { hp = 30; enemy = 24; enemyAtk = 6; points = 0; draw(); });
-    setTouchActions({ action: enemyTurn });
     draw();
     return () => {};
   }
