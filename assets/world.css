@@ -1350,6 +1350,616 @@ body.arcade-page .fruit-cell.is-aim {
   outline-offset: -3px;
 }
 
+body.arcade-page .arcade-menu button em {
+  color: rgba(247, 243, 232, 0.48);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+body[data-arcade-theme="block-forge"] {
+  background:
+    radial-gradient(circle at 14% 20%, rgba(255, 116, 70, 0.25), transparent 34%),
+    radial-gradient(circle at 82% 10%, rgba(112, 214, 178, 0.22), transparent 30%),
+    linear-gradient(135deg, #17171b 0%, #271b18 48%, #101918 100%);
+}
+
+body[data-arcade-theme="ember-2048"] {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 193, 94, 0.28), transparent 34%),
+    radial-gradient(circle at 82% 18%, rgba(255, 122, 144, 0.2), transparent 30%),
+    linear-gradient(135deg, #1d1511 0%, #342116 52%, #141817 100%);
+}
+
+body[data-arcade-theme="sonar-mines"] {
+  background:
+    radial-gradient(circle at 24% 22%, rgba(97, 216, 255, 0.22), transparent 32%),
+    radial-gradient(circle at 80% 12%, rgba(112, 214, 178, 0.2), transparent 30%),
+    linear-gradient(135deg, #0e1920 0%, #102b31 48%, #161b24 100%);
+}
+
+body[data-arcade-theme="ink-sudoku"] {
+  background:
+    radial-gradient(circle at 16% 24%, rgba(244, 241, 187, 0.16), transparent 34%),
+    radial-gradient(circle at 84% 12%, rgba(157, 140, 255, 0.16), transparent 30%),
+    linear-gradient(135deg, #1b1c1e 0%, #222324 48%, #151719 100%);
+}
+
+body[data-arcade-theme="neon-snake"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(112, 214, 178, 0.28), transparent 32%),
+    radial-gradient(circle at 84% 16%, rgba(208, 140, 255, 0.22), transparent 30%),
+    linear-gradient(135deg, #0a1118 0%, #11162c 48%, #081a16 100%);
+}
+
+body[data-arcade-theme="tide-bubble"] {
+  background:
+    radial-gradient(circle at 20% 16%, rgba(97, 216, 255, 0.28), transparent 34%),
+    radial-gradient(circle at 82% 16%, rgba(244, 241, 187, 0.18), transparent 28%),
+    linear-gradient(135deg, #0b1723 0%, #10324a 50%, #111725 100%);
+}
+
+body[data-arcade-theme="orchard-suika"] {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(112, 214, 178, 0.24), transparent 34%),
+    radial-gradient(circle at 78% 18%, rgba(255, 193, 94, 0.2), transparent 30%),
+    linear-gradient(135deg, #111b14 0%, #1f2b19 50%, #171716 100%);
+}
+
+body[data-arcade-theme="lunar-jump"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(157, 140, 255, 0.24), transparent 34%),
+    radial-gradient(circle at 84% 12%, rgba(97, 216, 255, 0.18), transparent 30%),
+    linear-gradient(135deg, #111426 0%, #171a31 48%, #101013 100%);
+}
+
+body[data-arcade-theme="canyon-tower"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 193, 94, 0.24), transparent 34%),
+    radial-gradient(circle at 84% 14%, rgba(112, 214, 178, 0.16), transparent 30%),
+    linear-gradient(135deg, #211912 0%, #302118 48%, #141915 100%);
+}
+
+body[data-arcade-theme="starship-cards"] {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(97, 216, 255, 0.24), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(255, 122, 144, 0.18), transparent 30%),
+    linear-gradient(135deg, #0d1020 0%, #171a2e 48%, #101418 100%);
+}
+
+body.arcade-page .board-tetris-forge {
+  width: min(100%, 360px);
+  height: min(64svh, 700px);
+  aspect-ratio: 1 / 2;
+  gap: 3px;
+  border: 10px solid rgba(255, 193, 94, 0.16);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 122, 76, 0.12), rgba(0, 0, 0, 0.2)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 28px),
+    #111417;
+  padding: 8px;
+  box-shadow: inset 0 -22px 44px rgba(255, 116, 70, 0.08), 0 22px 60px rgba(0, 0, 0, 0.35);
+}
+
+.block-cell {
+  border: 1px solid rgba(255, 239, 212, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.block-cell[style] {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 34%),
+    var(--cell);
+  box-shadow: 0 9px 18px rgba(0, 0, 0, 0.24), inset 0 -5px 10px rgba(0, 0, 0, 0.18);
+}
+
+.block-cell.is-active {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: -3px;
+}
+
+.block-cell.is-ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border-style: dashed;
+}
+
+.block-cell.is-surge {
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0 6px, transparent 6px 12px),
+    #d25a4b;
+}
+
+body.arcade-page .board-ember-2048 {
+  width: min(100%, 590px);
+  height: auto;
+  aspect-ratio: 1;
+  gap: clamp(8px, 1.5vw, 14px);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 193, 94, 0.2), transparent 44%),
+    linear-gradient(135deg, rgba(255, 122, 144, 0.18), rgba(255, 193, 94, 0.1)),
+    rgba(26, 18, 14, 0.86);
+  padding: clamp(12px, 2vw, 20px);
+}
+
+.board-ember-2048 .merge-cell {
+  position: relative;
+  border: 0;
+  border-radius: 20px 8px 20px 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.14)),
+    rgba(255, 255, 255, 0.08);
+  color: #fff7e8;
+  font-size: clamp(20px, 5vw, 42px);
+  text-shadow: 0 2px 16px rgba(255, 193, 94, 0.3);
+}
+
+.board-ember-2048 .merge-cell:not(.v0)::after {
+  content: attr(data-value);
+  position: absolute;
+  inset: auto 8px 6px auto;
+  color: rgba(255, 255, 255, 0.24);
+  font-size: 11px;
+}
+
+.board-ember-2048 .merge-cell.is-hot {
+  box-shadow: 0 0 26px rgba(255, 122, 90, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+body.arcade-page .board-sonar-mines {
+  width: min(100%, 590px);
+  height: auto;
+  aspect-ratio: 1;
+  gap: 6px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, rgba(97, 216, 255, 0.16) 0 2px, transparent 2px 46px),
+    radial-gradient(circle at 50% 50%, rgba(97, 216, 255, 0.14), rgba(3, 14, 20, 0.9) 68%);
+  padding: clamp(12px, 2vw, 24px);
+}
+
+.board-sonar-mines .mine-cell {
+  border-radius: 50%;
+  background: rgba(97, 216, 255, 0.08);
+  color: #bff4ff;
+  font-size: clamp(14px, 3vw, 24px);
+}
+
+.board-sonar-mines .mine-cell.is-open {
+  background: radial-gradient(circle, rgba(97, 216, 255, 0.34), rgba(97, 216, 255, 0.1));
+}
+
+.board-sonar-mines .mine-cell.is-flagged {
+  background: rgba(255, 193, 94, 0.28);
+  color: #ffe3a8;
+}
+
+.board-sonar-mines .mine-cell.is-pulse {
+  box-shadow: 0 0 0 8px rgba(97, 216, 255, 0.08), 0 0 28px rgba(97, 216, 255, 0.34);
+}
+
+.board-sonar-mines .mine-cell.near-1 { color: #70d6b2; }
+.board-sonar-mines .mine-cell.near-2 { color: #61d8ff; }
+.board-sonar-mines .mine-cell.near-3 { color: #ffc15e; }
+.board-sonar-mines .mine-cell.near-4,
+.board-sonar-mines .mine-cell.near-5,
+.board-sonar-mines .mine-cell.near-6,
+.board-sonar-mines .mine-cell.near-7,
+.board-sonar-mines .mine-cell.near-8 { color: #ff7a90; }
+
+body.arcade-page .board-ink-sudoku {
+  width: min(100%, 620px);
+  height: auto;
+  aspect-ratio: 1;
+  gap: 0;
+  border: 12px solid rgba(244, 241, 187, 0.18);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, transparent calc(33.333% - 2px), rgba(255, 255, 255, 0.38) calc(33.333% - 2px) calc(33.333% + 2px), transparent calc(33.333% + 2px) calc(66.666% - 2px), rgba(255, 255, 255, 0.38) calc(66.666% - 2px) calc(66.666% + 2px), transparent calc(66.666% + 2px)),
+    linear-gradient(180deg, transparent calc(33.333% - 2px), rgba(255, 255, 255, 0.38) calc(33.333% - 2px) calc(33.333% + 2px), transparent calc(33.333% + 2px) calc(66.666% - 2px), rgba(255, 255, 255, 0.38) calc(66.666% - 2px) calc(66.666% + 2px), transparent calc(66.666% + 2px)),
+    #f4f1df;
+  padding: 8px;
+}
+
+.board-ink-sudoku .sudoku-cell {
+  border-radius: 0;
+  border-color: rgba(25, 28, 30, 0.18);
+  background: rgba(255, 255, 255, 0.58);
+  color: #1b1c1e;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 3.8vw, 30px);
+}
+
+.board-ink-sudoku .sudoku-cell.is-fixed {
+  background: rgba(25, 28, 30, 0.12);
+  color: #111;
+  font-weight: 900;
+}
+
+.board-ink-sudoku .sudoku-cell.is-related {
+  background: rgba(157, 140, 255, 0.16);
+}
+
+.board-ink-sudoku .sudoku-cell.is-same {
+  color: #5b4bd1;
+}
+
+.board-ink-sudoku .sudoku-cell.is-selected {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid #1b1c1e;
+}
+
+.board-ink-sudoku .sudoku-cell.is-conflict {
+  background: rgba(255, 122, 144, 0.32);
+  color: #8c2035;
+}
+
+body.arcade-page .board-neon-snake {
+  width: min(100%, 600px);
+  height: auto;
+  aspect-ratio: 1;
+  gap: 3px;
+  border: 10px solid rgba(112, 214, 178, 0.16);
+  border-radius: 26px;
+  background:
+    linear-gradient(90deg, rgba(112, 214, 178, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(157, 140, 255, 0.05) 1px, transparent 1px),
+    #071019;
+  background-size: 32px 32px;
+  padding: 10px;
+}
+
+.board-neon-snake .snake-cell {
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.board-neon-snake .snake-cell.is-portal {
+  background: rgba(157, 140, 255, 0.09);
+}
+
+.board-neon-snake .snake-cell.is-snake {
+  background: #70d6b2;
+  box-shadow: 0 0 16px rgba(112, 214, 178, 0.4);
+}
+
+.board-neon-snake .snake-cell.is-head {
+  border-radius: 50% 50% 12px 12px;
+  background: #f4f1bb;
+}
+
+.board-neon-snake .snake-cell.is-food {
+  border-radius: 50%;
+  background: #ff7a90;
+  box-shadow: 0 0 20px rgba(255, 122, 144, 0.42);
+}
+
+.board-neon-snake .snake-cell.is-pulse-food {
+  background: #d08cff;
+  box-shadow: 0 0 30px rgba(208, 140, 255, 0.55);
+}
+
+body.arcade-page .board-tide-bubble {
+  width: min(100%, 620px);
+  height: auto;
+  aspect-ratio: 9 / 11;
+  gap: clamp(5px, 1vw, 8px);
+  border-radius: 34px 34px 22px 22px;
+  background:
+    linear-gradient(180deg, rgba(97, 216, 255, 0.16), transparent 38%),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 28px),
+    rgba(7, 21, 35, 0.9);
+  padding: clamp(12px, 2vw, 22px);
+}
+
+.board-tide-bubble .bubble-cell,
+.board-tide-bubble .bubble-launch {
+  border: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.9), transparent 0 12%, transparent 13%),
+    radial-gradient(circle at 50% 60%, var(--cell, transparent), rgba(255, 255, 255, 0.05));
+}
+
+.board-tide-bubble .bubble-cell:not(.is-filled) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.board-tide-bubble .bubble-launch {
+  box-shadow: 0 0 22px color-mix(in srgb, var(--cell, #61d8ff) 50%, transparent);
+}
+
+body.arcade-page .board-orchard-suika {
+  width: min(100%, 540px);
+  height: auto;
+  aspect-ratio: 6 / 9;
+  gap: 6px;
+  border: 10px solid rgba(112, 214, 178, 0.16);
+  border-radius: 30px 30px 18px 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 122, 144, 0.16) 0 12%, transparent 12%),
+    linear-gradient(180deg, rgba(112, 214, 178, 0.12), rgba(0, 0, 0, 0.1)),
+    rgba(10, 24, 13, 0.92);
+  padding: 12px;
+}
+
+.board-orchard-suika .fruit-cell {
+  border: 0;
+  border-radius: 42% 58% 50% 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: clamp(20px, 5vw, 42px);
+}
+
+.board-orchard-suika .fruit-cell[style] {
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.58), transparent 0 17%, transparent 18%),
+    var(--cell);
+}
+
+.board-orchard-suika .fruit-cell.is-danger {
+  box-shadow: inset 0 2px 0 rgba(255, 122, 144, 0.42);
+}
+
+.board-orchard-suika .fruit-cell.is-aim {
+  outline-color: rgba(244, 241, 187, 0.9);
+}
+
+body.arcade-page .board-lunar-jump {
+  display: block;
+  width: min(100%, 680px);
+  height: min(50svh, 430px);
+}
+
+.jump-scene {
+  position: relative;
+  height: 100%;
+  min-height: 280px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 74% 22%, rgba(244, 241, 187, 0.82) 0 22px, transparent 23px),
+    linear-gradient(180deg, #11172e 0%, #202245 62%, #3a3948 100%);
+  overflow: hidden;
+}
+
+.jump-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.46) 0 1px, transparent 2px);
+  background-position: 18px 28px, 92px 64px;
+  background-size: 96px 84px, 132px 108px;
+}
+
+.board-lunar-jump .jump-player,
+.board-lunar-jump .jump-target,
+.board-lunar-jump .jump-landing {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.board-lunar-jump .jump-player {
+  bottom: 88px;
+  width: 34px;
+  height: 46px;
+  border-radius: 18px 18px 10px 10px;
+  background: linear-gradient(180deg, #f4f1bb, #70d6b2);
+}
+
+.board-lunar-jump .jump-target {
+  bottom: 72px;
+  width: 92px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9d8cff;
+  box-shadow: 0 0 28px rgba(157, 140, 255, 0.42);
+}
+
+.board-lunar-jump .jump-landing {
+  bottom: 118px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(244, 241, 187, 0.78);
+  border-radius: 50%;
+}
+
+.board-lunar-jump .jump-power {
+  position: absolute;
+  left: 20px;
+  bottom: 24px;
+  height: 8px;
+  max-width: calc(100% - 40px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #70d6b2, #ffc15e, #ff7a90);
+}
+
+body.arcade-page .board-canyon-tower {
+  width: min(100%, 660px);
+  height: auto;
+  aspect-ratio: 10 / 7;
+  gap: 4px;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 193, 94, 0.1), rgba(112, 214, 178, 0.08)),
+    #20160f;
+  padding: 10px;
+}
+
+.board-canyon-tower .tower-cell {
+  border: 1px solid rgba(255, 239, 212, 0.12);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent),
+    #2a2118;
+  color: #fff4df;
+}
+
+.board-canyon-tower .tower-cell.is-path {
+  background:
+    linear-gradient(135deg, rgba(255, 193, 94, 0.22), rgba(255, 122, 90, 0.12)),
+    #5a3b22;
+}
+
+.board-canyon-tower .tower-cell.is-cannon {
+  background: radial-gradient(circle, #ffc15e 0 28%, #5a3b22 29%);
+  color: #1f1308;
+}
+
+.board-canyon-tower .tower-cell.is-frost {
+  background: radial-gradient(circle, #61d8ff 0 28%, #173142 29%);
+  color: #08141a;
+}
+
+.board-canyon-tower .tower-cell.is-enemy {
+  background:
+    linear-gradient(180deg, #ff7a90 0 30%, #2a2118 31%);
+  color: #fff;
+}
+
+body.arcade-page .board-starship-cards {
+  display: block;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  width: min(100%, 740px);
+  height: auto;
+  min-height: min(56svh, 560px);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(97, 216, 255, 0.2), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+    rgba(9, 12, 24, 0.92);
+  padding: clamp(12px, 2vw, 22px);
+}
+
+.board-starship-cards .card-battle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.board-starship-cards .card-battle div {
+  border: 1px solid rgba(97, 216, 255, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(97, 216, 255, 0.12), rgba(255, 255, 255, 0.04));
+}
+
+.board-starship-cards .card-battle span,
+.board-starship-cards .card-battle small,
+.board-starship-cards .rogue-card small,
+.board-starship-cards .rogue-card span {
+  color: rgba(247, 243, 232, 0.68);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.board-starship-cards .card-battle strong {
+  color: #fffaf0;
+  font-size: clamp(26px, 4vw, 38px);
+}
+
+.board-starship-cards .card-hand {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.board-starship-cards .rogue-card {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  min-height: 152px;
+  border-radius: 18px;
+  border-color: rgba(247, 243, 232, 0.18);
+  padding: 14px;
+  text-align: left;
+}
+
+.board-starship-cards .rogue-card span {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(97, 216, 255, 0.16);
+}
+
+.board-starship-cards .rogue-card strong {
+  align-self: end;
+  color: #fffaf0;
+  font-size: 18px;
+}
+
+.board-starship-cards .rogue-card.is-attack {
+  background: linear-gradient(160deg, rgba(255, 122, 144, 0.26), rgba(255, 255, 255, 0.05));
+}
+
+.board-starship-cards .rogue-card.is-guard {
+  background: linear-gradient(160deg, rgba(97, 216, 255, 0.24), rgba(255, 255, 255, 0.05));
+}
+
+.board-starship-cards .rogue-card.is-tech {
+  background: linear-gradient(160deg, rgba(112, 214, 178, 0.24), rgba(255, 255, 255, 0.05));
+}
+
+@media (max-width: 620px) {
+  body.arcade-page .board-tetris-forge {
+    width: min(82vw, 330px);
+    height: min(58svh, 650px);
+  }
+
+  body.arcade-page .board-ember-2048,
+  body.arcade-page .board-sonar-mines,
+  body.arcade-page .board-ink-sudoku,
+  body.arcade-page .board-neon-snake {
+    width: 100%;
+  }
+
+  body.arcade-page .board-tide-bubble {
+    width: min(100%, 520px);
+    aspect-ratio: 9 / 11;
+  }
+
+  body.arcade-page .board-orchard-suika {
+    width: min(100%, 440px);
+    aspect-ratio: 6 / 9;
+  }
+
+  body.arcade-page .board-lunar-jump {
+    height: min(46svh, 390px);
+  }
+
+  .jump-scene {
+    min-height: 250px;
+  }
+
+  body.arcade-page .board-canyon-tower {
+    width: 100%;
+    aspect-ratio: 10 / 8;
+  }
+
+  .board-starship-cards .card-battle {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .board-starship-cards .energy-panel {
+    grid-column: 1 / -1;
+  }
+
+  .board-starship-cards .card-hand {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .world-footer {
   display: flex;
   justify-content: space-between;
@@ -1393,16 +2003,10 @@ body.arcade-page .fruit-cell.is-aim {
   }
 
   body.arcade-page .arcade-menu {
-    grid-template-columns: repeat(5, minmax(126px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
     max-height: none;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0 0 4px;
-    scroll-snap-type: x mandatory;
-  }
-
-  body.arcade-page .arcade-menu button {
-    scroll-snap-align: start;
+    overflow: visible;
+    padding: 0;
   }
 
 }
@@ -1554,15 +2158,16 @@ body.arcade-page .fruit-cell.is-aim {
   }
 
   body.arcade-page .arcade-menu {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
   }
 
   body.arcade-page .arcade-menu button {
-    flex: 0 0 126px;
+    flex: none;
   }
 
   .arcade-playfield {
@@ -1580,4 +2185,191 @@ body.arcade-page .fruit-cell.is-aim {
     height: min(56svh, 600px);
   }
 
+}
+
+@media (max-width: 620px) {
+  body.arcade-page .arcade-app {
+    width: min(100% - 16px, 1420px);
+    padding-top: 8px;
+  }
+
+  body.arcade-page .arcade-appbar {
+    top: 6px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  body.arcade-page .arcade-appbar .brand-mark {
+    width: 52px;
+    height: 52px;
+    font-size: 18px;
+  }
+
+  body.arcade-page .arcade-appbar h1 {
+    font-size: 30px;
+  }
+
+  body.arcade-page .arcade-jump a {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  body.arcade-page .arcade-hero {
+    padding: 16px 2px 8px;
+  }
+
+  body.arcade-page .arcade-copy h2 {
+    margin-bottom: 6px;
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  body.arcade-page .arcade-copy p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  body.arcade-page .arcade-mini-dashboard {
+    display: none;
+  }
+
+  body.arcade-page .arcade-zone > div:first-child {
+    margin-bottom: 8px;
+  }
+
+  body.arcade-page .arcade-zone h2 {
+    font-size: 26px;
+  }
+
+  body.arcade-page .arcade-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding: 0;
+    scroll-snap-type: none;
+  }
+
+  body.arcade-page .arcade-menu button {
+    flex: none;
+    min-height: 86px;
+    border-radius: 16px;
+    padding: 10px;
+    scroll-snap-align: none;
+  }
+
+  body.arcade-page .arcade-menu button strong {
+    font-size: 15px;
+    line-height: 1.22;
+  }
+
+  body.arcade-page .arcade-menu button em {
+    display: none;
+  }
+
+  body.arcade-page .arcade-titlebar h3 {
+    font-size: 24px;
+    line-height: 1.12;
+  }
+
+  body.arcade-page .arcade-titlebar strong {
+    min-width: 72px;
+    padding: 7px 8px;
+    font-size: 16px;
+  }
+
+  body.arcade-page .arcade-status {
+    margin-bottom: 8px;
+  }
+
+  body.arcade-page .arcade-board.board-ember-2048,
+  body.arcade-page .arcade-board.board-sonar-mines,
+  body.arcade-page .arcade-board.board-ink-sudoku,
+  body.arcade-page .arcade-board.board-neon-snake,
+  body.arcade-page .arcade-board.board-tide-bubble,
+  body.arcade-page .arcade-board.board-orchard-suika,
+  body.arcade-page .arcade-board.board-canyon-tower {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  body.arcade-page .arcade-board.board-tetris-forge {
+    width: min(82vw, 300px);
+    height: min(56svh, 600px);
+  }
+
+  body.arcade-page .arcade-board.board-tide-bubble {
+    aspect-ratio: 9 / 11;
+  }
+
+  body.arcade-page .arcade-board.board-orchard-suika {
+    aspect-ratio: 6 / 9;
+  }
+
+  body.arcade-page .arcade-board.board-canyon-tower {
+    aspect-ratio: 10 / 7;
+  }
+
+  body.arcade-page .arcade-board.board-lunar-jump {
+    width: 100%;
+    max-width: 100%;
+    height: min(46svh, 390px);
+  }
+
+  body.arcade-page .arcade-board.board-starship-cards {
+    display: block;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    padding: 10px;
+  }
+
+  body.arcade-page .board-starship-cards .card-battle {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  body.arcade-page .board-starship-cards .card-battle div {
+    min-height: 0;
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  body.arcade-page .board-starship-cards .card-battle span,
+  body.arcade-page .board-starship-cards .card-battle small {
+    font-size: 10px;
+  }
+
+  body.arcade-page .board-starship-cards .card-battle strong {
+    font-size: 24px;
+    line-height: 1.05;
+  }
+
+  body.arcade-page .board-starship-cards .energy-panel {
+    grid-column: auto;
+  }
+
+  body.arcade-page .board-starship-cards .card-hand {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.arcade-page .board-starship-cards .rogue-card {
+    min-height: 106px;
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  body.arcade-page .board-starship-cards .rogue-card strong {
+    font-size: 15px;
+  }
+
+  body.arcade-page .board-starship-cards .rogue-card small {
+    font-size: 10px;
+  }
 }

@@ -26,6 +26,8 @@ const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "ga
   .join("\n");
 const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
+const gamesScript = readFileSync("assets/games.js", "utf8");
+const worldCss = readFileSync("assets/world.css", "utf8");
 
 const required = [
   "刘勇",
@@ -231,6 +233,19 @@ const requiredAssets = [
   "assets/papers/ensemble-force.png"
 ];
 
+const distinctGameChecks = [
+  { theme: "block-forge", board: "board-tetris-forge", mechanic: "tetrisGhostCells", css: ".board-tetris-forge" },
+  { theme: "ember-2048", board: "board-ember-2048", mechanic: "mergeStreak", css: ".board-ember-2048" },
+  { theme: "sonar-mines", board: "board-sonar-mines", mechanic: "firstSafeOpen", css: ".board-sonar-mines" },
+  { theme: "ink-sudoku", board: "board-ink-sudoku", mechanic: "conflictMarks", css: ".board-ink-sudoku" },
+  { theme: "neon-snake", board: "board-neon-snake", mechanic: "portalWrap", css: ".board-neon-snake" },
+  { theme: "tide-bubble", board: "board-tide-bubble", mechanic: "tideDrops", css: ".board-tide-bubble" },
+  { theme: "orchard-suika", board: "board-orchard-suika", mechanic: "chainCombo", css: ".board-orchard-suika" },
+  { theme: "lunar-jump", board: "board-lunar-jump", mechanic: "landingArc", css: ".board-lunar-jump" },
+  { theme: "canyon-tower", board: "board-canyon-tower", mechanic: "towerTypes", css: ".board-canyon-tower" },
+  { theme: "starship-cards", board: "board-starship-cards", mechanic: "energyCards", css: ".board-starship-cards" }
+];
+
 const requiredLinks = [
   "https://orcid.org/0000-0002-7584-2953",
   "https://github.com/shanxixiaoyong",
@@ -295,6 +310,17 @@ for (const asset of requiredAssets) {
   }
   if (!existsSync(asset)) {
     failures.push(`Missing required asset file: ${asset}`);
+  }
+}
+
+for (const item of distinctGameChecks) {
+  for (const token of [item.theme, item.board, item.mechanic]) {
+    if (!gamesScript.includes(token)) {
+      failures.push(`Game runtime missing distinct game token: ${token}`);
+    }
+  }
+  if (!worldCss.includes(item.css)) {
+    failures.push(`Game stylesheet missing distinct board selector: ${item.css}`);
   }
 }
 
