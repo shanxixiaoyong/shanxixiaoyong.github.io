@@ -1,10 +1,17 @@
-# 刘勇 / Yong Liu Academic Homepage
+# 刘勇 / Yong Liu Personal Space
 
-This repository serves the public academic homepage for Liu Yong / Yong Liu:
+This repository serves the public personal space for Liu Yong / Yong Liu:
 
 https://shanxixiaoyong.github.io/
 
-The site is a framework-free GitHub Pages page focused on:
+The root page is a framework-free GitHub Pages portal with four public entries:
+
+- personal academic homepage: `home.html`
+- personal knowledge base: `knowledge.html`
+- small toolbox: `tools.html`
+- mini games: `games.html`
+
+The academic homepage is focused on:
 
 - self-supervised fundus image analysis and medical vision;
 - piezoelectric touch and force sensing;
@@ -24,7 +31,7 @@ Public profile links:
 
 ## Maintenance
 
-The page is implemented as a static `index.html`. Publication and patent records are stored as structured JavaScript arrays in that file, so updates only require editing the relevant data entries and pushing to `master`.
+The site is implemented as static HTML, CSS, and JavaScript. Publication and patent records are stored as structured JavaScript arrays in `home.html`, so academic updates only require editing the relevant data entries and pushing to `master`.
 
 Run the local smoke check before publishing:
 

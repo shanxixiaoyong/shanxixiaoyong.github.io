@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小工具箱 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="刘勇 / Yong Liu 的个人小工具箱，包含文本统计、引用格式、日期倒计时和专注计时。">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
+  <link rel="stylesheet" href="assets/world.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="world-header">
+    <nav class="world-nav" aria-label="Main navigation">
+      <a class="world-brand" href="index.html" aria-label="个人天地首页">
+        <span class="brand-mark">YL</span>
+        <span class="brand-copy">
+          <span>Yong Liu</span>
+          <span>小工具箱</span>
+        </span>
+      </a>
+      <div class="world-links">
+        <a href="index.html">入口</a>
+        <a href="home.html">主页</a>
+        <a href="knowledge.html">知识库</a>
+        <a class="is-active" href="tools.html">工具箱</a>
+        <a href="games.html">小游戏</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="world-hero">
+      <div>
+        <p class="kicker">Small Toolbox</p>
+        <h1>个人小工具箱</h1>
+        <p class="lead">一些不需要后端、不需要登录的轻量工具。页面加载后即可使用，所有计算都在本地浏览器完成。</p>
+      </div>
+      <div class="content-card">
+        <span>Local First</span>
+        <h2>短平快的日常处理</h2>
+        <p>文本统计、引用草稿、日期倒计时和专注计时放在同一个页面，适合写作和整理资料时顺手使用。</p>
+        <div class="image-strip" aria-hidden="true">
+          <img src="assets/papers/rectified-ann.jpg" alt="">
+          <img src="assets/papers/fundus-disorders.png" alt="">
+          <img src="assets/papers/force-touch.png" alt="">
+        </div>
+      </div>
+    </section>
+
+    <section class="world-section">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Tools</p>
+          <h2>可用工具</h2>
+        </div>
+        <p class="sublead">这些工具不追求复杂，重点是打开即用。后续可以继续添加 DOI 查询、单位换算、实验日志生成等模块。</p>
+      </div>
+
+      <div class="tool-grid">
+        <article class="tool-card">
+          <h3>文本统计</h3>
+          <textarea id="text-input" placeholder="粘贴摘要、笔记或待统计文本"></textarea>
+          <div id="text-stats" class="stat-row" aria-live="polite"></div>
+        </article>
+
+        <article class="tool-card">
+          <h3>引用格式草稿</h3>
+          <form id="citation-form" class="form-grid">
+            <label>Authors<input name="authors" value="Liu Y., Gao S."></label>
+            <label>Year<input name="year" value="2026"></label>
+            <label>Title<input name="title" value="Research note title"></label>
+            <label>Venue<input name="venue" value="Journal or Conference"></label>
+            <label>DOI<input name="doi" placeholder="10.xxxx/xxxxx"></label>
+            <button class="primary" type="submit">生成</button>
+          </form>
+          <div id="citation-output" class="output-box" aria-live="polite"></div>
+        </article>
+
+        <article class="tool-card">
+          <h3>日期倒计时</h3>
+          <div class="form-grid">
+            <label>事项<input id="deadline-title" value="论文截止"></label>
+            <label>日期<input id="deadline-date" type="date"></label>
+          </div>
+          <div id="deadline-output" class="output-box" aria-live="polite"></div>
+        </article>
+
+        <article class="tool-card">
+          <h3>专注计时</h3>
+          <label>分钟<input id="focus-minutes" type="number" min="1" max="180" value="25"></label>
+          <div id="focus-output" class="output-box" aria-live="polite"></div>
+          <div class="hero-actions">
+            <button id="focus-start" class="primary" type="button">开始</button>
+            <button id="focus-reset" type="button">重置</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="world-footer">
+    <span>© <span id="year">2026</span> Yong Liu</span>
+    <span><a href="index.html">个人天地</a> · <a href="games.html">小游戏</a></span>
+  </footer>
+
+  <script src="assets/world.js"></script>
+</body>
+</html>

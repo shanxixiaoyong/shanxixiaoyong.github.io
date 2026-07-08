@@ -1,11 +1,43 @@
 import { readFileSync, existsSync } from "node:fs";
 
-const html = readFileSync("index.html", "utf8");
+const siteFiles = [
+  "index.html",
+  "home.html",
+  "knowledge.html",
+  "tools.html",
+  "games.html",
+  "assets/world.css",
+  "assets/world.js"
+];
+
+for (const file of siteFiles) {
+  if (!existsSync(file)) {
+    console.error(`Missing site file: ${file}`);
+    process.exit(1);
+  }
+}
+
+const html = siteFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 const readme = readFileSync("README.md", "utf8");
 
 const required = [
   "刘勇",
   "Yong Liu",
+  "个人天地",
+  'href="home.html"',
+  'href="knowledge.html"',
+  'href="tools.html"',
+  'href="games.html"',
+  "个人知识库",
+  "个人小工具箱",
+  "小游戏",
+  "knowledge-search",
+  "text-input",
+  "citation-form",
+  "memory-board",
+  "reaction-pad",
+  "assets/world.css",
+  "assets/world.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
   "SSVT: Self-Supervised Vision Transformer",

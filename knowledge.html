@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>个人知识库 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="刘勇 / Yong Liu 的个人知识库，整理研究笔记、工程方法、论文写作和阅读地图。">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
+  <link rel="stylesheet" href="assets/world.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="world-header">
+    <nav class="world-nav" aria-label="Main navigation">
+      <a class="world-brand" href="index.html" aria-label="个人天地首页">
+        <span class="brand-mark">YL</span>
+        <span class="brand-copy">
+          <span>Yong Liu</span>
+          <span>个人知识库</span>
+        </span>
+      </a>
+      <div class="world-links">
+        <a href="index.html">入口</a>
+        <a href="home.html">主页</a>
+        <a class="is-active" href="knowledge.html">知识库</a>
+        <a href="tools.html">工具箱</a>
+        <a href="games.html">小游戏</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="world-hero">
+      <div>
+        <p class="kicker">Knowledge Base</p>
+        <h1>个人知识库</h1>
+        <p class="lead">
+          面向长期积累的笔记入口。这里不替代正式论文页面，而是把研究、工程、写作和阅读过程中的可复用材料整理成可检索条目。
+        </p>
+      </div>
+      <div class="content-card">
+        <span>Index</span>
+        <h2>从问题出发组织材料</h2>
+        <p>每个条目保留一个清楚主题：要解决什么问题、沉淀什么方法、后续能被哪个任务复用。</p>
+        <div class="image-strip" aria-hidden="true">
+          <img src="assets/papers/ssvt.png" alt="">
+          <img src="assets/papers/fundus-disorders.png" alt="">
+          <img src="assets/papers/force-touch.png" alt="">
+        </div>
+      </div>
+    </section>
+
+    <section class="world-section">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Notes</p>
+          <h2>条目索引</h2>
+        </div>
+        <p class="sublead">按主题筛选，也可以直接搜索关键词。后续新增笔记时，只需要按当前卡片结构继续追加。</p>
+      </div>
+
+      <div class="search-row" aria-label="知识库筛选">
+        <input id="knowledge-search" type="search" placeholder="搜索：自监督、眼底、传感、写作">
+        <button class="knowledge-filter primary" type="button" data-group="all">全部</button>
+        <button class="knowledge-filter" type="button" data-group="research">研究</button>
+        <button class="knowledge-filter" type="button" data-group="method">方法</button>
+        <button class="knowledge-filter" type="button" data-group="writing">写作</button>
+      </div>
+
+      <div class="knowledge-layout">
+        <article class="content-card knowledge-card" data-group="research">
+          <div class="knowledge-meta"><span>研究</span><span>Medical Vision</span></div>
+          <h3>眼底图像智能诊断</h3>
+          <p>围绕有限标注、病灶多样性和跨数据集泛化，整理自监督预训练、多疾病分类和模型评估相关笔记。</p>
+          <div class="tag-row"><span class="tag">fundus</span><span class="tag">self-supervised</span><span class="tag">diagnosis</span></div>
+        </article>
+
+        <article class="content-card knowledge-card" data-group="research">
+          <div class="knowledge-meta"><span>研究</span><span>Tactile Sensing</span></div>
+          <h3>压电触觉与力感知</h3>
+          <p>梳理触摸力度识别、时序信号建模、传感材料与人机交互场景之间的关系。</p>
+          <div class="tag-row"><span class="tag">piezoelectric</span><span class="tag">force</span><span class="tag">sensing</span></div>
+        </article>
+
+        <article class="content-card knowledge-card" data-group="method">
+          <div class="knowledge-meta"><span>方法</span><span>Modeling</span></div>
+          <h3>小样本与表征学习</h3>
+          <p>记录数据增强、预训练任务、特征可视化和错误样本分析的常用方法，方便后续复现实验。</p>
+          <div class="tag-row"><span class="tag">representation</span><span class="tag">augmentation</span><span class="tag">analysis</span></div>
+        </article>
+
+        <article class="content-card knowledge-card" data-group="method">
+          <div class="knowledge-meta"><span>方法</span><span>Engineering</span></div>
+          <h3>实验记录模板</h3>
+          <p>把数据版本、参数配置、评价指标和结论摘要放在同一条记录里，减少回看实验时的信息损失。</p>
+          <div class="tag-row"><span class="tag">experiment</span><span class="tag">reproducibility</span><span class="tag">metrics</span></div>
+        </article>
+
+        <article class="content-card knowledge-card" data-group="writing">
+          <div class="knowledge-meta"><span>写作</span><span>Paper</span></div>
+          <h3>论文写作检查表</h3>
+          <p>按问题定义、方法贡献、实验支撑、图表表达和局限性说明检查论文草稿。</p>
+          <div class="tag-row"><span class="tag">paper</span><span class="tag">revision</span><span class="tag">figures</span></div>
+        </article>
+
+        <article class="content-card knowledge-card" data-group="writing">
+          <div class="knowledge-meta"><span>写作</span><span>Reading</span></div>
+          <h3>阅读地图</h3>
+          <p>按主题维护阅读路线：先看综述确定问题边界，再看代表方法，最后看公开实现和消融实验。</p>
+          <div class="tag-row"><span class="tag">reading</span><span class="tag">survey</span><span class="tag">baseline</span></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="world-footer">
+    <span>© <span id="year">2026</span> Yong Liu</span>
+    <span><a href="index.html">个人天地</a> · <a href="home.html">个人主页</a></span>
+  </footer>
+
+  <script src="assets/world.js"></script>
+</body>
+</html>

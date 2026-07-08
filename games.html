@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小游戏 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="刘勇 / Yong Liu 的个人小游戏页面，包含记忆翻牌和反应速度测试。">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
+  <link rel="stylesheet" href="assets/world.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="world-header">
+    <nav class="world-nav" aria-label="Main navigation">
+      <a class="world-brand" href="index.html" aria-label="个人天地首页">
+        <span class="brand-mark">YL</span>
+        <span class="brand-copy">
+          <span>Yong Liu</span>
+          <span>小游戏</span>
+        </span>
+      </a>
+      <div class="world-links">
+        <a href="index.html">入口</a>
+        <a href="home.html">主页</a>
+        <a href="knowledge.html">知识库</a>
+        <a href="tools.html">工具箱</a>
+        <a class="is-active" href="games.html">小游戏</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="world-hero">
+      <div>
+        <p class="kicker">Mini Games</p>
+        <h1>小游戏</h1>
+        <p class="lead">轻量、无登录、无网络请求。当前放两个短时小游戏：记忆翻牌和反应速度测试。</p>
+      </div>
+      <div class="content-card">
+        <span>Break</span>
+        <h2>短暂切换注意力</h2>
+        <p>小游戏保持简单，不覆盖浏览器存档，不追踪数据，刷新页面即可重新开始。</p>
+        <div class="image-strip" aria-hidden="true">
+          <img src="assets/papers/ensemble-force.png" alt="">
+          <img src="assets/papers/multimodal-stroke.jpg" alt="">
+          <img src="assets/papers/ssvt.png" alt="">
+        </div>
+      </div>
+    </section>
+
+    <section class="world-section">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Play</p>
+          <h2>游戏入口</h2>
+        </div>
+        <p class="sublead">两个游戏都支持桌面和手机触控，规则保持直观。</p>
+      </div>
+
+      <div class="game-grid">
+        <article class="game-card">
+          <h3>记忆翻牌</h3>
+          <div id="memory-board" class="memory-board" aria-label="记忆翻牌棋盘"></div>
+          <div class="hero-actions">
+            <button id="memory-reset" class="primary" type="button">重新开始</button>
+            <span id="memory-moves" class="button-link" aria-live="polite">步数 0</span>
+          </div>
+        </article>
+
+        <article class="game-card">
+          <h3>反应速度</h3>
+          <button id="reaction-pad" class="reaction-pad" type="button">准备区</button>
+          <div class="hero-actions">
+            <button id="reaction-start" class="primary" type="button">开始</button>
+            <span id="reaction-output" class="button-link" aria-live="polite">尚无成绩</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="world-footer">
+    <span>© <span id="year">2026</span> Yong Liu</span>
+    <span><a href="index.html">个人天地</a> · <a href="tools.html">工具箱</a></span>
+  </footer>
+
+  <script src="assets/world.js"></script>
+</body>
+</html>
