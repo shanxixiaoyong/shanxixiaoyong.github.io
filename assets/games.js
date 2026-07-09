@@ -474,6 +474,7 @@ if (gameHub || soloGame) {
     let tiles = [];
     let points = 0;
     let bestValue = 2;
+    let seenStageValues = new Set([2]);
     let lastMergeCells = [];
     let lastSpawnCell = -1;
     let lastMoveDir = "start";
@@ -483,6 +484,7 @@ if (gameHub || soloGame) {
     let memoryOpen = false;
     let moodTimer = 0;
     let sceneBloomTimer = 0;
+    let stageCelebrationTimer = 0;
     const spawnOnBlockedInput = true;
 
     const tileStory = [
@@ -720,13 +722,6 @@ if (gameHub || soloGame) {
       return tiles.reduce((best, value) => Math.max(best, value || 0), 0);
     }
 
-    function nextTarget() {
-      const top = maxTile();
-      const maxStage = tileStory[tileStory.length - 1][0];
-      const target = top >= maxStage ? maxStage : Math.max(4, top * 2);
-      return romanceTile(target);
-    }
-
     function pickMergeScene(nextValue) {
       const finalStage = tileStory[tileStory.length - 1][0];
       const pool = narrativeScenes[nextValue] || narrativeScenes[finalStage];
@@ -750,9 +745,23 @@ if (gameHub || soloGame) {
       applyMood(scene);
     }
 
+    function rememberScene(scene) {
+      const variants = [
+        {
+          title: "还记得 · " + scene.title,
+          line: "还记得之前的「" + scene.title + "」吗？" + scene.line
+        },
+        {
+          title: "回忆 · " + scene.title,
+          line: "回忆又翻到「" + scene.title + "」那一页：" + scene.line
+        }
+      ];
+      const picked = variants[Math.floor(Math.random() * variants.length)];
+      return { ...scene, title: picked.title, line: picked.line, memory: true };
+    }
+
     function renderStoryCard() {
       const top = romanceTile(maxTile());
-      const target = nextTarget();
       const scene = currentScene || {
         stage: "开始",
         title: "滑动牵手",
@@ -761,7 +770,7 @@ if (gameHub || soloGame) {
       };
       const memories = memoryOpen ? '<div class="love-memory-drawer">' + (storyLog.length ? storyLog.map((item) => '<p><b>' + escapeText(item.stage) + ' · ' + escapeText(item.title) + '</b><span>' + escapeText(item.line) + '</span></p>').join("") : '<p><b>暂无回忆</b><span>先合成一次，故事会留在这里。</span></p>') + '</div>' : "";
       return '<div class="love-story-card">'
-        + '<div class="love-story-kicker"><span>目标 ' + target.value + ' · ' + escapeText(target.label) + '</span><span>最高 ' + top.value + ' · ' + escapeText(top.label) + '</span></div>'
+        + '<div class="love-story-kicker"><span>当前最高 ' + (top.value || 2) + ' · ' + escapeText(top.label || "初见") + '</span></div>'
         + '<h3>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.stage) + ' · ' + escapeText(scene.title) + '</h3>'
         + '<p>' + escapeText(scene.line) + '</p>'
         + '</div>' + memories;
@@ -800,10 +809,11 @@ if (gameHub || soloGame) {
       return false;
     }
 
-    function playScene(scene, cellIndex) {
+    function playScene(scene, cellIndex, isFirstStageReveal = false) {
       triggerBoardEffect("love-story", { text: scene.title, duration: 1180 });
       triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 940 });
       showSceneBloom(scene);
+      if (isFirstStageReveal) showStageCelebration(scene);
     }
 
     function showSceneBloom(scene) {
@@ -818,6 +828,21 @@ if (gameHub || soloGame) {
         + '<p>' + escapeText(scene.line) + '</p>';
       board.append(item);
       sceneBloomTimer = window.setTimeout(() => item.remove(), 1550);
+    }
+
+    function showStageCelebration(scene) {
+      clearTimeout(stageCelebrationTimer);
+      document.querySelector(".love-stage-celebration")?.remove();
+      const item = document.createElement("div");
+      item.className = "love-stage-celebration";
+      item.setAttribute("aria-hidden", "true");
+      item.dataset.tone = scene.tone || scene.mood || "story";
+      item.innerHTML = '<i>' + escapeText(scene.glyph || "♡") + '</i>'
+        + '<span>' + escapeText(scene.stage) + '</span>'
+        + '<strong>' + escapeText(scene.title) + '</strong>'
+        + '<p>' + escapeText(scene.line) + '</p>';
+      document.body.append(item);
+      stageCelebrationTimer = window.setTimeout(() => item.remove(), 2100);
     }
 
     function move(dir) {
@@ -862,14 +887,18 @@ if (gameHub || soloGame) {
         loveTempo = Math.max(0.58, 1 - Math.min(5, mergedCells.length) * 0.06);
         featured = mergeScenes.sort((a, b) => b.nextValue - a.nextValue)[0];
         if (featured) {
+          const isFirstStageReveal = featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue);
+          if (!isFirstStageReveal && seenStageValues.has(featured.nextValue)) featured.scene = rememberScene(featured.scene);
+          featured.isFirstStageReveal = isFirstStageReveal;
           bestValue = Math.max(bestValue, featured.nextValue);
+          seenStageValues.add(featured.nextValue);
           pushStory(featured.scene);
         }
       } else {
         loveTempo = 1;
       }
       render();
-      if (featured) playScene(featured.scene, featured.cellIndex);
+      if (featured) playScene(featured.scene, featured.cellIndex, featured.isFirstStageReveal);
       if (!mergedThisMove && lastSpawnCell >= 0) triggerCellEffect("love-top-spawn", lastSpawnCell, size, size, { duration: 620 });
     }
 
@@ -918,11 +947,14 @@ if (gameHub || soloGame) {
     function restart() {
       clearTimeout(moodTimer);
       clearTimeout(sceneBloomTimer);
+      clearTimeout(stageCelebrationTimer);
       board.querySelector(".love-scene-bloom")?.remove();
+      document.querySelector(".love-stage-celebration")?.remove();
       for (const name of moodClasses) board.classList.remove(name);
       tiles = Array(size * size).fill(0);
       points = 0;
       bestValue = 2;
+      seenStageValues = new Set([2]);
       lastMoveDir = "start";
       lastMergeCells = [];
       lastSpawnCell = -1;
@@ -941,7 +973,7 @@ if (gameHub || soloGame) {
     restart();
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
-    return () => { clearTimeout(moodTimer); clearTimeout(sceneBloomTimer); offKey(); offSwipe(); };
+    return () => { clearTimeout(moodTimer); clearTimeout(sceneBloomTimer); clearTimeout(stageCelebrationTimer); document.querySelector(".love-stage-celebration")?.remove(); offKey(); offSwipe(); };
   }
 
   function runMines() {

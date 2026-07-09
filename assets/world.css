@@ -4863,6 +4863,122 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   background-clip: text;
 }
 
+.love-stage-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  color: #fffaf0;
+  pointer-events: none;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.32), transparent 12%),
+    radial-gradient(circle at 50% 44%, rgba(255, 168, 204, 0.28), transparent 34%),
+    radial-gradient(circle at 24% 18%, rgba(255, 225, 133, 0.18), transparent 28%),
+    radial-gradient(circle at 78% 22%, rgba(179, 205, 255, 0.16), transparent 30%),
+    rgba(24, 8, 18, 0.18);
+  overflow: hidden;
+  animation: loveStageCelebration 2100ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
+}
+
+.love-stage-celebration::before,
+.love-stage-celebration::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(112vmin, 720px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.love-stage-celebration::before {
+  border: 1px solid rgba(255, 236, 170, 0.34);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.58) 0 4%, rgba(255, 174, 207, 0.3) 5% 24%, transparent 58%),
+    conic-gradient(from 0deg, transparent, rgba(255, 149, 198, 0.46), transparent, rgba(255, 229, 132, 0.44), transparent, rgba(183, 209, 255, 0.32), transparent);
+  filter: blur(0.5px);
+  animation: loveStageRing 2100ms ease-out both;
+}
+
+.love-stage-celebration::after {
+  width: min(148vmin, 920px);
+  background:
+    repeating-conic-gradient(from 14deg, rgba(255, 255, 255, 0) 0 8deg, rgba(255, 228, 150, 0.2) 8deg 10deg, rgba(255, 255, 255, 0) 10deg 22deg);
+  mix-blend-mode: screen;
+  animation: loveStageSpark 2100ms ease-out both;
+}
+
+.love-stage-celebration > * {
+  position: relative;
+  z-index: 1;
+  display: block;
+  max-width: min(82vw, 460px);
+}
+
+.love-stage-celebration i {
+  margin: 0 auto 7px;
+  font-size: clamp(38px, 14vw, 78px);
+  font-style: normal;
+  line-height: 1;
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.62),
+    0 0 56px rgba(255, 174, 207, 0.46);
+}
+
+.love-stage-celebration span {
+  margin: 0 auto 7px;
+  color: rgba(255, 241, 230, 0.82);
+  font-size: clamp(13px, 3.6vw, 18px);
+  font-weight: 950;
+  letter-spacing: 0;
+  text-shadow: 0 0 14px rgba(255, 193, 218, 0.68);
+}
+
+.love-stage-celebration strong {
+  margin: 0 auto;
+  background: linear-gradient(90deg, #fffef7, #ffd3e6 42%, #ffe88f 76%, #fffef7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(34px, 10vw, 64px);
+  font-weight: 950;
+  line-height: 1.02;
+  letter-spacing: 0;
+  text-shadow: 0 0 30px rgba(255, 188, 216, 0.44);
+}
+
+.love-stage-celebration p {
+  margin: 12px auto 0;
+  color: rgba(255, 248, 244, 0.94);
+  font-size: clamp(14px, 3.8vw, 19px);
+  font-weight: 850;
+  line-height: 1.5;
+  text-shadow:
+    0 2px 12px rgba(30, 7, 18, 0.78),
+    0 0 22px rgba(255, 190, 215, 0.38);
+}
+
+.love-stage-celebration[data-tone="rain"] {
+  background:
+    repeating-linear-gradient(112deg, rgba(210, 230, 255, 0.14) 0 1px, transparent 1px 18px),
+    radial-gradient(circle at 50% 42%, rgba(228, 242, 255, 0.32), transparent 13%),
+    radial-gradient(circle at 50% 45%, rgba(154, 185, 255, 0.24), transparent 36%),
+    rgba(14, 19, 38, 0.22);
+}
+
+.love-stage-celebration[data-tone="vow"] {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 250, 204, 0.38), transparent 14%),
+    radial-gradient(circle at 50% 48%, rgba(255, 207, 105, 0.28), transparent 36%),
+    radial-gradient(circle at 24% 18%, rgba(255, 168, 207, 0.22), transparent 28%),
+    rgba(26, 12, 24, 0.18);
+}
+
 .board-love-2048.mood-meet {
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 232, 242, 0.42), transparent 28%),
@@ -5145,6 +5261,26 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   24% { opacity: 0.92; transform: translate(-50%, -50%) scale(0.88) rotate(8deg); }
   72% { opacity: 0.45; transform: translate(-50%, -50%) scale(1.18) rotate(26deg); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.55) rotate(42deg); }
+}
+
+@keyframes loveStageCelebration {
+  0% { opacity: 0; backdrop-filter: blur(0); }
+  12% { opacity: 1; backdrop-filter: blur(2px); }
+  72% { opacity: 1; backdrop-filter: blur(1.5px); }
+  100% { opacity: 0; backdrop-filter: blur(0); }
+}
+
+@keyframes loveStageRing {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-18deg); }
+  24% { opacity: 0.98; transform: translate(-50%, -50%) scale(0.82) rotate(8deg); }
+  72% { opacity: 0.52; transform: translate(-50%, -50%) scale(1.08) rotate(32deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.36) rotate(50deg); }
+}
+
+@keyframes loveStageSpark {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.68) rotate(0deg); }
+  22% { opacity: 0.72; transform: translate(-50%, -50%) scale(0.98) rotate(18deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(68deg); }
 }
 
 @keyframes loveDateBloom {
