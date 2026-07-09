@@ -3756,3 +3756,616 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > :not(.board-effect, .towe
     font-size: 10px;
   }
 }
+
+/* Reference-aligned playable boards */
+body:is(.arcade-page, .solo-game-page) .arcade-board {
+  background-blend-mode: normal, screen, normal;
+}
+
+body:is(.arcade-page, .solo-game-page) .arcade-board::after {
+  opacity: 0.22;
+}
+
+.board-tetris-forge {
+  border: clamp(14px, 2vw, 24px) solid #1a1615;
+  border-radius: 34px;
+  background:
+    linear-gradient(180deg, rgba(255, 121, 55, 0.18), rgba(0, 0, 0, 0.28)),
+    repeating-linear-gradient(0deg, rgba(255, 178, 86, 0.12) 0 1px, transparent 1px 7.5%),
+    repeating-linear-gradient(90deg, rgba(255, 178, 86, 0.1) 0 1px, transparent 1px 10%),
+    #0f1214;
+  padding: clamp(10px, 1.4vw, 18px);
+  box-shadow:
+    0 0 0 2px rgba(255, 157, 67, 0.2),
+    0 0 0 10px rgba(13, 11, 10, 0.58),
+    0 28px 80px rgba(0, 0, 0, 0.52),
+    inset 0 0 0 2px rgba(255, 222, 155, 0.12),
+    inset 0 -38px 80px rgba(255, 89, 37, 0.18);
+}
+
+.board-tetris-forge::before {
+  background:
+    radial-gradient(circle at 50% -4%, rgba(255, 172, 61, 0.95) 0 4%, rgba(255, 94, 41, 0.38) 5% 10%, transparent 11%),
+    linear-gradient(90deg, transparent 0 7%, rgba(48, 53, 58, 0.78) 7% 11%, transparent 11% 89%, rgba(48, 53, 58, 0.78) 89% 93%, transparent 93%),
+    linear-gradient(180deg, transparent 0 70%, rgba(255, 135, 42, 0.1) 70% 100%),
+    repeating-linear-gradient(0deg, rgba(255, 218, 170, 0.055) 0 1px, transparent 1px 5%);
+  opacity: 0.95;
+  mix-blend-mode: normal;
+}
+
+.board-tetris-forge::after {
+  opacity: 0.32 !important;
+  mix-blend-mode: screen;
+}
+
+.board-tetris-forge .block-cell {
+  border-radius: 7px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.32)),
+    rgba(23, 18, 17, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.42);
+}
+
+.board-tetris-forge .block-cell[style] {
+  border: 1px solid rgba(255, 245, 220, 0.28);
+  border-radius: 8px;
+  transform: translateZ(0);
+}
+
+.board-ember-2048 {
+  border: 12px solid #231712;
+  border-radius: 38px;
+  background:
+    linear-gradient(180deg, rgba(255, 112, 45, 0.26) 0 16px, transparent 17px 100%),
+    radial-gradient(circle at 50% 0%, rgba(255, 183, 63, 0.28), transparent 34%),
+    linear-gradient(145deg, #17100d, #392016 58%, #130e0c);
+  padding: clamp(24px, 3vw, 40px);
+  gap: clamp(14px, 2vw, 22px);
+  box-shadow:
+    0 0 0 1px rgba(255, 186, 86, 0.32),
+    0 24px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 234, 192, 0.18);
+}
+
+.board-ember-2048::before {
+  inset: 12px 22px auto;
+  height: 12px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, #ff7547, #ffbf57, rgba(255, 191, 87, var(--heat-alpha, 0.18))),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 26px rgba(255, 121, 55, 0.34);
+  opacity: 1;
+}
+
+.board-ember-2048::after {
+  opacity: 0.34 !important;
+  mix-blend-mode: color-dodge;
+}
+
+.board-ember-2048 .merge-cell {
+  border-radius: 22px 10px 22px 10px;
+  box-shadow:
+    0 14px 24px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 240, 210, 0.25),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.2);
+}
+
+.board-sonar-mines {
+  border: 14px solid #132c34;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 88% 22%, rgba(97, 216, 255, 0.18), transparent 15%),
+    repeating-radial-gradient(circle at 88% 22%, rgba(97, 216, 255, 0.2) 0 1px, transparent 1px 28px),
+    linear-gradient(145deg, #061821, #0c3440);
+  padding: clamp(14px, 2vw, 24px);
+  gap: clamp(5px, 0.8vw, 9px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48), inset 0 0 60px rgba(97, 216, 255, 0.08);
+}
+
+.board-sonar-mines::after {
+  opacity: 0.28 !important;
+  mix-blend-mode: screen;
+}
+
+.board-sonar-mines .mine-cell {
+  border-radius: 9px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.2)),
+    #0c2a35;
+  color: #d8fbff;
+  box-shadow: inset 0 1px 0 rgba(154, 239, 255, 0.14), inset 0 -5px 10px rgba(0, 0, 0, 0.26);
+}
+
+.board-sonar-mines .mine-cell.is-open {
+  background:
+    radial-gradient(circle, rgba(97, 216, 255, 0.32), rgba(97, 216, 255, 0.08) 54%, rgba(0, 0, 0, 0.12)),
+    #0b3542;
+}
+
+.board-ink-sudoku {
+  border: 14px solid rgba(24, 22, 20, 0.82);
+  border-radius: 16px;
+  background:
+    url("game-art/ink-sudoku-ui.jpg") center / cover,
+    #efe7d6;
+  background-blend-mode: soft-light, normal;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.3),
+    inset 0 0 80px rgba(51, 39, 27, 0.15);
+}
+
+.board-ink-sudoku::after {
+  opacity: 0.18 !important;
+  mix-blend-mode: multiply;
+}
+
+.board-ink-sudoku .sudoku-cell {
+  background: rgba(255, 251, 239, 0.72);
+  border-color: rgba(33, 31, 28, 0.22);
+}
+
+.board-ink-sudoku .sudoku-cell.is-fixed {
+  background: rgba(33, 31, 28, 0.14);
+}
+
+.board-ink-sudoku .sudoku-cell.is-selected {
+  outline-color: #b3352c;
+  box-shadow: inset 0 0 0 999px rgba(195, 63, 47, 0.08);
+}
+
+.board-neon-snake {
+  border: 14px solid #09111f;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(34, 240, 255, 0.18), transparent 26%),
+    linear-gradient(90deg, rgba(34, 240, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 75, 216, 0.08) 1px, transparent 1px),
+    #060b14;
+  background-size: auto, 34px 34px, 34px 34px, auto;
+  box-shadow:
+    0 0 0 1px rgba(34, 240, 255, 0.22),
+    0 28px 90px rgba(0, 0, 0, 0.56),
+    inset 0 0 60px rgba(255, 75, 216, 0.12);
+}
+
+.board-neon-snake::after {
+  opacity: 0.34 !important;
+  mix-blend-mode: screen;
+}
+
+.board-neon-snake .snake-cell {
+  border-radius: 11px;
+  background: rgba(11, 18, 32, 0.64);
+}
+
+.board-neon-snake .snake-cell.is-snake {
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.42), transparent 28%),
+    hsl(var(--snake-hue, 165) 78% 58%);
+  box-shadow: 0 0 18px hsla(var(--snake-hue, 165), 78%, 58%, 0.58);
+}
+
+.board-neon-snake .snake-cell.is-head {
+  border-radius: 40% 60% 48% 52%;
+  transform: scale(1.18);
+}
+
+.board-tide-bubble {
+  border: 13px solid rgba(13, 43, 66, 0.96);
+  border-radius: 42px 42px 24px 24px;
+  background:
+    radial-gradient(circle at 50% 112%, rgba(255, 255, 255, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(113, 228, 255, 0.24), rgba(4, 21, 35, 0.86)),
+    url("game-art/tide-bubble-ui.jpg") center / cover;
+  background-blend-mode: screen, normal, soft-light;
+  padding-bottom: clamp(18px, 3vw, 30px);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.52), inset 0 0 60px rgba(113, 228, 255, 0.12);
+}
+
+.board-tide-bubble::after {
+  opacity: 0.2 !important;
+}
+
+.board-tide-bubble .bubble-cell,
+.board-tide-bubble .bubble-launch {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transform: scale(0.95);
+}
+
+.bubble-aim-ray {
+  width: 4px;
+  height: 78%;
+  background:
+    radial-gradient(circle at 50% 0%, #fff, transparent 9px),
+    linear-gradient(0deg, var(--cell), rgba(255, 255, 255, 0.1), transparent);
+}
+
+.board-orchard-suika {
+  border: 15px solid rgba(90, 58, 24, 0.94);
+  border-radius: 42px 42px 24px 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 86, 86, 0.34) 0 3px, transparent 3px 16%),
+    radial-gradient(circle at 50% 0%, rgba(255, 182, 77, 0.18), transparent 28%),
+    url("game-art/orchard-suika-ui.jpg") center / cover,
+    #1a2417;
+  background-blend-mode: normal, screen, soft-light, normal;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.52), inset 0 0 80px rgba(255, 182, 77, 0.1);
+}
+
+.board-orchard-suika::after {
+  opacity: 0.26 !important;
+}
+
+.board-orchard-suika .fruit-cell[style] {
+  color: transparent;
+  font-size: 0;
+  border-radius: 50%;
+  transform: scale(0.9);
+}
+
+.board-orchard-suika .fruit-cell[style]::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 31% 22%, rgba(255, 255, 255, 0.88) 0 9%, transparent 10%),
+    radial-gradient(circle at 60% 62%, rgba(0, 0, 0, 0.16), transparent 44%),
+    var(--cell);
+  box-shadow: inset -9px -12px 18px rgba(0, 0, 0, 0.24), inset 5px 5px 11px rgba(255, 255, 255, 0.36), 0 10px 22px rgba(0, 0, 0, 0.24);
+}
+
+.fruit-dropper {
+  top: 1.4%;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.4), transparent 18%),
+    linear-gradient(145deg, rgba(255, 182, 77, 0.34), rgba(0, 0, 0, 0.28));
+}
+
+.board-lunar-jump {
+  border: 12px solid rgba(18, 28, 52, 0.9);
+  border-radius: 34px;
+  background:
+    linear-gradient(180deg, rgba(111, 228, 255, 0.14), rgba(0, 0, 0, 0.22)),
+    url("game-art/lunar-jump-ui.jpg") center / cover;
+  background-blend-mode: screen, soft-light;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(111, 228, 255, 0.1);
+}
+
+.board-lunar-jump::after {
+  opacity: 0.24 !important;
+}
+
+.jump-scene {
+  background:
+    radial-gradient(circle at 76% 18%, rgba(244, 241, 187, 0.88) 0 24px, transparent 25px),
+    url("game-art/lunar-jump-ui.jpg") center / cover,
+    linear-gradient(180deg, #11172e 0%, #202245 62%, #3a3948 100%);
+  background-blend-mode: screen, soft-light, normal;
+}
+
+.board-lunar-jump .jump-target,
+.board-lunar-jump .jump-player {
+  box-shadow: 0 0 28px rgba(111, 228, 255, 0.54), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.board-canyon-tower {
+  border: 14px solid #2d1a10;
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(255, 179, 68, 0.16), rgba(111, 215, 255, 0.08)),
+    url("game-art/canyon-tower-ui.jpg") center / cover,
+    #2b1a10;
+  background-blend-mode: screen, soft-light, normal;
+  gap: 5px;
+  padding: clamp(12px, 2vw, 20px);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55), inset 0 0 80px rgba(255, 179, 68, 0.08);
+}
+
+.board-canyon-tower::after {
+  opacity: 0.3 !important;
+  mix-blend-mode: screen;
+}
+
+.board-canyon-tower .tower-cell {
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.08), transparent 32%),
+    #2f2117;
+}
+
+.board-canyon-tower .tower-cell.is-path {
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 203, 111, 0.32), rgba(163, 83, 38, 0.38)),
+    repeating-linear-gradient(35deg, rgba(255, 255, 255, 0.12) 0 4px, transparent 4px 14px),
+    #7a4a27;
+  box-shadow: inset 0 1px 0 rgba(255, 232, 176, 0.16), inset 0 -7px 12px rgba(0, 0, 0, 0.24);
+}
+
+.board-canyon-tower .tower-cell.is-enemy {
+  color: #fff8df;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.board-canyon-tower .tower-cell.is-enemy::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border-radius: 50% 50% 42% 42%;
+  background:
+    radial-gradient(circle at 35% 35%, #fff 0 7%, transparent 8%),
+    linear-gradient(180deg, #5dd7ff, #1c3e5c);
+  box-shadow: 0 0 16px rgba(97, 216, 255, 0.52);
+}
+
+.board-starship-cards {
+  border: 13px solid rgba(6, 10, 25, 0.96);
+  border-radius: 38px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(109, 232, 255, 0.2), transparent 30%),
+    url("game-art/starship-cards-ui.jpg") center / cover,
+    #060b18;
+  background-blend-mode: screen, soft-light, normal;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56), inset 0 0 80px rgba(109, 232, 255, 0.1);
+}
+
+.board-starship-cards::after {
+  opacity: 0.28 !important;
+}
+
+.board-starship-cards .card-battle {
+  grid-template-columns: 0.82fr 1.25fr 0.82fr;
+  align-items: stretch;
+  min-height: clamp(150px, 24vh, 230px);
+}
+
+.board-starship-cards .enemy-panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.board-starship-cards .enemy-panel::before {
+  content: "";
+  position: absolute;
+  inset: 12% 26%;
+  border-radius: 48% 52% 44% 56%;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 80, 80, 0.92) 0 9%, transparent 10%),
+    conic-gradient(from 45deg, transparent, rgba(255, 122, 144, 0.68), transparent, rgba(109, 232, 255, 0.5), transparent);
+  filter: drop-shadow(0 0 22px rgba(255, 80, 80, 0.56));
+  opacity: 0.74;
+}
+
+.board-starship-cards .enemy-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.board-starship-cards .rogue-card {
+  min-height: clamp(170px, 22vh, 230px);
+  border-radius: 22px;
+}
+
+.board-starship-cards .rogue-card::before {
+  height: 50%;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255, 255, 255, 0.42), transparent 22%),
+    url("game-art/starship-cards-ui.jpg") center / 260% auto;
+  mix-blend-mode: screen;
+}
+
+@media (max-width: 620px) {
+  body:is(.arcade-page, .solo-game-page) .arcade-board::after {
+    opacity: 0.18;
+  }
+
+  .board-tetris-forge {
+    border-width: 14px;
+    padding: 8px;
+  }
+
+  .board-ember-2048,
+  .board-sonar-mines,
+  .board-ink-sudoku,
+  .board-neon-snake,
+  .board-tide-bubble,
+  .board-orchard-suika,
+  .board-canyon-tower,
+  .board-starship-cards {
+    border-width: 10px;
+  }
+
+  .board-starship-cards .card-battle {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-height: 0;
+  }
+
+  .board-starship-cards .rogue-card {
+    min-height: 112px;
+  }
+}
+
+/* Solo game surface cleanup */
+body.solo-game-page .solo-stage {
+  align-items: center;
+}
+
+body.solo-game-page .solo-playfield {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: clamp(4px, 1vw, 14px);
+  overflow: visible;
+}
+
+body.solo-game-page .solo-playfield::before,
+body.solo-game-page .solo-panel::before {
+  display: none !important;
+}
+
+body.solo-game-page .solo-panel {
+  align-self: center;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--game-accent) 18%, transparent), transparent 42%),
+    rgba(5, 8, 12, 0.74);
+  padding: clamp(14px, 1.8vw, 22px);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.solo-game-page .solo-panel h2 {
+  font-size: clamp(20px, 2.4vw, 30px);
+}
+
+body.solo-game-page .solo-panel p {
+  font-size: clamp(13px, 1.2vw, 15px);
+  line-height: 1.45;
+}
+
+body.solo-game-page .solo-panel .arcade-controls button {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+body.solo-game-page .arcade-board::after {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.3)),
+    var(--game-art);
+  background-position: var(--game-art-position, center);
+  background-size: cover;
+  filter: saturate(1.2) contrast(1.08);
+  mix-blend-mode: soft-light;
+  opacity: 0.42;
+}
+
+body.solo-game-page .board-tetris-forge {
+  background:
+    url("game-art/tetris-forge-ui.jpg") center / cover,
+    linear-gradient(180deg, rgba(255, 121, 55, 0.18), rgba(0, 0, 0, 0.34)),
+    #0f1214;
+  background-blend-mode: soft-light, normal, normal;
+  padding: clamp(15px, 2.1vw, 28px);
+}
+
+body.solo-game-page .board-ember-2048 {
+  background:
+    url("game-art/ember-2048-ui.jpg") center / cover,
+    radial-gradient(circle at 50% 0%, rgba(255, 183, 63, 0.34), transparent 34%),
+    linear-gradient(145deg, #17100d, #392016 58%, #130e0c);
+  background-blend-mode: soft-light, screen, normal;
+}
+
+body.solo-game-page .board-sonar-mines {
+  background:
+    url("game-art/sonar-mines-ui.jpg") center / cover,
+    repeating-radial-gradient(circle at 88% 22%, rgba(97, 216, 255, 0.2) 0 1px, transparent 1px 28px),
+    linear-gradient(145deg, #061821, #0c3440);
+  background-blend-mode: soft-light, screen, normal;
+}
+
+body.solo-game-page .board-ink-sudoku {
+  background:
+    url("game-art/ink-sudoku-ui.jpg") center / cover,
+    #efe7d6;
+  background-blend-mode: soft-light, normal;
+}
+
+body.solo-game-page.solo-game-sudoku .solo-panel h2,
+body.solo-game-page.solo-game-sudoku .solo-panel p {
+  color: #fffaf0;
+}
+
+body.solo-game-page.solo-game-sudoku .solo-panel .kicker {
+  color: var(--game-accent, #a72924);
+}
+
+body.solo-game-page .board-neon-snake {
+  background:
+    url("game-art/neon-snake-ui.jpg") center / cover,
+    linear-gradient(90deg, rgba(34, 240, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 75, 216, 0.08) 1px, transparent 1px),
+    #060b14;
+  background-size: cover, 34px 34px, 34px 34px, auto;
+  background-blend-mode: soft-light, screen, screen, normal;
+}
+
+body.solo-game-page .board-tide-bubble {
+  background:
+    url("game-art/tide-bubble-ui.jpg") center / cover,
+    linear-gradient(180deg, rgba(113, 228, 255, 0.24), rgba(4, 21, 35, 0.84));
+  background-blend-mode: soft-light, normal;
+}
+
+body.solo-game-page .board-orchard-suika {
+  background:
+    url("game-art/orchard-suika-ui.jpg") center / cover,
+    linear-gradient(180deg, rgba(255, 86, 86, 0.34) 0 3px, transparent 3px 16%),
+    #1a2417;
+  background-blend-mode: soft-light, normal, normal;
+}
+
+@media (min-width: 621px) {
+  body.solo-game-page .board-orchard-suika {
+    width: min(100%, 500px);
+  }
+}
+
+body.solo-game-page .board-canyon-tower {
+  background:
+    url("game-art/canyon-tower-ui.jpg") center / cover,
+    linear-gradient(135deg, rgba(255, 179, 68, 0.16), rgba(111, 215, 255, 0.08)),
+    #2b1a10;
+  background-blend-mode: soft-light, screen, normal;
+}
+
+body.solo-game-page .board-starship-cards {
+  background:
+    url("game-art/starship-cards-ui.jpg") center / cover,
+    radial-gradient(circle at 50% 12%, rgba(109, 232, 255, 0.2), transparent 30%),
+    #060b18;
+  background-blend-mode: soft-light, screen, normal;
+}
+
+@media (max-width: 620px) {
+  body.solo-game-page .solo-game-shell {
+    width: min(100% - 14px, 1440px);
+  }
+
+  body.solo-game-page .solo-stage {
+    gap: 8px;
+  }
+
+  body.solo-game-page .solo-panel {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  body.solo-game-page .solo-panel h2 {
+    font-size: 20px;
+    line-height: 1.12;
+  }
+
+  body.solo-game-page .solo-panel p {
+    font-size: 13px;
+  }
+
+  body.solo-game-page .solo-panel .arcade-meta span {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  body.solo-game-page .solo-panel .arcade-controls button {
+    min-height: 36px;
+    padding: 7px 10px;
+  }
+
+  body.solo-game-page .board-tetris-forge {
+    width: min(80vw, 320px);
+    padding: 12px;
+  }
+}
