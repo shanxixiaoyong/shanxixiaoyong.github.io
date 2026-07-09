@@ -261,7 +261,7 @@ const requiredAssets = [
 
 const distinctGameChecks = [
   { theme: "block-forge", board: "board-tetris-forge", mechanic: "tetrisGhostCells", css: ".board-tetris-forge" },
-  { theme: "love-2048", board: "board-love-2048", mechanic: "bloomChain", css: ".board-love-2048" },
+  { theme: "love-2048", board: "board-love-2048", mechanic: "narrativeScenes", css: ".board-love-2048" },
   { theme: "sonar-mines", board: "board-sonar-mines", mechanic: "firstSafeOpen", css: ".board-sonar-mines" },
   { theme: "ink-sudoku", board: "board-ink-sudoku", mechanic: "conflictMarks", css: ".board-ink-sudoku" },
   { theme: "neon-snake", board: "board-neon-snake", mechanic: "portalWrap", css: ".board-neon-snake" },
