@@ -1,11 +1,25 @@
 import { readFileSync, existsSync } from "node:fs";
 
+const standaloneGamePages = [
+  "game-tetris.html",
+  "game-2048.html",
+  "game-mines.html",
+  "game-sudoku.html",
+  "game-snake.html",
+  "game-bubble.html",
+  "game-suika.html",
+  "game-jump.html",
+  "game-tower.html",
+  "game-cards.html"
+];
+
 const siteFiles = [
   "index.html",
   "home.html",
   "knowledge.html",
   "tools.html",
   "games.html",
+  ...standaloneGamePages,
   "assets/world.css",
   "assets/world.js",
   "assets/games.js",
@@ -21,9 +35,11 @@ for (const file of siteFiles) {
 }
 
 const html = siteFiles.map((file) => readFileSync(file, "utf8")).join("\n");
-const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "games.html"]
+const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]
   .map((file) => readFileSync(file, "utf8"))
   .join("\n");
+const indexHtml = readFileSync("index.html", "utf8");
+const gamesHtml = readFileSync("games.html", "utf8");
 const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
 const gamesScript = readFileSync("assets/games.js", "utf8");
@@ -246,6 +262,19 @@ const distinctGameChecks = [
   { theme: "starship-cards", board: "board-starship-cards", mechanic: "energyCards", css: ".board-starship-cards" }
 ];
 
+const standaloneGameChecks = [
+  { file: "game-tetris.html", href: 'href="game-tetris.html"', id: "tetris", title: "熔炉方块" },
+  { file: "game-2048.html", href: 'href="game-2048.html"', id: "merge2048", title: "熔核 2048" },
+  { file: "game-mines.html", href: 'href="game-mines.html"', id: "mines", title: "声呐扫雷" },
+  { file: "game-sudoku.html", href: 'href="game-sudoku.html"', id: "sudoku", title: "墨格数独" },
+  { file: "game-snake.html", href: 'href="game-snake.html"', id: "snake", title: "霓虹列车" },
+  { file: "game-bubble.html", href: 'href="game-bubble.html"', id: "bubble", title: "潮汐泡泡" },
+  { file: "game-suika.html", href: 'href="game-suika.html"', id: "suika", title: "重力果园" },
+  { file: "game-jump.html", href: 'href="game-jump.html"', id: "jump", title: "月面跳台" },
+  { file: "game-tower.html", href: 'href="game-tower.html"', id: "tower", title: "峡谷塔防" },
+  { file: "game-cards.html", href: 'href="game-cards.html"', id: "cards", title: "星舰卡牌" }
+];
+
 const requiredLinks = [
   "https://orcid.org/0000-0002-7584-2953",
   "https://github.com/shanxixiaoyong",
@@ -324,7 +353,36 @@ for (const item of distinctGameChecks) {
   }
 }
 
-for (const file of ["index.html", "knowledge.html", "tools.html", "games.html"]) {
+if (gamesHtml.includes('id="game-board"') || gamesHtml.includes('id="game-hub"')) {
+  failures.push("games.html must be a lobby, not the integrated playable game page");
+}
+
+for (const item of standaloneGameChecks) {
+  if (!indexHtml.includes(item.href)) {
+    failures.push(`Homepage missing direct game link: ${item.href}`);
+  }
+  if (!gamesHtml.includes(item.href)) {
+    failures.push(`Game lobby missing standalone game link: ${item.href}`);
+  }
+  const fileHtml = readFileSync(item.file, "utf8");
+  if (!fileHtml.includes('class="solo-game-page') || !fileHtml.includes('id="solo-game"')) {
+    failures.push(`${item.file} must use standalone solo game shell`);
+  }
+  if (!fileHtml.includes(`data-game="${item.id}"`)) {
+    failures.push(`${item.file} missing data-game="${item.id}"`);
+  }
+  if (!fileHtml.includes(item.title)) {
+    failures.push(`${item.file} missing game title: ${item.title}`);
+  }
+}
+
+for (const token of ["soloGame", "dataset.game", "solo-game-page"]) {
+  if (!gamesScript.includes(token) && !worldCss.includes(token)) {
+    failures.push(`Standalone game runtime/style missing token: ${token}`);
+  }
+}
+
+for (const file of ["index.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]) {
   const fileHtml = readFileSync(file, "utf8");
   if (fileHtml.includes("assets/papers/")) {
     failures.push(`${file} must not use paper figures outside the academic homepage`);

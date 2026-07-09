@@ -4,72 +4,57 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>游戏厅 - 刘勇 / Yong Liu</title>
-  <meta name="description" content="刘勇 / Yong Liu 的游戏厅：俄罗斯方块、2048、扫雷、数独、贪吃蛇、泡泡龙、合成、跳跃、塔防和卡牌。">
+  <meta name="description" content="刘勇 / Yong Liu 的游戏厅入口：熔炉方块、熔核 2048、声呐扫雷、墨格数独、霓虹列车、潮汐泡泡、重力果园、月面跳台、峡谷塔防和星舰卡牌。">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="stylesheet" href="assets/world.css">
 </head>
-<body class="arcade-page">
+<body class="game-lobby-page">
   <a class="skip-link" href="#main">Skip to content</a>
-  <main id="main" class="arcade-app">
-    <header class="arcade-appbar">
-      <a class="arcade-back" href="index.html" aria-label="返回个人天地">
+  <main id="main" class="lobby-shell">
+    <header class="lobby-top">
+      <a class="world-brand" href="index.html" aria-label="个人天地首页">
         <span class="brand-mark">YL</span>
+        <span class="brand-copy">
+          <span>Yong Liu</span>
+          <span>个人天地</span>
+        </span>
       </a>
-      <div>
-        <p class="kicker">Arcade</p>
-        <h1>游戏厅</h1>
-      </div>
-      <nav class="arcade-jump" aria-label="Arcade navigation">
+      <nav class="lobby-nav" aria-label="Game lobby navigation">
+        <a href="index.html">首页</a>
         <a href="home.html">主页</a>
         <a href="knowledge.html">知识库</a>
         <a href="tools.html">工具箱</a>
       </nav>
     </header>
 
-    <section class="arcade-hero" aria-label="游戏厅">
-      <div class="arcade-copy">
-        <h2>各自成局的小型游戏</h2>
-        <p>方块、数字、棋盘、弹珠、合成、跳跃、塔防和卡牌，每一局都有自己的手感。</p>
+    <section class="lobby-hero" aria-label="游戏厅">
+      <div>
+        <p class="kicker">Game Lobby</p>
+        <h1>选择一局进入</h1>
+        <p>每个游戏都有自己的页面、画面和操作节奏。</p>
       </div>
-      <div class="arcade-mini-dashboard" aria-label="游戏状态">
-        <span>Touch</span>
-        <span>Keys</span>
-        <span>Best</span>
-      </div>
+      <a class="lobby-feature" href="game-tetris.html">
+        <span>Featured</span>
+        <strong>熔炉方块</strong>
+        <small>幽影落点、暂存槽、上涌压力线。</small>
+      </a>
     </section>
 
-    <section class="arcade-zone" aria-label="Arcade">
-        <div>
-          <p class="kicker">Now Playing</p>
-          <h2 id="arcade-heading">选择游戏</h2>
-        </div>
-
-      <div class="arcade-shell" id="game-hub">
-        <aside class="arcade-menu" id="game-menu" aria-label="游戏列表"></aside>
-        <article class="arcade-stage">
-          <div class="arcade-titlebar">
-            <div>
-              <span id="game-kind">Arcade</span>
-              <h3 id="game-title">游戏厅</h3>
-            </div>
-            <strong id="game-score">0</strong>
-          </div>
-          <div id="game-status" class="arcade-status" aria-live="polite"></div>
-          <div class="arcade-playfield">
-            <div id="game-board" class="arcade-board" tabindex="0" aria-label="游戏区域"></div>
-          </div>
-          <div class="arcade-hud">
-            <div id="game-meta" class="arcade-meta"></div>
-            <div id="game-controls" class="arcade-controls" aria-label="游戏控制"></div>
-          </div>
-        </article>
-      </div>
+    <section class="lobby-game-grid" aria-label="游戏列表">
+      <a class="lobby-game-card block-forge" href="game-tetris.html"><span>Blocks</span><strong>熔炉方块</strong><small>俄罗斯方块 / Ghost / Hold</small></a>
+      <a class="lobby-game-card ember-2048" href="game-2048.html"><span>Numbers</span><strong>熔核 2048</strong><small>Streak / Heat / Temper</small></a>
+      <a class="lobby-game-card sonar-mines" href="game-mines.html"><span>Logic</span><strong>声呐扫雷</strong><small>Safe first tap / Sonar</small></a>
+      <a class="lobby-game-card ink-sudoku" href="game-sudoku.html"><span>Logic</span><strong>墨格数独</strong><small>Focus lines / Conflict</small></a>
+      <a class="lobby-game-card neon-snake" href="game-snake.html"><span>Arcade</span><strong>霓虹列车</strong><small>Portal / Combo</small></a>
+      <a class="lobby-game-card tide-bubble" href="game-bubble.html"><span>Shooter</span><strong>潮汐泡泡</strong><small>泡泡龙 / Tide / Preview</small></a>
+      <a class="lobby-game-card orchard-suika" href="game-suika.html"><span>Merge</span><strong>重力果园</strong><small>合成大西瓜 / Chain</small></a>
+      <a class="lobby-game-card lunar-jump" href="game-jump.html"><span>Timing</span><strong>月面跳台</strong><small>跳一跳 / Drift</small></a>
+      <a class="lobby-game-card canyon-tower" href="game-tower.html"><span>Strategy</span><strong>峡谷塔防</strong><small>Cannon / Frost</small></a>
+      <a class="lobby-game-card starship-cards" href="game-cards.html"><span>Cards</span><strong>星舰卡牌</strong><small>肉鸽卡牌 / Intent</small></a>
     </section>
   </main>
-
   <script src="assets/world.js"></script>
-  <script src="assets/games.js"></script>
 </body>
 </html>

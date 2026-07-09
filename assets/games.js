@@ -1,6 +1,7 @@
 const gameHub = document.querySelector("#game-hub");
+const soloGame = document.querySelector("#solo-game");
 
-if (gameHub) {
+if (gameHub || soloGame) {
   const menu = document.querySelector("#game-menu");
   const title = document.querySelector("#game-title");
   const heading = document.querySelector("#arcade-heading");
@@ -238,23 +239,25 @@ if (gameHub) {
     board.removeAttribute("style");
     board.className = `arcade-board is-${game.id} ${game.boardClass}`;
     board.dataset.theme = game.theme;
-    menu.querySelectorAll("button").forEach((item) => {
+    menu?.querySelectorAll("button").forEach((item) => {
       item.classList.toggle("is-active", item.dataset.game === game.id);
     });
     cleanup = game.run();
     board.focus({ preventScroll: true });
   }
 
-  games.forEach((game) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.dataset.game = game.id;
-    item.innerHTML = `<span>${escapeText(game.kind)}</span><strong>${escapeText(game.name)}</strong><em>${escapeText(game.feature)}</em>`;
-    item.addEventListener("click", () => resetStage(game));
-    menu.append(item);
-  });
+  if (menu) {
+    games.forEach((game) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.dataset.game = game.id;
+      item.innerHTML = `<span>${escapeText(game.kind)}</span><strong>${escapeText(game.name)}</strong><em>${escapeText(game.feature)}</em>`;
+      item.addEventListener("click", () => resetStage(game));
+      menu.append(item);
+    });
+  }
 
-  resetStage(games[0]);
+  resetStage(games.find((game) => game.id === soloGame?.dataset.game) || games[0]);
 
   function runTetris() {
     const width = 10;

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>熔核 2048 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="熔核 2048：连续合并、热度积累和淬火爆发的独立数字游戏。">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
+  <link rel="stylesheet" href="assets/world.css">
+</head>
+<body class="solo-game-page solo-game-2048">
+  <main id="main" class="solo-game-shell">
+    <section class="solo-game" id="solo-game" data-game="merge2048" aria-label="熔核 2048">
+      <header class="solo-topbar">
+        <a class="solo-back" href="games.html">游戏厅</a>
+        <div><span id="game-kind">Numbers</span><h1 id="game-title">熔核 2048</h1></div>
+        <strong id="game-score">0</strong>
+      </header>
+      <div class="solo-stage">
+        <aside class="solo-panel">
+          <p class="kicker">Ember Core</p>
+          <h2>连击升温，满能淬火</h2>
+          <p id="game-status" aria-live="polite">Heat 0%</p>
+          <div id="game-meta" class="arcade-meta"></div>
+          <div id="game-controls" class="arcade-controls" aria-label="游戏控制"></div>
+        </aside>
+        <div class="solo-playfield">
+          <div id="game-board" class="arcade-board" tabindex="0" aria-label="游戏区域"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="assets/games.js"></script>
+</body>
+</html>
