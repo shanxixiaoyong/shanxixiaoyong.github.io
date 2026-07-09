@@ -1383,10 +1383,14 @@ body.arcade-page .fruit-cell.is-aim {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.82;
   background:
-    radial-gradient(circle at 22% 20%, rgba(255, 255, 255, 0.22), transparent 28%),
-    linear-gradient(135deg, var(--game-a), var(--game-b));
+    linear-gradient(180deg, rgba(5, 7, 10, 0.04) 0%, rgba(5, 7, 10, 0.78) 78%, rgba(5, 7, 10, 0.92) 100%),
+    linear-gradient(135deg, color-mix(in srgb, var(--game-a) 72%, transparent), color-mix(in srgb, var(--game-b) 64%, transparent)),
+    var(--game-art);
+  background-position: var(--game-art-position, center);
+  background-size: cover;
+  opacity: 0.96;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
 .home-game-card::after,
@@ -1396,11 +1400,27 @@ body.arcade-page .fruit-cell.is-aim {
   position: absolute;
   inset: 0;
   background:
+    radial-gradient(circle at 24% 12%, rgba(255, 255, 255, 0.2), transparent 24%),
     linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(180deg, transparent 38%, rgba(0, 0, 0, 0.5));
   background-size: 28px 28px;
   mix-blend-mode: screen;
   opacity: 0.38;
+}
+
+.home-game-card:hover,
+.lobby-game-card:hover,
+.lobby-feature:hover {
+  text-decoration: none;
+  transform: translateY(-3px);
+}
+
+.home-game-card:hover::before,
+.lobby-game-card:hover::before,
+.lobby-feature:hover::before {
+  transform: scale(1.04);
+  opacity: 1;
 }
 
 .home-game-card span,
@@ -1442,19 +1462,120 @@ body.arcade-page .fruit-cell.is-aim {
   line-height: 1.35;
 }
 
-.block-forge { --game-a: #3b1912; --game-b: #11544b; }
-.ember-2048 { --game-a: #4d2412; --game-b: #a84c36; }
-.sonar-mines { --game-a: #0d3140; --game-b: #12605e; }
-.ink-sudoku { --game-a: #2d2d34; --game-b: #6b5fb3; }
-.neon-snake { --game-a: #081627; --game-b: #1b6a60; }
-.tide-bubble { --game-a: #0b2c4a; --game-b: #147aa1; }
-.orchard-suika { --game-a: #123a20; --game-b: #7f5a18; }
-.lunar-jump { --game-a: #181a39; --game-b: #4f479d; }
-.canyon-tower { --game-a: #3d2514; --game-b: #5e4527; }
-.starship-cards { --game-a: #10172e; --game-b: #45335f; }
+.block-forge,
+.solo-game-tetris,
+body[data-arcade-theme="block-forge"] {
+  --game-a: #24120d;
+  --game-b: #c35a23;
+  --game-accent: #ff9b43;
+  --game-accent-2: #56d4b7;
+  --game-art: url("game-art/tetris-forge-ui.jpg");
+  --game-art-position: center;
+}
+
+.ember-2048,
+.solo-game-2048,
+body[data-arcade-theme="ember-2048"] {
+  --game-a: #2a120b;
+  --game-b: #e46526;
+  --game-accent: #ffb24f;
+  --game-accent-2: #ff735f;
+  --game-art: url("game-art/ember-2048-ui.jpg");
+  --game-art-position: center;
+}
+
+.sonar-mines,
+.solo-game-mines,
+body[data-arcade-theme="sonar-mines"] {
+  --game-a: #061a24;
+  --game-b: #0b7c86;
+  --game-accent: #5ee7ff;
+  --game-accent-2: #ffb04b;
+  --game-art: url("game-art/sonar-mines-ui.jpg");
+  --game-art-position: center;
+}
+
+.ink-sudoku,
+.solo-game-sudoku,
+body[data-arcade-theme="ink-sudoku"] {
+  --game-a: #211f1c;
+  --game-b: #efe5cd;
+  --game-accent: #c83f2f;
+  --game-accent-2: #161616;
+  --game-art: url("game-art/ink-sudoku-ui.jpg");
+  --game-art-position: center;
+}
+
+.neon-snake,
+.solo-game-snake,
+body[data-arcade-theme="neon-snake"] {
+  --game-a: #050b16;
+  --game-b: #a918a9;
+  --game-accent: #22f0ff;
+  --game-accent-2: #ff4bd8;
+  --game-art: url("game-art/neon-snake-ui.jpg");
+  --game-art-position: center;
+}
+
+.tide-bubble,
+.solo-game-bubble,
+body[data-arcade-theme="tide-bubble"] {
+  --game-a: #051f3d;
+  --game-b: #0596bd;
+  --game-accent: #71e4ff;
+  --game-accent-2: #f8cc6a;
+  --game-art: url("game-art/tide-bubble-ui.jpg");
+  --game-art-position: center;
+}
+
+.orchard-suika,
+.solo-game-suika,
+body[data-arcade-theme="orchard-suika"] {
+  --game-a: #142816;
+  --game-b: #9a5f20;
+  --game-accent: #ffb64d;
+  --game-accent-2: #75d66f;
+  --game-art: url("game-art/orchard-suika-ui.jpg");
+  --game-art-position: center;
+}
+
+.lunar-jump,
+.solo-game-jump,
+body[data-arcade-theme="lunar-jump"] {
+  --game-a: #0d1530;
+  --game-b: #2b63a9;
+  --game-accent: #6fe4ff;
+  --game-accent-2: #ffb84d;
+  --game-art: url("game-art/lunar-jump-ui.jpg");
+  --game-art-position: center;
+}
+
+.canyon-tower,
+.solo-game-tower,
+body[data-arcade-theme="canyon-tower"] {
+  --game-a: #341b10;
+  --game-b: #b96b2f;
+  --game-accent: #ffb344;
+  --game-accent-2: #6fd7ff;
+  --game-art: url("game-art/canyon-tower-ui.jpg");
+  --game-art-position: center;
+}
+
+.starship-cards,
+.solo-game-cards,
+body[data-arcade-theme="starship-cards"] {
+  --game-a: #070c21;
+  --game-b: #4b236e;
+  --game-accent: #6de8ff;
+  --game-accent-2: #ffb13d;
+  --game-art: url("game-art/starship-cards-ui.jpg");
+  --game-art-position: center;
+}
 
 .game-lobby-page,
 .solo-game-page {
+  position: relative;
+  isolation: isolate;
   min-height: 100svh;
   background:
     radial-gradient(circle at 16% 18%, rgba(117, 215, 189, 0.22), transparent 34%),
@@ -1464,8 +1585,54 @@ body.arcade-page .fruit-cell.is-aim {
   overflow-x: hidden;
 }
 
+.game-lobby-page::before,
+.solo-game-page::before,
+.game-lobby-page::after,
+.solo-game-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.game-lobby-page::before,
+.solo-game-page::before {
+  z-index: -2;
+  background:
+    linear-gradient(180deg, rgba(6, 8, 11, 0.22), rgba(6, 8, 11, 0.78)),
+    var(--game-art);
+  background-position: var(--game-art-position, center);
+  background-size: cover;
+  filter: saturate(1.08) contrast(1.04);
+  opacity: 0.68;
+  transform: scale(1.02);
+}
+
+.game-lobby-page::after,
+.solo-game-page::after {
+  z-index: -1;
+  background:
+    radial-gradient(circle at 48% 16%, color-mix(in srgb, var(--game-accent, #75d7bd) 26%, transparent), transparent 34%),
+    radial-gradient(circle at 14% 80%, color-mix(in srgb, var(--game-accent-2, #eea04e) 22%, transparent), transparent 30%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.46), transparent 42%, rgba(0, 0, 0, 0.42));
+}
+
+.game-lobby-page::before {
+  background:
+    linear-gradient(180deg, rgba(8, 10, 14, 0.24), rgba(8, 10, 14, 0.88)),
+    url("game-art/tetris-forge-ui.jpg"),
+    url("game-art/canyon-tower-ui.jpg"),
+    url("game-art/starship-cards-ui.jpg");
+  background-position: center, left 8% center, right 12% center, center;
+  background-repeat: no-repeat;
+  background-size: cover, min(32vw, 420px) auto, min(34vw, 460px) auto, cover;
+  opacity: 0.5;
+}
+
 .lobby-shell,
 .solo-game-shell {
+  position: relative;
+  z-index: 1;
   width: min(100% - 28px, 1440px);
   min-height: 100svh;
   margin: 0 auto;
@@ -1498,9 +1665,9 @@ body.arcade-page .fruit-cell.is-aim {
 
 .lobby-nav a,
 .solo-back {
-  border: 1px solid rgba(247, 243, 232, 0.18);
+  border: 1px solid color-mix(in srgb, var(--game-accent, #fffaf0) 28%, rgba(247, 243, 232, 0.14));
   border-radius: 999px;
-  background: rgba(247, 243, 232, 0.08);
+  background: rgba(8, 12, 18, 0.32);
   padding: 9px 13px;
   color: #fffaf0;
   font-size: 13px;
@@ -1544,7 +1711,7 @@ body.arcade-page .fruit-cell.is-aim {
 
 .solo-topbar {
   min-height: 72px;
-  border-bottom: 1px solid rgba(247, 243, 232, 0.12);
+  border-bottom: 1px solid color-mix(in srgb, var(--game-accent) 24%, rgba(247, 243, 232, 0.1));
 }
 
 .solo-topbar div {
@@ -1553,7 +1720,7 @@ body.arcade-page .fruit-cell.is-aim {
 
 .solo-topbar span,
 .solo-panel .kicker {
-  color: #75d7bd;
+  color: var(--game-accent, #75d7bd);
   font-size: 12px;
   font-weight: 840;
   text-transform: uppercase;
@@ -1568,13 +1735,16 @@ body.arcade-page .fruit-cell.is-aim {
 
 .solo-topbar strong {
   min-width: 90px;
-  border: 1px solid rgba(238, 160, 78, 0.42);
+  border: 1px solid color-mix(in srgb, var(--game-accent-2, #eea04e) 52%, rgba(247, 243, 232, 0.16));
   border-radius: 16px;
-  background: rgba(238, 160, 78, 0.14);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--game-accent) 24%, transparent), transparent 58%),
+    rgba(8, 12, 18, 0.44);
   padding: 10px 14px;
-  color: #ffd69a;
+  color: color-mix(in srgb, var(--game-accent-2, #ffd69a) 76%, #fff);
   text-align: center;
   font-size: 20px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .solo-stage {
@@ -1586,16 +1756,33 @@ body.arcade-page .fruit-cell.is-aim {
 }
 
 .solo-panel {
+  position: relative;
   display: grid;
   align-content: start;
   gap: 14px;
-  border: 1px solid rgba(247, 243, 232, 0.14);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 24%, rgba(247, 243, 232, 0.1));
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 250, 240, 0.1), rgba(255, 250, 240, 0.03)),
-    rgba(11, 16, 20, 0.54);
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--game-accent) 18%, transparent), transparent 42%),
+    rgba(7, 10, 15, 0.68);
   padding: clamp(16px, 2vw, 24px);
   backdrop-filter: blur(20px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.solo-panel::before {
+  content: "";
+  display: block;
+  height: clamp(122px, 19vh, 210px);
+  margin: calc(clamp(16px, 2vw, 24px) * -1) calc(clamp(16px, 2vw, 24px) * -1) 4px;
+  background:
+    linear-gradient(180deg, rgba(5, 8, 12, 0.04), rgba(5, 8, 12, 0.76)),
+    var(--game-art);
+  background-position: var(--game-art-position, center);
+  background-size: cover;
+  border-bottom: 1px solid color-mix(in srgb, var(--game-accent) 24%, rgba(247, 243, 232, 0.1));
 }
 
 .solo-panel h2 {
@@ -1618,31 +1805,52 @@ body.arcade-page .fruit-cell.is-aim {
 
 .solo-panel .arcade-controls button {
   min-height: 44px;
-  border-color: rgba(247, 243, 232, 0.18);
+  border-color: color-mix(in srgb, var(--game-accent) 26%, rgba(247, 243, 232, 0.12));
   border-radius: 999px;
-  background: rgba(247, 243, 232, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #fffaf0;
   padding: 10px 15px;
 }
 
 .solo-panel .arcade-controls button.primary {
-  border-color: rgba(117, 215, 189, 0.62);
-  background: linear-gradient(135deg, #75d7bd, #4fa991);
-  color: #101616;
+  border-color: color-mix(in srgb, var(--game-accent) 68%, rgba(247, 243, 232, 0.22));
+  background: linear-gradient(135deg, var(--game-accent), var(--game-accent-2));
+  color: #080c10;
 }
 
 .solo-playfield {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
   place-items: center;
-  border: 1px solid rgba(247, 243, 232, 0.12);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 24%, rgba(247, 243, 232, 0.1));
   border-radius: 10px;
   background:
     radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.08), transparent 36%),
-    rgba(0, 0, 0, 0.22);
+    linear-gradient(135deg, color-mix(in srgb, var(--game-a) 46%, rgba(4, 7, 10, 0.86)), color-mix(in srgb, var(--game-b) 30%, rgba(4, 7, 10, 0.86)));
   padding: clamp(10px, 2vw, 24px);
   overflow: hidden;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.solo-playfield::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(5, 8, 12, 0.54), rgba(5, 8, 12, 0.14)),
+    var(--game-art);
+  background-position: var(--game-art-position, center);
+  background-size: cover;
+  filter: blur(10px) saturate(1.1);
+  opacity: 0.2;
+  transform: scale(1.06);
+}
+
+.solo-playfield > * {
+  position: relative;
+  z-index: 1;
 }
 
 body.solo-game-page .arcade-board {
@@ -1650,6 +1858,7 @@ body.solo-game-page .arcade-board {
   min-height: 0;
   height: min(66svh, 680px);
   gap: clamp(4px, 0.7vw, 8px);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34), 0 0 0 1px color-mix(in srgb, var(--game-accent) 22%, transparent);
 }
 
 body.solo-game-page .board-tetris-forge {
@@ -1710,6 +1919,82 @@ body.solo-game-page .board-starship-cards .card-hand {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.solo-game-2048 .solo-stage,
+.solo-game-sudoku .solo-stage,
+.solo-game-cards .solo-stage {
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
+}
+
+.solo-game-2048 .solo-panel,
+.solo-game-sudoku .solo-panel,
+.solo-game-cards .solo-panel {
+  order: 2;
+}
+
+.solo-game-2048 .solo-playfield,
+.solo-game-sudoku .solo-playfield,
+.solo-game-cards .solo-playfield {
+  order: 1;
+}
+
+.solo-game-snake .solo-stage,
+.solo-game-jump .solo-stage {
+  position: relative;
+  grid-template-columns: 1fr;
+}
+
+.solo-game-snake .solo-panel,
+.solo-game-jump .solo-panel {
+  grid-area: 1 / 1;
+  align-self: end;
+  justify-self: center;
+  z-index: 3;
+  width: min(calc(100% - 32px), 980px);
+  margin-bottom: clamp(30px, 4vh, 48px);
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  padding: 14px 16px;
+}
+
+.solo-game-snake .solo-panel::before,
+.solo-game-jump .solo-panel::before {
+  display: none;
+}
+
+.solo-game-snake .solo-playfield,
+.solo-game-jump .solo-playfield {
+  grid-area: 1 / 1;
+  min-height: min(72svh, 760px);
+  padding-bottom: clamp(150px, 20vh, 230px);
+}
+
+.solo-game-snake .solo-panel h2,
+.solo-game-jump .solo-panel h2 {
+  font-size: clamp(20px, 2.3vw, 30px);
+}
+
+.solo-game-snake .solo-panel p,
+.solo-game-jump .solo-panel p {
+  max-width: 42em;
+}
+
+.solo-game-sudoku .solo-panel,
+.solo-game-sudoku .solo-playfield {
+  border-color: rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 238, 0.72), rgba(255, 250, 238, 0.2)),
+    color-mix(in srgb, var(--game-b) 22%, rgba(7, 10, 15, 0.42));
+}
+
+.solo-game-sudoku .solo-panel h2,
+.solo-game-sudoku .solo-panel p {
+  color: #1f211f;
+}
+
+.solo-game-sudoku .solo-panel .kicker {
+  color: #a72924;
+}
+
 @media (max-width: 980px) {
   .home-game-grid,
   .lobby-game-grid {
@@ -1721,12 +2006,58 @@ body.solo-game-page .board-starship-cards .card-hand {
     grid-template-columns: 1fr;
   }
 
+  .solo-game-2048 .solo-stage,
+  .solo-game-sudoku .solo-stage,
+  .solo-game-cards .solo-stage,
+  .solo-game-snake .solo-stage,
+  .solo-game-jump .solo-stage {
+    grid-template-columns: 1fr;
+  }
+
   .solo-panel {
+    order: 2;
+  }
+
+  .solo-game-2048 .solo-panel,
+  .solo-game-sudoku .solo-panel,
+  .solo-game-cards .solo-panel {
     order: 2;
   }
 
   .solo-playfield {
     order: 1;
+  }
+
+  .solo-game-2048 .solo-playfield,
+  .solo-game-sudoku .solo-playfield,
+  .solo-game-cards .solo-playfield {
+    order: 1;
+  }
+
+  .solo-game-snake .solo-panel,
+  .solo-game-jump .solo-panel {
+    grid-area: auto;
+    width: auto;
+    margin-bottom: 0;
+    justify-self: stretch;
+    align-self: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .solo-game-snake .solo-panel::before,
+  .solo-game-jump .solo-panel::before {
+    display: block;
+    width: auto;
+    height: clamp(120px, 24vh, 190px);
+    min-height: 0;
+    margin: calc(clamp(16px, 2vw, 24px) * -1) calc(clamp(16px, 2vw, 24px) * -1) 4px;
+  }
+
+  .solo-game-snake .solo-playfield,
+  .solo-game-jump .solo-playfield {
+    grid-area: auto;
+    padding-bottom: 10px;
+    min-height: 0;
   }
 }
 
@@ -1973,7 +2304,7 @@ body[data-arcade-theme="starship-cards"] {
     linear-gradient(135deg, #0d1020 0%, #171a2e 48%, #101418 100%);
 }
 
-body.arcade-page .board-tetris-forge {
+body:is(.arcade-page, .solo-game-page) .board-tetris-forge {
   width: min(100%, 360px);
   height: min(64svh, 700px);
   aspect-ratio: 1 / 2;
@@ -2018,7 +2349,7 @@ body.arcade-page .board-tetris-forge {
     #d25a4b;
 }
 
-body.arcade-page .board-ember-2048 {
+body:is(.arcade-page, .solo-game-page) .board-ember-2048 {
   width: min(100%, 590px);
   height: auto;
   aspect-ratio: 1;
@@ -2055,7 +2386,7 @@ body.arcade-page .board-ember-2048 {
   box-shadow: 0 0 26px rgba(255, 122, 90, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-body.arcade-page .board-sonar-mines {
+body:is(.arcade-page, .solo-game-page) .board-sonar-mines {
   width: min(100%, 590px);
   height: auto;
   aspect-ratio: 1;
@@ -2096,7 +2427,7 @@ body.arcade-page .board-sonar-mines {
 .board-sonar-mines .mine-cell.near-7,
 .board-sonar-mines .mine-cell.near-8 { color: #ff7a90; }
 
-body.arcade-page .board-ink-sudoku {
+body:is(.arcade-page, .solo-game-page) .board-ink-sudoku {
   width: min(100%, 620px);
   height: auto;
   aspect-ratio: 1;
@@ -2144,7 +2475,7 @@ body.arcade-page .board-ink-sudoku {
   color: #8c2035;
 }
 
-body.arcade-page .board-neon-snake {
+body:is(.arcade-page, .solo-game-page) .board-neon-snake {
   width: min(100%, 600px);
   height: auto;
   aspect-ratio: 1;
@@ -2190,7 +2521,7 @@ body.arcade-page .board-neon-snake {
   box-shadow: 0 0 30px rgba(208, 140, 255, 0.55);
 }
 
-body.arcade-page .board-tide-bubble {
+body:is(.arcade-page, .solo-game-page) .board-tide-bubble {
   width: min(100%, 620px);
   height: auto;
   aspect-ratio: 9 / 11;
@@ -2220,7 +2551,7 @@ body.arcade-page .board-tide-bubble {
   box-shadow: 0 0 22px color-mix(in srgb, var(--cell, #61d8ff) 50%, transparent);
 }
 
-body.arcade-page .board-orchard-suika {
+body:is(.arcade-page, .solo-game-page) .board-orchard-suika {
   width: min(100%, 540px);
   height: auto;
   aspect-ratio: 6 / 9;
@@ -2256,7 +2587,7 @@ body.arcade-page .board-orchard-suika {
   outline-color: rgba(244, 241, 187, 0.9);
 }
 
-body.arcade-page .board-lunar-jump {
+body:is(.arcade-page, .solo-game-page) .board-lunar-jump {
   display: block;
   width: min(100%, 680px);
   height: min(50svh, 430px);
@@ -2325,7 +2656,7 @@ body.arcade-page .board-lunar-jump {
   background: linear-gradient(90deg, #70d6b2, #ffc15e, #ff7a90);
 }
 
-body.arcade-page .board-canyon-tower {
+body:is(.arcade-page, .solo-game-page) .board-canyon-tower {
   width: min(100%, 660px);
   height: auto;
   aspect-ratio: 10 / 7;
@@ -2368,7 +2699,7 @@ body.arcade-page .board-canyon-tower {
   color: #fff;
 }
 
-body.arcade-page .board-starship-cards {
+body:is(.arcade-page, .solo-game-page) .board-starship-cards {
   display: block;
   grid-template-columns: none;
   grid-template-rows: none;
@@ -2457,29 +2788,29 @@ body.arcade-page .board-starship-cards {
 }
 
 @media (max-width: 620px) {
-  body.arcade-page .board-tetris-forge {
+  body:is(.arcade-page, .solo-game-page) .board-tetris-forge {
     width: min(82vw, 330px);
     height: min(58svh, 650px);
   }
 
-  body.arcade-page .board-ember-2048,
-  body.arcade-page .board-sonar-mines,
-  body.arcade-page .board-ink-sudoku,
-  body.arcade-page .board-neon-snake {
+  body:is(.arcade-page, .solo-game-page) .board-ember-2048,
+  body:is(.arcade-page, .solo-game-page) .board-sonar-mines,
+  body:is(.arcade-page, .solo-game-page) .board-ink-sudoku,
+  body:is(.arcade-page, .solo-game-page) .board-neon-snake {
     width: 100%;
   }
 
-  body.arcade-page .board-tide-bubble {
+  body:is(.arcade-page, .solo-game-page) .board-tide-bubble {
     width: min(100%, 520px);
     aspect-ratio: 9 / 11;
   }
 
-  body.arcade-page .board-orchard-suika {
+  body:is(.arcade-page, .solo-game-page) .board-orchard-suika {
     width: min(100%, 440px);
     aspect-ratio: 6 / 9;
   }
 
-  body.arcade-page .board-lunar-jump {
+  body:is(.arcade-page, .solo-game-page) .board-lunar-jump {
     height: min(46svh, 390px);
   }
 
@@ -2487,7 +2818,7 @@ body.arcade-page .board-starship-cards {
     min-height: 250px;
   }
 
-  body.arcade-page .board-canyon-tower {
+  body:is(.arcade-page, .solo-game-page) .board-canyon-tower {
     width: 100%;
     aspect-ratio: 10 / 8;
   }
@@ -2827,42 +3158,42 @@ body.arcade-page .board-starship-cards {
     margin-bottom: 8px;
   }
 
-  body.arcade-page .arcade-board.board-ember-2048,
-  body.arcade-page .arcade-board.board-sonar-mines,
-  body.arcade-page .arcade-board.board-ink-sudoku,
-  body.arcade-page .arcade-board.board-neon-snake,
-  body.arcade-page .arcade-board.board-tide-bubble,
-  body.arcade-page .arcade-board.board-orchard-suika,
-  body.arcade-page .arcade-board.board-canyon-tower {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-ember-2048,
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-sonar-mines,
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-ink-sudoku,
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-neon-snake,
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-tide-bubble,
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-orchard-suika,
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-canyon-tower {
     width: 100%;
     max-width: 100%;
     height: auto;
   }
 
-  body.arcade-page .arcade-board.board-tetris-forge {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-tetris-forge {
     width: min(82vw, 300px);
     height: min(56svh, 600px);
   }
 
-  body.arcade-page .arcade-board.board-tide-bubble {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-tide-bubble {
     aspect-ratio: 9 / 11;
   }
 
-  body.arcade-page .arcade-board.board-orchard-suika {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-orchard-suika {
     aspect-ratio: 6 / 9;
   }
 
-  body.arcade-page .arcade-board.board-canyon-tower {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-canyon-tower {
     aspect-ratio: 10 / 7;
   }
 
-  body.arcade-page .arcade-board.board-lunar-jump {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-lunar-jump {
     width: 100%;
     max-width: 100%;
     height: min(46svh, 390px);
   }
 
-  body.arcade-page .arcade-board.board-starship-cards {
+  body:is(.arcade-page, .solo-game-page) .arcade-board.board-starship-cards {
     display: block;
     grid-template-columns: none;
     grid-template-rows: none;
@@ -2873,48 +3204,48 @@ body.arcade-page .board-starship-cards {
     padding: 10px;
   }
 
-  body.arcade-page .board-starship-cards .card-battle {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .card-battle {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 10px;
   }
 
-  body.arcade-page .board-starship-cards .card-battle div {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .card-battle div {
     min-height: 0;
     border-radius: 14px;
     padding: 10px;
   }
 
-  body.arcade-page .board-starship-cards .card-battle span,
-  body.arcade-page .board-starship-cards .card-battle small {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .card-battle span,
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .card-battle small {
     font-size: 10px;
   }
 
-  body.arcade-page .board-starship-cards .card-battle strong {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .card-battle strong {
     font-size: 24px;
     line-height: 1.05;
   }
 
-  body.arcade-page .board-starship-cards .energy-panel {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .energy-panel {
     grid-column: auto;
   }
 
-  body.arcade-page .board-starship-cards .card-hand {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .card-hand {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
-  body.arcade-page .board-starship-cards .rogue-card {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .rogue-card {
     min-height: 106px;
     border-radius: 14px;
     padding: 10px;
   }
 
-  body.arcade-page .board-starship-cards .rogue-card strong {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .rogue-card strong {
     font-size: 15px;
   }
 
-  body.arcade-page .board-starship-cards .rogue-card small {
+  body:is(.arcade-page, .solo-game-page) .board-starship-cards .rogue-card small {
     font-size: 10px;
   }
 }

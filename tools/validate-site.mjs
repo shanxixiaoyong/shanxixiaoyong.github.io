@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 
 const standaloneGamePages = [
   "game-tetris.html",
@@ -246,7 +246,17 @@ const requiredAssets = [
   "assets/papers/ssvt.png",
   "assets/papers/multimodal-stroke.jpg",
   "assets/papers/force-touch.png",
-  "assets/papers/ensemble-force.png"
+  "assets/papers/ensemble-force.png",
+  "assets/game-art/tetris-forge-ui.jpg",
+  "assets/game-art/ember-2048-ui.jpg",
+  "assets/game-art/sonar-mines-ui.jpg",
+  "assets/game-art/ink-sudoku-ui.jpg",
+  "assets/game-art/neon-snake-ui.jpg",
+  "assets/game-art/tide-bubble-ui.jpg",
+  "assets/game-art/orchard-suika-ui.jpg",
+  "assets/game-art/lunar-jump-ui.jpg",
+  "assets/game-art/canyon-tower-ui.jpg",
+  "assets/game-art/starship-cards-ui.jpg"
 ];
 
 const distinctGameChecks = [
@@ -332,13 +342,16 @@ if (existsSync("CNAME")) {
 }
 
 for (const asset of requiredAssets) {
-  const referencedInPages = html.includes(asset);
+  const cssRelativeAsset = asset.startsWith("assets/") ? asset.slice("assets/".length) : asset;
+  const referencedInPages = html.includes(asset) || html.includes(cssRelativeAsset);
   const isPaperAsset = asset.startsWith("assets/papers/");
   if (!referencedInPages && !isPaperAsset) {
     failures.push(`Missing required asset reference: ${asset}`);
   }
   if (!existsSync(asset)) {
     failures.push(`Missing required asset file: ${asset}`);
+  } else if (asset.startsWith("assets/game-art/") && statSync(asset).size < 100000) {
+    failures.push(`Generated game art file is unexpectedly small: ${asset}`);
   }
 }
 
