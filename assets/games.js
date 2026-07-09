@@ -656,6 +656,10 @@ if (gameHub || soloGame) {
       triggerBoardEffect("love-vow", { text: "♡", duration: 2200 });
     }
 
+    function heartMarkup() {
+      return `<svg class="heart-core" viewBox="0 0 100 92" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true"><path class="heart-shadow" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-main" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-gloss" d="M29 18C20 19 15 26 16 35C17 42 23 48 31 51C26 43 28 30 38 23C35 20 32 18 29 18Z"></path></svg>`;
+    }
+
     function render() {
       const moveVectors = {
         left: ["-1", "0"],
@@ -683,7 +687,7 @@ if (gameHub || soloGame) {
         const topSpawn = lastSpawnFromTop && index === lastSpawnCell ? "is-top-spawn" : "";
         const vowTile = value && value >= 1024 ? "is-vow" : "";
         const style = value ? ` style="--tile:${tile.color};--tile-deep:${tile.deep};--rank:${tile.rank};"` : "";
-        const content = value ? `<i class="heart-core" aria-hidden="true"></i><b>${tile.glyph}</b><em class="tile-number">${value}</em><small>${escapeText(tile.label)}</small>` : "";
+        const content = value ? `${heartMarkup()}<b>${tile.glyph}</b><em class="tile-number">${value}</em><small>${escapeText(tile.label)}</small>` : "";
         return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${newborn} ${topSpawn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
       }).join("");
       setScore(points);
