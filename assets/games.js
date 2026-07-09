@@ -482,7 +482,7 @@ if (gameHub || soloGame) {
     let currentScene = null;
     let memoryOpen = false;
     let moodTimer = 0;
-    let sceneOverlayTimer = 0;
+    let sceneBloomTimer = 0;
     const spawnOnBlockedInput = true;
 
     const tileStory = [
@@ -803,21 +803,21 @@ if (gameHub || soloGame) {
     function playScene(scene, cellIndex) {
       triggerBoardEffect("love-story", { text: scene.title, duration: 1180 });
       triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 940 });
-      showSceneOverlay(scene);
+      showSceneBloom(scene);
     }
 
-    function showSceneOverlay(scene) {
-      clearTimeout(sceneOverlayTimer);
-      board.querySelector(".love-scene-overlay")?.remove();
+    function showSceneBloom(scene) {
+      clearTimeout(sceneBloomTimer);
+      board.querySelector(".love-scene-bloom")?.remove();
       const item = document.createElement("div");
-      item.className = "love-scene-overlay";
+      item.className = "love-scene-bloom";
       item.setAttribute("aria-hidden", "true");
       item.dataset.tone = scene.tone || scene.mood || "story";
       item.innerHTML = '<span>' + escapeText(scene.stage) + '</span>'
         + '<strong>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.title) + '</strong>'
         + '<p>' + escapeText(scene.line) + '</p>';
       board.append(item);
-      sceneOverlayTimer = window.setTimeout(() => item.remove(), 2400);
+      sceneBloomTimer = window.setTimeout(() => item.remove(), 1550);
     }
 
     function move(dir) {
@@ -917,8 +917,8 @@ if (gameHub || soloGame) {
 
     function restart() {
       clearTimeout(moodTimer);
-      clearTimeout(sceneOverlayTimer);
-      board.querySelector(".love-scene-overlay")?.remove();
+      clearTimeout(sceneBloomTimer);
+      board.querySelector(".love-scene-bloom")?.remove();
       for (const name of moodClasses) board.classList.remove(name);
       tiles = Array(size * size).fill(0);
       points = 0;
@@ -941,7 +941,7 @@ if (gameHub || soloGame) {
     restart();
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
-    return () => { clearTimeout(moodTimer); clearTimeout(sceneOverlayTimer); offKey(); offSwipe(); };
+    return () => { clearTimeout(moodTimer); clearTimeout(sceneBloomTimer); offKey(); offSwipe(); };
   }
 
   function runMines() {

@@ -2872,7 +2872,7 @@ body:is(.arcade-page, .solo-game-page) .arcade-board::after {
   opacity: 0.1;
 }
 
-body:is(.arcade-page, .solo-game-page) .arcade-board > :not(.board-effect, .love-scene-overlay, .tower-projectile, .bubble-aim-ray, .fruit-dropper) {
+body:is(.arcade-page, .solo-game-page) .arcade-board > :not(.board-effect, .love-scene-bloom, .tower-projectile, .bubble-aim-ray, .fruit-dropper) {
   position: relative;
   z-index: 1;
 }
@@ -4774,81 +4774,93 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   line-height: 1.42;
 }
 
-.love-scene-overlay {
+.love-scene-bloom {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 48%;
   z-index: 12;
   display: grid;
-  width: min(82%, 360px);
-  min-height: 150px;
+  width: min(84%, 360px);
   place-items: center;
-  border: 1px solid rgba(255, 236, 204, 0.46);
-  border-radius: 28px;
-  padding: 18px 20px;
-  background:
-    radial-gradient(circle at 22% 0%, rgba(255, 239, 218, 0.26), transparent 28%),
-    radial-gradient(circle at 82% 15%, rgba(255, 174, 205, 0.24), transparent 28%),
-    linear-gradient(145deg, rgba(68, 18, 45, 0.9), rgba(22, 9, 23, 0.86));
-  box-shadow:
-    0 24px 70px rgba(24, 6, 17, 0.48),
-    0 0 0 999px rgba(19, 7, 15, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  color: #fff8ef;
+  color: #fffaf0;
   pointer-events: none;
   text-align: center;
   transform: translate(-50%, -50%);
-  animation: loveSceneOverlay 2400ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
+  animation: loveSceneBloom 1550ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
 }
 
-body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-overlay {
+body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   position: absolute;
   z-index: 12;
 }
 
-.love-scene-overlay span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  border: 1px solid rgba(255, 233, 201, 0.28);
-  border-radius: 999px;
-  padding: 4px 9px;
-  background: rgba(255, 255, 255, 0.09);
+.love-scene-bloom::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(72vmin, 360px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.62) 0 7%, rgba(255, 181, 210, 0.32) 8% 31%, transparent 64%),
+    conic-gradient(from 18deg, transparent, rgba(255, 160, 202, 0.44), transparent, rgba(255, 231, 146, 0.42), transparent);
+  filter: blur(2px);
+  opacity: 0.82;
+  transform: translate(-50%, -50%);
+  animation: loveSceneBling 1550ms ease-out both;
+}
+
+.love-scene-bloom span,
+.love-scene-bloom strong,
+.love-scene-bloom p {
+  position: relative;
+  z-index: 1;
+}
+
+.love-scene-bloom span {
+  display: block;
   color: rgba(255, 241, 230, 0.78);
   font-size: 12px;
   font-weight: 900;
+  text-shadow: 0 0 12px rgba(255, 198, 218, 0.8);
 }
 
-.love-scene-overlay strong {
+.love-scene-bloom strong {
   display: block;
-  margin-top: 8px;
-  color: #fffaf0;
-  font-size: clamp(22px, 6vw, 34px);
-  line-height: 1.05;
+  margin-top: 4px;
+  background: linear-gradient(90deg, #fffdf5, #ffd1e4 42%, #ffe89a 76%, #fffdf5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(25px, 7vw, 40px);
+  line-height: 1.02;
   letter-spacing: 0;
-  text-shadow: 0 10px 28px rgba(80, 10, 42, 0.42);
+  text-shadow: 0 0 28px rgba(255, 184, 212, 0.44);
 }
 
-.love-scene-overlay p {
-  max-width: 24em;
-  margin: 10px auto 0;
-  color: rgba(255, 244, 238, 0.9);
-  font-size: clamp(13px, 3.25vw, 16px);
-  font-weight: 750;
-  line-height: 1.48;
+.love-scene-bloom p {
+  max-width: 22em;
+  margin: 7px auto 0;
+  color: rgba(255, 248, 244, 0.94);
+  font-size: clamp(13px, 3.3vw, 16px);
+  font-weight: 850;
+  line-height: 1.42;
+  text-shadow:
+    0 2px 10px rgba(37, 8, 22, 0.74),
+    0 0 18px rgba(255, 185, 210, 0.42);
 }
 
-.love-scene-overlay[data-tone="rain"] {
-  background:
-    repeating-linear-gradient(112deg, rgba(210, 230, 255, 0.12) 0 1px, transparent 1px 16px),
-    linear-gradient(145deg, rgba(25, 34, 64, 0.92), rgba(82, 38, 70, 0.86));
+.love-scene-bloom[data-tone="rain"] strong {
+  background: linear-gradient(90deg, #f7fbff, #cae1ff 48%, #ffd2e7 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
-.love-scene-overlay[data-tone="vow"] {
-  border-color: rgba(255, 229, 143, 0.62);
-  background:
-    radial-gradient(circle at 50% -18%, rgba(255, 241, 178, 0.42), transparent 34%),
-    linear-gradient(145deg, rgba(94, 46, 18, 0.9), rgba(32, 14, 32, 0.88));
+.love-scene-bloom[data-tone="vow"] strong {
+  background: linear-gradient(90deg, #fffef4, #ffe88d 50%, #ffd3ee 84%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .board-love-2048.mood-meet {
@@ -5121,11 +5133,18 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-overlay {
   to { opacity: 0; transform: translate(-50%, -50%) scale(1.55); }
 }
 
-@keyframes loveSceneOverlay {
-  0% { opacity: 0; transform: translate(-50%, -46%) scale(0.86); filter: blur(4px); }
-  14% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
-  78% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
-  100% { opacity: 0; transform: translate(-50%, -54%) scale(0.96); filter: blur(3px); }
+@keyframes loveSceneBloom {
+  0% { opacity: 0; transform: translate(-50%, -44%) scale(0.78); filter: blur(5px); }
+  16% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+  62% { opacity: 0.96; transform: translate(-50%, -50%) scale(1.02); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, -56%) scale(1.1); filter: blur(4px); }
+}
+
+@keyframes loveSceneBling {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.18) rotate(-12deg); }
+  24% { opacity: 0.92; transform: translate(-50%, -50%) scale(0.88) rotate(8deg); }
+  72% { opacity: 0.45; transform: translate(-50%, -50%) scale(1.18) rotate(26deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.55) rotate(42deg); }
 }
 
 @keyframes loveDateBloom {
