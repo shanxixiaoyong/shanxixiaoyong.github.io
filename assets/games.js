@@ -683,7 +683,7 @@ if (gameHub || soloGame) {
         const topSpawn = lastSpawnFromTop && index === lastSpawnCell ? "is-top-spawn" : "";
         const vowTile = value && value >= 1024 ? "is-vow" : "";
         const style = value ? ` style="--tile:${tile.color};--tile-deep:${tile.deep};--rank:${tile.rank};"` : "";
-        const content = value ? `<i class="heart-core" aria-hidden="true"></i><b>${tile.glyph}</b><small>${escapeText(tile.label)}</small><em>${value}</em>` : "";
+        const content = value ? `<i class="heart-core" aria-hidden="true"></i><b>${tile.glyph}</b><em class="tile-number">${value}</em><small>${escapeText(tile.label)}</small>` : "";
         return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${newborn} ${topSpawn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
       }).join("");
       setScore(points);
