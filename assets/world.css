@@ -4490,15 +4490,12 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
 }
 
 .board-love-2048 .merge-cell:not(.v0) {
+  align-content: center;
+  border-color: transparent;
   background:
-    radial-gradient(circle at 32% 20%, rgba(255, 255, 255, 0.58), transparent 18%),
-    linear-gradient(145deg, color-mix(in srgb, var(--tile) 90%, white), color-mix(in srgb, var(--tile-deep) 82%, #2c0c1b)),
-    var(--tile);
-  box-shadow:
-    0 14px 26px rgba(62, 8, 34, 0.36),
-    0 0 calc(8px + var(--rank, 1) * 3px) color-mix(in srgb, var(--tile) 38%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.46),
-    inset 0 -14px 24px rgba(78, 9, 42, 0.22);
+    radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--tile) 30%, transparent), transparent 54%),
+    transparent;
+  box-shadow: none;
   animation: loveTileArrive calc(420ms * var(--tempo, 1)) cubic-bezier(0.18, 0.92, 0.2, 1.12) both;
 }
 
@@ -4515,6 +4512,50 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
     linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.02));
   opacity: 0.16;
   transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.board-love-2048 .merge-cell:not(.v0)::before {
+  opacity: 0;
+}
+
+.board-love-2048 .heart-core {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  z-index: 0;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 18% 18% 8% 18%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.64), transparent 23%),
+    linear-gradient(145deg, color-mix(in srgb, var(--tile) 92%, white), color-mix(in srgb, var(--tile-deep) 86%, #2c0c1b));
+  box-shadow:
+    0 16px 30px rgba(62, 8, 34, 0.36),
+    0 0 calc(12px + var(--rank, 1) * 4px) color-mix(in srgb, var(--tile) 42%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset -8px -10px 16px rgba(78, 9, 42, 0.22);
+  transform: translate(-50%, -42%) rotate(45deg);
+}
+
+.board-love-2048 .heart-core::before,
+.board-love-2048 .heart-core::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: inherit;
+  box-shadow: inherit;
+}
+
+.board-love-2048 .heart-core::before {
+  left: -50%;
+  top: 0;
+}
+
+.board-love-2048 .heart-core::after {
+  left: 0;
+  top: -50%;
 }
 
 .board-love-2048 .merge-cell:not(.v0)::after {
@@ -4561,6 +4602,10 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   animation: loveNewTile calc(520ms * var(--tempo, 1)) ease-out both;
 }
 
+.board-love-2048 .merge-cell.is-top-spawn .heart-core {
+  animation: loveTopDrop 620ms cubic-bezier(0.18, 0.92, 0.24, 1.2) both;
+}
+
 .board-love-2048 .merge-cell.is-collision {
   animation: loveTileMerge calc(680ms * var(--tempo, 1)) cubic-bezier(0.2, 0.9, 0.2, 1.16) both;
   box-shadow:
@@ -4574,13 +4619,21 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
 }
 
 .effect-love-merge,
-.effect-love-collision {
+.effect-love-collision,
+.effect-love-top-spawn {
   width: 118px;
   height: 118px;
   background:
     radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 8%, rgba(255, 148, 187, 0.52) 9% 34%, transparent 62%),
     conic-gradient(from 20deg, transparent, rgba(255, 151, 191, 0.72), transparent, rgba(255, 220, 132, 0.62), transparent);
   animation: loveMergePulse 820ms ease-out both;
+}
+
+.effect-love-top-spawn {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.86) 0 7%, rgba(255, 214, 229, 0.5) 8% 30%, transparent 58%),
+    conic-gradient(from 0deg, transparent, rgba(255, 183, 211, 0.62), transparent, rgba(255, 224, 144, 0.52), transparent);
+  animation: loveTopSpawnBurst 760ms ease-out both;
 }
 
 .effect-love-vow {
@@ -4634,10 +4687,22 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   to { opacity: 1; transform: scale(1) rotate(0); }
 }
 
+@keyframes loveTopDrop {
+  from { opacity: 0; transform: translate(-50%, -92%) rotate(45deg) scale(0.62); }
+  68% { opacity: 1; transform: translate(-50%, -38%) rotate(45deg) scale(1.08); }
+  to { opacity: 1; transform: translate(-50%, -42%) rotate(45deg) scale(1); }
+}
+
 @keyframes loveMergePulse {
   from { opacity: 0.95; transform: translate(-50%, -50%) scale(0.28) rotate(0deg); }
   48% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(18deg); }
   to { opacity: 0; transform: translate(-50%, -50%) scale(1.75) rotate(46deg); }
+}
+
+@keyframes loveTopSpawnBurst {
+  from { opacity: 0.9; transform: translate(-50%, -72%) scale(0.18); }
+  48% { opacity: 1; transform: translate(-50%, -50%) scale(0.92); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.55); }
 }
 
 @keyframes loveTileMerge {

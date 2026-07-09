@@ -478,19 +478,20 @@ if (gameHub || soloGame) {
     let vowReady = false;
     let lastMergeCells = [];
     let lastSpawnCell = -1;
+    let lastSpawnFromTop = false;
     let lastMoveDir = "start";
     let loveTempo = 1;
 
     const tileStory = [
-      [2, "♡", "初遇", "#ffd7e5", "#bc486f"],
-      [4, "❀", "桃信", "#ffc8df", "#bf5777"],
-      [8, "💌", "告白", "#ffb4d2", "#c94d78"],
-      [16, "💕", "牵手", "#ffa2c7", "#bb416d"],
-      [32, "🌸", "花雨", "#ff91ba", "#a93565"],
+      [2, "♡", "初识", "#ffd7e5", "#bc486f"],
+      [4, "💓", "心动", "#ffc8df", "#bf5777"],
+      [8, "💌", "暧昧", "#ffb4d2", "#c94d78"],
+      [16, "🌹", "告白", "#ffa2c7", "#bb416d"],
+      [32, "💕", "牵手", "#ff91ba", "#a93565"],
       [64, "💗", "热恋", "#ff7fae", "#95315d"],
       [128, "💞", "相守", "#ff6da2", "#862a55"],
-      [256, "💖", "心约", "#ff5d98", "#7e2651"],
-      [512, "🌙", "良夜", "#eaa6ff", "#65306d"],
+      [256, "💖", "承诺", "#ff5d98", "#7e2651"],
+      [512, "🌙", "求婚", "#eaa6ff", "#65306d"],
       [1024, "💍", "誓约", "#ffd27a", "#8a5722"],
       [2048, "💘", "永恒", "#fff0a8", "#8f5b2f"]
     ];
@@ -504,6 +505,22 @@ if (gameHub || soloGame) {
       const index = empty[Math.floor(Math.random() * empty.length)];
       tiles[index] = value;
       return index;
+    }
+
+    function addFromTop(value = Math.random() > 0.88 ? 4 : 2) {
+      for (let row = 0; row < size; row += 1) {
+        const empties = [];
+        for (let col = 0; col < size; col += 1) {
+          const index = row * size + col;
+          if (!tiles[index]) empties.push(index);
+        }
+        if (empties.length) {
+          const index = empties[Math.floor(Math.random() * empties.length)];
+          tiles[index] = value;
+          return index;
+        }
+      }
+      return -1;
     }
 
     function romanceTile(value) {
@@ -557,6 +574,8 @@ if (gameHub || soloGame) {
       const before = tiles.join(",");
       let mergedThisMove = 0;
       const mergedCells = [];
+      let topSpawned = false;
+      let bumped = false;
       for (let i = 0; i < size; i += 1) {
         const rawIndices = [];
         for (let j = 0; j < size; j += 1) {
@@ -575,6 +594,7 @@ if (gameHub || soloGame) {
       if (tiles.join(",") !== before) {
         lastMoveDir = dir;
         lastMergeCells = mergedCells;
+        lastSpawnFromTop = false;
         if (mergedThisMove) {
           bloomChain += 1;
           affinity = Math.min(100, affinity + 18 + bloomChain * 6 + Math.min(14, Math.floor(Math.log2(mergedThisMove))));
@@ -590,10 +610,19 @@ if (gameHub || soloGame) {
       } else {
         lastMoveDir = dir;
         lastMergeCells = [];
+        lastSpawnCell = addFromTop();
+        lastSpawnFromTop = lastSpawnCell >= 0;
+        topSpawned = lastSpawnFromTop;
+        bumped = !topSpawned;
+      }
+      render();
+      if (topSpawned) {
+        setStatus("顶端飘来一颗新心，继续牵手");
+        triggerCellEffect("love-top-spawn", lastSpawnCell, size, size, { duration: 760 });
+      } else if (bumped) {
         setStatus("轻轻碰撞，换个方向牵手");
         triggerBoardEffect("love-bump", { duration: 420 });
       }
-      render();
       if (mergedThisMove) {
         triggerBoardEffect("love-merge", { text: `×${bloomChain}`, duration: 860 });
         for (const index of mergedCells.slice(0, 4)) {
@@ -651,10 +680,11 @@ if (gameHub || soloGame) {
         const hot = value && value >= 128 ? "is-hot" : "";
         const collision = mergeSet.has(index) ? "is-collision" : "";
         const newborn = index === lastSpawnCell ? "is-new" : "";
+        const topSpawn = lastSpawnFromTop && index === lastSpawnCell ? "is-top-spawn" : "";
         const vowTile = value && value >= 1024 ? "is-vow" : "";
         const style = value ? ` style="--tile:${tile.color};--tile-deep:${tile.deep};--rank:${tile.rank};"` : "";
-        const content = value ? `<b>${tile.glyph}</b><small>${escapeText(tile.label)}</small><em>${value}</em>` : "";
-        return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${newborn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
+        const content = value ? `<i class="heart-core" aria-hidden="true"></i><b>${tile.glyph}</b><small>${escapeText(tile.label)}</small><em>${value}</em>` : "";
+        return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${newborn} ${topSpawn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
       }).join("");
       setScore(points);
       if (!canMove()) {
@@ -674,6 +704,7 @@ if (gameHub || soloGame) {
       vowReady = false;
       lastMoveDir = "start";
       lastMergeCells = [];
+      lastSpawnFromTop = false;
       add();
       lastSpawnCell = add();
       render();
