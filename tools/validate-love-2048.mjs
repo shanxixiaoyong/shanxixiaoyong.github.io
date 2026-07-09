@@ -17,10 +17,22 @@ const expectations = [
   ["2048 stores current narrative scene", files.js, "let currentScene = null"],
   ["2048 stores story log", files.js, "let storyLog = []"],
   ["2048 defines narrative scene pools", files.js, "const narrativeScenes"],
+  ["2048 spawns from top first", files.js, "function addFromTop"],
+  ["2048 handles blocked-input spawning", files.js, "spawnOnBlockedInput"],
+  ["2048 tracks scene overlay timer", files.js, "let sceneOverlayTimer = 0"],
+  ["2048 shows centered scene overlay", files.js, "function showSceneOverlay"],
   ["2048 includes first-meet scene pool", files.js, '"初见"'],
+  ["2048 includes remember stage", files.js, '"记住"'],
+  ["2048 includes testing stage", files.js, '"试探"'],
+  ["2048 includes confession-eve stage", files.js, '"告白前夜"'],
+  ["2048 includes stable relationship stage", files.js, '"稳定相处"'],
+  ["2048 includes marriage discussion stage", files.js, '"谈及婚姻"'],
+  ["2048 includes proposal stage", files.js, '"求婚时刻"'],
+  ["2048 includes pre-wedding stage", files.js, '"婚礼之前"'],
   ["2048 includes date scene pool", files.js, '"第一次约会"'],
   ["2048 includes future scene pool", files.js, '"未来计划"'],
-  ["2048 includes final stage", files.js, '"双向奔赴"'],
+  ["2048 includes final stage", files.js, '"长久相爱"'],
+  ["2048 keeps mutual-romance event", files.js, '"双向奔赴"'],
   ["2048 includes rainy convenience scene", files.js, "雨停便利店"],
   ["2048 includes cafe date scene", files.js, "咖啡馆"],
   ["2048 includes movie date scene", files.js, "电影散场"],
@@ -58,12 +70,17 @@ const expectations = [
   ["CSS defines love board", files.css, ".board-love-2048"],
   ["CSS defines story card", files.css, ".love-story-card"],
   ["CSS defines memory drawer", files.css, ".love-memory-drawer"],
+  ["CSS defines centered scene overlay", files.css, ".love-scene-overlay"],
   ["CSS defines mood meet", files.css, ".board-love-2048.mood-meet"],
   ["CSS defines mood chat", files.css, ".board-love-2048.mood-chat"],
   ["CSS defines mood date", files.css, ".board-love-2048.mood-date"],
   ["CSS defines mood rain", files.css, ".board-love-2048.mood-rain"],
   ["CSS defines mood home", files.css, ".board-love-2048.mood-home"],
   ["CSS defines mood starlight", files.css, ".board-love-2048.mood-starlight"],
+  ["CSS defines mood campus", files.css, ".board-love-2048.mood-campus"],
+  ["CSS defines mood cafe", files.css, ".board-love-2048.mood-cafe"],
+  ["CSS defines mood street", files.css, ".board-love-2048.mood-street"],
+  ["CSS defines mood vow", files.css, ".board-love-2048.mood-vow"],
   ["CSS defines story effect", files.css, ".effect-love-story"],
   ["CSS defines petal effect", files.css, ".effect-love-petal"],
   ["CSS defines starlight effect", files.css, ".effect-love-starlight"],
@@ -82,6 +99,76 @@ if (failures.length) {
   console.error("Love 2048 validation failed:");
   for (const [label, , needle, forbidden] of failures) {
     console.error(`- ${label}: ${forbidden ? "still has" : "missing"} ${JSON.stringify(needle)}`);
+  }
+  process.exit(1);
+}
+
+const sceneRequirements = new Map([
+  [2, 8],
+  [4, 8],
+  [8, 8],
+  [16, 8],
+  [32, 8],
+  [64, 8],
+  [128, 8],
+  [256, 6],
+  [512, 6],
+  [1024, 6],
+  [2048, 6],
+  [4096, 4],
+  [8192, 4],
+  [16384, 4],
+  [32768, 4],
+  [65536, 4],
+  [131072, 4],
+  [262144, 4],
+  [524288, 4],
+  [1048576, 4],
+  [2097152, 4],
+  [4194304, 4]
+]);
+
+function countScenesFor(value) {
+  const source = files.js;
+  const startToken = `${value}: [`;
+  const start = source.indexOf(startToken);
+  if (start === -1) return 0;
+  let depth = 0;
+  let inString = false;
+  let stringQuote = "";
+  let escaped = false;
+  for (let i = start + startToken.length - 1; i < source.length; i += 1) {
+    const char = source[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === stringQuote) inString = false;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      inString = true;
+      stringQuote = char;
+      continue;
+    }
+    if (char === "[") depth += 1;
+    if (char === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        return (source.slice(start, i).match(/\{\s*title:/g) || []).length;
+      }
+    }
+  }
+  return 0;
+}
+
+const sceneFailures = [...sceneRequirements.entries()]
+  .map(([value, minimum]) => [value, minimum, countScenesFor(value)])
+  .filter(([, minimum, actual]) => actual < minimum);
+
+if (sceneFailures.length) {
+  console.error("Love 2048 scene density validation failed:");
+  for (const [value, minimum, actual] of sceneFailures) {
+    console.error(`- ${value}: expected at least ${minimum} scenes, found ${actual}`);
   }
   process.exit(1);
 }

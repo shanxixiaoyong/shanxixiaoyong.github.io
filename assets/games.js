@@ -35,8 +35,8 @@ if (gameHub || soloGame) {
       kind: "Love",
       theme: "love-2048",
       boardClass: "board-love-2048",
-      tagline: "滑动牵手，合并心意，桃花会随连击盛放。",
-      feature: "Affinity / Bloom / Vow",
+      tagline: "滑动牵手，合并心意，每次升级翻开一段随机故事。",
+      feature: "Stage / Story / Bloom",
       run: run2048
     },
     {
@@ -482,119 +482,206 @@ if (gameHub || soloGame) {
     let currentScene = null;
     let memoryOpen = false;
     let moodTimer = 0;
+    let sceneOverlayTimer = 0;
+    const spawnOnBlockedInput = true;
 
     const tileStory = [
       [2, "👋", "初见", "#ffd7e5", "#bc486f", "#ff8db8", "#fff1f7"],
-      [4, "💓", "有好感", "#ffc8df", "#bf5777", "#ff73ac", "#ffe1ef"],
-      [8, "💬", "暧昧", "#ffb4d2", "#c94d78", "#ff5c9d", "#ffd4e7"],
-      [16, "☕", "第一次约会", "#ffa2c7", "#bb416d", "#ff477f", "#ffc4dc"],
-      [32, "🌹", "确认关系", "#ff91ba", "#a93565", "#ff346e", "#ffb5d2"],
-      [64, "🎆", "热恋期", "#ff7fae", "#95315d", "#ff2c73", "#ffa4cc"],
-      [128, "🧩", "磨合期", "#ff6da2", "#862a55", "#f82483", "#ff94c4"],
-      [256, "🤝", "信任建立", "#ff5d98", "#7e2651", "#ec1d79", "#ff83bb"],
-      [512, "🔑", "共同生活", "#eaa6ff", "#65306d", "#ad62ff", "#f2d0ff"],
-      [1024, "🗺️", "未来计划", "#ffd27a", "#8a5722", "#ffb02e", "#fff1b8"],
-      [2048, "💘", "双向奔赴", "#fff0a8", "#8f5b2f", "#ffcf4f", "#fff9d0"],
-      [4096, "📷", "十年纪念", "#ffe19c", "#91531e", "#ffb538", "#fff3c4"],
-      [8192, "🌌", "白发相册", "#ded5ff", "#4f3f89", "#9d8cff", "#f4efff"]
+      [4, "📝", "记住", "#ffd0e2", "#bd526f", "#ff82b1", "#ffedf5"],
+      [8, "💓", "有好感", "#ffc8df", "#bf5777", "#ff73ac", "#ffe1ef"],
+      [16, "✨", "试探", "#ffbed8", "#c24d76", "#ff679f", "#ffd9eb"],
+      [32, "💬", "暧昧", "#ffb4d2", "#c94d78", "#ff5c9d", "#ffd4e7"],
+      [64, "🍵", "约见", "#ffabc9", "#bf446f", "#ff508c", "#ffcadf"],
+      [128, "☕", "第一次约会", "#ffa2c7", "#bb416d", "#ff477f", "#ffc4dc"],
+      [256, "📱", "频繁联系", "#ff99c0", "#b93c68", "#ff3f77", "#ffbdd8"],
+      [512, "🌙", "心照不宣", "#ff91ba", "#a93565", "#ff346e", "#ffb5d2"],
+      [1024, "✉️", "告白前夜", "#ff89b4", "#9e335f", "#ff2d70", "#ffadd0"],
+      [2048, "🌹", "确认关系", "#ff7fae", "#95315d", "#ff2c73", "#ffa4cc"],
+      [4096, "🎆", "热恋期", "#ff75a7", "#8b2d58", "#ff247a", "#ff9bc5"],
+      [8192, "🧩", "磨合期", "#ff6da2", "#862a55", "#f82483", "#ff94c4"],
+      [16384, "🤝", "稳定相处", "#ff669d", "#7e2651", "#ec1d79", "#ff8fc0"],
+      [32768, "👥", "见过朋友", "#fb80b8", "#742650", "#df2378", "#ffc0d8"],
+      [65536, "🚄", "共同旅行", "#ff9e8e", "#7f3330", "#ff6c6c", "#ffd3bf"],
+      [131072, "🔑", "同居日常", "#eaa6ff", "#65306d", "#ad62ff", "#f2d0ff"],
+      [262144, "🏮", "见过家人", "#ffd38a", "#8a5722", "#ffb02e", "#fff1b8"],
+      [524288, "🗺️", "谈及婚姻", "#ffe19c", "#91531e", "#ffb538", "#fff3c4"],
+      [1048576, "💍", "求婚时刻", "#fff0a8", "#8f5b2f", "#ffcf4f", "#fff9d0"],
+      [2097152, "🕯️", "婚礼之前", "#fff4be", "#8a6232", "#ffdc72", "#fff9da"],
+      [4194304, "💘", "长久相爱", "#ded5ff", "#4f3f89", "#9d8cff", "#f4efff"]
     ];
 
     const narrativeScenes = {
       2: [
-        { title: "雨停便利店", line: "你们同时站在门口等雨小，谁都没有先走。", mood: "meet", effect: "love-petal" },
-        { title: "图书馆错拿书", line: "伸手拿到同一本书时，你们都笑了一下。", mood: "meet", effect: "love-petal" },
-        { title: "地铁对视", line: "车厢轻轻一晃，目光刚好碰上。", mood: "meet", effect: "love-story" },
-        { title: "朋友聚会", line: "热闹里突然记住了一个安静的人。", mood: "meet", effect: "love-story" },
-        { title: "楼下晚风", line: "一句普通问候，被你记了很久。", mood: "meet", effect: "love-petal" }
+        { title: "雨停便利店", line: "你们同时站在门口等雨小，檐下的灯把沉默照得很柔软。谁都没有先走，好像都在等一句可以继续的话。", mood: "meet", effect: "love-petal", tone: "meet" },
+        { title: "图书馆错拿书", line: "两只手同时碰到同一本书，书脊轻轻歪了一下。你们把书推来推去，最后都笑了。", mood: "campus", effect: "love-petal", tone: "campus" },
+        { title: "地铁对视", line: "车厢忽然一晃，你扶住把手，目光刚好撞上 TA 的笑意。下一站很快到了，你却觉得这一秒很长。", mood: "street", effect: "love-story", tone: "street" },
+        { title: "朋友聚会", line: "热闹里每个人都在说话，你却记住了那个安静听别人讲完的人。离开时，TA 的名字留在了你的脑海里。", mood: "meet", effect: "love-story", tone: "meet" },
+        { title: "楼下晚风", line: "一句普通的问候被晚风吹得很轻，你们站在路灯下多聊了两句。后来你才发现自己记住了那天的温度。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "排队买奶茶", line: "前面的人很多，你们聊起菜单上奇怪的新品。原本无聊的队伍，突然变得不太想前进。", mood: "cafe", effect: "love-story", tone: "date" },
+        { title: "借伞的人", line: "雨落得很急，TA 把伞往你这边挪了一点。你说谢谢时，声音比平时小。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "电梯一层", line: "电梯门打开又关上，你们只一起站了一层楼。可那短短几十秒，像一段故事的第一页。", mood: "meet", effect: "love-story", tone: "meet" }
       ],
       4: [
-        { title: "等消息", line: "手机亮了一下，你比想象中更快拿起来。", mood: "chat", effect: "love-story" },
-        { title: "记住喜好", line: "TA 随口说过的口味，你竟然记住了。", mood: "chat", effect: "love-petal" },
-        { title: "偶遇绕路", line: "明明不顺路，还是想从那边经过。", mood: "meet", effect: "love-petal" },
-        { title: "点赞停留", line: "一个普通动态，你看了不止一遍。", mood: "chat", effect: "love-story" },
-        { title: "小心试探", line: "一句玩笑话里藏着一点认真。", mood: "chat", effect: "love-story" }
+        { title: "记住名字", line: "你第二次听见 TA 的名字时，没有再问是哪两个字。这个小小的准确，让对方抬头看了你一眼。", mood: "campus", effect: "love-story", tone: "campus" },
+        { title: "记住口味", line: "TA 随口说不太喝冰的，你却在点单时自然改成了温的。对方愣了一下，笑得很轻。", mood: "cafe", effect: "love-petal", tone: "date" },
+        { title: "记住座位", line: "你开始知道 TA 常坐在哪个角落。路过时没打扰，只是脚步慢了一点。", mood: "campus", effect: "love-story", tone: "campus" },
+        { title: "记住伞柄", line: "人群里那么多把伞，你先看见了那一把。你甚至还没看见人，心里已经有了答案。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "记住笑点", line: "别人讲到一半，你已经知道 TA 会在哪一句笑出来。果然下一秒，TA 笑得眼睛弯了一下。", mood: "meet", effect: "love-story", tone: "meet" },
+        { title: "记住路线", line: "你发现自己绕了一小段路，只为了可能碰见 TA。没有碰见也没关系，心情还是亮了一点。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "记住歌单", line: "耳机里响起 TA 分享过的歌，你第一次认真听完了副歌。歌词忽然变得像在替你说话。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "记住小事", line: "TA 提过的一件小烦恼，你隔天问了一句后来怎么样。那不是客套，是你真的放在了心上。", mood: "chat", effect: "love-story", tone: "chat" }
       ],
       8: [
-        { title: "正在输入", line: "那几个字闪了又停，心也跟着停了一下。", mood: "chat", effect: "love-story" },
-        { title: "晚安多一秒", line: "晚安发出后，你们都没有立刻退出聊天。", mood: "chat", effect: "love-petal" },
-        { title: "表情包互传", line: "奇怪的是，连无聊都变得好玩。", mood: "chat", effect: "love-story" },
-        { title: "深夜长聊", line: "窗外安静下来，聊天框还亮着。", mood: "chat", effect: "love-starlight" },
-        { title: "约饭试探", line: "一句“改天一起吃饭”变得不像客套。", mood: "date", effect: "love-petal" }
+        { title: "等消息", line: "手机亮了一下，你比想象中更快拿起来。看到不是 TA 的时候，又假装自己只是随便看一眼。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "点赞停留", line: "一个普通动态，你看了不止一遍。拇指悬在屏幕上，像在犹豫要不要留下一个太明显的信号。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "偶遇绕路", line: "明明不顺路，还是想从那边经过。真的遇见时，你又装作只是刚好路过。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "小心试探", line: "一句玩笑话里藏着一点认真，说出口后你假装看别处。TA 接得很自然，你松了口气。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "帮忙占座", line: "你提前把旁边的位置留出来，理由找得很普通。TA 坐下时，你突然觉得今天的课没那么长。", mood: "campus", effect: "love-petal", tone: "campus" },
+        { title: "同款咖啡", line: "你点了和 TA 一样的口味，说只是想试试。第一口其实有点苦，但你没有后悔。", mood: "cafe", effect: "love-story", tone: "date" },
+        { title: "雨后同行", line: "雨停后地面还有水光，你们并肩绕开同一处积水。短短一段路，被你走得很慢。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "晚风回复", line: "TA 的回复隔了很久才来，你却没有生气。你发现自己已经开始为对方找很多温柔的理由。", mood: "starlight", effect: "love-starlight", tone: "chat" }
       ],
       16: [
-        { title: "咖啡馆", line: "杯子轻碰，暖灯落在桌面上。", mood: "date", effect: "love-petal" },
-        { title: "电影散场", line: "电影一般，但散场后的路走得很慢。", mood: "date", effect: "love-story" },
-        { title: "雨天共享伞", line: "伞不算大，距离却刚刚好。", mood: "rain", effect: "love-petal" },
-        { title: "夜市灯火", line: "人群很吵，你却听得清 TA 说话。", mood: "date", effect: "love-starlight" },
-        { title: "公园长椅", line: "风吹过树影，你们聊到天色暗下来。", mood: "date", effect: "love-petal" },
-        { title: "书店角落", line: "翻页声很轻，连沉默都不尴尬。", mood: "meet", effect: "love-story" }
+        { title: "正在输入", line: "那几个字闪了又停，心也跟着停了一下。你盯着聊天框，像在等一场小小的烟花。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "晚安多一秒", line: "晚安发出后，你们都没有立刻退出聊天。屏幕暗下去以前，又多了一句没什么意义却很甜的话。", mood: "chat", effect: "love-petal", tone: "chat" },
+        { title: "表情包互传", line: "奇怪的是，连无聊都变得好玩。一个很傻的表情包，被你们反复发了好几轮。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "深夜长聊", line: "窗外安静下来，聊天框还亮着。你们从今天聊到小时候，又绕回明天要吃什么。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "约饭试探", line: "一句“改天一起吃饭”变得不像客套。你们都没有追问是哪天，却都记住了这句话。", mood: "cafe", effect: "love-petal", tone: "date" },
+        { title: "撤回之后", line: "TA 撤回了一句话，你没有问。过了一会儿，TA 又发来一句更认真也更笨拙的话。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "共享歌单", line: "你们把歌一首首发给对方，像在交换一点不敢明说的心情。某句歌词被同时截图。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "语音三十秒", line: "一段三十秒的语音，你反复听了两遍。TA 的笑声在耳机里显得比文字更近。", mood: "chat", effect: "love-petal", tone: "chat" }
       ],
       32: [
-        { title: "路口告白", line: "红灯很长，足够把话说完。", mood: "date", effect: "love-petal" },
-        { title: "花束递出", line: "花有点歪，但心意很认真。", mood: "date", effect: "love-petal" },
-        { title: "天台晚风", line: "城市很远，眼前的人很近。", mood: "starlight", effect: "love-starlight" },
-        { title: "聊天记录", line: "那句“我们试试看吧”停在屏幕中央。", mood: "chat", effect: "love-story" },
-        { title: "牵手确认", line: "没有夸张台词，只是手没有再松开。", mood: "date", effect: "love-petal" }
+        { title: "消息置顶", line: "你没有告诉 TA，但那个聊天框已经被悄悄放到最上面。每次打开手机，它都像一个小小的期待。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "雨夜电话", line: "外面下着雨，你们没有急着挂电话。很多话没有重点，却都像在慢慢靠近。", mood: "rain", effect: "love-starlight", tone: "rain" },
+        { title: "错过末班", line: "你们聊到差点错过末班车，站台风很大。TA 说下次早点走，你却听出下次这两个字。", mood: "street", effect: "love-story", tone: "street" },
+        { title: "生日零点", line: "你卡着零点发出祝福，字数删了又删。TA 回得很快，说你是第一个。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "照片存下", line: "那张随手拍的合照其实有点糊，你还是保存了。相册里第一次多了一个不能随便删的人。", mood: "date", effect: "love-petal", tone: "date" },
+        { title: "借口见面", line: "你们都找了一个不太高明的借口，只为了把线上聊天搬到现实里。见面时谁也没有拆穿。", mood: "cafe", effect: "love-story", tone: "date" },
+        { title: "暧昧沉默", line: "沉默突然不再尴尬，反而像一段只属于你们的暗号。你们并肩走着，谁也没有急着说话。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "朋友起哄", line: "有人开玩笑说你们很熟，你们同时笑了一下。那一瞬间，空气里的答案比玩笑更明显。", mood: "meet", effect: "love-story", tone: "meet" }
       ],
       64: [
-        { title: "烟花夜", line: "烟花亮起时，你们同时看向对方。", mood: "starlight", effect: "love-starlight" },
-        { title: "旅行车票", line: "目的地不重要，一起出发比较重要。", mood: "date", effect: "love-story" },
-        { title: "合照贴纸", line: "相册里开始频繁出现两个人。", mood: "date", effect: "love-petal" },
-        { title: "拥抱重逢", line: "见面前的路都显得太长。", mood: "date", effect: "love-petal" },
-        { title: "纪念小物", line: "一个不起眼的小东西，被认真收好。", mood: "home", effect: "love-story" }
+        { title: "咖啡馆", line: "杯子轻碰，暖灯落在桌面上。你们终于不只是聊天记录里的两个人。", mood: "cafe", effect: "love-petal", tone: "date" },
+        { title: "书店角落", line: "翻页声很轻，连沉默都不尴尬。你们站在同一排书架前，交换了很小声的推荐。", mood: "campus", effect: "love-story", tone: "campus" },
+        { title: "下班等候", line: "TA 出来时一眼看见你，脚步明显快了一点。你把热饮递过去，说刚好顺路。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "公园长椅", line: "风吹过树影，你们聊到天色暗下来。路灯亮起的时候，谁也没有提回去。", mood: "date", effect: "love-story", tone: "date" },
+        { title: "夜市灯火", line: "人群很吵，你却听得清 TA 说话。你们分着一份小吃，笑得像已经认识很久。", mood: "street", effect: "love-starlight", tone: "street" },
+        { title: "展览门口", line: "你们在一幅画前停得很久，解释各自看到的东西。差异没有拉开距离，反而多了话题。", mood: "date", effect: "love-story", tone: "date" },
+        { title: "雨天共享伞", line: "伞不算大，距离却刚刚好。肩膀偶尔碰到时，你们都没有往外躲。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "街角告别", line: "这次见面结束得太快，告别被你们拉长了好几次。走出几步后，你忍不住回头。", mood: "street", effect: "love-story", tone: "street" }
       ],
       128: [
-        { title: "雨窗沉默", line: "你们第一次不知道该先说什么。", mood: "rain", effect: "love-story" },
-        { title: "小争执", line: "吵的不是那件小事，而是没说出口的在意。", mood: "rain", effect: "love-story" },
-        { title: "道歉消息", line: "删删改改很久，最后只发出一句真心话。", mood: "chat", effect: "love-petal" },
-        { title: "情绪冷却", line: "过了一会儿，你们终于愿意好好听对方说。", mood: "rain", effect: "love-story" },
-        { title: "重新靠近", line: "不是没有分歧，是没有转身离开。", mood: "date", effect: "love-petal" }
+        { title: "电影散场", line: "电影一般，但散场后的路走得很慢。真正被记住的不是剧情，是你们在路灯下讨论它的样子。", mood: "street", effect: "love-story", tone: "date" },
+        { title: "晚餐靠窗", line: "你们坐在靠窗的位置，城市的光落在杯沿。点菜时互相让来让去，最后点了都想吃的。", mood: "cafe", effect: "love-petal", tone: "date" },
+        { title: "雨天共享伞", line: "雨比预报来得早，你们挤在同一把伞下。走到门口时，两个人都慢了半步。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "夜市灯火", line: "摊位的灯一盏盏亮起来，你们在人群里交换手里的小吃。那天的热闹后来变成一张很亮的回忆。", mood: "street", effect: "love-starlight", tone: "street" },
+        { title: "公园长椅", line: "你们坐在长椅上看人来人往，说了很多没有结论的话。可是离开时，心里都更确定了一点。", mood: "date", effect: "love-story", tone: "date" },
+        { title: "书店角落", line: "TA 把一本书递给你，说这本应该适合你。你接过时忽然觉得，被理解原来这么具体。", mood: "campus", effect: "love-petal", tone: "campus" },
+        { title: "天台晚风", line: "城市很远，眼前的人很近。你们聊到风变凉，还是舍不得结束这次见面。", mood: "starlight", effect: "love-starlight", tone: "date" },
+        { title: "散步回程", line: "导航显示只剩几分钟，你们却又绕了一条路。每一个红绿灯都像在帮你们多留一会儿。", mood: "street", effect: "love-story", tone: "street" }
       ],
       256: [
-        { title: "深夜长谈", line: "真正的问题被慢慢摊开。", mood: "starlight", effect: "love-starlight" },
-        { title: "共享伞", line: "这次不是浪漫，是一种被照顾的安心。", mood: "rain", effect: "love-petal" },
-        { title: "坦白过去", line: "说出来之后，反而轻松了一点。", mood: "chat", effect: "love-story" },
-        { title: "等待归来", line: "有人为你留着灯，关系就有了重量。", mood: "home", effect: "love-story" },
-        { title: "低谷陪伴", line: "没有解决一切，但没有让对方一个人。", mood: "home", effect: "love-petal" }
+        { title: "每天早安", line: "早安不再是礼貌，而像一天开始时的确认。你们都知道，有个人醒来后会想到自己。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "午休碎片", line: "短短十分钟午休，TA 也会发来今天的小事。你们把生活切成很多碎片，一点点递给对方。", mood: "chat", effect: "love-petal", tone: "chat" },
+        { title: "下雨提醒", line: "天气预报弹出来时，你先想到的是提醒 TA 带伞。消息发出后，对方回了一个很乖的收到。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "共同日历", line: "你们开始认真对齐空闲时间。那些本来普通的日期，被标记后忽然有了期待。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "视频通话", line: "屏幕里的光照着两张有点疲惫的脸。你们没有说什么大事，只是陪彼此把一天收尾。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "城市另一端", line: "隔着很远的路，你们还是讲起同一场雨。距离没有消失，但它不再让人慌。", mood: "street", effect: "love-story", tone: "street" }
       ],
       512: [
-        { title: "同一把钥匙", line: "门打开时，灯已经亮着。", mood: "home", effect: "love-story" },
-        { title: "早餐热气", line: "平淡的一天，从给对方留一份开始。", mood: "home", effect: "love-petal" },
-        { title: "阳台植物", line: "你们一起养活了一盆小小的绿意。", mood: "home", effect: "love-petal" },
-        { title: "同款拖鞋", line: "生活的痕迹开始成双出现。", mood: "home", effect: "love-story" },
-        { title: "台灯夜话", line: "没有轰轰烈烈，但很踏实。", mood: "home", effect: "love-starlight" }
+        { title: "不用明说", line: "TA 递过来的是你刚想拿的东西。你们都笑了，因为有些默契已经不用解释。", mood: "home", effect: "love-petal", tone: "home" },
+        { title: "座位自然留出", line: "聚会时 TA 身边的空位像是默认留给你。你走过去坐下，所有人都很自然。", mood: "meet", effect: "love-story", tone: "meet" },
+        { title: "眼神接住", line: "人群里你只看了 TA 一眼，TA 就知道你想离开一下。被懂得的感觉，比被关注更安稳。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "同一把伞", line: "这次不用再问要不要一起走，伞已经自动往你这边倾斜。雨声像给你们留出的背景。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "各自忙碌", line: "你们坐在同一张桌前做自己的事，偶尔抬头笑一下。没有一直说话，也没有觉得疏远。", mood: "cafe", effect: "love-story", tone: "date" },
+        { title: "夜路并肩", line: "路灯把影子拉得很长，你们走得很慢。很多话没说出口，但都好像已经被听见。", mood: "starlight", effect: "love-starlight", tone: "street" }
       ],
       1024: [
-        { title: "地图标记", line: "那些没去过的地方，被认真圈起来。", mood: "starlight", effect: "love-starlight" },
-        { title: "日历约定", line: "未来第一次有了具体日期。", mood: "date", effect: "love-story" },
-        { title: "城市夜景", line: "你们讨论以后，也讨论现实。", mood: "starlight", effect: "love-starlight" },
-        { title: "共同目标", line: "不是完全一样的人，却愿意往同一边走。", mood: "home", effect: "love-petal" },
-        { title: "车票远方", line: "路还很长，但这次不是一个人。", mood: "starlight", effect: "love-story" }
+        { title: "删了又写", line: "那句关键的话在输入框里来回改了很多遍。你第一次觉得，勇气原来会卡在发送键前。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "花店门口", line: "你在花店外站了很久，不确定哪一束才不显得太夸张。最后选的那束有点歪，但心意很认真。", mood: "cafe", effect: "love-petal", tone: "date" },
+        { title: "朋友助攻", line: "朋友故意把你们留在一起，你们都看破了却没有拒绝。空气里多了一点被推着往前的勇气。", mood: "meet", effect: "love-story", tone: "meet" },
+        { title: "路口红灯", line: "红灯很长，长到足够把心里的话排好顺序。你看着倒计时，决定绿灯前开口。", mood: "street", effect: "love-starlight", tone: "street" },
+        { title: "告白前夜", line: "你提前想了很多句，最后发现最想说的其实很简单。夜里很安静，心跳却像提前到了明天。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "未发送草稿", line: "草稿箱里躺着一段长长的话，你反复读到每个标点都熟悉。明天，它也许就不再只是草稿。", mood: "chat", effect: "love-story", tone: "chat" }
       ],
       2048: [
-        { title: "相册翻页", line: "每一页都不是完美，却都真实。", mood: "starlight", effect: "love-starlight" },
-        { title: "桃花满屏", line: "那些靠近、争执、和好，终于长成答案。", mood: "date", effect: "love-petal" },
-        { title: "家的灯", line: "远处有灯，身边有人。", mood: "home", effect: "love-starlight" },
-        { title: "长路同行", line: "不是童话结尾，是一起继续生活。", mood: "home", effect: "love-starlight" },
-        { title: "星光心形", line: "你们没有成为完美的人，只是更愿意理解彼此。", mood: "starlight", effect: "love-starlight" }
+        { title: "路口告白", line: "你终于把话说完，声音没有想象中平稳。TA 没有立刻回答，只是先牵住了你的手。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "花束递出", line: "花束有点歪，包装纸也被你攥皱了。TA 接过去时笑了，说你紧张得太明显。", mood: "cafe", effect: "love-petal", tone: "date" },
+        { title: "聊天记录", line: "那句“我们试试看吧”停在屏幕中央。你盯着它看了很久，像确认一件刚刚发生的奇迹。", mood: "chat", effect: "love-story", tone: "chat" },
+        { title: "牵手确认", line: "没有夸张台词，只是手没有再松开。街上的风很普通，却把这一天吹得很特别。", mood: "street", effect: "love-petal", tone: "street" },
+        { title: "双向奔赴", line: "这一次，不是你一个人在靠近。你们终于把同样的心意说出口，故事从暗号变成约定。", mood: "vow", effect: "love-starlight", tone: "vow" },
+        { title: "第一张合照", line: "你们拍了确认关系后的第一张照片，角度不完美，笑却很真。相册从这一刻开始有了新的分类。", mood: "date", effect: "love-story", tone: "date" }
       ],
       4096: [
-        { title: "十年纪念", line: "很多事变成习惯以后，依然会在某天突然心动。", mood: "home", effect: "love-starlight" },
-        { title: "旧车票", line: "很多路走过之后，才知道哪段最值得回头。", mood: "home", effect: "love-story" },
-        { title: "纪念晚餐", line: "菜还是那几道，但你们已经有了很多故事。", mood: "date", effect: "love-petal" },
-        { title: "老照片", line: "照片里的笑有些笨拙，却是真的。", mood: "home", effect: "love-story" },
-        { title: "重走旧路", line: "当年觉得很长的路，现在走起来刚刚好。", mood: "starlight", effect: "love-starlight" }
+        { title: "烟花夜", line: "烟花亮起时，你们同时看向对方。世界被照亮的一秒里，TA 的眼睛比天空更近。", mood: "starlight", effect: "love-starlight", tone: "date" },
+        { title: "旅行车票", line: "目的地不重要，一起出发比较重要。车票夹在书里，像一张未来的书签。", mood: "street", effect: "love-story", tone: "street" },
+        { title: "拥抱重逢", line: "见面前的路都显得太长，直到 TA 站在出口向你招手。拥抱发生得很自然，像终于把空缺补上。", mood: "date", effect: "love-petal", tone: "date" },
+        { title: "纪念小物", line: "一个不起眼的小东西，被认真收好。它没有价格感，却像给热恋留下的一枚坐标。", mood: "home", effect: "love-story", tone: "home" }
       ],
       8192: [
-        { title: "白发相册", line: "照片慢慢褪色，牵手的动作还是熟悉。", mood: "starlight", effect: "love-starlight" },
-        { title: "院子晚风", line: "一生很长，长到很多答案都变得温柔。", mood: "home", effect: "love-petal" },
-        { title: "旧歌重听", line: "旋律响起时，你们又想起第一次并肩走路。", mood: "starlight", effect: "love-story" },
-        { title: "慢慢回家", line: "步子变慢之后，等待也变成一种浪漫。", mood: "home", effect: "love-starlight" },
-        { title: "一生的故事", line: "这不是终点，只是下一页开始前的停顿。", mood: "starlight", effect: "love-starlight" }
+        { title: "雨窗沉默", line: "你们第一次不知道该先说什么。雨水顺着玻璃往下滑，像把情绪也拖得很慢。", mood: "rain", effect: "love-story", tone: "rain" },
+        { title: "小争执", line: "吵的不是那件小事，而是没说出口的在意。沉默之后，你们都意识到不能只靠猜。", mood: "rain", effect: "love-story", tone: "rain" },
+        { title: "道歉消息", line: "删删改改很久，最后只发出一句真心话。TA 回得不快，但回来的那一刻，空气松了一点。", mood: "chat", effect: "love-petal", tone: "chat" },
+        { title: "重新靠近", line: "不是没有分歧，是没有转身离开。你们坐下来慢慢说，把尖锐的话磨成能被理解的样子。", mood: "home", effect: "love-petal", tone: "home" }
+      ],
+      16384: [
+        { title: "深夜长谈", line: "真正的问题被慢慢摊开，没有谁急着赢。你们第一次把理解放在了情绪前面。", mood: "starlight", effect: "love-starlight", tone: "chat" },
+        { title: "共享伞", line: "这次不是浪漫，是一种被照顾的安心。雨很密，但你知道自己不会被落下。", mood: "rain", effect: "love-petal", tone: "rain" },
+        { title: "低谷陪伴", line: "没有解决一切，但没有让对方一个人。很多爱不是答案，而是陪你一起等答案出现。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "日常确认", line: "你们不再用热烈证明喜欢，而是在一件件小事里确认彼此。稳定不是变淡，是终于安心。", mood: "home", effect: "love-petal", tone: "home" }
+      ],
+      32768: [
+        { title: "朋友局公开", line: "TA 很自然地把你介绍给朋友，语气里有一点不藏的骄傲。你坐在人群里，忽然有了位置感。", mood: "meet", effect: "love-story", tone: "meet" },
+        { title: "被朋友调侃", line: "朋友们起哄时，你们都没有急着否认。那种默认，比任何解释都更甜。", mood: "date", effect: "love-petal", tone: "date" },
+        { title: "照顾社交", line: "TA 会在陌生话题里自然把你带进来。你不用努力证明什么，因为有人已经站在你这边。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "散场牵手", line: "聚会散场后，你们走在最后。热闹褪去，手心里的温度反而更清楚。", mood: "street", effect: "love-starlight", tone: "street" }
+      ],
+      65536: [
+        { title: "第一段旅程", line: "行李箱轮子碾过站台，你们因为路线吵了一小会儿，又因为一碗热汤和好。旅行把喜欢照得更真实。", mood: "street", effect: "love-story", tone: "street" },
+        { title: "海边日落", line: "风把头发吹乱，你们拍了很多不好看的照片。可每一张都像在说，当时真的很快乐。", mood: "starlight", effect: "love-starlight", tone: "date" },
+        { title: "酒店小灯", line: "陌生城市的房间亮着小灯，你们摊开第二天的地图。未来计划第一次变得像可以触摸的纸。", mood: "home", effect: "love-petal", tone: "home" },
+        { title: "迷路之后", line: "导航把你们带进一条安静小巷。迷路没有坏掉这天，反而让你们多了一段只有彼此知道的路。", mood: "street", effect: "love-story", tone: "street" }
+      ],
+      131072: [
+        { title: "同一把钥匙", line: "门打开时，灯已经亮着。生活不再只是见面，而是有人在同一个屋檐下等你回来。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "早餐热气", line: "平淡的一天，从给对方留一份早餐开始。蒸汽升起来时，爱变成了可以吃下去的温度。", mood: "home", effect: "love-petal", tone: "home" },
+        { title: "阳台植物", line: "你们一起养活了一盆小小的绿意。它长得不快，却让日子有了可被观察的变化。", mood: "home", effect: "love-petal", tone: "home" },
+        { title: "家的灯", line: "夜里回来时，远处有灯，身边有人。你第一次觉得家不是地址，而是一种确定的抵达。", mood: "home", effect: "love-starlight", tone: "home" }
+      ],
+      262144: [
+        { title: "家人饭桌", line: "饭桌上有些问题问得直接，TA 在桌下轻轻碰了碰你的手。那一下让你知道，自己不是一个人在应对。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "长辈红包", line: "长辈把红包塞过来时，你们都有点不好意思。礼节背后，是关系被认真看见。", mood: "vow", effect: "love-petal", tone: "vow" },
+        { title: "厨房帮忙", line: "你们在厨房里笨手笨脚地洗菜，偶尔对视一笑。进入对方家庭的方式，原来也可以这么具体。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "离开后的路", line: "从家里出来后，你们都松了一口气，又忍不住笑。紧张过去，牵手变得比来时更稳。", mood: "street", effect: "love-starlight", tone: "street" }
+      ],
+      524288: [
+        { title: "未来计划", line: "你们把城市、工作、家庭和自由都摊开来讲。不是每个答案都一样，但你们愿意一起找重叠的部分。", mood: "starlight", effect: "love-starlight", tone: "vow" },
+        { title: "婚姻不是终点", line: "谈到婚姻时，你们没有只聊仪式，也聊柴米油盐和坏情绪。浪漫没有消失，只是长出了骨架。", mood: "home", effect: "love-story", tone: "home" },
+        { title: "共同账户", line: "你们开始认真记录开销和计划。那些数字不再冰冷，因为背后是一段要一起负责的生活。", mood: "home", effect: "love-petal", tone: "home" },
+        { title: "地图标记", line: "地图上被圈起很多地方，有想去的城市，也有可能生活的城市。未来不再抽象，它有了路线。", mood: "starlight", effect: "love-starlight", tone: "street" }
+      ],
+      1048576: [
+        { title: "戒指口袋", line: "戒指在口袋里小小地硌着你，提醒你每一步都是真的。TA 还不知道，今晚的风会记住这件事。", mood: "vow", effect: "love-starlight", tone: "vow" },
+        { title: "求婚时刻", line: "你说得没有排练时流利，甚至有一点颤。可 TA 眼睛红起来的时候，你知道最重要的话已经到了。", mood: "vow", effect: "love-starlight", tone: "vow" },
+        { title: "朋友欢呼", line: "身边的人开始欢呼，你们却只看见彼此。那一瞬间很吵，也很安静。", mood: "starlight", effect: "love-petal", tone: "vow" },
+        { title: "答应以后", line: "戒指戴上去后，你们都笑得有点傻。未来突然变得很大，又因为牵着手而不再吓人。", mood: "vow", effect: "love-starlight", tone: "vow" }
+      ],
+      2097152: [
+        { title: "婚礼之前", line: "请柬、座位表、衣服和时间表把你们弄得手忙脚乱。忙乱里偶尔抬头，你们还是会笑。", mood: "vow", effect: "love-story", tone: "vow" },
+        { title: "试穿礼服", line: "镜子里的样子有点陌生，身边的人却熟悉得让人安心。你们突然意识到，很多路真的走到了这里。", mood: "vow", effect: "love-starlight", tone: "vow" },
+        { title: "誓词草稿", line: "誓词写了很多版，最后留下的都是朴素的句子。因为最深的承诺，往往不需要太花哨。", mood: "starlight", effect: "love-starlight", tone: "vow" },
+        { title: "前夜灯光", line: "婚礼前夜，灯光很暖，你们没有说太多话。只是一起坐着，就已经像一种回答。", mood: "home", effect: "love-petal", tone: "home" }
+      ],
+      4194304: [
+        { title: "长久相爱", line: "很多年后，你们依然会因为小事争执，也会在晚饭后一起散步。爱没有停在某一天，而是继续生活。", mood: "home", effect: "love-starlight", tone: "home" },
+        { title: "相册翻页", line: "每一页都不是完美，却都真实。那些靠近、争执、和好，终于长成了你们自己的答案。", mood: "starlight", effect: "love-starlight", tone: "vow" },
+        { title: "慢慢回家", line: "步子变慢之后，等待也变成一种浪漫。你们还是会为对方留灯，像很久以前那样。", mood: "home", effect: "love-petal", tone: "home" },
+        { title: "一生的故事", line: "这不是童话结尾，也不是游戏终点。只是下一页开始前，你们又一次选择并肩往前走。", mood: "vow", effect: "love-starlight", tone: "vow" }
       ]
     };
 
-    const moodClasses = ["mood-meet", "mood-chat", "mood-date", "mood-rain", "mood-home", "mood-starlight"];
+    const moodClasses = ["mood-meet", "mood-campus", "mood-chat", "mood-date", "mood-cafe", "mood-rain", "mood-street", "mood-home", "mood-starlight", "mood-vow"];
 
     board.style.setProperty("--cols", size);
     board.style.setProperty("--rows", size);
@@ -607,10 +694,14 @@ if (gameHub || soloGame) {
       return tiles.join(",");
     }
 
-    function add(value = Math.random() > 0.88 ? 4 : 2) {
+    function addFromTop(value = Math.random() > 0.88 ? 4 : 2) {
       const empty = emptyIndices();
       if (!empty.length) return -1;
-      const index = empty[Math.floor(Math.random() * empty.length)];
+      const topEmpty = tiles.slice(0, size)
+        .map((cell, index) => cell ? -1 : index)
+        .filter((index) => index >= 0);
+      const candidates = topEmpty.length ? topEmpty : empty;
+      const index = candidates[Math.floor(Math.random() * candidates.length)];
       tiles[index] = value;
       return index;
     }
@@ -631,12 +722,14 @@ if (gameHub || soloGame) {
 
     function nextTarget() {
       const top = maxTile();
-      const target = top >= 2048 ? Math.min(top * 2, 8192) : Math.max(4, top * 2);
+      const maxStage = tileStory[tileStory.length - 1][0];
+      const target = top >= maxStage ? maxStage : Math.max(4, top * 2);
       return romanceTile(target);
     }
 
     function pickMergeScene(nextValue) {
-      const pool = narrativeScenes[nextValue] || narrativeScenes[2048];
+      const finalStage = tileStory[tileStory.length - 1][0];
+      const pool = narrativeScenes[nextValue] || narrativeScenes[finalStage];
       const tile = romanceTile(nextValue);
       const base = pool[Math.floor(Math.random() * pool.length)];
       return { ...base, value: nextValue, stage: tile.label, glyph: tile.glyph };
@@ -710,6 +803,21 @@ if (gameHub || soloGame) {
     function playScene(scene, cellIndex) {
       triggerBoardEffect("love-story", { text: scene.title, duration: 1180 });
       triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 940 });
+      showSceneOverlay(scene);
+    }
+
+    function showSceneOverlay(scene) {
+      clearTimeout(sceneOverlayTimer);
+      board.querySelector(".love-scene-overlay")?.remove();
+      const item = document.createElement("div");
+      item.className = "love-scene-overlay";
+      item.setAttribute("aria-hidden", "true");
+      item.dataset.tone = scene.tone || scene.mood || "story";
+      item.innerHTML = '<span>' + escapeText(scene.stage) + '</span>'
+        + '<strong>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.title) + '</strong>'
+        + '<p>' + escapeText(scene.line) + '</p>';
+      board.append(item);
+      sceneOverlayTimer = window.setTimeout(() => item.remove(), 2400);
     }
 
     function move(dir) {
@@ -738,14 +846,16 @@ if (gameHub || soloGame) {
       if (boardSignature() === before) {
         lastMergeCells = [];
         lastMoveDir = dir;
+        lastSpawnCell = spawnOnBlockedInput && emptyIndices().length ? addFromTop() : -1;
         render();
-        triggerBoardEffect("love-bump", { duration: 360 });
+        if (lastSpawnCell >= 0) triggerCellEffect("love-top-spawn", lastSpawnCell, size, size, { duration: 620 });
+        else triggerBoardEffect("love-bump", { duration: 360 });
         return;
       }
 
       lastMoveDir = dir;
       lastMergeCells = mergedCells;
-      lastSpawnCell = add();
+      lastSpawnCell = addFromTop();
       let featured = null;
       if (mergedThisMove) {
         points += mergedThisMove;
@@ -794,19 +904,21 @@ if (gameHub || soloGame) {
         const tile = romanceTile(value);
         const hot = value && value >= 128 ? "is-hot" : "";
         const collision = mergeSet.has(index) ? "is-collision" : "";
-        const newborn = index === lastSpawnCell ? "is-new" : "";
+        const newborn = index === lastSpawnCell ? "is-new is-top-spawn" : "";
         const vowTile = value && value >= 1024 ? "is-vow" : "";
         const style = value ? ' style="--tile:' + tile.color + ';--tile-deep:' + tile.deep + ';--tile-accent:' + tile.accent + ';--tile-rim:' + tile.rim + ';--rank:' + tile.rank + ';"' : "";
         const content = value ? heartMarkup(index) + '<b>' + tile.glyph + '</b><em class="tile-number">' + value + '</em><small>' + escapeText(tile.label) + '</small>' : "";
         return '<span class="merge-cell love-tile v' + (value || 0) + ' ' + hot + ' ' + collision + ' ' + newborn + ' ' + vowTile + '" data-value="' + (value || "") + '" data-rank="' + tile.rank + '" data-romance="' + escapeText(tile.label) + '"' + style + '>' + content + '</span>';
       }).join("");
       setScore(points);
-      setStatus(canMove() ? "滑动合并相同爱心，合成 2048 双向奔赴" : "棋盘已满，点重遇再开始一段故事");
+      setStatus(canMove() ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
       meta.innerHTML = renderStoryCard();
     }
 
     function restart() {
       clearTimeout(moodTimer);
+      clearTimeout(sceneOverlayTimer);
+      board.querySelector(".love-scene-overlay")?.remove();
       for (const name of moodClasses) board.classList.remove(name);
       tiles = Array(size * size).fill(0);
       points = 0;
@@ -819,8 +931,8 @@ if (gameHub || soloGame) {
       currentScene = pickMergeScene(2);
       memoryOpen = false;
       applyMood(currentScene);
-      add();
-      lastSpawnCell = add();
+      addFromTop();
+      lastSpawnCell = addFromTop();
       render();
     }
 
@@ -829,7 +941,7 @@ if (gameHub || soloGame) {
     restart();
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
-    return () => { clearTimeout(moodTimer); offKey(); offSwipe(); };
+    return () => { clearTimeout(moodTimer); clearTimeout(sceneOverlayTimer); offKey(); offSwipe(); };
   }
 
   function runMines() {
