@@ -31,12 +31,12 @@ if (gameHub || soloGame) {
     },
     {
       id: "merge2048",
-      name: "熔核 2048",
-      kind: "Numbers",
-      theme: "ember-2048",
-      boardClass: "board-ember-2048",
-      tagline: "连续合并会升温，满能量可触发一次淬火。",
-      feature: "Streak / Heat / Temper",
+      name: "桃花心动 2048",
+      kind: "Love",
+      theme: "love-2048",
+      boardClass: "board-love-2048",
+      tagline: "滑动牵手，合并心意，桃花会随连击盛放。",
+      feature: "Affinity / Bloom / Vow",
       run: run2048
     },
     {
@@ -473,111 +473,216 @@ if (gameHub || soloGame) {
     const size = 4;
     let tiles = [];
     let points = 0;
-    let heat = 0;
-    let mergeStreak = 0;
-    let temperReady = false;
+    let affinity = 0;
+    let bloomChain = 0;
+    let vowReady = false;
+    let lastMergeCells = [];
+    let lastSpawnCell = -1;
+    let lastMoveDir = "start";
+    let loveTempo = 1;
+
+    const tileStory = [
+      [2, "♡", "初遇", "#ffd7e5", "#bc486f"],
+      [4, "❀", "桃信", "#ffc8df", "#bf5777"],
+      [8, "💌", "告白", "#ffb4d2", "#c94d78"],
+      [16, "💕", "牵手", "#ffa2c7", "#bb416d"],
+      [32, "🌸", "花雨", "#ff91ba", "#a93565"],
+      [64, "💗", "热恋", "#ff7fae", "#95315d"],
+      [128, "💞", "相守", "#ff6da2", "#862a55"],
+      [256, "💖", "心约", "#ff5d98", "#7e2651"],
+      [512, "🌙", "良夜", "#eaa6ff", "#65306d"],
+      [1024, "💍", "誓约", "#ffd27a", "#8a5722"],
+      [2048, "💘", "永恒", "#fff0a8", "#8f5b2f"]
+    ];
 
     board.style.setProperty("--cols", size);
     board.style.setProperty("--rows", size);
 
     function add(value = Math.random() > 0.88 ? 4 : 2) {
       const empty = tiles.map((v, i) => v ? -1 : i).filter((i) => i >= 0);
-      if (!empty.length) return;
-      tiles[empty[Math.floor(Math.random() * empty.length)]] = value;
+      if (!empty.length) return -1;
+      const index = empty[Math.floor(Math.random() * empty.length)];
+      tiles[index] = value;
+      return index;
+    }
+
+    function romanceTile(value) {
+      if (!value) return { glyph: "", label: "", rank: 0, color: "transparent", deep: "transparent" };
+      let selected = tileStory[0];
+      for (const item of tileStory) {
+        if (value >= item[0]) selected = item;
+      }
+      const rank = Math.max(1, Math.min(tileStory.length, Math.round(Math.log2(value))));
+      return {
+        glyph: selected[1],
+        label: selected[2],
+        rank,
+        color: selected[3],
+        deep: selected[4]
+      };
     }
 
     function slideLine(line) {
       const values = line.filter(Boolean);
+      const result = [];
+      const mergedSlots = [];
       let merged = 0;
-      for (let i = 0; i < values.length - 1; i += 1) {
-        if (values[i] === values[i + 1]) {
-          values[i] *= 2;
-          merged += values[i];
-          values.splice(i + 1, 1);
+      for (let i = 0; i < values.length; i += 1) {
+        if (values[i] && values[i] === values[i + 1]) {
+          const nextValue = values[i] * 2;
+          result.push(nextValue);
+          mergedSlots.push(result.length - 1);
+          merged += nextValue;
+          i += 1;
+        } else {
+          result.push(values[i]);
         }
       }
-      while (values.length < size) values.push(0);
-      return { values, merged };
+      while (result.length < size) result.push(0);
+      return { values: result, merged, mergedSlots };
+    }
+
+    function canMove() {
+      if (tiles.some((value) => !value)) return true;
+      for (let i = 0; i < tiles.length; i += 1) {
+        const col = i % size;
+        const row = Math.floor(i / size);
+        if (col < size - 1 && tiles[i] === tiles[i + 1]) return true;
+        if (row < size - 1 && tiles[i] === tiles[i + size]) return true;
+      }
+      return false;
     }
 
     function move(dir) {
       const before = tiles.join(",");
       let mergedThisMove = 0;
+      const mergedCells = [];
       for (let i = 0; i < size; i += 1) {
-        const line = [];
+        const rawIndices = [];
         for (let j = 0; j < size; j += 1) {
           const idx = dir === "left" || dir === "right" ? i * size + j : j * size + i;
-          line.push(tiles[idx]);
+          rawIndices.push(idx);
         }
-        const input = dir === "right" || dir === "down" ? line.reverse() : line;
+        const orientedIndices = dir === "right" || dir === "down" ? rawIndices.slice().reverse() : rawIndices;
+        const input = orientedIndices.map((idx) => tiles[idx]);
         const shifted = slideLine(input);
-        const result = dir === "right" || dir === "down" ? shifted.values.reverse() : shifted.values;
         mergedThisMove += shifted.merged;
+        for (const slot of shifted.mergedSlots) mergedCells.push(orientedIndices[slot]);
         for (let j = 0; j < size; j += 1) {
-          const idx = dir === "left" || dir === "right" ? i * size + j : j * size + i;
-          tiles[idx] = result[j];
+          tiles[orientedIndices[j]] = shifted.values[j];
         }
       }
       if (tiles.join(",") !== before) {
+        lastMoveDir = dir;
+        lastMergeCells = mergedCells;
         if (mergedThisMove) {
-          mergeStreak += 1;
-          heat = Math.min(100, heat + 18 + mergeStreak * 5);
-          points += Math.round(mergedThisMove * (1 + Math.min(mergeStreak, 5) * 0.18));
-          if (heat >= 100) temperReady = true;
+          bloomChain += 1;
+          affinity = Math.min(100, affinity + 18 + bloomChain * 6 + Math.min(14, Math.floor(Math.log2(mergedThisMove))));
+          loveTempo = Math.max(0.58, 1 - bloomChain * 0.055);
+          points += Math.round(mergedThisMove * (1 + Math.min(bloomChain, 6) * 0.22));
+          if (affinity >= 100) vowReady = true;
         } else {
-          mergeStreak = 0;
-          heat = Math.max(0, heat - 8);
+          bloomChain = 0;
+          affinity = Math.max(0, affinity - 6);
+          loveTempo = 1;
         }
-        add();
+        lastSpawnCell = add();
+      } else {
+        lastMoveDir = dir;
+        lastMergeCells = [];
+        setStatus("轻轻碰撞，换个方向牵手");
+        triggerBoardEffect("love-bump", { duration: 420 });
       }
       render();
-      if (mergedThisMove) triggerBoardEffect("ember-merge", { text: `×${mergeStreak}`, duration: 760 });
+      if (mergedThisMove) {
+        triggerBoardEffect("love-merge", { text: `×${bloomChain}`, duration: 860 });
+        for (const index of mergedCells.slice(0, 4)) {
+          triggerCellEffect("love-collision", index, size, size, { duration: 680 });
+        }
+      }
     }
 
-    function temper() {
-      if (!temperReady) return;
+    function vow() {
+      if (!vowReady) {
+        setStatus("心动值未满，继续合并积攒桃花");
+        triggerBoardEffect("love-bump", { duration: 420 });
+        return;
+      }
       const small = tiles
         .map((value, index) => ({ value, index }))
         .filter((item) => item.value)
         .sort((a, b) => a.value - b.value)[0];
       if (small) {
         tiles[small.index] *= 2;
-        points += tiles[small.index];
+        points += tiles[small.index] * 2;
+        lastMergeCells = [small.index];
       }
-      heat = 0;
-      temperReady = false;
-      setStatus("Tempered lowest tile");
+      affinity = 0;
+      bloomChain = 0;
+      loveTempo = 1;
+      vowReady = false;
+      lastMoveDir = "vow";
       render();
-      triggerBoardEffect("ember-temper", { duration: 920 });
+      setStatus("誓约绽放，最小心意翻倍");
+      triggerBoardEffect("love-vow", { text: "♡", duration: 2200 });
     }
 
     function render() {
-      board.style.setProperty("--heat", heat);
-      board.style.setProperty("--heat-alpha", Math.min(0.48, heat / 220).toFixed(3));
-      board.innerHTML = tiles.map((value) => {
+      const moveVectors = {
+        left: ["-1", "0"],
+        right: ["1", "0"],
+        up: ["0", "-1"],
+        down: ["0", "1"],
+        vow: ["0", "0"],
+        start: ["0", "0"]
+      };
+      const [moveX, moveY] = moveVectors[lastMoveDir] || moveVectors.start;
+      const mergeSet = new Set(lastMergeCells);
+      board.style.setProperty("--affinity", affinity);
+      board.style.setProperty("--affinity-alpha", Math.min(0.62, affinity / 150).toFixed(3));
+      board.style.setProperty("--tempo", loveTempo.toFixed(2));
+      board.style.setProperty("--move-x", moveX);
+      board.style.setProperty("--move-y", moveY);
+      board.classList.toggle("is-accelerated", bloomChain >= 2);
+      board.classList.toggle("is-vow-ready", vowReady);
+      board.dataset.move = lastMoveDir;
+      board.innerHTML = tiles.map((value, index) => {
+        const tile = romanceTile(value);
         const hot = value && value >= 128 ? "is-hot" : "";
-        return `<span class="merge-cell v${value || 0} ${hot}" data-value="${value || ""}">${value || ""}</span>`;
+        const collision = mergeSet.has(index) ? "is-collision" : "";
+        const newborn = index === lastSpawnCell ? "is-new" : "";
+        const vowTile = value && value >= 1024 ? "is-vow" : "";
+        const style = value ? ` style="--tile:${tile.color};--tile-deep:${tile.deep};--rank:${tile.rank};"` : "";
+        const content = value ? `<b>${tile.glyph}</b><small>${escapeText(tile.label)}</small><em>${value}</em>` : "";
+        return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${newborn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
       }).join("");
       setScore(points);
-      setStatus(temperReady ? "Heat full · tap Temper" : `Heat ${heat}%`);
-      setMeta([`Streak ${mergeStreak}`, `Heat ${heat}%`, temperReady ? "Temper ready" : "Build heat"]);
+      if (!canMove()) {
+        setStatus("花局已满，点重遇重新开始");
+      } else {
+        setStatus(vowReady ? "心动值已满，点誓约让最小心意翻倍" : `心动值 ${affinity}% · ${bloomChain ? `桃花连击 ×${bloomChain}` : "滑动牵手"}`);
+      }
+      setMeta([`心动 ${affinity}%`, bloomChain ? `连击 ${bloomChain}` : "等待相遇", vowReady ? "誓约可用" : `加速 ${loveTempo.toFixed(2)}x`]);
     }
 
     function restart() {
       tiles = Array(size * size).fill(0);
       points = 0;
-      heat = 0;
-      mergeStreak = 0;
-      temperReady = false;
+      affinity = 0;
+      bloomChain = 0;
+      loveTempo = 1;
+      vowReady = false;
+      lastMoveDir = "start";
+      lastMergeCells = [];
       add();
-      add();
+      lastSpawnCell = add();
       render();
     }
 
-    button("淬火", temper, true);
-    button("重开", restart);
+    button("誓约", vow, true);
+    button("重遇", restart);
     restart();
-    const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down"), " ": temper });
+    const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down"), " ": vow });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
     return () => { offKey(); offSwipe(); };
   }

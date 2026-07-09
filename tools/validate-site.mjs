@@ -261,7 +261,7 @@ const requiredAssets = [
 
 const distinctGameChecks = [
   { theme: "block-forge", board: "board-tetris-forge", mechanic: "tetrisGhostCells", css: ".board-tetris-forge" },
-  { theme: "ember-2048", board: "board-ember-2048", mechanic: "mergeStreak", css: ".board-ember-2048" },
+  { theme: "love-2048", board: "board-love-2048", mechanic: "bloomChain", css: ".board-love-2048" },
   { theme: "sonar-mines", board: "board-sonar-mines", mechanic: "firstSafeOpen", css: ".board-sonar-mines" },
   { theme: "ink-sudoku", board: "board-ink-sudoku", mechanic: "conflictMarks", css: ".board-ink-sudoku" },
   { theme: "neon-snake", board: "board-neon-snake", mechanic: "portalWrap", css: ".board-neon-snake" },
@@ -274,7 +274,7 @@ const distinctGameChecks = [
 
 const standaloneGameChecks = [
   { file: "game-tetris.html", href: 'href="game-tetris.html"', id: "tetris", title: "熔炉方块" },
-  { file: "game-2048.html", href: 'href="game-2048.html"', id: "merge2048", title: "熔核 2048" },
+  { file: "game-2048.html", href: 'href="game-2048.html"', id: "merge2048", title: "桃花心动 2048" },
   { file: "game-mines.html", href: 'href="game-mines.html"', id: "mines", title: "声呐扫雷" },
   { file: "game-sudoku.html", href: 'href="game-sudoku.html"', id: "sudoku", title: "墨格数独" },
   { file: "game-snake.html", href: 'href="game-snake.html"', id: "snake", title: "霓虹列车" },

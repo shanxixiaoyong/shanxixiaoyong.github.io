@@ -4369,3 +4369,291 @@ body.solo-game-page .board-starship-cards {
     padding: 12px;
   }
 }
+
+/* Love 2048 */
+.love-2048,
+.solo-game-2048,
+body[data-arcade-theme="love-2048"] {
+  --game-a: #361422;
+  --game-b: #ff8eb6;
+  --game-accent: #ff8fb8;
+  --game-accent-2: #ffd36d;
+  --game-art:
+    radial-gradient(circle at 24% 18%, rgba(255, 189, 212, 0.52), transparent 24%),
+    radial-gradient(circle at 72% 12%, rgba(255, 218, 122, 0.36), transparent 22%),
+    radial-gradient(circle at 50% 78%, rgba(255, 115, 156, 0.28), transparent 34%);
+  --game-art-position: center;
+}
+
+body.solo-game-2048,
+body[data-arcade-theme="love-2048"] {
+  background:
+    radial-gradient(circle at 15% 12%, rgba(255, 197, 218, 0.34), transparent 26%),
+    radial-gradient(circle at 80% 16%, rgba(255, 214, 125, 0.22), transparent 28%),
+    linear-gradient(135deg, #210b18 0%, #4a1a2d 48%, #17101d 100%);
+}
+
+body.solo-game-2048::before {
+  background:
+    linear-gradient(180deg, rgba(33, 10, 24, 0.2), rgba(10, 5, 12, 0.76)),
+    radial-gradient(circle at 16% 28%, rgba(255, 184, 210, 0.3), transparent 22%),
+    radial-gradient(circle at 78% 18%, rgba(255, 220, 130, 0.2), transparent 20%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 18px),
+    linear-gradient(135deg, #301020, #6f2640 54%, #160d1b);
+  opacity: 0.86;
+}
+
+.home-game-card.love-2048,
+.lobby-game-card.love-2048 {
+  --game-accent: #ff8fb8;
+  --game-accent-2: #ffd36d;
+}
+
+.home-game-card.love-2048::before,
+.lobby-game-card.love-2048::before {
+  background:
+    radial-gradient(circle at 26% 25%, rgba(255, 216, 229, 0.62), transparent 22%),
+    radial-gradient(circle at 78% 18%, rgba(255, 212, 120, 0.42), transparent 22%),
+    linear-gradient(135deg, rgba(94, 24, 51, 0.92), rgba(255, 116, 160, 0.48));
+}
+
+body:is(.arcade-page, .solo-game-page) .board-love-2048 {
+  width: min(100%, 620px);
+  height: auto;
+  aspect-ratio: 1;
+  gap: clamp(10px, 1.5vw, 18px);
+  border: clamp(12px, 1.7vw, 22px) solid rgba(86, 24, 50, 0.9);
+  border-radius: 46px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 210, 229, 0.44), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035)),
+    linear-gradient(135deg, rgba(78, 18, 45, 0.94), rgba(255, 132, 174, 0.26)),
+    #2a0d1b;
+  padding: clamp(22px, 3vw, 40px);
+  box-shadow:
+    0 0 0 1px rgba(255, 214, 230, 0.22),
+    0 28px 90px rgba(31, 6, 21, 0.58),
+    inset 0 0 0 2px rgba(255, 239, 246, 0.09),
+    inset 0 -32px 70px rgba(255, 97, 149, var(--affinity-alpha, 0.08));
+}
+
+.board-love-2048::before {
+  background:
+    radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.34) 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 20%, rgba(255, 210, 229, 0.4) 0 3px, transparent 4px),
+    radial-gradient(circle at 22% 76%, rgba(255, 213, 122, 0.32) 0 3px, transparent 4px),
+    conic-gradient(from 45deg at 50% 50%, transparent 0 12%, rgba(255, 178, 207, 0.16) 12% 14%, transparent 14% 31%, rgba(255, 215, 132, 0.12) 31% 33%, transparent 33%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 92px 92px, 130px 130px, 118px 118px, auto, 25% 25%, 25% 25%;
+  filter: blur(0.1px);
+  mix-blend-mode: screen;
+  opacity: 0.82;
+  animation: lovePetalDrift calc(4200ms * var(--tempo, 1)) linear infinite;
+}
+
+.board-love-2048::after {
+  background:
+    radial-gradient(circle at calc(50% + var(--move-x, 0) * 11%) calc(50% + var(--move-y, 0) * 11%), rgba(255, 239, 246, 0.34), transparent 18%),
+    radial-gradient(circle at 50% 104%, rgba(255, 119, 164, var(--affinity-alpha, 0.08)), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(80, 12, 45, 0.22));
+  filter: none;
+  mix-blend-mode: screen;
+  opacity: 0.74 !important;
+}
+
+.board-love-2048.is-accelerated {
+  box-shadow:
+    0 0 0 1px rgba(255, 214, 230, 0.24),
+    0 32px 100px rgba(61, 8, 34, 0.62),
+    0 0 38px rgba(255, 116, 160, 0.22),
+    inset 0 -36px 78px rgba(255, 97, 149, var(--affinity-alpha, 0.2));
+}
+
+.board-love-2048.is-vow-ready {
+  border-color: rgba(255, 210, 112, 0.88);
+}
+
+.board-love-2048 .merge-cell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 232, 240, 0.18);
+  border-radius: 30px 30px 36px 36px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.055);
+  color: #fff8fb;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(91, 16, 47, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -8px 18px rgba(59, 10, 35, 0.18);
+  transition: transform calc(170ms * var(--tempo, 1)) ease, box-shadow calc(170ms * var(--tempo, 1)) ease;
+}
+
+.board-love-2048 .merge-cell:not(.v0) {
+  background:
+    radial-gradient(circle at 32% 20%, rgba(255, 255, 255, 0.58), transparent 18%),
+    linear-gradient(145deg, color-mix(in srgb, var(--tile) 90%, white), color-mix(in srgb, var(--tile-deep) 82%, #2c0c1b)),
+    var(--tile);
+  box-shadow:
+    0 14px 26px rgba(62, 8, 34, 0.36),
+    0 0 calc(8px + var(--rank, 1) * 3px) color-mix(in srgb, var(--tile) 38%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    inset 0 -14px 24px rgba(78, 9, 42, 0.22);
+  animation: loveTileArrive calc(420ms * var(--tempo, 1)) cubic-bezier(0.18, 0.92, 0.2, 1.12) both;
+}
+
+.board-love-2048 .merge-cell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 36%;
+  aspect-ratio: 1;
+  border-radius: 9px 9px 4px 9px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.52), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.02));
+  opacity: 0.16;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.board-love-2048 .merge-cell:not(.v0)::after {
+  content: attr(data-value);
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: clamp(9px, 1.3vw, 13px);
+  font-weight: 900;
+}
+
+.board-love-2048 .merge-cell b,
+.board-love-2048 .merge-cell small,
+.board-love-2048 .merge-cell em {
+  position: relative;
+  z-index: 1;
+}
+
+.board-love-2048 .merge-cell b {
+  display: block;
+  font-size: clamp(22px, 4.3vw, 42px);
+  line-height: 0.95;
+}
+
+.board-love-2048 .merge-cell small {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(10px, 1.6vw, 14px);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.board-love-2048 .merge-cell em {
+  display: block;
+  margin-top: 1px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: clamp(9px, 1.3vw, 12px);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.board-love-2048 .merge-cell.is-new {
+  animation: loveNewTile calc(520ms * var(--tempo, 1)) ease-out both;
+}
+
+.board-love-2048 .merge-cell.is-collision {
+  animation: loveTileMerge calc(680ms * var(--tempo, 1)) cubic-bezier(0.2, 0.9, 0.2, 1.16) both;
+  box-shadow:
+    0 18px 34px rgba(81, 8, 42, 0.42),
+    0 0 32px color-mix(in srgb, var(--tile) 62%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.52);
+}
+
+.board-love-2048 .merge-cell.is-vow {
+  outline: 2px solid rgba(255, 229, 141, 0.55);
+}
+
+.effect-love-merge,
+.effect-love-collision {
+  width: 118px;
+  height: 118px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 8%, rgba(255, 148, 187, 0.52) 9% 34%, transparent 62%),
+    conic-gradient(from 20deg, transparent, rgba(255, 151, 191, 0.72), transparent, rgba(255, 220, 132, 0.62), transparent);
+  animation: loveMergePulse 820ms ease-out both;
+}
+
+.effect-love-vow {
+  width: min(76vmin, 460px);
+  height: min(76vmin, 460px);
+  border: 2px solid rgba(255, 230, 144, 0.52);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.96) 0 4%, rgba(255, 228, 141, 0.5) 5% 20%, transparent 48%),
+    conic-gradient(from 0deg, transparent, rgba(255, 151, 191, 0.76), rgba(255, 231, 145, 0.66), transparent, rgba(255, 151, 191, 0.76), transparent);
+  color: #fff9d9;
+  font-size: 54px;
+  animation: loveVowBloom 2200ms ease-out both;
+}
+
+.effect-love-bump {
+  width: 90px;
+  height: 90px;
+  border: 2px solid rgba(255, 200, 220, 0.48);
+  background: radial-gradient(circle, rgba(255, 158, 194, 0.3), transparent 62%);
+  animation: loveBump 420ms ease-out both;
+}
+
+@media (max-width: 620px) {
+  body:is(.arcade-page, .solo-game-page) .board-love-2048 {
+    width: 100%;
+    max-width: 100%;
+    gap: 10px;
+    border-width: 10px;
+    border-radius: 34px;
+    padding: 18px;
+  }
+
+  .board-love-2048 .merge-cell {
+    border-radius: 22px 22px 28px 28px;
+  }
+}
+
+@keyframes lovePetalDrift {
+  from { background-position: 0 0, 0 0, 0 0, center, 0 0, 0 0; }
+  to { background-position: 44px 72px, -32px 58px, 26px -48px, center, 0 0, 0 0; }
+}
+
+@keyframes loveTileArrive {
+  from { opacity: 0; transform: translate(calc(var(--move-x, 0) * 18px), calc(var(--move-y, 0) * 18px)) scale(0.88); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+@keyframes loveNewTile {
+  from { opacity: 0; transform: scale(0.42) rotate(-8deg); }
+  70% { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes loveMergePulse {
+  from { opacity: 0.95; transform: translate(-50%, -50%) scale(0.28) rotate(0deg); }
+  48% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(18deg); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.75) rotate(46deg); }
+}
+
+@keyframes loveTileMerge {
+  from { transform: scale(0.88); filter: brightness(1); }
+  42% { transform: scale(1.12); filter: brightness(1.22) saturate(1.18); }
+  to { transform: scale(1); filter: brightness(1) saturate(1); }
+}
+
+@keyframes loveVowBloom {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.12) rotate(-18deg); }
+  32% { opacity: 1; transform: translate(-50%, -50%) scale(0.86) rotate(10deg); }
+  68% { opacity: 0.72; transform: translate(-50%, -50%) scale(1.12) rotate(24deg); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.42) rotate(38deg); }
+}
+
+@keyframes loveBump {
+  from { opacity: 0.78; transform: translate(-50%, -50%) scale(0.42); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
+}
