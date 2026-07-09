@@ -2023,6 +2023,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="assets/academic-v2.css?v=academic-20260710d">
 </head>
 <body data-theme="classic">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -2084,7 +2085,7 @@
   <main id="main">
     <section class="hero" id="top" aria-label="Hero">
       <div class="hero-inner">
-        <div>
+        <div class="hero-profile">
           <p class="eyebrow">National Key Laboratory · Xi’an Modern Control Technology Research Institute</p>
           <h1>刘勇<span class="name-en">Yong Liu</span></h1>
           <p class="hero-copy">
@@ -2122,6 +2123,36 @@
             <span>Piezoelectric Sensing</span>
             <span>Wearable Health</span>
           </div>
+        </div>
+
+        <div class="hero-research-strip" aria-label="Representative research figures">
+          <figure class="hero-figure hero-figure--vision">
+            <div class="hero-figure-media">
+              <img src="assets/papers/fundus-disorders.png" alt="Figure from the multiple fundus disorders self-supervised learning paper">
+            </div>
+            <figcaption>
+              <span class="hero-figure-domain">医学视觉</span>
+              <span class="hero-figure-note">自监督眼底疾病诊断</span>
+            </figcaption>
+          </figure>
+          <figure class="hero-figure hero-figure--touch">
+            <div class="hero-figure-media">
+              <img src="assets/papers/rectified-ann.jpg" alt="Figure from the rectified neural network force-sensing paper">
+            </div>
+            <figcaption>
+              <span class="hero-figure-domain">智能传感</span>
+              <span class="hero-figure-note">压电触摸力长期感知</span>
+            </figcaption>
+          </figure>
+          <figure class="hero-figure hero-figure--health">
+            <div class="hero-figure-media">
+              <img src="assets/papers/multimodal-stroke.jpg" alt="Graphical abstract from the multimodal stroke rehabilitation sensing review">
+            </div>
+            <figcaption>
+              <span class="hero-figure-domain">健康系统</span>
+              <span class="hero-figure-note">多模态康复评估</span>
+            </figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -2245,18 +2276,18 @@
       </div>
       <div>
         <a href="https://shanxixiaoyong.github.io/">https://shanxixiaoyong.github.io/</a><br>
-        Last updated: 2026-06-30
+        Last updated: 2026-07-10
       </div>
     </div>
   </footer>
 
   <script>
     const themeLabels = {
-      classic: "Classic",
+      classic: "Atlas",
       journal: "Journal",
-      minimal: "Minimal",
-      lab: "Lab",
-      gallery: "Gallery"
+      minimal: "Index",
+      lab: "Console",
+      gallery: "Exhibition"
     };
 
     const uiText = {
@@ -2268,11 +2299,11 @@
         themeLabel: "选择视觉风格",
         languageLabel: "语言",
         themeOptions: {
-          classic: "当前",
+          classic: "图谱",
           journal: "期刊",
-          minimal: "极简",
-          lab: "实验室",
-          gallery: "图文"
+          minimal: "索引",
+          lab: "仪器",
+          gallery: "展览"
         },
         brandSubtitle: "个人学术主页",
         nav: ["天地", "研究", "论文", "专利", "经历", "联系"],
@@ -2288,6 +2319,11 @@
         nameSecondary: "Yong Liu",
         heroCopy: "研究兴趣集中在医学影像自监督学习、眼底疾病智能诊断、压电触摸力感知与可穿戴健康系统。工作横跨视觉模型、传感器信号建模与智能人机交互，目标是让有限标签、复杂信号和真实场景中的健康评估更可靠。",
         heroCopySub: "Research at the intersection of self-supervised medical vision, piezoelectric force sensing, and wearable health intelligence.",
+        heroFigures: [
+          { domain: "医学视觉", note: "自监督眼底疾病诊断" },
+          { domain: "智能传感", note: "压电触摸力长期感知" },
+          { domain: "健康系统", note: "多模态康复评估" }
+        ],
         affiliationTitle: "当前单位",
         affiliations: [
           {
@@ -2352,7 +2388,7 @@
         },
         patentLabels: { number: "编号：", role: "角色：" },
         footerText: "个人学术主页。",
-        lastUpdated: "更新日期：2026-06-30"
+        lastUpdated: "更新日期：2026-07-10"
       },
       en: {
         title: "Yong Liu / 刘勇 - Academic Homepage",
@@ -2376,6 +2412,11 @@
         nameSecondary: "刘勇",
         heroCopy: "My research focuses on self-supervised medical imaging, intelligent fundus disease diagnosis, piezoelectric force sensing, and wearable health systems. The work connects visual models, sensor-signal modeling, and human-machine interaction for more reliable health assessment in real-world settings.",
         heroCopySub: "Research at the intersection of self-supervised medical vision, piezoelectric force sensing, and wearable health intelligence.",
+        heroFigures: [
+          { domain: "Medical Vision", note: "Self-supervised fundus diagnosis" },
+          { domain: "Smart Sensing", note: "Long-term piezoelectric force sensing" },
+          { domain: "Health Systems", note: "Multimodal rehabilitation assessment" }
+        ],
         affiliationTitle: "Current Affiliation",
         affiliations: [
           {
@@ -2440,7 +2481,7 @@
         },
         patentLabels: { number: "No.: ", role: "Role: " },
         footerText: "Personal academic homepage.",
-        lastUpdated: "Last updated: 2026-06-30"
+        lastUpdated: "Last updated: 2026-07-10"
       }
     };
 
@@ -2782,6 +2823,12 @@
       const heroCopy = document.querySelector(".hero-copy");
       heroCopy.childNodes[0].nodeValue = `${text.heroCopy} `;
       setText(".hero-copy .en", text.heroCopySub);
+
+      document.querySelectorAll(".hero-figure").forEach((figure, index) => {
+        const figureText = text.heroFigures[index];
+        figure.querySelector(".hero-figure-domain").textContent = figureText.domain;
+        figure.querySelector(".hero-figure-note").textContent = figureText.note;
+      });
 
       setText(".affiliation-card h2", text.affiliationTitle);
       document.querySelectorAll(".affiliation-block").forEach((block, index) => {

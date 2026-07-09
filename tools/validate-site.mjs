@@ -21,6 +21,7 @@ const siteFiles = [
   "games.html",
   ...standaloneGamePages,
   "assets/world.css",
+  "assets/academic-v2.css",
   "assets/world.js",
   "assets/games.js",
   "data/knowledge.json",
@@ -39,11 +40,13 @@ const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "ga
   .map((file) => readFileSync(file, "utf8"))
   .join("\n");
 const indexHtml = readFileSync("index.html", "utf8");
+const homeHtml = readFileSync("home.html", "utf8");
 const gamesHtml = readFileSync("games.html", "utf8");
 const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
 const gamesScript = readFileSync("assets/games.js", "utf8");
 const worldCss = readFileSync("assets/world.css", "utf8");
+const academicCss = readFileSync("assets/academic-v2.css", "utf8");
 
 const required = [
   "刘勇",
@@ -81,6 +84,7 @@ const required = [
   "data/knowledge.json",
   "sync-obsidian",
   "assets/world.css",
+  "assets/academic-v2.css",
   "assets/world.js",
   "assets/games.js",
   "0000-0002-7584-2953",
@@ -116,11 +120,16 @@ const required = [
   'body[data-theme="minimal"] .rail-dot',
   'body[data-theme="gallery"] .hero-inner > div:first-child',
   'body[data-theme="lab"] .mobile-section-rail',
+  '<link rel="stylesheet" href="assets/academic-v2.css?v=academic-20260710d">',
+  'class="hero-research-strip"',
+  'class="hero-figure hero-figure--vision"',
+  'class="hero-figure hero-figure--touch"',
+  'class="hero-figure hero-figure--health"',
   'Theme layout systems',
   'Academic homepage of Yong Liu',
   '当前单位',
   '教育与课程',
-  '更新日期：2026-06-30',
+  '更新日期：2026-07-10',
   'Intelligent Health Systems From Medical Imaging to Tactile Sensing',
   'Journal and Conference Publications',
   'Patents and Intellectual Property',
@@ -238,6 +247,7 @@ const requiredAssets = [
   "assets/world/portal-knowledge.svg",
   "assets/world/portal-tools.svg",
   "assets/world/portal-games.svg",
+  "assets/academic-v2.css",
   "assets/world/workspace-grid.svg",
   "assets/world/vault-map.svg",
   "assets/world/tool-console.svg",
@@ -301,6 +311,28 @@ const requiredLinks = [
 ];
 
 const failures = [];
+
+const academicThemeContracts = [
+  'body[data-theme="classic"] .hero-research-strip',
+  'body[data-theme="journal"] .hero-research-strip',
+  'body[data-theme="minimal"] .hero-research-strip',
+  'body[data-theme="lab"] .hero-research-strip',
+  'body[data-theme="gallery"] .hero-research-strip',
+  'body[data-theme="gallery"] .hero-figure--vision',
+  '@media (max-width: 620px)',
+  'object-fit: contain',
+  'prefers-reduced-motion'
+];
+
+for (const token of academicThemeContracts) {
+  if (!academicCss.includes(token)) {
+    failures.push(`Academic visual system missing contract: ${token}`);
+  }
+}
+
+if ((homeHtml.match(/class="hero-figure /g) || []).length !== 3) {
+  failures.push("Academic hero must contain exactly three local research figures");
+}
 
 for (const text of required) {
   if (!html.includes(text) && !readme.includes(text)) {
