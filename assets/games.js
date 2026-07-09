@@ -472,38 +472,113 @@ if (gameHub || soloGame) {
   function run2048() {
     const size = 4;
     let tiles = [];
+    let events = [];
+    let eventAges = [];
     let points = 0;
     let affinity = 0;
+    let trust = 54;
+    let communication = 4;
+    let freshness = 68;
     let bloomChain = 0;
     let vowReady = false;
+    let meetMeter = 0;
+    let dateReady = false;
+    let episode = 1;
+    let dateCount = 0;
+    let turn = 0;
+    let spaceStreak = 0;
+    let memoryCount = 0;
+    let endingUnlocked = false;
+    let duoMode = false;
+    let chapterMode = false;
+    let duoSide = 0;
     let lastMergeCells = [];
+    let featuredCells = [];
     let lastSpawnCell = -1;
     let lastSpawnFromTop = false;
     let lastMoveDir = "start";
     let loveTempo = 1;
+    let showMoment = "观察室：等待第一位嘉宾入场";
+    let lastMemory = "";
+    let seenStages = new Set();
+    const meetGoal = 4;
+    const negativeEvents = new Set(["misunderstanding", "coldWar", "busy", "distance", "future", "flatness", "anxiety", "disagreement"]);
 
     const tileStory = [
-      [2, "♡", "初识", "#ffd7e5", "#bc486f"],
-      [4, "💓", "心动", "#ffc8df", "#bf5777"],
-      [8, "💌", "暧昧", "#ffb4d2", "#c94d78"],
-      [16, "🌹", "告白", "#ffa2c7", "#bb416d"],
-      [32, "💕", "牵手", "#ff91ba", "#a93565"],
-      [64, "💗", "热恋", "#ff7fae", "#95315d"],
-      [128, "💞", "相守", "#ff6da2", "#862a55"],
-      [256, "💖", "承诺", "#ff5d98", "#7e2651"],
-      [512, "🌙", "求婚", "#eaa6ff", "#65306d"],
-      [1024, "💍", "誓约", "#ffd27a", "#8a5722"],
-      [2048, "💘", "永恒", "#fff0a8", "#8f5b2f"]
+      [2, "👋", "初见", "#ffd7e5", "#bc486f", "#ff8db8", "#fff1f7", "你们第一次注意到彼此"],
+      [4, "💓", "有好感", "#ffc8df", "#bf5777", "#ff73ac", "#ffe1ef", "好像有点在意 TA"],
+      [8, "💬", "暧昧", "#ffb4d2", "#c94d78", "#ff5c9d", "#ffd4e7", "消息来得刚刚好"],
+      [16, "☕", "第一次约会", "#ffa2c7", "#bb416d", "#ff477f", "#ffc4dc", "第一次正式见面"],
+      [32, "🌹", "确认关系", "#ff91ba", "#a93565", "#ff346e", "#ffb5d2", "你们决定试试看"],
+      [64, "🎆", "热恋期", "#ff7fae", "#95315d", "#ff2c73", "#ffa4cc", "世界都变成粉色了"],
+      [128, "🧩", "磨合期", "#ff6da2", "#862a55", "#f82483", "#ff94c4", "喜欢是真的，分歧也是真的"],
+      [256, "🤝", "信任建立", "#ff5d98", "#7e2651", "#ec1d79", "#ff83bb", "你们开始真的理解彼此"],
+      [512, "🔑", "共同生活", "#eaa6ff", "#65306d", "#ad62ff", "#f2d0ff", "爱情进入日常"],
+      [1024, "🗺️", "未来计划", "#ffd27a", "#8a5722", "#ffb02e", "#fff1b8", "你们开始讨论以后"],
+      [2048, "💘", "双向奔赴", "#fff0a8", "#8f5b2f", "#ffcf4f", "#fff9d0", "这不是终点，是一起走下去"],
+      [4096, "📷", "十年纪念", "#ffe19c", "#91531e", "#ffb538", "#fff3c4", "回忆已经长成一座小小的家"],
+      [8192, "🌌", "白发相册", "#ded5ff", "#4f3f89", "#9d8cff", "#f4efff", "一生的故事还在翻页"]
     ];
 
     board.style.setProperty("--cols", size);
     board.style.setProperty("--rows", size);
 
+    const relationshipEvents = {
+      communication: { glyph: "💬", label: "沟通", tone: "positive", hint: "认真把话说清楚" },
+      surprise: { glyph: "🎁", label: "惊喜", tone: "positive", hint: "给日常一点闪光" },
+      misunderstanding: { glyph: "❔", label: "误会", tone: "negative", hint: "不说清楚会变冷" },
+      coldWar: { glyph: "🧊", label: "冷战", tone: "negative", hint: "占住相处空间" },
+      anniversary: { glyph: "🗓️", label: "纪念日", tone: "timed", hint: "别错过认真庆祝" },
+      busy: { glyph: "💼", label: "忙碌期", tone: "negative", hint: "现实压力挤进来" },
+      memory: { glyph: "📷", label: "回忆", tone: "memory", hint: "过去的好会保护现在" },
+      distance: { glyph: "🚄", label: "异地", tone: "negative", hint: "距离需要计划来靠近" },
+      future: { glyph: "🧭", label: "未来分歧", tone: "negative", hint: "期待需要一起对齐" },
+      flatness: { glyph: "📱", label: "平淡", tone: "negative", hint: "日常不能只剩惯性" },
+      anxiety: { glyph: "…", label: "不安", tone: "negative", hint: "猜测正在变大" },
+      disagreement: { glyph: "🧩", label: "分歧", tone: "negative", hint: "不同不是敌人" }
+    };
+
+    function clamp(value, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function emptyIndices() {
+      return tiles.map((value, index) => value || events[index] ? -1 : index).filter((index) => index >= 0);
+    }
+
+    function getCell(index) {
+      if (events[index]) return { event: events[index], age: eventAges[index] || 0 };
+      if (tiles[index]) return { value: tiles[index] };
+      return null;
+    }
+
+    function setCell(index, cell) {
+      if (!cell) {
+        tiles[index] = 0;
+        events[index] = "";
+        eventAges[index] = 0;
+        return;
+      }
+      if (cell.event) {
+        tiles[index] = 0;
+        events[index] = cell.event;
+        eventAges[index] = cell.age || 0;
+        return;
+      }
+      tiles[index] = cell.value || 0;
+      events[index] = "";
+      eventAges[index] = 0;
+    }
+
+    function boardSignature() {
+      return tiles.join(",") + "|" + events.join(",") + "|" + eventAges.join(",");
+    }
+
     function add(value = Math.random() > 0.88 ? 4 : 2) {
-      const empty = tiles.map((v, i) => v ? -1 : i).filter((i) => i >= 0);
+      const empty = emptyIndices();
       if (!empty.length) return -1;
       const index = empty[Math.floor(Math.random() * empty.length)];
-      tiles[index] = value;
+      setCell(index, { value });
       return index;
     }
 
@@ -512,19 +587,32 @@ if (gameHub || soloGame) {
         const empties = [];
         for (let col = 0; col < size; col += 1) {
           const index = row * size + col;
-          if (!tiles[index]) empties.push(index);
+          if (!tiles[index] && !events[index]) empties.push(index);
         }
         if (empties.length) {
           const index = empties[Math.floor(Math.random() * empties.length)];
-          tiles[index] = value;
+          setCell(index, { value });
           return index;
         }
       }
       return -1;
     }
 
+    function addEvent(type, preferTop = false) {
+      const empty = emptyIndices();
+      if (!empty.length) return -1;
+      let pool = empty;
+      if (preferTop) {
+        const topRows = empty.filter((index) => index < size * 2);
+        if (topRows.length) pool = topRows;
+      }
+      const index = pool[Math.floor(Math.random() * pool.length)];
+      setCell(index, { event: type, age: 0 });
+      return index;
+    }
+
     function romanceTile(value) {
-      if (!value) return { glyph: "", label: "", rank: 0, color: "transparent", deep: "transparent" };
+      if (!value) return { glyph: "", label: "", rank: 0, color: "transparent", deep: "transparent", accent: "transparent", rim: "transparent" };
       let selected = tileStory[0];
       for (const item of tileStory) {
         if (value >= item[0]) selected = item;
@@ -535,47 +623,289 @@ if (gameHub || soloGame) {
         label: selected[2],
         rank,
         color: selected[3],
-        deep: selected[4]
+        deep: selected[4],
+        accent: selected[5],
+        rim: selected[6],
+        memory: selected[7]
       };
     }
 
-    function slideLine(line) {
-      const values = line.filter(Boolean);
+    function maxTile() {
+      return tiles.reduce((best, value) => Math.max(best, value || 0), 0);
+    }
+
+    function phaseName() {
+      if (vowReady) return "终选夜";
+      if (endingUnlocked) return "关系结局";
+      if (chapterMode && maxTile() >= 512) return "未来章";
+      if (chapterMode && maxTile() >= 128) return "磨合章";
+      if (chapterMode && maxTile() >= 32) return "热恋章";
+      if (dateReady) return "约会局";
+      if (affinity >= 70) return "心动互选";
+      if (meetMeter >= 2) return "相遇观察";
+      return "嘉宾入场";
+    }
+
+    function collectMeet(amount, moment) {
+      meetMeter = Math.min(meetGoal, meetMeter + amount);
+      if (meetMeter >= meetGoal || bloomChain >= 2) dateReady = true;
+      showMoment = `观察室：${moment}`;
+    }
+
+    function recordMemory(text) {
+      memoryCount = Math.min(9, memoryCount + 1);
+      lastMemory = text;
+      showMoment = `回忆相册：${text}`;
+    }
+
+    function canResolvePair(a, b) {
+      if (!a || !b) return false;
+      if (a.value && b.value) return a.value === b.value;
+      const typeA = a.event;
+      const typeB = b.event;
+      if (typeA === "communication" && (b.value || negativeEvents.has(typeB))) return true;
+      if (typeB === "communication" && (a.value || negativeEvents.has(typeA))) return true;
+      if (typeA === "surprise" && (b.value || typeB === "flatness")) return true;
+      if (typeB === "surprise" && (a.value || typeA === "flatness")) return true;
+      if (typeA === "memory" && negativeEvents.has(typeB)) return true;
+      if (typeB === "memory" && negativeEvents.has(typeA)) return true;
+      if (typeA === "anniversary" && b.value && b.value >= 64) return true;
+      if (typeB === "anniversary" && a.value && a.value >= 64) return true;
+      if (typeA === "busy" && b.value && b.value >= 256) return true;
+      if (typeB === "busy" && a.value && a.value >= 256) return true;
+      if (typeA === typeB && typeA === "misunderstanding") return true;
+      if (typeA === typeB && typeA === "communication") return true;
+      if (typeA === typeB && typeA === "surprise") return true;
+      return false;
+    }
+
+    function resolvePair(a, b) {
+      if (!canResolvePair(a, b)) return null;
+      if (a.value && b.value) {
+        const nextValue = a.value * 2;
+        const tile = romanceTile(nextValue);
+        affinity = clamp(affinity + 12 + Math.min(18, Math.round(Math.log2(nextValue))));
+        trust = clamp(trust + (nextValue >= 128 ? 4 : 2));
+        communication = clamp(communication + (nextValue >= 16 ? 2 : 1), 0, 18);
+        freshness = clamp(freshness + (bloomChain >= 1 ? 4 : 2));
+        if (!seenStages.has(nextValue)) {
+          seenStages.add(nextValue);
+          recordMemory(`${tile.label}：${tile.memory}`);
+        }
+        return { cell: { value: nextValue }, score: nextValue, label: tile.label };
+      }
+
+      const eventCell = a.event ? a : b;
+      const other = a.event ? b : a;
+      const event = eventCell.event;
+
+      if (event === "communication" && other.value) {
+        trust = clamp(trust + 8);
+        communication = clamp(communication + 1, 0, 18);
+        recordMemory(`${romanceTile(other.value).label}里，你们把话说开了`);
+        return { cell: { value: other.value }, score: other.value, label: "沟通" };
+      }
+      if (event === "surprise" && other.value) {
+        const nextValue = other.value * 2;
+        affinity = clamp(affinity + 18);
+        freshness = clamp(freshness + 18);
+        recordMemory(`${romanceTile(other.value).label}里出现了一次小惊喜`);
+        return { cell: { value: nextValue }, score: nextValue, label: "惊喜" };
+      }
+      if (event === "memory" && other.event && negativeEvents.has(other.event)) {
+        trust = clamp(trust + 10);
+        communication = clamp(communication + 2, 0, 18);
+        recordMemory("想起一起走过的路，你们愿意再好好聊一次");
+        return { cell: { event: "communication", age: 0 }, score: 16, label: "回忆" };
+      }
+      if (event === "communication" && other.event && negativeEvents.has(other.event)) {
+        trust = clamp(trust + (other.event === "coldWar" ? 14 : 9));
+        communication = clamp(communication + 2, 0, 18);
+        freshness = clamp(freshness + 4);
+        recordMemory("你们没有猜来猜去，而是坐下来认真听对方说完");
+        return { cell: { event: "memory", age: 0 }, score: 24, label: "理解" };
+      }
+      if (event === "surprise" && other.event === "flatness") {
+        freshness = clamp(freshness + 22);
+        affinity = clamp(affinity + 12);
+        return { cell: { event: "memory", age: 0 }, score: 18, label: "新鲜感" };
+      }
+      if (event === "anniversary" && other.value && other.value >= 64) {
+        trust = clamp(trust + 12);
+        freshness = clamp(freshness + 16);
+        affinity = clamp(affinity + 16);
+        recordMemory("你们认真准备了纪念日，后来每次想起都还会笑");
+        return { cell: { event: "memory", age: 0 }, score: other.value, label: "纪念日" };
+      }
+      if (event === "busy" && other.value && other.value >= 256) {
+        trust = clamp(trust + 14);
+        communication = clamp(communication + 4, 0, 18);
+        recordMemory("现实很忙，但你们没有把对方排除在计划之外");
+        return { cell: { value: other.value }, score: other.value, label: "共同成长" };
+      }
+      if (a.event === "misunderstanding" && b.event === "misunderstanding") {
+        trust = clamp(trust - 8);
+        return { cell: { event: "coldWar", age: 0 }, score: 0, label: "冷战" };
+      }
+      if (a.event === "communication" && b.event === "communication") {
+        trust = clamp(trust + 6);
+        communication = clamp(communication + 3, 0, 18);
+        return { cell: { value: 8 }, score: 8, label: "长谈" };
+      }
+      if (a.event === "surprise" && b.event === "surprise") {
+        freshness = clamp(freshness + 18);
+        return { cell: { value: 16 }, score: 16, label: "难忘约会" };
+      }
+      return null;
+    }
+
+    function slideLine(cells) {
+      const values = cells.filter(Boolean);
       const result = [];
       const mergedSlots = [];
+      const eventSlots = [];
       let merged = 0;
+      const labels = [];
       for (let i = 0; i < values.length; i += 1) {
-        if (values[i] && values[i] === values[i + 1]) {
-          const nextValue = values[i] * 2;
-          result.push(nextValue);
+        const resolved = values[i + 1] ? resolvePair(values[i], values[i + 1]) : null;
+        if (resolved) {
+          result.push(resolved.cell);
           mergedSlots.push(result.length - 1);
-          merged += nextValue;
+          if (resolved.cell?.event) eventSlots.push(result.length - 1);
+          merged += resolved.score || 0;
+          labels.push(resolved.label);
           i += 1;
         } else {
           result.push(values[i]);
         }
       }
-      while (result.length < size) result.push(0);
-      return { values: result, merged, mergedSlots };
+      while (result.length < size) result.push(null);
+      return { cells: result, merged, mergedSlots, eventSlots, labels };
     }
 
     function canMove() {
-      if (tiles.some((value) => !value)) return true;
+      if (emptyIndices().length) return true;
+      if (dateReady || vowReady || (communication > 0 && events.some((event) => negativeEvents.has(event)))) return true;
       for (let i = 0; i < tiles.length; i += 1) {
         const col = i % size;
         const row = Math.floor(i / size);
-        if (col < size - 1 && tiles[i] === tiles[i + 1]) return true;
-        if (row < size - 1 && tiles[i] === tiles[i + size]) return true;
+        const current = getCell(i);
+        const right = getCell(i + 1);
+        const down = getCell(i + size);
+        if (col < size - 1 && current?.event !== "coldWar" && right?.event !== "coldWar" && canResolvePair(current, right)) return true;
+        if (row < size - 1 && current?.event !== "coldWar" && down?.event !== "coldWar" && canResolvePair(current, down)) return true;
       }
       return false;
     }
 
+    function emptyCount() {
+      return emptyIndices().length;
+    }
+
+    function ageEvents() {
+      for (let i = 0; i < events.length; i += 1) {
+        if (!events[i]) continue;
+        eventAges[i] = (eventAges[i] || 0) + 1;
+        if (events[i] === "misunderstanding" && eventAges[i] >= 5) {
+          events[i] = "coldWar";
+          eventAges[i] = 0;
+          trust = clamp(trust - 10);
+          showMoment = "观察室：误会拖得太久，空气冷了下来";
+        } else if (events[i] === "anniversary" && eventAges[i] >= 5) {
+          events[i] = "misunderstanding";
+          eventAges[i] = 0;
+          trust = clamp(trust - 6);
+          freshness = clamp(freshness - 8);
+          showMoment = "观察室：纪念日被错过，失落悄悄留下";
+        } else if (events[i] === "busy" && eventAges[i] % 3 === 0) {
+          freshness = clamp(freshness - 4);
+        } else if (events[i] === "coldWar" && eventAges[i] % 2 === 0) {
+          trust = clamp(trust - 4);
+          communication = clamp(communication - 1, 0, 18);
+        }
+      }
+    }
+
+    function spawnRelationshipEvent(forceType = "") {
+      const empty = emptyIndices();
+      if (!empty.length) return -1;
+      let type = forceType;
+      const top = maxTile();
+      if (!type) {
+        if (turn > 0 && turn % 18 === 0) type = "anniversary";
+        else if (top >= 1024 && Math.random() < 0.32) type = "future";
+        else if (top >= 256 && Math.random() < 0.25) type = "distance";
+        else if (trust < 36 && Math.random() < 0.5) type = "misunderstanding";
+        else if (freshness < 34 && Math.random() < 0.5) type = "flatness";
+        else if (communication < 2 && Math.random() < 0.35) type = "anxiety";
+        else {
+          const pool = [
+            "communication",
+            "surprise",
+            "memory",
+            "busy",
+            top >= 128 ? "misunderstanding" : "communication",
+            top >= 512 ? "future" : "surprise"
+          ];
+          type = pool[Math.floor(Math.random() * pool.length)];
+        }
+      }
+      const index = addEvent(type, true);
+      if (index >= 0) {
+        featuredCells = [index];
+        showMoment = `观察室：${relationshipEvents[type]?.label || "事件"}出现，关系经营进入新一轮选择`;
+      }
+      return index;
+    }
+
+    function updateSpaceReward() {
+      if (emptyCount() >= 4) {
+        spaceStreak += 1;
+      } else {
+        spaceStreak = 0;
+      }
+      if (spaceStreak >= 3) {
+        spaceStreak = 0;
+        trust = clamp(trust + 5);
+        freshness = clamp(freshness + 7);
+        communication = clamp(communication + 1, 0, 18);
+        showMoment = "观察室：舒服的距离让关系有了呼吸感";
+        if (emptyIndices().length) spawnRelationshipEvent("memory");
+      }
+    }
+
+    function afterTurn(mergedThisMove, labels = []) {
+      turn += 1;
+      ageEvents();
+      updateSpaceReward();
+      if (mergedThisMove) {
+        collectMeet(bloomChain >= 2 ? 2 : 1, `${labels[0] || "关系"}推进，心跳连击亮起`);
+        if (bloomChain >= 3 && emptyIndices().length) spawnRelationshipEvent("surprise");
+      }
+      if (!mergedThisMove) {
+        freshness = clamp(freshness - 3);
+        if (freshness < 30 && emptyIndices().length && Math.random() < 0.28) spawnRelationshipEvent("flatness");
+      }
+      if ((turn % 7 === 0 || trust < 32 || freshness < 28) && emptyIndices().length) {
+        spawnRelationshipEvent();
+      }
+      if (affinity >= 100 || maxTile() >= 1024) vowReady = true;
+      if (meetMeter >= meetGoal || bloomChain >= 2) dateReady = true;
+      if (maxTile() >= 2048 && !endingUnlocked) {
+        endingUnlocked = true;
+        showMoment = `结局：${endingName()}。${endingLine()}`;
+        triggerBoardEffect("love-ending", { text: endingName(), duration: 1800 });
+      }
+    }
+
     function move(dir) {
-      const before = tiles.join(",");
+      const before = boardSignature();
       let mergedThisMove = 0;
       const mergedCells = [];
+      const mergeLabels = [];
       let topSpawned = false;
       let bumped = false;
+      featuredCells = [];
       for (let i = 0; i < size; i += 1) {
         const rawIndices = [];
         for (let j = 0; j < size; j += 1) {
@@ -583,37 +913,67 @@ if (gameHub || soloGame) {
           rawIndices.push(idx);
         }
         const orientedIndices = dir === "right" || dir === "down" ? rawIndices.slice().reverse() : rawIndices;
-        const input = orientedIndices.map((idx) => tiles[idx]);
-        const shifted = slideLine(input);
-        mergedThisMove += shifted.merged;
-        for (const slot of shifted.mergedSlots) mergedCells.push(orientedIndices[slot]);
-        for (let j = 0; j < size; j += 1) {
-          tiles[orientedIndices[j]] = shifted.values[j];
+        let cursor = 0;
+        while (cursor < size) {
+          if (events[orientedIndices[cursor]] === "coldWar") {
+            cursor += 1;
+            continue;
+          }
+          const segmentIndices = [];
+          while (cursor < size && events[orientedIndices[cursor]] !== "coldWar") {
+            segmentIndices.push(orientedIndices[cursor]);
+            cursor += 1;
+          }
+          const shifted = slideLine(segmentIndices.map((idx) => getCell(idx)));
+          mergedThisMove += shifted.merged;
+          for (const slot of shifted.mergedSlots) mergedCells.push(segmentIndices[slot]);
+          for (const label of shifted.labels) mergeLabels.push(label);
+          for (let j = 0; j < segmentIndices.length; j += 1) {
+            setCell(segmentIndices[j], shifted.cells[j]);
+          }
         }
       }
-      if (tiles.join(",") !== before) {
+      if (boardSignature() !== before) {
         lastMoveDir = dir;
         lastMergeCells = mergedCells;
         lastSpawnFromTop = false;
         if (mergedThisMove) {
           bloomChain += 1;
-          affinity = Math.min(100, affinity + 18 + bloomChain * 6 + Math.min(14, Math.floor(Math.log2(mergedThisMove))));
           loveTempo = Math.max(0.58, 1 - bloomChain * 0.055);
           points += Math.round(mergedThisMove * (1 + Math.min(bloomChain, 6) * 0.22));
-          if (affinity >= 100) vowReady = true;
+          featuredCells = mergedCells.slice(0, 4);
+          if (bloomChain >= 2) showMoment = "观察室：连续心动触发约会机会";
         } else {
           bloomChain = 0;
-          affinity = Math.max(0, affinity - 6);
+          affinity = clamp(affinity - 4);
           loveTempo = 1;
         }
-        lastSpawnCell = add();
+        afterTurn(mergedThisMove, mergeLabels);
+        lastSpawnCell = Math.random() < 0.16 ? spawnRelationshipEvent() : add();
+        if (!mergedThisMove && lastSpawnCell >= 0) {
+          featuredCells = [lastSpawnCell];
+          collectMeet(1, "新事件入场，关系线重新洗牌");
+        }
       } else {
         lastMoveDir = dir;
         lastMergeCells = [];
-        lastSpawnCell = addFromTop();
+        if (emptyIndices().length && Math.random() < 0.35) {
+          lastSpawnCell = spawnRelationshipEvent("communication");
+        } else {
+          lastSpawnCell = addFromTop();
+        }
         lastSpawnFromTop = lastSpawnCell >= 0;
         topSpawned = lastSpawnFromTop;
         bumped = !topSpawned;
+        if (topSpawned) {
+          featuredCells = [lastSpawnCell];
+          collectMeet(2, "顶端空降新嘉宾，粉红任务开启");
+          afterTurn(0, []);
+        }
+      }
+      if (duoMode && boardSignature() !== before) {
+        duoSide = 1 - duoSide;
+        trust = clamp(trust + (mergedThisMove ? 2 : 0));
       }
       render();
       if (topSpawned) {
@@ -631,6 +991,68 @@ if (gameHub || soloGame) {
       }
     }
 
+    function communicate() {
+      const target = events.findIndex((event) => negativeEvents.has(event));
+      if (target < 0) {
+        communication = clamp(communication + 2, 0, 18);
+        trust = clamp(trust + 4);
+        const index = spawnRelationshipEvent("communication");
+        featuredCells = index >= 0 ? [index] : [];
+        showMoment = "观察室：没有大矛盾的时候也愿意沟通，是关系变稳的开始";
+      } else if (communication > 0) {
+        communication = clamp(communication - 1, 0, 18);
+        events[target] = "memory";
+        eventAges[target] = 0;
+        trust = clamp(trust + 12);
+        freshness = clamp(freshness + 3);
+        featuredCells = [target];
+        recordMemory("你们把卡住的话题说清楚了");
+      } else {
+        setStatus("沟通值不足，先创造一次长谈机会");
+        triggerBoardEffect("love-bump", { duration: 420 });
+        return;
+      }
+      render();
+      triggerBoardEffect("love-communication", { text: "沟通", duration: 980 });
+    }
+
+    function date() {
+      if (!dateReady) {
+        setStatus(`相遇值 ${meetMeter}/${meetGoal}，再制造一点心动`);
+        triggerBoardEffect("love-bump", { duration: 420 });
+        return;
+      }
+      const pick = tiles
+        .map((value, index) => ({ value, index }))
+        .filter((item) => item.value)
+        .sort((a, b) => a.value - b.value || a.index - b.index)[0];
+      if (!pick) return;
+      tiles[pick.index] *= 2;
+      points += tiles[pick.index] * 2;
+      affinity = clamp(affinity + 26 + dateCount * 3);
+      trust = clamp(trust + 8);
+      communication = clamp(communication + 2, 0, 18);
+      freshness = clamp(freshness + 16);
+      meetMeter = 0;
+      dateReady = false;
+      dateCount += 1;
+      episode += 1;
+      bloomChain = Math.max(1, bloomChain);
+      loveTempo = Math.max(0.62, loveTempo - 0.07);
+      if (affinity >= 100) vowReady = true;
+      lastMoveDir = "date";
+      lastMergeCells = [pick.index];
+      featuredCells = [pick.index];
+      lastSpawnCell = -1;
+      lastSpawnFromTop = false;
+      const stage = romanceTile(tiles[pick.index]).label;
+      showMoment = `观察室：第${episode}期约会成局，${stage}关系升温`;
+      render();
+      setStatus(`第${episode}期约会成局，${stage}升温`);
+      triggerBoardEffect("love-date", { text: "约会", duration: 1280 });
+      triggerCellEffect("love-date", pick.index, size, size, { duration: 980 });
+    }
+
     function vow() {
       if (!vowReady) {
         setStatus("心动值未满，继续合并积攒桃花");
@@ -645,19 +1067,68 @@ if (gameHub || soloGame) {
         tiles[small.index] *= 2;
         points += tiles[small.index] * 2;
         lastMergeCells = [small.index];
+        featuredCells = [small.index];
       }
       affinity = 0;
+      trust = clamp(trust + 12);
+      communication = clamp(communication + 3, 0, 18);
+      freshness = clamp(freshness + 8);
       bloomChain = 0;
+      meetMeter = 0;
+      dateReady = false;
+      episode += 1;
       loveTempo = 1;
       vowReady = false;
       lastMoveDir = "vow";
+      showMoment = `观察室：第${episode}期终选夜落幕，誓约正式绽放`;
       render();
       setStatus("誓约绽放，最小心意翻倍");
       triggerBoardEffect("love-vow", { text: "♡", duration: 2200 });
     }
 
-    function heartMarkup() {
-      return `<svg class="heart-core" viewBox="0 0 100 92" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true"><path class="heart-shadow" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-main" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-gloss" d="M29 18C20 19 15 26 16 35C17 42 23 48 31 51C26 43 28 30 38 23C35 20 32 18 29 18Z"></path></svg>`;
+    function realTask() {
+      trust = clamp(trust + 5);
+      communication = clamp(communication + 2, 0, 18);
+      freshness = clamp(freshness + 7);
+      recordMemory("真实任务：今天问对方一个最近认真在意的小问题");
+      const index = spawnRelationshipEvent("memory");
+      featuredCells = index >= 0 ? [index] : [];
+      render();
+      triggerBoardEffect("love-communication", { text: "任务", duration: 980 });
+    }
+
+    function toggleDuo() {
+      duoMode = !duoMode;
+      showMoment = duoMode ? "默契挑战：两个人轮流选择方向，行动与回应都算数" : "观察室：回到单人关系经营";
+      render();
+    }
+
+    function toggleChapter() {
+      chapterMode = !chapterMode;
+      showMoment = chapterMode ? "章节模式：遇见、暧昧、告白、磨合、现实、未来依次展开" : "观察室：回到无尽经营";
+      render();
+    }
+
+    function endingName() {
+      if (maxTile() >= 2048 && trust >= 70 && communication >= 8 && freshness >= 55) return "双向奔赴";
+      if (maxTile() >= 2048 && trust >= 76) return "细水长流";
+      if (memoryCount >= 5 && trust < 46) return "差一点";
+      if (communication >= 10 && trust < 52) return "好好告别";
+      return "共同未来";
+    }
+
+    function endingLine() {
+      const ending = endingName();
+      if (ending === "双向奔赴") return "你们没有变成完美的人，但变成了更愿意理解彼此的人。";
+      if (ending === "细水长流") return "没有每天轰轰烈烈，但每次回头，TA 都在那里。";
+      if (ending === "差一点") return "你们曾经很认真地靠近过，只是那时还不太会爱。";
+      if (ending === "好好告别") return "你们没有继续走下去，但终于学会了把话说清楚。";
+      return "你们开始认真讨论以后，也愿意一起找答案。";
+    }
+
+    function heartMarkup(index) {
+      const uid = `love-heart-${index}`;
+      return `<svg class="heart-core" viewBox="0 0 100 92" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true"><defs><linearGradient id="${uid}-fill" x1="20" y1="10" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop class="heart-stop-light" offset="0"></stop><stop class="heart-stop-mid" offset="0.48"></stop><stop class="heart-stop-deep" offset="1"></stop></linearGradient><radialGradient id="${uid}-glow" cx="34%" cy="25%" r="58%"><stop class="heart-glow-light" offset="0"></stop><stop class="heart-glow-clear" offset="1"></stop></radialGradient></defs><path class="heart-shadow" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-main" fill="url(#${uid}-fill)" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-glow" fill="url(#${uid}-glow)" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-rim" d="M50 84C45 77 17 61 9 41C2 24 13 8 30 8C40 8 47 14 50 22C53 14 60 8 70 8C87 8 98 24 91 41C83 61 55 77 50 84Z"></path><path class="heart-gloss" d="M29 18C20 19 15 26 16 35C17 42 23 48 31 51C26 43 28 30 38 23C35 20 32 18 29 18Z"></path><circle class="heart-spark" cx="68" cy="21" r="3.2"></circle><circle class="heart-spark is-small" cx="76" cy="31" r="1.9"></circle></svg>`;
     }
 
     function render() {
@@ -666,58 +1137,107 @@ if (gameHub || soloGame) {
         right: ["1", "0"],
         up: ["0", "-1"],
         down: ["0", "1"],
+        date: ["0", "0"],
         vow: ["0", "0"],
         start: ["0", "0"]
       };
       const [moveX, moveY] = moveVectors[lastMoveDir] || moveVectors.start;
       const mergeSet = new Set(lastMergeCells);
+      const featureSet = new Set(featuredCells);
       board.style.setProperty("--affinity", affinity);
       board.style.setProperty("--affinity-alpha", Math.min(0.62, affinity / 150).toFixed(3));
+      board.style.setProperty("--meet-alpha", Math.min(0.58, meetMeter / (meetGoal + 2)).toFixed(3));
+      board.style.setProperty("--trust-alpha", Math.min(0.62, trust / 150).toFixed(3));
       board.style.setProperty("--tempo", loveTempo.toFixed(2));
       board.style.setProperty("--move-x", moveX);
       board.style.setProperty("--move-y", moveY);
       board.classList.toggle("is-accelerated", bloomChain >= 2);
       board.classList.toggle("is-vow-ready", vowReady);
+      board.classList.toggle("is-date-ready", dateReady);
+      board.classList.toggle("is-duo-mode", duoMode);
+      board.classList.toggle("is-chapter-mode", chapterMode);
       board.dataset.move = lastMoveDir;
+      board.dataset.showPhase = phaseName();
       board.innerHTML = tiles.map((value, index) => {
+        const event = events[index];
+        if (event) {
+          const info = relationshipEvents[event] || relationshipEvents.communication;
+          const negative = negativeEvents.has(event) ? "event-negative" : "";
+          const memory = event === "memory" ? "event-memory" : "";
+          const featured = featureSet.has(index) ? "is-featured" : "";
+          const age = eventAges[index] || 0;
+          return `<span class="merge-cell event-cell event-${event} ${negative} ${memory} ${featured}" data-event="${event}" data-age="${age}"><b>${info.glyph}</b><em class="tile-number">${escapeText(info.label)}</em><small>${escapeText(info.hint)}</small></span>`;
+        }
         const tile = romanceTile(value);
         const hot = value && value >= 128 ? "is-hot" : "";
         const collision = mergeSet.has(index) ? "is-collision" : "";
+        const featured = featureSet.has(index) ? "is-featured" : "";
         const newborn = index === lastSpawnCell ? "is-new" : "";
         const topSpawn = lastSpawnFromTop && index === lastSpawnCell ? "is-top-spawn" : "";
         const vowTile = value && value >= 1024 ? "is-vow" : "";
-        const style = value ? ` style="--tile:${tile.color};--tile-deep:${tile.deep};--rank:${tile.rank};"` : "";
-        const content = value ? `${heartMarkup()}<b>${tile.glyph}</b><em class="tile-number">${value}</em><small>${escapeText(tile.label)}</small>` : "";
-        return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${newborn} ${topSpawn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
+        const style = value ? ` style="--tile:${tile.color};--tile-deep:${tile.deep};--tile-accent:${tile.accent};--tile-rim:${tile.rim};--rank:${tile.rank};"` : "";
+        const content = value ? `${heartMarkup(index)}<b>${tile.glyph}</b><em class="tile-number">${value}</em><small>${escapeText(tile.label)}</small>` : "";
+        return `<span class="merge-cell love-tile v${value || 0} ${hot} ${collision} ${featured} ${newborn} ${topSpawn} ${vowTile}" data-value="${value || ""}" data-rank="${tile.rank}" data-romance="${escapeText(tile.label)}"${style}>${content}</span>`;
       }).join("");
       setScore(points);
       if (!canMove()) {
-        setStatus("花局已满，点重遇重新开始");
+        setStatus(`关系空间被情绪填满：${memoryCount ? endingLine() : "你们需要重遇，重新留出相处余地"}`);
       } else {
-        setStatus(vowReady ? "心动值已满，点誓约让最小心意翻倍" : `心动值 ${affinity}% · ${bloomChain ? `桃花连击 ×${bloomChain}` : "滑动牵手"}`);
+        setStatus(vowReady ? `${showMoment} · 点誓约进入终选夜` : dateReady ? `${showMoment} · 点约会推进关系` : `${showMoment} · 相遇 ${meetMeter}/${meetGoal}`);
       }
-      setMeta([`心动 ${affinity}%`, bloomChain ? `连击 ${bloomChain}` : "等待相遇", vowReady ? "誓约可用" : `加速 ${loveTempo.toFixed(2)}x`]);
+      setMeta([
+        "关系经营",
+        chapterMode ? `章节 ${phaseName()}` : `第${episode}期`,
+        duoMode ? (duoSide ? "回应方" : "行动方") : `心动 ${affinity}%`,
+        `信任 ${trust}`,
+        `沟通 ${communication}`,
+        `新鲜感 ${freshness}`,
+        dateReady ? "约会可用" : `相遇 ${meetMeter}/${meetGoal}`,
+        vowReady ? "誓约可用" : `回忆 ${memoryCount}`
+      ]);
     }
 
     function restart() {
       tiles = Array(size * size).fill(0);
+      events = Array(size * size).fill("");
+      eventAges = Array(size * size).fill(0);
       points = 0;
       affinity = 0;
+      trust = 54;
+      communication = 4;
+      freshness = 68;
       bloomChain = 0;
       loveTempo = 1;
       vowReady = false;
+      meetMeter = 0;
+      dateReady = false;
+      episode = 1;
+      dateCount = 0;
+      turn = 0;
+      spaceStreak = 0;
+      memoryCount = 0;
+      endingUnlocked = false;
+      seenStages = new Set();
       lastMoveDir = "start";
       lastMergeCells = [];
+      featuredCells = [];
       lastSpawnFromTop = false;
+      showMoment = "观察室：等待第一位嘉宾入场";
       add();
       lastSpawnCell = add();
+      featuredCells = [lastSpawnCell];
       render();
     }
 
+    button("沟通", communicate, true);
+    button("约会", date, true);
     button("誓约", vow, true);
+    button("章节", toggleChapter);
+    button("双人", toggleDuo);
+    button("任务", realTask);
     button("重遇", restart);
     restart();
-    const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down"), " ": vow });
+    const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down"), " ": vow, c: communicate, C: communicate, d: date, D: date });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
     return () => { offKey(); offSwipe(); };
   }
