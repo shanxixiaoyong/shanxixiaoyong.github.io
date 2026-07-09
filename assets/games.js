@@ -183,6 +183,30 @@ if (gameHub || soloGame) {
     return () => document.removeEventListener("keydown", handler);
   }
 
+  function triggerBoardEffect(name, options = {}) {
+    if (!board) return;
+    const item = document.createElement("span");
+    item.className = `board-effect effect-${name}`;
+    item.setAttribute("aria-hidden", "true");
+    if (Number.isFinite(options.x)) item.style.setProperty("--fx-x", `${options.x}%`);
+    if (Number.isFinite(options.y)) item.style.setProperty("--fx-y", `${options.y}%`);
+    if (options.text) item.textContent = options.text;
+    const duration = options.duration || 760;
+    board.append(item);
+    window.setTimeout(() => item.remove(), duration);
+    const fxClass = `fx-${name}`;
+    board.classList.remove(fxClass);
+    void board.offsetWidth;
+    board.classList.add(fxClass);
+    window.setTimeout(() => board.classList.remove(fxClass), duration);
+  }
+
+  function triggerCellEffect(name, index, cols, rows, options = {}) {
+    const x = ((index % cols) + 0.5) / cols * 100;
+    const y = (Math.floor(index / cols) + 0.5) / rows * 100;
+    triggerBoardEffect(name, { ...options, x, y });
+  }
+
   function enableSwipe(actions, threshold = 28) {
     let startX = 0;
     let startY = 0;
@@ -344,6 +368,7 @@ if (gameHub || soloGame) {
       if (!incoming) nextPiece = makePiece();
       setStatus("Hold locked until next piece");
       render();
+      triggerBoardEffect("forge-hold", { duration: 620 });
     }
 
     function applySurge() {
@@ -363,7 +388,8 @@ if (gameHub || soloGame) {
       while (grid.length < height) grid.unshift(Array(width).fill(0));
       points += cleared ? [0, 120, 360, 720, 1200][cleared] : 14;
       locks += 1;
-      if (locks % 6 === 0) applySurge();
+      const surged = locks % 6 === 0;
+      if (surged) applySurge();
       piece = nextPiece;
       nextPiece = makePiece();
       holdUsed = false;
@@ -372,12 +398,16 @@ if (gameHub || soloGame) {
         setStatus("Game Over");
       }
       render();
+      if (cleared) triggerBoardEffect("forge-clear", { text: `+${cleared}`, duration: 820 });
+      else triggerBoardEffect("forge-lock", { duration: 520 });
+      if (surged) triggerBoardEffect("forge-surge", { duration: 920 });
     }
 
     function hardDrop() {
       if (over || paused) return;
       while (move(0, 1)) points += 2;
       render();
+      triggerBoardEffect("forge-drop", { duration: 460 });
     }
 
     function render() {
@@ -501,6 +531,7 @@ if (gameHub || soloGame) {
         add();
       }
       render();
+      if (mergedThisMove) triggerBoardEffect("ember-merge", { text: `×${mergeStreak}`, duration: 760 });
     }
 
     function temper() {
@@ -517,9 +548,12 @@ if (gameHub || soloGame) {
       temperReady = false;
       setStatus("Tempered lowest tile");
       render();
+      triggerBoardEffect("ember-temper", { duration: 920 });
     }
 
     function render() {
+      board.style.setProperty("--heat", heat);
+      board.style.setProperty("--heat-alpha", Math.min(0.48, heat / 220).toFixed(3));
       board.innerHTML = tiles.map((value) => {
         const hot = value && value >= 128 ? "is-hot" : "";
         return `<span class="merge-cell v${value || 0} ${hot}" data-value="${value || ""}">${value || ""}</span>`;
@@ -586,7 +620,7 @@ if (gameHub || soloGame) {
       }
     }
 
-    function reveal(i) {
+    function reveal(i, cascade = false) {
       if (ended || cells[i].open || cells[i].flag) return;
       if (!firstSafeOpen) {
         firstSafeOpen = true;
@@ -599,19 +633,21 @@ if (gameHub || soloGame) {
         cells.forEach((c) => { if (c.mine) c.open = true; });
         setStatus("Signal lost");
       } else if (!cells[i].near) {
-        neighbors(i).forEach(reveal);
+        neighbors(i).forEach((n) => reveal(n, true));
       }
       if (!ended && cells.filter((c) => !c.mine && c.open).length === width * width - mineCount) {
         ended = true;
         setStatus("Field clear");
       }
       render();
+      if (!cascade) triggerCellEffect(cells[i].mine ? "sonar-mine" : "sonar-ping", i, width, width, { duration: 900 });
     }
 
     function toggleFlag(i) {
       if (ended || cells[i].open) return;
       cells[i].flag = !cells[i].flag;
       render();
+      triggerCellEffect("sonar-flag", i, width, width, { duration: 520 });
     }
 
     function render() {
@@ -651,6 +687,14 @@ if (gameHub || soloGame) {
         });
         board.append(b);
       });
+      if (lastOpen >= 0) {
+        const ping = document.createElement("span");
+        ping.className = "board-effect effect-sonar-ping";
+        ping.setAttribute("aria-hidden", "true");
+        ping.style.setProperty("--fx-x", `${((lastOpen % width) + 0.5) / width * 100}%`);
+        ping.style.setProperty("--fx-y", `${(Math.floor(lastOpen / width) + 0.5) / width * 100}%`);
+        board.append(ping);
+      }
       setScore(cells.filter((c) => c.flag).length);
       setMeta([firstSafeOpen ? "First tap safe" : "First tap protected", "Long press flag", `${mineCount} signals`]);
     }
@@ -734,7 +778,11 @@ if (gameHub || soloGame) {
           conflicts.has(i) ? "is-conflict" : ""
         ].filter(Boolean).join(" ");
         const b = cell(classes, value || "");
-        b.addEventListener("click", () => { selected = i; render(); });
+        b.addEventListener("click", () => {
+          selected = i;
+          render();
+          triggerCellEffect("ink-focus", i, 9, 9, { duration: 620 });
+        });
         board.append(b);
       });
       const conflictCount = conflicts.size;
@@ -746,6 +794,9 @@ if (gameHub || soloGame) {
     function put(n) {
       if (puzzle[selected] === "0") values[selected] = n;
       render();
+      const conflicts = conflictMarks();
+      triggerCellEffect(conflicts.has(selected) ? "ink-conflict" : "ink-mark", selected, 9, 9, { duration: 680 });
+      if (values.join("") === answer) triggerBoardEffect("ink-solve", { duration: 1000 });
     }
 
     function select(dx, dy) {
@@ -753,6 +804,7 @@ if (gameHub || soloGame) {
       const y = Math.floor(selected / 9);
       selected = Math.max(0, Math.min(8, y + dy)) * 9 + Math.max(0, Math.min(8, x + dx));
       render();
+      triggerCellEffect("ink-focus", selected, 9, 9, { duration: 420 });
     }
 
     for (let i = 1; i <= 9; i += 1) button(String(i), () => put(i), i === 1);
@@ -812,10 +864,14 @@ if (gameHub || soloGame) {
       if (snake.includes(next)) {
         dead = true;
         setStatus("Train derailed");
+        render();
+        triggerCellEffect("neon-crash", next, size, size, { duration: 980 });
         return;
       }
+      let ate = false;
       snake.unshift(next);
       if (next === food.index) {
+        ate = true;
         combo += 1;
         points += food.pulse ? 25 + combo * 4 : 10 + combo * 2;
         placeFood();
@@ -824,6 +880,7 @@ if (gameHub || soloGame) {
         snake.pop();
       }
       render();
+      if (ate) triggerCellEffect("neon-eat", next, size, size, { text: `+${combo}`, duration: 720 });
     }
 
     function schedule() {
@@ -838,15 +895,20 @@ if (gameHub || soloGame) {
       const set = new Set(snake);
       board.innerHTML = Array.from({ length: size * size }, (_, i) => {
         const edge = i < size || i >= size * (size - 1) || i % size === 0 || i % size === size - 1;
+        const segment = snake.indexOf(i);
         const classes = [
           "snake-cell",
           set.has(i) ? "is-snake" : "",
           snake[0] === i ? "is-head" : "",
+          segment === snake.length - 1 ? "is-tail" : "",
           food.index === i ? "is-food" : "",
           food.index === i && food.pulse ? "is-pulse-food" : "",
           edge ? "is-portal" : ""
         ].filter(Boolean).join(" ");
-        return `<span class="${classes}"></span>`;
+        const style = segment >= 0
+          ? ` style="--segment:${segment};--snake-size:${snake.length};--snake-hue:${165 + Math.min(segment, 12) * 8};--snake-scale:${Math.max(0.84, 1 - Math.min(segment, 8) * 0.018).toFixed(3)}"`
+          : "";
+        return `<span class="${classes}"${style}></span>`;
       }).join("");
       setScore(points);
       setStatus(dead ? "Train derailed" : paused ? "Paused" : `Combo ${combo}`);
@@ -909,25 +971,37 @@ if (gameHub || soloGame) {
     }
 
     function shoot(col = aim) {
+      let placedIndex = -1;
+      let popped = 0;
+      let tide = false;
       for (let r = rows - 1; r >= 0; r -= 1) {
         const i = r * cols + col;
         if (!bubbles[i]) {
           bubbles[i] = current;
+          placedIndex = i;
           const group = cluster(i, current);
           if (group.size >= 3) {
             group.forEach((idx) => bubbles[idx] = 0);
             points += group.size * 12;
+            popped = group.size;
             setStatus(`Pop ${group.size}`);
           }
           current = next;
           next = 1 + Math.floor(Math.random() * 5);
           shots += 1;
-          if (shots % 5 === 0) tideDrops();
+          if (shots % 5 === 0) {
+            tide = true;
+            tideDrops();
+          }
           render();
+          triggerCellEffect("bubble-shot", (rows * cols) + col, cols, rows + 1, { duration: 560 });
+          if (popped) triggerCellEffect("bubble-pop", placedIndex, cols, rows + 1, { text: `×${popped}`, duration: 920 });
+          if (tide) triggerBoardEffect("bubble-tide", { duration: 860 });
           return;
         }
       }
       setStatus("Column blocked");
+      triggerCellEffect("bubble-block", (rows * cols) + col, cols, rows + 1, { duration: 520 });
     }
 
     function moveAim(delta) {
@@ -946,6 +1020,14 @@ if (gameHub || soloGame) {
         b.addEventListener("click", () => shoot(c));
         board.append(b);
       }
+      const ray = document.createElement("span");
+      ray.className = "bubble-aim-ray";
+      ray.setAttribute("aria-hidden", "true");
+      ray.style.setProperty("--aim", aim);
+      ray.style.setProperty("--cols", cols);
+      ray.style.setProperty("--aim-left", `${((aim + 0.5) / cols * 100).toFixed(2)}%`);
+      ray.style.setProperty("--cell", colors[current]);
+      board.append(ray);
       setScore(points);
       setMeta([`Next ${next}`, `Tide ${5 - (shots % 5)}`, `Rows ${tideLevel}`]);
     }
@@ -975,6 +1057,7 @@ if (gameHub || soloGame) {
     let points = 0;
     let aim = 2;
     let chainCombo = 0;
+    let lastMergeIndex = -1;
 
     board.style.setProperty("--cols", cols);
     board.style.setProperty("--rows", rows);
@@ -997,6 +1080,7 @@ if (gameHub || soloGame) {
           const [nr, nc] = pair;
           grid[r][c] = Math.min(value + 1, fruitIcons.length - 1);
           grid[nr][nc] = 0;
+          lastMergeIndex = r * cols + c;
           chainCombo += 1;
           points += grid[r][c] * 24 * chainCombo;
           settle();
@@ -1017,6 +1101,7 @@ if (gameHub || soloGame) {
       const r = grid.findLastIndex((row) => !row[col]);
       if (r < 0) {
         setStatus("Orchard full");
+        triggerCellEffect("suika-danger", col, cols, rows, { duration: 680 });
         return;
       }
       grid[r][col] = next;
@@ -1024,6 +1109,8 @@ if (gameHub || soloGame) {
       settle();
       resolveChains();
       render();
+      triggerCellEffect("suika-drop", r * cols + col, cols, rows, { duration: 620 });
+      if (chainCombo) triggerCellEffect("suika-chain", lastMergeIndex, cols, rows, { text: `×${chainCombo}`, duration: 920 });
     }
 
     function moveAim(delta) {
@@ -1041,6 +1128,14 @@ if (gameHub || soloGame) {
         b.addEventListener("click", () => drop(col));
         board.append(b);
       });
+      const dropper = document.createElement("span");
+      dropper.className = "fruit-dropper";
+      dropper.setAttribute("aria-hidden", "true");
+      dropper.style.setProperty("--aim", aim);
+      dropper.style.setProperty("--cols", cols);
+      dropper.style.setProperty("--aim-left", `${((aim + 0.5) / cols * 100).toFixed(2)}%`);
+      dropper.textContent = fruitIcons[next];
+      board.append(dropper);
       setScore(points);
       setStatus(chainCombo ? `Chain ×${chainCombo}` : `Next ${fruitIcons[next]}`);
       setMeta([`Next ${fruitIcons[next]}`, chainCombo ? `Chain ${chainCombo}` : "Find pairs", "Danger line"]);
@@ -1092,9 +1187,11 @@ if (gameHub || soloGame) {
       const landing = landingArc();
       const platform = ratioToX(platformRatio);
       const target = ratioToX(targetRatio);
+      board.classList.toggle("is-charging", charging);
       board.innerHTML = `
         <div class="jump-scene">
           <div class="jump-stars"></div>
+          <span class="jump-arc" style="--from:${platform}px;--to:${landing}px"></span>
           <span class="jump-player" style="left:${platform}px"></span>
           <span class="jump-target" style="left:${target}px"></span>
           <span class="jump-landing" style="left:${landing}px"></span>
@@ -1127,6 +1224,7 @@ if (gameHub || soloGame) {
       charging = false;
       setStatus(hit ? "Clean landing" : "Missed");
       render();
+      triggerBoardEffect(hit ? "lunar-hit" : "lunar-miss", { duration: 780 });
     }
 
     function driftTarget() {
@@ -1178,6 +1276,7 @@ if (gameHub || soloGame) {
     let lives = 10;
     let coins = 74;
     let wave = 0;
+    let lastShots = [];
 
     board.style.setProperty("--cols", cols);
     board.style.setProperty("--rows", rows);
@@ -1192,6 +1291,7 @@ if (gameHub || soloGame) {
       towers.set(i, selectedType);
       coins -= type.cost;
       render();
+      triggerCellEffect(selectedType === "frost" ? "tower-frost" : "tower-build", i, cols, rows, { duration: 660 });
     }
 
     function spawn() {
@@ -1199,9 +1299,11 @@ if (gameHub || soloGame) {
       for (let i = 0; i < 4 + wave; i += 1) enemies.push({ step: -i * 2, hp: 4 + wave, slow: 0 });
       setStatus(`Wave ${wave}`);
       render();
+      triggerBoardEffect("tower-wave", { duration: 820 });
     }
 
     function tick() {
+      lastShots = [];
       enemies.forEach((enemy) => {
         if (enemy.slow > 0) enemy.slow -= 1;
         else enemy.step += 1;
@@ -1223,6 +1325,22 @@ if (gameHub || soloGame) {
           return Math.abs(pos % cols - tx) + Math.abs(Math.floor(pos / cols) - ty) <= type.range;
         });
         if (targetEnemy) {
+          const targetPos = path[targetEnemy.step];
+          const fromX = ((tower % cols) + 0.5) / cols * 100;
+          const fromY = (Math.floor(tower / cols) + 0.5) / rows * 100;
+          const toX = ((targetPos % cols) + 0.5) / cols * 100;
+          const toY = (Math.floor(targetPos / cols) + 0.5) / rows * 100;
+          lastShots.push({
+            from: tower,
+            to: targetPos,
+            type: typeName,
+            x1: fromX,
+            y1: fromY,
+            x2: toX,
+            y2: toY,
+            len: Math.hypot(toX - fromX, toY - fromY),
+            angle: Math.atan2(toY - fromY, toX - fromX) * 180 / Math.PI
+          });
           targetEnemy.hp -= type.damage;
           if (typeName === "frost") targetEnemy.slow = 1;
           if (targetEnemy.hp <= 0) coins += typeName === "frost" ? 7 : 9;
@@ -1230,6 +1348,7 @@ if (gameHub || soloGame) {
       });
       if (lives <= 0) setStatus("Base lost");
       render();
+      if (lastShots.length) triggerBoardEffect("tower-volley", { duration: 680 });
     }
 
     function render() {
@@ -1249,6 +1368,18 @@ if (gameHub || soloGame) {
         b.addEventListener("click", () => place(i));
         board.append(b);
       }
+      lastShots.forEach((shot) => {
+        const fx = document.createElement("span");
+        fx.className = `tower-projectile is-${shot.type}`;
+        fx.setAttribute("aria-hidden", "true");
+        fx.style.setProperty("--x1", `${shot.x1}%`);
+        fx.style.setProperty("--y1", `${shot.y1}%`);
+        fx.style.setProperty("--x2", `${shot.x2}%`);
+        fx.style.setProperty("--y2", `${shot.y2}%`);
+        fx.style.setProperty("--len", `${shot.len}%`);
+        fx.style.setProperty("--angle", `${shot.angle}deg`);
+        board.append(fx);
+      });
       setScore(`${coins}/${lives}`);
       setMeta([`Mode ${selectedType}`, `Wave ${wave}`, `Lives ${lives}`]);
     }
@@ -1257,6 +1388,7 @@ if (gameHub || soloGame) {
       selectedType = "cannon";
       towers = new Map();
       enemies = [];
+      lastShots = [];
       lives = 10;
       coins = 74;
       wave = 0;
@@ -1315,6 +1447,7 @@ if (gameHub || soloGame) {
       }
       if (hp <= 0) setStatus("Ship disabled");
       draw();
+      triggerBoardEffect("card-hit", { duration: 760 });
     }
 
     function play(i) {
@@ -1332,13 +1465,16 @@ if (gameHub || soloGame) {
         nextEnemy();
         draw(5);
         setStatus("Enemy down");
+        triggerBoardEffect("card-burst", { duration: 860 });
       } else {
         render();
+        triggerBoardEffect("card-play", { duration: 640 });
       }
     }
 
     function render() {
       board.innerHTML = `
+        <div class="starfield"></div>
         <div class="card-battle">
           <div class="ship-panel"><span>Hull</span><strong>${hp}</strong><small>Shield ${shield}</small></div>
           <div class="enemy-panel"><span>Hostile</span><strong>${Math.max(0, enemy)}</strong><small>Intent ${enemyAtk}</small></div>

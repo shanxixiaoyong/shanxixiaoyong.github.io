@@ -2836,6 +2836,513 @@ body:is(.arcade-page, .solo-game-page) .board-starship-cards {
   }
 }
 
+body:is(.arcade-page, .solo-game-page) .arcade-board {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+body:is(.arcade-page, .solo-game-page) .arcade-board::before,
+body:is(.arcade-page, .solo-game-page) .arcade-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body:is(.arcade-page, .solo-game-page) .arcade-board::before {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--game-accent, #75d7bd) 24%, transparent), transparent 42%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: auto, 44px 44px, 44px 44px;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+}
+
+body:is(.arcade-page, .solo-game-page) .arcade-board::after {
+  background:
+    linear-gradient(180deg, rgba(3, 5, 8, 0.58), rgba(3, 5, 8, 0.18)),
+    var(--game-art);
+  background-position: var(--game-art-position, center);
+  background-size: cover;
+  filter: saturate(1.12) contrast(1.05);
+  mix-blend-mode: screen;
+  opacity: 0.1;
+}
+
+body:is(.arcade-page, .solo-game-page) .arcade-board > :not(.board-effect, .tower-projectile, .bubble-aim-ray, .fruit-dropper) {
+  position: relative;
+  z-index: 1;
+}
+
+.board-effect,
+.tower-projectile,
+.bubble-aim-ray,
+.fruit-dropper {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.board-effect {
+  left: var(--fx-x, 50%);
+  top: var(--fx-y, 50%);
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 900;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  transform: translate(-50%, -50%);
+}
+
+.effect-forge-lock,
+.effect-forge-drop,
+.effect-ember-merge,
+.effect-suika-drop,
+.effect-card-play {
+  background: radial-gradient(circle, color-mix(in srgb, var(--game-accent) 74%, white) 0 12%, color-mix(in srgb, var(--game-accent) 34%, transparent) 13% 42%, transparent 72%);
+  animation: boardBurst 620ms ease-out both;
+}
+
+.effect-forge-clear,
+.effect-forge-surge,
+.effect-ember-temper,
+.effect-bubble-pop,
+.effect-suika-chain,
+.effect-card-burst {
+  width: 140px;
+  height: 140px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.86) 0 8%, color-mix(in srgb, var(--game-accent-2) 52%, transparent) 9% 26%, transparent 58%),
+    conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--game-accent) 70%, white), transparent, color-mix(in srgb, var(--game-accent-2) 70%, white), transparent);
+  animation: bigBoardBurst 900ms ease-out both;
+}
+
+.effect-sonar-ping,
+.effect-sonar-flag,
+.effect-ink-focus,
+.effect-ink-mark,
+.effect-neon-eat,
+.effect-bubble-shot,
+.effect-tower-build,
+.effect-tower-frost,
+.effect-lunar-hit {
+  border: 2px solid color-mix(in srgb, var(--game-accent) 72%, white);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--game-accent) 46%, transparent);
+  animation: ripplePing 760ms ease-out both;
+}
+
+.effect-sonar-mine,
+.effect-ink-conflict,
+.effect-neon-crash,
+.effect-bubble-block,
+.effect-suika-danger,
+.effect-lunar-miss,
+.effect-card-hit {
+  background: radial-gradient(circle, rgba(255, 122, 144, 0.86) 0 16%, rgba(255, 122, 144, 0.26) 17% 46%, transparent 70%);
+  animation: warningBurst 780ms ease-out both;
+}
+
+.effect-bubble-tide,
+.effect-tower-wave {
+  left: 50%;
+  top: 50%;
+  width: 120%;
+  height: 120%;
+  border-radius: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--game-accent) 32%, transparent), transparent 34%, color-mix(in srgb, var(--game-accent-2) 24%, transparent));
+  animation: tideSweep 860ms ease-out both;
+}
+
+.board-tetris-forge {
+  outline: 1px solid rgba(255, 190, 90, 0.28);
+}
+
+.board-tetris-forge .block-cell {
+  position: relative;
+  border-color: rgba(255, 220, 170, 0.14);
+  border-radius: 6px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.2)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.board-tetris-forge .block-cell[style] {
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.62), transparent 0 12%, transparent 13%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.18)),
+    var(--cell);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3), inset 0 -6px 12px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.board-tetris-forge .block-cell.is-active {
+  animation: forgeActive 680ms ease-in-out infinite alternate;
+}
+
+.board-tetris-forge.fx-forge-surge::after {
+  background: linear-gradient(0deg, rgba(255, 91, 64, 0.42), transparent 34%);
+  animation: surgeRise 900ms ease-out both;
+}
+
+.board-ember-2048 {
+  box-shadow: inset 0 -28px 70px rgba(255, 92, 46, var(--heat-alpha, 0)), 0 26px 70px rgba(0, 0, 0, 0.42);
+}
+
+.board-ember-2048 .merge-cell {
+  transform-style: preserve-3d;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.board-ember-2048 .merge-cell:not(.v0) {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.32), transparent 0 16%, transparent 17%),
+    linear-gradient(145deg, rgba(255, 196, 97, 0.22), rgba(255, 99, 62, 0.16)),
+    #2b211c;
+}
+
+.board-ember-2048.fx-ember-merge .merge-cell:not(.v0) {
+  animation: emberTilePop 420ms ease-out both;
+}
+
+.board-sonar-mines {
+  border-radius: 22px;
+}
+
+.board-sonar-mines .mine-cell {
+  position: relative;
+  border: 1px solid rgba(106, 232, 255, 0.16);
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent),
+    rgba(6, 27, 36, 0.82);
+}
+
+.board-sonar-mines .mine-cell.is-open::after {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border: 1px solid rgba(97, 216, 255, 0.56);
+  border-radius: 50%;
+  animation: sonarCell 1100ms ease-out infinite;
+}
+
+.board-sonar-mines.fx-sonar-ping::after {
+  left: var(--fx-x, 50%);
+  top: var(--fx-y, 50%);
+  width: 20%;
+  height: 20%;
+  border: 2px solid rgba(97, 216, 255, 0.72);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: sonarSweep 900ms ease-out both;
+}
+
+.board-ink-sudoku {
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(25, 28, 30, 0.16);
+}
+
+.board-ink-sudoku .sudoku-cell {
+  position: relative;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.board-ink-sudoku .sudoku-cell.is-selected {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(200, 63, 47, 0.2), transparent 64%),
+    rgba(255, 255, 255, 0.78);
+  transform: scale(1.04);
+}
+
+.board-ink-sudoku .sudoku-cell.is-related::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: rgba(30, 30, 30, 0.08);
+}
+
+.board-neon-snake .snake-cell {
+  transition: background 90ms ease, box-shadow 90ms ease, transform 90ms ease;
+}
+
+.board-neon-snake .snake-cell.is-snake {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28), transparent 36%),
+    hsl(var(--snake-hue, 165) 72% 60%);
+  transform: scale(var(--snake-scale, 1));
+}
+
+.board-neon-snake .snake-cell.is-head {
+  background: radial-gradient(circle at 60% 35%, #fff6a3 0 18%, #22f0ff 19% 62%, #0a1728 64%);
+  box-shadow: 0 0 24px rgba(34, 240, 255, 0.66);
+}
+
+.board-neon-snake .snake-cell.is-tail {
+  opacity: 0.72;
+}
+
+.board-neon-snake.fx-neon-eat::after {
+  background: radial-gradient(circle at var(--fx-x, 50%) var(--fx-y, 50%), rgba(255, 75, 216, 0.4), transparent 24%);
+  animation: neonFlash 660ms ease-out both;
+}
+
+.board-tide-bubble .bubble-cell,
+.board-tide-bubble .bubble-launch {
+  box-shadow: inset -6px -8px 14px rgba(0, 0, 0, 0.24), inset 3px 4px 8px rgba(255, 255, 255, 0.34), 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.bubble-aim-ray {
+  left: var(--aim-left);
+  bottom: 8%;
+  width: 3px;
+  height: 72%;
+  border-radius: 999px;
+  background: linear-gradient(0deg, var(--cell), transparent);
+  box-shadow: 0 0 18px var(--cell);
+  opacity: 0.62;
+  transform: translateX(-50%);
+}
+
+.board-tide-bubble.fx-bubble-tide::after {
+  background: linear-gradient(180deg, rgba(97, 216, 255, 0.42), transparent 28%);
+  animation: tidePush 860ms ease-out both;
+}
+
+.board-orchard-suika .fruit-cell {
+  box-shadow: inset -8px -10px 15px rgba(0, 0, 0, 0.22), inset 4px 4px 10px rgba(255, 255, 255, 0.34), 0 8px 18px rgba(0, 0, 0, 0.18);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.board-orchard-suika .fruit-cell[style] {
+  animation: fruitSettle 420ms cubic-bezier(0.2, 0.9, 0.2, 1.2) both;
+}
+
+.fruit-dropper {
+  left: var(--aim-left);
+  top: 3%;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid rgba(255, 221, 144, 0.42);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 221, 144, 0.22), rgba(0, 0, 0, 0.28));
+  font-size: 28px;
+  transform: translateX(-50%);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.25);
+}
+
+.jump-scene::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 36%;
+  background: linear-gradient(180deg, transparent, rgba(111, 228, 255, 0.16));
+}
+
+.jump-arc {
+  position: absolute;
+  left: min(var(--from), var(--to));
+  bottom: 108px;
+  width: max(70px, calc(max(var(--from), var(--to)) - min(var(--from), var(--to))));
+  height: 120px;
+  border-top: 3px solid rgba(255, 184, 77, 0.72);
+  border-radius: 50% 50% 0 0;
+  filter: drop-shadow(0 0 12px rgba(255, 184, 77, 0.42));
+}
+
+.board-lunar-jump.is-charging .jump-player {
+  animation: lunarCharge 360ms ease-in-out infinite alternate;
+}
+
+.board-canyon-tower .tower-cell {
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.board-canyon-tower .tower-cell.is-path {
+  background:
+    linear-gradient(135deg, rgba(255, 193, 94, 0.28), rgba(255, 122, 90, 0.14)),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 3px, transparent 3px 11px),
+    #6a4024;
+}
+
+.board-canyon-tower .tower-cell.is-cannon,
+.board-canyon-tower .tower-cell.is-frost {
+  font-size: 0;
+}
+
+.board-canyon-tower .tower-cell.is-cannon::before,
+.board-canyon-tower .tower-cell.is-frost::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+}
+
+.board-canyon-tower .tower-cell.is-cannon::before {
+  background: radial-gradient(circle, #ffc15e 0 28%, #3c2512 29% 52%, #ffc15e 53% 64%, transparent 65%);
+}
+
+.board-canyon-tower .tower-cell.is-frost::before {
+  background: radial-gradient(circle, #d8fbff 0 18%, #61d8ff 19% 42%, #123648 43% 64%, transparent 65%);
+}
+
+.tower-projectile {
+  left: var(--x1);
+  top: var(--y1);
+  width: var(--len);
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #ffc15e, #fff);
+  box-shadow: 0 0 16px rgba(255, 193, 94, 0.72);
+  transform: rotate(var(--angle));
+  transform-origin: left center;
+  animation: towerShot 520ms ease-out both;
+}
+
+.tower-projectile.is-frost {
+  background: linear-gradient(90deg, transparent, #61d8ff, #fff);
+  box-shadow: 0 0 18px rgba(97, 216, 255, 0.78);
+}
+
+.board-starship-cards {
+  overflow: hidden;
+}
+
+.board-starship-cards .starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 20% 24%, rgba(109, 232, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 70% 18%, rgba(255, 177, 61, 0.14), transparent 20%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.72) 0 1px, transparent 2px);
+  background-size: auto, auto, 58px 58px;
+  opacity: 0.55;
+}
+
+.board-starship-cards .card-battle,
+.board-starship-cards .card-hand {
+  position: relative;
+  z-index: 1;
+}
+
+.board-starship-cards .enemy-panel {
+  box-shadow: 0 0 0 1px rgba(255, 122, 144, 0.2), inset 0 0 28px rgba(255, 122, 144, 0.12);
+}
+
+.board-starship-cards .rogue-card {
+  overflow: hidden;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.board-starship-cards .rogue-card:hover {
+  transform: translateY(-6px) rotate(-1deg);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
+}
+
+.board-starship-cards .rogue-card::before {
+  content: "";
+  position: absolute;
+  inset: 14px 14px auto;
+  height: 42%;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.34), transparent 26%),
+    linear-gradient(135deg, rgba(109, 232, 255, 0.18), rgba(255, 177, 61, 0.12));
+  opacity: 0.78;
+}
+
+.board-starship-cards.fx-card-hit::after {
+  background: linear-gradient(180deg, rgba(255, 122, 144, 0.32), transparent);
+  animation: warningBurst 760ms ease-out both;
+}
+
+@keyframes boardBurst {
+  from { opacity: 0.95; transform: translate(-50%, -50%) scale(0.24); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.8); }
+}
+
+@keyframes bigBoardBurst {
+  from { opacity: 0.9; transform: translate(-50%, -50%) scale(0.12) rotate(0deg); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.6) rotate(70deg); }
+}
+
+@keyframes ripplePing {
+  from { opacity: 0.95; transform: translate(-50%, -50%) scale(0.18); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.65); }
+}
+
+@keyframes warningBurst {
+  from { opacity: 0.95; transform: translate(-50%, -50%) scale(0.2); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+}
+
+@keyframes tideSweep {
+  from { opacity: 0; transform: translate(-50%, -46%); }
+  35% { opacity: 0.8; }
+  to { opacity: 0; transform: translate(-50%, -54%); }
+}
+
+@keyframes forgeActive {
+  from { filter: saturate(1); }
+  to { filter: saturate(1.3) brightness(1.2); }
+}
+
+@keyframes surgeRise {
+  from { opacity: 0; transform: translateY(40%); }
+  45% { opacity: 1; }
+  to { opacity: 0; transform: translateY(-18%); }
+}
+
+@keyframes emberTilePop {
+  from { transform: scale(0.86) rotateX(16deg); }
+  to { transform: scale(1) rotateX(0deg); }
+}
+
+@keyframes sonarCell {
+  from { opacity: 0.7; transform: scale(0.55); }
+  to { opacity: 0; transform: scale(1.75); }
+}
+
+@keyframes sonarSweep {
+  from { opacity: 0.8; transform: translate(-50%, -50%) scale(0.1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(5); }
+}
+
+@keyframes neonFlash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes tidePush {
+  from { opacity: 0; transform: translateY(-16%); }
+  40% { opacity: 0.9; }
+  to { opacity: 0; transform: translateY(18%); }
+}
+
+@keyframes fruitSettle {
+  from { transform: translateY(-18px) scale(0.9); }
+  to { transform: translateY(0) scale(1); }
+}
+
+@keyframes lunarCharge {
+  from { transform: translateX(-50%) scaleY(1); }
+  to { transform: translateX(-50%) scaleY(0.82); }
+}
+
+@keyframes towerShot {
+  from { opacity: 0; transform: rotate(var(--angle)) scaleX(0); }
+  35% { opacity: 1; }
+  to { opacity: 0; transform: rotate(var(--angle)) scaleX(1); }
+}
+
 .world-footer {
   display: flex;
   justify-content: space-between;
