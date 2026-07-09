@@ -4786,7 +4786,7 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   pointer-events: none;
   text-align: center;
   transform: translate(-50%, -50%);
-  animation: loveSceneBloom 1550ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
+  animation: loveSceneBloom 760ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
 }
 
 body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
@@ -4808,12 +4808,11 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   filter: blur(2px);
   opacity: 0.82;
   transform: translate(-50%, -50%);
-  animation: loveSceneBling 1550ms ease-out both;
+  animation: loveSceneBling 760ms ease-out both;
 }
 
 .love-scene-bloom span,
-.love-scene-bloom strong,
-.love-scene-bloom p {
+.love-scene-bloom strong {
   position: relative;
   z-index: 1;
 }
@@ -4837,18 +4836,6 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   line-height: 1.02;
   letter-spacing: 0;
   text-shadow: 0 0 28px rgba(255, 184, 212, 0.44);
-}
-
-.love-scene-bloom p {
-  max-width: 22em;
-  margin: 7px auto 0;
-  color: rgba(255, 248, 244, 0.94);
-  font-size: clamp(13px, 3.3vw, 16px);
-  font-weight: 850;
-  line-height: 1.42;
-  text-shadow:
-    0 2px 10px rgba(37, 8, 22, 0.74),
-    0 0 18px rgba(255, 185, 210, 0.42);
 }
 
 .love-scene-bloom[data-tone="rain"] strong {
@@ -4880,7 +4867,7 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
     radial-gradient(circle at 78% 22%, rgba(179, 205, 255, 0.16), transparent 30%),
     rgba(24, 8, 18, 0.18);
   overflow: hidden;
-  animation: loveStageCelebration 2100ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
+  animation: loveStageCelebration 860ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
 }
 
 .love-stage-celebration::before,
@@ -4902,7 +4889,7 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
     radial-gradient(circle, rgba(255, 255, 255, 0.58) 0 4%, rgba(255, 174, 207, 0.3) 5% 24%, transparent 58%),
     conic-gradient(from 0deg, transparent, rgba(255, 149, 198, 0.46), transparent, rgba(255, 229, 132, 0.44), transparent, rgba(183, 209, 255, 0.32), transparent);
   filter: blur(0.5px);
-  animation: loveStageRing 2100ms ease-out both;
+  animation: loveStageRing 860ms ease-out both;
 }
 
 .love-stage-celebration::after {
@@ -4910,7 +4897,7 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   background:
     repeating-conic-gradient(from 14deg, rgba(255, 255, 255, 0) 0 8deg, rgba(255, 228, 150, 0.2) 8deg 10deg, rgba(255, 255, 255, 0) 10deg 22deg);
   mix-blend-mode: screen;
-  animation: loveStageSpark 2100ms ease-out both;
+  animation: loveStageSpark 860ms ease-out both;
 }
 
 .love-stage-celebration > * {
@@ -4952,23 +4939,81 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   text-shadow: 0 0 30px rgba(255, 188, 216, 0.44);
 }
 
-.love-stage-celebration p {
-  margin: 12px auto 0;
-  color: rgba(255, 248, 244, 0.94);
-  font-size: clamp(14px, 3.8vw, 19px);
-  font-weight: 850;
-  line-height: 1.5;
-  text-shadow:
-    0 2px 12px rgba(30, 7, 18, 0.78),
-    0 0 22px rgba(255, 190, 215, 0.38);
-}
-
 .love-stage-celebration[data-tone="rain"] {
   background:
     repeating-linear-gradient(112deg, rgba(210, 230, 255, 0.14) 0 1px, transparent 1px 18px),
     radial-gradient(circle at 50% 42%, rgba(228, 242, 255, 0.32), transparent 13%),
     radial-gradient(circle at 50% 45%, rgba(154, 185, 255, 0.24), transparent 36%),
     rgba(14, 19, 38, 0.22);
+}
+
+.love-scene-danmaku-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 78;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.love-scene-danmaku {
+  position: absolute;
+  top: var(--danmaku-y, 120px);
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: none;
+  border: 1px solid rgba(255, 227, 238, 0.22);
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: rgba(255, 251, 244, 0.92);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.09), rgba(255, 177, 210, 0.13)),
+    rgba(38, 12, 28, 0.25);
+  box-shadow:
+    0 8px 22px rgba(38, 8, 24, 0.16),
+    0 0 20px rgba(255, 176, 212, 0.14);
+  font-size: clamp(13px, 3.3vw, 16px);
+  font-weight: 850;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-shadow: 0 1px 9px rgba(32, 6, 18, 0.78);
+  transform: translateX(104vw);
+  animation: loveSceneDanmaku var(--danmaku-duration, 7600ms) linear forwards;
+  will-change: transform, opacity;
+  backdrop-filter: blur(8px);
+}
+
+.love-scene-danmaku::before {
+  content: "";
+  width: 7px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: linear-gradient(135deg, #fff5c6, #ff8fbc);
+  box-shadow: 0 0 14px rgba(255, 176, 204, 0.65);
+}
+
+.love-scene-danmaku.is-milestone {
+  border-color: rgba(255, 237, 166, 0.34);
+  color: rgba(255, 255, 247, 0.96);
+  background:
+    linear-gradient(90deg, rgba(255, 235, 139, 0.18), rgba(255, 148, 198, 0.16)),
+    rgba(42, 12, 31, 0.26);
+}
+
+.love-scene-danmaku[data-tone="rain"] {
+  border-color: rgba(201, 226, 255, 0.26);
+  background:
+    linear-gradient(90deg, rgba(218, 239, 255, 0.17), rgba(255, 203, 224, 0.1)),
+    rgba(18, 24, 44, 0.25);
+}
+
+.love-scene-danmaku[data-tone="vow"] {
+  border-color: rgba(255, 238, 156, 0.34);
+  background:
+    linear-gradient(90deg, rgba(255, 239, 148, 0.19), rgba(255, 174, 214, 0.14)),
+    rgba(40, 18, 30, 0.25);
 }
 
 .love-stage-celebration[data-tone="vow"] {
@@ -5281,6 +5326,13 @@ body:is(.arcade-page, .solo-game-page) .arcade-board > .love-scene-bloom {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.68) rotate(0deg); }
   22% { opacity: 0.72; transform: translate(-50%, -50%) scale(0.98) rotate(18deg); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(68deg); }
+}
+
+@keyframes loveSceneDanmaku {
+  0% { opacity: 0; transform: translateX(104vw) scale(0.98); }
+  8% { opacity: 0.92; }
+  84% { opacity: 0.92; }
+  100% { opacity: 0; transform: translateX(calc(-100% - 28vw)) scale(1); }
 }
 
 @keyframes loveDateBloom {

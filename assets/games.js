@@ -485,6 +485,8 @@ if (gameHub || soloGame) {
     let moodTimer = 0;
     let sceneBloomTimer = 0;
     let stageCelebrationTimer = 0;
+    let sceneDanmakuTimers = [];
+    let sceneDanmakuLane = 0;
     const spawnOnBlockedInput = true;
 
     const tileStory = [
@@ -813,6 +815,7 @@ if (gameHub || soloGame) {
       triggerBoardEffect("love-story", { text: scene.title, duration: 1180 });
       triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 940 });
       showSceneBloom(scene);
+      showSceneDanmaku(scene, isFirstStageReveal);
       if (isFirstStageReveal) showStageCelebration(scene);
     }
 
@@ -824,10 +827,9 @@ if (gameHub || soloGame) {
       item.setAttribute("aria-hidden", "true");
       item.dataset.tone = scene.tone || scene.mood || "story";
       item.innerHTML = '<span>' + escapeText(scene.stage) + '</span>'
-        + '<strong>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.title) + '</strong>'
-        + '<p>' + escapeText(scene.line) + '</p>';
+        + '<strong>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.title) + '</strong>';
       board.append(item);
-      sceneBloomTimer = window.setTimeout(() => item.remove(), 1550);
+      sceneBloomTimer = window.setTimeout(() => item.remove(), 760);
     }
 
     function showStageCelebration(scene) {
@@ -839,10 +841,61 @@ if (gameHub || soloGame) {
       item.dataset.tone = scene.tone || scene.mood || "story";
       item.innerHTML = '<i>' + escapeText(scene.glyph || "♡") + '</i>'
         + '<span>' + escapeText(scene.stage) + '</span>'
-        + '<strong>' + escapeText(scene.title) + '</strong>'
-        + '<p>' + escapeText(scene.line) + '</p>';
+        + '<strong>' + escapeText(scene.title) + '</strong>';
       document.body.append(item);
-      stageCelebrationTimer = window.setTimeout(() => item.remove(), 2100);
+      stageCelebrationTimer = window.setTimeout(() => item.remove(), 860);
+    }
+
+    function clearSceneDanmaku() {
+      sceneDanmakuTimers.forEach((timer) => clearTimeout(timer));
+      sceneDanmakuTimers = [];
+      document.querySelector(".love-scene-danmaku-layer")?.remove();
+    }
+
+    function danmakuLanes() {
+      const rect = board.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight || 932;
+      const lower = [rect.bottom + 32, rect.bottom + 74, rect.bottom + 116]
+        .filter((lane) => lane < vh - 52);
+      const upper = rect.top > 168 ? [rect.top - 86, rect.top - 44] : [];
+      const candidates = [...lower, ...upper].map((lane) => Math.max(56, Math.min(vh - 64, lane)));
+      const safeLanes = candidates.filter((lane, index, list) => {
+        const outsideBoard = lane < rect.top - 28 || lane > rect.bottom + 18;
+        return outsideBoard && list.indexOf(lane) === index;
+      });
+      return safeLanes.length ? safeLanes : [Math.max(56, Math.min(vh - 96, rect.bottom + 34))];
+    }
+
+    function showSceneDanmaku(scene, isFirstStageReveal = false) {
+      let layer = document.querySelector(".love-scene-danmaku-layer");
+      if (!layer) {
+        layer = document.createElement("div");
+        layer.className = "love-scene-danmaku-layer";
+        layer.setAttribute("aria-hidden", "true");
+        document.body.append(layer);
+      }
+      const lanes = danmakuLanes();
+      const lines = isFirstStageReveal
+        ? [scene.glyph + " " + scene.stage + " · " + scene.title, scene.line]
+        : [scene.line];
+      lines.forEach((text, index) => {
+        const item = document.createElement("div");
+        item.className = "love-scene-danmaku" + (isFirstStageReveal ? " is-milestone" : "");
+        item.dataset.tone = scene.tone || scene.mood || "story";
+        item.textContent = text;
+        const lane = lanes.length ? lanes[(sceneDanmakuLane + index) % lanes.length] : 120 + index * 42;
+        const duration = Math.min(9800, Math.max(6200, 5200 + text.length * 95));
+        item.style.setProperty("--danmaku-y", lane + "px");
+        item.style.setProperty("--danmaku-duration", duration + "ms");
+        layer.append(item);
+        const timer = window.setTimeout(() => {
+          item.remove();
+          sceneDanmakuTimers = sceneDanmakuTimers.filter((entry) => entry !== timer);
+          if (!layer.children.length) layer.remove();
+        }, duration + 260);
+        sceneDanmakuTimers.push(timer);
+      });
+      sceneDanmakuLane += 1;
     }
 
     function move(dir) {
@@ -950,11 +1003,13 @@ if (gameHub || soloGame) {
       clearTimeout(stageCelebrationTimer);
       board.querySelector(".love-scene-bloom")?.remove();
       document.querySelector(".love-stage-celebration")?.remove();
+      clearSceneDanmaku();
       for (const name of moodClasses) board.classList.remove(name);
       tiles = Array(size * size).fill(0);
       points = 0;
       bestValue = 2;
       seenStageValues = new Set([2]);
+      sceneDanmakuLane = 0;
       lastMoveDir = "start";
       lastMergeCells = [];
       lastSpawnCell = -1;
@@ -973,7 +1028,7 @@ if (gameHub || soloGame) {
     restart();
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
-    return () => { clearTimeout(moodTimer); clearTimeout(sceneBloomTimer); clearTimeout(stageCelebrationTimer); document.querySelector(".love-stage-celebration")?.remove(); offKey(); offSwipe(); };
+    return () => { clearTimeout(moodTimer); clearTimeout(sceneBloomTimer); clearTimeout(stageCelebrationTimer); document.querySelector(".love-stage-celebration")?.remove(); clearSceneDanmaku(); offKey(); offSwipe(); };
   }
 
   function runMines() {

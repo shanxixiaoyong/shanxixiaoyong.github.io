@@ -22,8 +22,10 @@ const expectations = [
   ["2048 handles blocked-input spawning", files.js, "spawnOnBlockedInput"],
   ["2048 tracks scene bloom timer", files.js, "let sceneBloomTimer = 0"],
   ["2048 tracks stage celebration timer", files.js, "let stageCelebrationTimer = 0"],
+  ["2048 tracks danmaku cleanup timers", files.js, "let sceneDanmakuTimers = []"],
   ["2048 shows centered scene text bloom", files.js, "function showSceneBloom"],
   ["2048 shows first-stage full-screen celebration", files.js, "function showStageCelebration"],
+  ["2048 floats detailed scene text as danmaku", files.js, "function showSceneDanmaku"],
   ["2048 rewrites repeat stages as memories", files.js, "function rememberScene"],
   ["2048 detects first higher-stage reveal", files.js, "isFirstStageReveal"],
   ["2048 includes first-meet scene pool", files.js, '"初见"'],
@@ -81,6 +83,8 @@ const expectations = [
   ["CSS defines memory drawer", files.css, ".love-memory-drawer"],
   ["CSS defines centered scene text bloom", files.css, ".love-scene-bloom"],
   ["CSS defines full-screen stage celebration", files.css, ".love-stage-celebration"],
+  ["CSS defines nonblocking scene danmaku", files.css, ".love-scene-danmaku"],
+  ["CSS animates scene danmaku", files.css, "@keyframes loveSceneDanmaku"],
   ["CSS defines mood meet", files.css, ".board-love-2048.mood-meet"],
   ["CSS defines mood chat", files.css, ".board-love-2048.mood-chat"],
   ["CSS defines mood date", files.css, ".board-love-2048.mood-date"],
@@ -111,6 +115,26 @@ if (failures.length) {
   console.error("Love 2048 validation failed:");
   for (const [label, , needle, forbidden] of failures) {
     console.error(`- ${label}: ${forbidden ? "still has" : "missing"} ${JSON.stringify(needle)}`);
+  }
+  process.exit(1);
+}
+
+function functionSource(name) {
+  const start = files.js.indexOf(`function ${name}`);
+  if (start === -1) return "";
+  const next = files.js.indexOf("\n    function ", start + 1);
+  return files.js.slice(start, next === -1 ? files.js.length : next);
+}
+
+const blockingSceneTextFailures = [
+  ["showSceneBloom", functionSource("showSceneBloom")],
+  ["showStageCelebration", functionSource("showStageCelebration")]
+].filter(([, source]) => source.includes("scene.line"));
+
+if (blockingSceneTextFailures.length) {
+  console.error("Love 2048 nonblocking narrative validation failed:");
+  for (const [name] of blockingSceneTextFailures) {
+    console.error(`- ${name}: still renders detailed scene.line in the flash layer`);
   }
   process.exit(1);
 }
