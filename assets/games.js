@@ -574,6 +574,7 @@ if (soloGame) {
           special?.className || ""
         ].filter(Boolean).join(" ");
         ghost.dataset.rank = String(tile?.rank || 0);
+        ghost.dataset.digits = String(tile ? String(tile.value).length : 0);
         if (special?.kind === "fate") ghost.dataset.special = "fate";
         if (special?.kind === "conflict") ghost.dataset.special = "conflict";
         ghost.style.cssText = (tile ? "--tile:" + tile.color
@@ -801,6 +802,9 @@ if (soloGame) {
       if (spawn.kind === "conflict" && lastSpawnCell >= 0) {
         triggerCellEffect("love-conflict", lastSpawnCell, size, size, { duration: 620 });
       }
+      if (spawn.kind === "fate" && lastSpawnCell >= 0) {
+        triggerCellEffect("love-special-spawn", lastSpawnCell, size, size, { duration: 620 });
+      }
       playStageEvent(stageEvent);
     }
 
@@ -840,10 +844,10 @@ if (soloGame) {
 
     function specialTile(value) {
       if (value === TILE.FATE || value === TILE.DESTINY) {
-        return { kind: "fate", className: "is-fate", label: "命运碎片" };
+        return { kind: "fate", className: "is-fate", label: "缘分" };
       }
       const cracks = conflictCracks(value);
-      if (cracks) return { kind: "conflict", className: "is-conflict", label: "心结", cracks };
+      if (cracks) return { kind: "conflict", className: "is-conflict", label: "矛盾", cracks };
       return null;
     }
 
@@ -854,7 +858,7 @@ if (soloGame) {
           + '<small class="tile-label">' + escapeText(special.label) + '</small>';
       }
       if (special?.kind === "conflict") {
-        return '<span class="special-heart conflict-heart" data-special="conflict" aria-hidden="true"></span>'
+        return '<span class="special-heart conflict-heart" data-special="conflict" data-cracks="' + special.cracks + '" aria-hidden="true"><i></i><i></i></span>'
           + '<em class="conflict-crack-count" data-cracks="' + special.cracks + '">' + special.cracks + '</em>'
           + '<small class="tile-label">' + escapeText(special.label) + '</small>';
       }
@@ -978,7 +982,14 @@ if (soloGame) {
         renderedScore = points;
         setScore(points);
       }
-      setStatus(engine.canMove(tiles, size) ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
+      const remainingConflictMerges = tiles.reduce((remaining, value) => Math.max(remaining, conflictCracks(value)), 0);
+      if (tiles.some((value) => value === TILE.FATE)) {
+        setStatus("缘分：两枚缘分相遇，最高阶段进一阶");
+      } else if (remainingConflictMerges > 0) {
+        setStatus(`矛盾：还需 ${remainingConflictMerges} 次普通合并即可化解`);
+      } else {
+        setStatus(engine.canMove(tiles, size) ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
+      }
       const nextStoryRenderKey = [bestValue, currentScene?.title, memoryOpen, storyLog.length].join("|");
       if (scoreChanged || storyRenderKey !== nextStoryRenderKey) {
         meta.innerHTML = renderStoryCard();

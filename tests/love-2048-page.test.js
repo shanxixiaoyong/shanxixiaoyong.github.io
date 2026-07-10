@@ -235,15 +235,15 @@ function createDom() {
   document.register("game-title", document.createElement("h1"));
   document.register("game-kind", document.createElement("span"));
   document.register("game-score", document.createElement("strong"));
-  document.register("game-status", document.createElement("p"));
+  const status = document.register("game-status", document.createElement("p"));
   const board = document.register("game-board", document.createElement("div"));
   document.register("game-controls", document.createElement("div"));
   document.register("game-meta", document.createElement("div"));
-  return { document, board };
+  return { document, board, status };
 }
 
 function createHarness(options = {}) {
-  const { document, board } = createDom();
+  const { document, board, status } = createDom();
   const randomValues = [0, 0, 0, 0, 0];
   const chooseCalls = [];
   const chooseResults = [...(options.chooseResults || [])];
@@ -299,6 +299,8 @@ function createHarness(options = {}) {
 
   return {
     board,
+    document,
+    status,
     chooseCalls,
     randomValues,
     press(key) { return document.dispatchKey(key); },
@@ -309,6 +311,7 @@ function createHarness(options = {}) {
 }
 
 test("loads the Love 2048 engine before VFX and the shared game script", () => {
+  const stylesheet = html.match(/<link\s+rel="stylesheet"\s+href="(assets\/love-2048\.css\?v=[^"]+)"/);
   const scripts = [...html.matchAll(/<script\s+src="([^"]+)"/g)].map((match) => match[1]);
   const engineIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-engine.js?v="));
   const vfxIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-vfx.js?v="));
@@ -320,8 +323,10 @@ test("loads the Love 2048 engine before VFX and the shared game script", () => {
 
   const versions = [scripts[engineIndex], scripts[vfxIndex], scripts[gamesIndex]]
     .map((source) => new URLSearchParams(source.split("?")[1]).get("v"));
+  const stylesheetVersion = new URLSearchParams(stylesheet[1].split("?")[1]).get("v");
   assert.ok(versions[0], "Love 2048 scripts must use a cache version");
   assert.deepEqual(versions, [versions[0], versions[0], versions[0]]);
+  assert.equal(stylesheetVersion, versions[0], "Love 2048 CSS and scripts must share one cache version");
 });
 
 test("initializes 25 stable cells and blocked input adds only a normal tile", () => {
@@ -356,13 +361,17 @@ test("fate and conflict decisions replace the normal spawn and render real DOM s
       kind: "fate",
       state: { fatePhase: "awaiting-second" },
       special: "fate",
-      className: "is-fate"
+      className: "is-fate",
+      label: "缘分",
+      status: /两枚缘分.*最高阶段.*进一阶/
     },
     {
       kind: "conflict",
       state: { eventCooldown: 12 },
       special: "conflict",
-      className: "is-conflict"
+      className: "is-conflict",
+      label: "矛盾",
+      status: /还需 2 次普通合并.*化解/
     }
   ];
 
@@ -378,13 +387,34 @@ test("fate and conflict decisions replace the normal spawn and render real DOM s
     assert.ok(special, `${scenario.kind} cell must be rendered`);
     assert.equal(special.classList.contains(scenario.className), true);
     assert.equal(special.dataset.special, scenario.special);
+    assert.match(special.innerHTML, new RegExp(`<small class="tile-label">${scenario.label}</small>`));
+    assert.match(harness.status.textContent, scenario.status);
+    assert.equal(harness.document.body.querySelector(".love-special-guide"), null, "special guidance must stay in status text");
 
-    if (scenario.kind === "conflict") {
+    if (scenario.kind === "fate") {
+      const effect = harness.effects().find((item) => item.classList.contains("effect-love-special-spawn"));
+      assert.ok(effect, "fate spawn effect must be appended to the board");
+      assert.equal(effect.parentElement, harness.board);
+      assert.equal(effect.getAttribute("aria-hidden"), "true");
+    } else {
       assert.match(special.innerHTML, /data-cracks="2">2<\/em>/);
       const effect = harness.effects().find((item) => item.classList.contains("effect-love-conflict"));
       assert.ok(effect, "conflict effect must be appended to the board");
       assert.equal(effect.parentElement, harness.board);
       assert.equal(effect.getAttribute("aria-hidden"), "true");
+
+      harness.press("ArrowUp");
+      harness.press("ArrowUp");
+      harness.press("ArrowLeft");
+      const repairing = harness.cells().find((cell) => cell.dataset.special === "conflict");
+      assert.match(repairing.innerHTML, /data-cracks="1">1<\/em>/);
+      assert.match(harness.status.textContent, /还需 1 次普通合并.*化解/);
+
+      harness.press("ArrowUp");
+      harness.press("ArrowLeft");
+      assert.equal(harness.cells().some((cell) => cell.dataset.special === "conflict"), false);
+      assert.equal(harness.status.textContent, "滑动合并相同爱心，推进下一段关系");
+      assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-reconcile")));
     }
   }
 });
@@ -433,4 +463,6 @@ test("a fate sequence active at turn start preserves effort through its destiny 
   assert.equal(harness.chooseCalls.length, 3);
   assert.equal(harness.chooseCalls[2].state.firstFateTurns, 17);
   assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-destiny")));
+  assert.equal(harness.cells().some((cell) => cell.dataset.special === "fate"), false);
+  assert.equal(harness.status.textContent, "滑动合并相同爱心，推进下一段关系");
 });
