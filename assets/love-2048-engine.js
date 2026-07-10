@@ -6,6 +6,7 @@
   const TILE = Object.freeze({
     FATE: "fate",
     DESTINY: "destiny",
+    CONFLICT: "conflict",
     CONFLICT_2: "conflict:2",
     CONFLICT_1: "conflict:1"
   });
@@ -34,6 +35,25 @@
     return typeof value === "number" && value > 0;
   }
 
+  function unitRandom(random) {
+    const value = Number((typeof random === "function" ? random : Math.random)());
+    return Math.max(0, Math.min(0.999999, Number.isFinite(value) ? value : 0));
+  }
+
+  function createConflictTile(remaining) {
+    const count = Math.max(1, Math.min(5, Math.round(Number(remaining) || 1)));
+    return `${TILE.CONFLICT}:${count}`;
+  }
+
+  function conflictRemaining(value) {
+    const match = typeof value === "string" && value.match(/^conflict:([1-5])$/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  function isConflictTile(value) {
+    return conflictRemaining(value) > 0;
+  }
+
   function mergeValue(left, right) {
     if (isOrdinaryTile(left) && left === right) return left * 2;
     if (left === TILE.FATE && right === TILE.FATE) return TILE.DESTINY;
@@ -41,55 +61,107 @@
   }
 
   function slideLine(line, size) {
-    const values = line
-      .slice(0, size)
-      .map((value, source) => ({ value, source }))
-      .filter((entry) => entry.value !== 0);
-    const cells = [];
+    const sourceCells = line.slice(0, size);
+    while (sourceCells.length < size) sourceCells.push(0);
+    const cells = Array(size).fill(0);
     const mergedSlots = [];
     const mergedValues = [];
     const motions = [];
     let merged = 0;
     let ordinaryMergeCount = 0;
 
-    for (let index = 0; index < values.length; index += 1) {
-      const current = values[index];
-      const next = values[index + 1];
-      const destination = cells.length;
-      const nextValue = next && mergeValue(current.value, next.value);
+    function slideSegment(start, end) {
+      const values = sourceCells
+        .slice(start, end)
+        .map((value, offset) => ({ value, source: start + offset }))
+        .filter((entry) => entry.value !== 0);
+      let destinationOffset = 0;
 
-      if (nextValue !== null && nextValue !== undefined) {
-        cells.push(nextValue);
-        mergedSlots.push(destination);
-        mergedValues.push(nextValue);
-        motions.push(
-          { source: current.source, destination, value: current.value, merged: true },
-          { source: next.source, destination, value: next.value, merged: true }
-        );
-        if (isOrdinaryTile(nextValue)) {
-          merged += nextValue;
-          ordinaryMergeCount += 1;
+      for (let index = 0; index < values.length; index += 1) {
+        const current = values[index];
+        const next = values[index + 1];
+        const destination = start + destinationOffset;
+        const nextValue = next && mergeValue(current.value, next.value);
+
+        if (nextValue !== null && nextValue !== undefined) {
+          cells[destination] = nextValue;
+          mergedSlots.push(destination);
+          mergedValues.push(nextValue);
+          motions.push(
+            { source: current.source, destination, value: current.value, merged: true },
+            { source: next.source, destination, value: next.value, merged: true }
+          );
+          if (isOrdinaryTile(nextValue)) {
+            merged += nextValue;
+            ordinaryMergeCount += 1;
+          }
+          index += 1;
+        } else {
+          cells[destination] = current.value;
+          motions.push({ source: current.source, destination, value: current.value, merged: false });
         }
-        index += 1;
-      } else {
-        cells.push(current.value);
-        motions.push({ source: current.source, destination, value: current.value, merged: false });
+        destinationOffset += 1;
       }
     }
 
-    while (cells.length < size) cells.push(0);
+    let segmentStart = 0;
+    for (let index = 0; index <= size; index += 1) {
+      if (index < size && !isConflictTile(sourceCells[index])) continue;
+      slideSegment(segmentStart, index);
+      if (index < size) cells[index] = sourceCells[index];
+      segmentStart = index + 1;
+    }
     return { cells, merged, ordinaryMergeCount, mergedSlots, mergedValues, motions };
   }
 
   function canMove(tiles, size) {
-    if (tiles.some((value) => value === 0)) return true;
-    for (let index = 0; index < tiles.length; index += 1) {
-      const column = index % size;
-      const row = Math.floor(index / size);
-      if (column < size - 1 && mergeValue(tiles[index], tiles[index + 1])) return true;
-      if (row < size - 1 && mergeValue(tiles[index], tiles[index + size])) return true;
+    const directions = [
+      { vertical: false, reverse: false },
+      { vertical: false, reverse: true },
+      { vertical: true, reverse: false },
+      { vertical: true, reverse: true }
+    ];
+    for (const direction of directions) {
+      const nextTiles = tiles.slice();
+      for (let lineIndex = 0; lineIndex < size; lineIndex += 1) {
+        const indices = Array.from({ length: size }, (_, offset) => direction.vertical
+          ? offset * size + lineIndex
+          : lineIndex * size + offset);
+        const oriented = direction.reverse ? indices.slice().reverse() : indices;
+        const shifted = slideLine(oriented.map((index) => tiles[index]), size);
+        shifted.cells.forEach((value, offset) => { nextTiles[oriented[offset]] = value; });
+      }
+      if (nextTiles.some((value, index) => value !== tiles[index])) return true;
     }
     return false;
+  }
+
+  function createConflictProfile(random) {
+    const severityRoll = unitRandom(random);
+    const config = severityRoll < 0.35
+      ? { severity: "minor", minMerges: 2, maxMerges: 3, minEntry: 900, maxEntry: 1250 }
+      : severityRoll < 0.8
+        ? { severity: "friction", minMerges: 3, maxMerges: 4, minEntry: 1200, maxEntry: 1650 }
+        : { severity: "deep", minMerges: 4, maxMerges: 5, minEntry: 1550, maxEntry: 2100 };
+    const remaining = config.minMerges
+      + Math.floor(unitRandom(random) * (config.maxMerges - config.minMerges + 1));
+    return {
+      severity: config.severity,
+      remaining,
+      entryMs: Math.round(config.minEntry + unitRandom(random) * (config.maxEntry - config.minEntry)),
+      idleMs: Math.round(1800 + unitRandom(random) * 1300),
+      resolveMs: Math.round(800 + unitRandom(random) * 600),
+      loosenMs: Math.round(220 + unitRandom(random) * 200)
+    };
+  }
+
+  function safeConflictIndices(tiles, size, remaining) {
+    return tiles.flatMap((value, index) => {
+      if (value !== 0) return [];
+      const candidate = tiles.slice();
+      candidate[index] = createConflictTile(remaining);
+      return canMove(candidate, size) ? [index] : [];
+    });
   }
 
   function fateTier(highestTile) {
@@ -168,17 +240,16 @@
 
     if (conflictEligible && eventRoll < fateChance + CONFLICT_CHANCE) {
       nextState.eventCooldown = EVENT_COOLDOWN_TURNS;
-      return { kind: "conflict", state: nextState };
+      return { kind: "conflict", profile: createConflictProfile(nextRandom), state: nextState };
     }
     return { kind: "normal", state: nextState };
   }
 
-  function resolveDestiny(tiles, options) {
+  function resolveDestiny(tiles, options = {}) {
     const nextTiles = tiles.slice();
     const destinyIndices = [];
     const ordinaryTiles = [];
-    const emptyCount = nextTiles.filter((value) => value === 0).length;
-    const miracleUsed = Boolean(options && options.miracleUsed);
+    const nextRandom = typeof options.random === "function" ? options.random : Math.random;
 
     nextTiles.forEach((value, index) => {
       if (value === TILE.DESTINY) destinyIndices.push(index);
@@ -188,11 +259,12 @@
     if (!destinyIndices.length) {
       return {
         tiles: nextTiles,
-        miracle: false,
         upgradedIndex: -1,
         upgradedValue: 0,
-        clearedIndices: [],
-        state: { miracleUsed }
+        previousValue: 0,
+        targetWasHighest: false,
+        favoredHighest: false,
+        clearedIndices: []
       };
     }
 
@@ -200,48 +272,58 @@
     if (!ordinaryTiles.length) {
       return {
         tiles: nextTiles,
-        miracle: false,
         upgradedIndex: -1,
         upgradedValue: 0,
-        clearedIndices: [],
-        state: { miracleUsed }
+        previousValue: 0,
+        targetWasHighest: false,
+        favoredHighest: false,
+        clearedIndices: destinyIndices
       };
     }
-    const highest = ordinaryTiles.slice().sort((left, right) => right.value - left.value || left.index - right.index)[0];
-    const otherOrdinaryTiles = ordinaryTiles
-      .filter((tile) => tile.index !== highest.index)
-      .sort((left, right) => left.value - right.value || left.index - right.index);
-    const miracle = !miracleUsed && emptyCount <= 1;
-    const clearedTiles = miracle ? otherOrdinaryTiles : otherOrdinaryTiles.slice(0, 4);
-
-    nextTiles[highest.index] = highest.value * 2;
-    clearedTiles.forEach((tile) => { nextTiles[tile.index] = 0; });
+    const highestValue = ordinaryTiles.reduce((highest, tile) => Math.max(highest, tile.value), 0);
+    const highestTiles = ordinaryTiles.filter((tile) => tile.value === highestValue);
+    const favoredHighest = unitRandom(nextRandom) < 0.3;
+    const candidates = favoredHighest ? highestTiles : ordinaryTiles;
+    const selected = candidates[Math.floor(unitRandom(nextRandom) * candidates.length)];
+    nextTiles[selected.index] = selected.value * 2;
     return {
       tiles: nextTiles,
-      miracle,
-      upgradedIndex: highest.index,
-      upgradedValue: highest.value * 2,
-      clearedIndices: clearedTiles.map((tile) => tile.index),
-      state: { miracleUsed: miracleUsed || miracle }
+      upgradedIndex: selected.index,
+      upgradedValue: selected.value * 2,
+      previousValue: selected.value,
+      targetWasHighest: selected.value === highestValue,
+      favoredHighest,
+      clearedIndices: destinyIndices
     };
   }
 
   function repairConflict(tiles, ordinaryMergeCount) {
-    const mergeCount = Math.max(0, ordinaryMergeCount || 0);
-    const nextTiles = tiles.map((tile) => {
-      if (tile === TILE.CONFLICT_2) {
-        if (mergeCount >= 2) return 0;
-        if (mergeCount === 1) return TILE.CONFLICT_1;
-      }
-      if (tile === TILE.CONFLICT_1 && mergeCount >= 1) return 0;
-      return tile;
-    });
-    return { tiles: nextTiles };
+    const mergeCount = Math.max(0, Math.floor(Number(ordinaryMergeCount) || 0));
+    const nextTiles = tiles.slice();
+    const index = nextTiles.findIndex(isConflictTile);
+    if (index < 0 || mergeCount <= 0) {
+      const remaining = index < 0 ? 0 : conflictRemaining(nextTiles[index]);
+      return {
+        tiles: nextTiles,
+        index,
+        beforeRemaining: remaining,
+        remaining,
+        resolved: false
+      };
+    }
+    const beforeRemaining = conflictRemaining(nextTiles[index]);
+    const remaining = Math.max(0, beforeRemaining - mergeCount);
+    nextTiles[index] = remaining ? createConflictTile(remaining) : 0;
+    return { tiles: nextTiles, index, beforeRemaining, remaining, resolved: remaining === 0 };
   }
 
   return {
     TILE,
     createDirectorState,
+    createConflictTile,
+    conflictRemaining,
+    createConflictProfile,
+    safeConflictIndices,
     slideLine,
     canMove,
     chooseSpawn,

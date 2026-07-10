@@ -94,6 +94,7 @@ if (soloGame) {
     if (Number.isFinite(options.y)) item.style.setProperty("--fx-y", `${options.y}%`);
     if (options.text) item.textContent = options.text;
     const duration = options.duration || 760;
+    item.style.setProperty("--fx-duration", `${duration}ms`);
     board.append(item);
     window.setTimeout(() => item.remove(), duration);
     if (!isLoveBoard) {
@@ -157,6 +158,8 @@ if (soloGame) {
   function run2048() {
     const engine = window.Love2048Engine;
     if (!engine) throw new Error("Love2048Engine is required for Love 2048");
+    const stories = window.Love2048Stories;
+    if (!stories) throw new Error("Love2048Stories is required for Love 2048");
     const { TILE } = engine;
     const size = 5;
     let tiles = [];
@@ -164,8 +167,8 @@ if (soloGame) {
     let bestValue = 2;
     let seenStageValues = new Set([2]);
     let directorState = engine.createDirectorState();
-    let miracleUsed = false;
     let milestoneGraceTurns = 0;
+    let activeConflict = null;
     let lastMergeCells = [];
     let lastSpawnCell = -1;
     let storyLog = [];
@@ -180,6 +183,14 @@ if (soloGame) {
     let motionGeometry = null;
     let storyRenderKey = "";
     let renderedScore = -1;
+    let specialSequenceActive = false;
+    let bufferedSwipeDirection = null;
+    const specialSequenceTimers = new Set();
+    const typographyCache = new Map();
+    const typographyCanvas = document.createElement("canvas");
+    const typographyContext = typeof typographyCanvas.getContext === "function"
+      ? typographyCanvas.getContext("2d")
+      : null;
     const spawnOnBlockedInput = true;
 
     const loveVfxFactory = window.Love2048Vfx?.createLoveVfx;
@@ -416,14 +427,8 @@ if (soloGame) {
       return tiles.some((value) => value === TILE.FATE || value === TILE.DESTINY);
     }
 
-    function conflictCracks(value) {
-      if (value === TILE.CONFLICT_2) return 2;
-      if (value === TILE.CONFLICT_1) return 1;
-      return 0;
-    }
-
     function hasConflictTile() {
-      return tiles.some((value) => conflictCracks(value) > 0);
+      return tiles.some((value) => engine.conflictRemaining(value) > 0);
     }
 
     function addFromTop(value = Math.random() > 0.88 ? 4 : 2) {
@@ -438,6 +443,14 @@ if (soloGame) {
       return index;
     }
 
+    function addConflict(profile) {
+      const candidates = engine.safeConflictIndices(tiles, size, profile.remaining);
+      if (!candidates.length) return -1;
+      const index = candidates[Math.floor(Math.random() * candidates.length)];
+      tiles[index] = engine.createConflictTile(profile.remaining);
+      return index;
+    }
+
     function romanceTile(value) {
       if (!value) return { glyph: "", label: "", rank: 0, color: "transparent", deep: "transparent", accent: "transparent", rim: "transparent" };
       let selected = tileStory[0];
@@ -448,14 +461,49 @@ if (soloGame) {
       return { value, glyph: selected[1], label: selected[2], rank, color: selected[3], deep: selected[4], accent: selected[5], rim: selected[6] };
     }
 
-    function numberScaleForDigits(digits) {
-      if (digits <= 3) return 1;
-      return ({ 4: 0.8, 5: 0.66, 6: 0.56, 7: 0.48, 8: 0.42 }[digits] || 0.38);
+    function measureTypography(text, cellWidth, kind) {
+      const value = String(text);
+      const width = Math.max(36, Number(cellWidth) || 64);
+      const key = `${kind}:${value}:${Math.round(width)}`;
+      if (typographyCache.has(key)) return typographyCache.get(key);
+      const isNumber = kind === "number";
+      const maxSize = isNumber ? Math.min(32, width * 0.49) : Math.min(8, width * 0.13);
+      const minSize = isNumber ? 8 : 5.4;
+      const availableWidth = width * (isNumber ? 0.86 : 0.82);
+      let size = maxSize;
+      let opticalX = 0;
+
+      if (typographyContext) {
+        const family = isNumber
+          ? 'ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, sans-serif'
+          : 'system-ui, sans-serif';
+        const weight = isNumber ? 900 : 800;
+        typographyContext.font = `${weight} ${maxSize}px ${family}`;
+        const initial = typographyContext.measureText(value);
+        const initialInk = Math.max(1, (initial.actualBoundingBoxLeft || 0) + (initial.actualBoundingBoxRight || initial.width));
+        size = Math.max(minSize, maxSize * Math.min(1, availableWidth / initialInk));
+        typographyContext.font = `${weight} ${size}px ${family}`;
+        const fitted = typographyContext.measureText(value);
+        if (isNumber) {
+          const inkCenter = (-(fitted.actualBoundingBoxLeft || 0) + (fitted.actualBoundingBoxRight || fitted.width)) / 2;
+          opticalX = fitted.width / 2 - inkCenter + (value.startsWith("1") ? 0.25 : 0);
+        }
+      } else {
+        const fallbackScale = isNumber
+          ? ({ 4: 0.72, 5: 0.6, 6: 0.51, 7: 0.44, 8: 0.39 }[value.length] || (value.length <= 3 ? 1 : 0.35))
+          : ({ 5: 0.88, 6: 0.76, 7: 0.66, 8: 0.58 }[Array.from(value).length] || (Array.from(value).length <= 4 ? 1 : 0.52));
+        size = Math.max(minSize, maxSize * fallbackScale);
+      }
+
+      const result = { size: Number(size.toFixed(2)), opticalX: Number(opticalX.toFixed(2)) };
+      typographyCache.set(key, result);
+      return result;
     }
 
-    function labelScaleForLength(length) {
-      if (length <= 4) return 1;
-      return ({ 5: 0.9, 6: 0.78, 7: 0.68, 8: 0.6 }[length] || 0.54);
+    function positiveBandFor(value) {
+      if (value < 1024) return "near";
+      if (value < 16384) return "together";
+      return "future";
     }
 
     function maxTile() {
@@ -489,6 +537,10 @@ if (soloGame) {
       storyLog = [scene, ...storyLog].slice(0, 10);
       storyRenderKey = "";
       applyMood(scene);
+      if (meta) {
+        meta.innerHTML = renderStoryCard();
+        storyRenderKey = [bestValue, currentScene?.title, memoryOpen, storyLog.length].join("|");
+      }
     }
 
     function renderStoryCard() {
@@ -527,6 +579,7 @@ if (soloGame) {
     }
 
     function sceneBackdropKey(scene) {
+      if (["rain", "cafe", "campus", "city", "home", "starlight"].includes(scene?.backdrop)) return scene.backdrop;
       const text = `${scene?.title || ""} ${scene?.line || ""}`;
       if (/雨|伞|rain|storm/i.test(text) || scene?.mood === "rain") return "rain";
       if (/咖啡|奶茶|晚餐|甜点|花店|cafe/i.test(text) || scene?.mood === "cafe") return "cafe";
@@ -536,7 +589,74 @@ if (soloGame) {
       return "city";
     }
 
-    function playMilestoneScene(scene, cellIndex) {
+    function scheduleSpecial(callback, delay) {
+      const timer = window.setTimeout(() => {
+        specialSequenceTimers.delete(timer);
+        callback();
+      }, delay);
+      specialSequenceTimers.add(timer);
+      return timer;
+    }
+
+    function beginSpecialSequence() {
+      specialSequenceActive = true;
+    }
+
+    function finishSpecialSequence() {
+      specialSequenceActive = false;
+      const direction = bufferedSwipeDirection;
+      bufferedSwipeDirection = null;
+      if (direction) scheduleSpecial(() => move(direction), 0);
+    }
+
+    function requestSwipe(direction) {
+      if (!specialSequenceActive) {
+        move(direction);
+        return;
+      }
+      bufferedSwipeDirection = direction;
+    }
+
+    function pulseHaptic(pattern) {
+      window.navigator?.vibrate?.(pattern);
+    }
+
+    function showCinematic(scene, options = {}) {
+      const duration = Math.max(700, Number(options.duration) || 2680);
+      const kind = options.kind || "milestone";
+      clearTimeout(stageCelebrationTimer);
+      document.querySelector(".love-stage-celebration")?.remove();
+      const item = document.createElement("div");
+      item.className = `love-stage-celebration love-cinematic-scene is-${kind}`;
+      item.setAttribute("role", "status");
+      item.setAttribute("aria-live", "polite");
+      item.setAttribute("aria-atomic", "true");
+      item.dataset.tone = scene.tone || scene.mood || "story";
+      item.dataset.mood = scene.mood || "meet";
+      item.dataset.atmosphere = scene.atmosphere || "petals";
+      item.setAttribute("data-backdrop", sceneBackdropKey(scene));
+      item.style.setProperty("--cinematic-duration", `${duration}ms`);
+      item.innerHTML = '<div class="cinematic-backdrop"></div>'
+        + '<div class="cinematic-atmosphere"><i></i><i></i><i></i></div>'
+        + '<div class="cinematic-foreground" aria-hidden="true"><i></i><i></i></div>'
+        + '<div class="cinematic-copy"><span>' + escapeText(options.kicker || scene.stage || "故事发生") + '</span>'
+        + '<strong><i>' + escapeText(scene.glyph || "✦") + '</i>' + escapeText(scene.title) + '</strong>'
+        + '<p>' + escapeText(scene.line) + '</p></div>'
+        + '<div class="cinematic-timeline"></div>';
+      document.body.append(item);
+      if (kind === "knot") {
+        loveVfx.burst({ mood: scene.mood, tone: scene.tone, count: 10 });
+      } else {
+        loveVfx.celebrate({ mood: scene.mood, tone: scene.tone });
+      }
+      stageCelebrationTimer = window.setTimeout(() => {
+        item.remove();
+        options.onDone?.();
+      }, duration);
+      return duration;
+    }
+
+    function playMilestoneScene(scene, cellIndex, options = {}) {
       triggerBoardEffect("love-story", { duration: 840 });
       triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 860 });
       const target = board.querySelector('[data-index="' + cellIndex + '"]');
@@ -548,29 +668,120 @@ if (soloGame) {
         tone: scene.tone,
         count: 20
       });
-      clearTimeout(stageCelebrationTimer);
-      document.querySelector(".love-stage-celebration")?.remove();
-      const item = document.createElement("div");
-      item.className = "love-stage-celebration love-cinematic-scene";
-      item.setAttribute("role", "status");
-      item.setAttribute("aria-live", "polite");
-      item.setAttribute("aria-atomic", "true");
-      item.dataset.tone = scene.tone || scene.mood || "story";
-      item.dataset.mood = scene.mood || "meet";
-      item.setAttribute("data-backdrop", sceneBackdropKey(scene));
-      item.innerHTML = '<div class="cinematic-backdrop"></div>'
-        + '<div class="cinematic-atmosphere"><i></i><i></i><i></i></div>'
-        + '<div class="cinematic-copy"><span>首次解锁 · ' + escapeText(scene.stage) + '</span>'
-        + '<strong><i>' + escapeText(scene.glyph || "♡") + '</i>' + escapeText(scene.title) + '</strong>'
-        + '<p>' + escapeText(scene.line) + '</p></div>'
-        + '<div class="cinematic-timeline"></div>';
-      document.body.append(item);
-      loveVfx.celebrate({ mood: scene.mood, tone: scene.tone });
-      stageCelebrationTimer = window.setTimeout(() => item.remove(), 2680);
+      pushStory(scene);
+      return showCinematic(scene, {
+        duration: options.duration || 2680,
+        kind: "milestone",
+        kicker: options.kicker || `首次解锁 · ${scene.stage}`,
+        onDone: options.onDone
+      });
     }
 
     function playRepeatMerge(cellIndex) {
       triggerCellEffect("love-merge", cellIndex, size, size, { duration: 260 });
+    }
+
+    function buildPositiveScene(highestBefore) {
+      const story = stories.pickPositive(positiveBandFor(highestBefore), Math.random);
+      return {
+        ...story,
+        stage: "伏笔成章",
+        glyph: "✦",
+        effect: "love-foreshadow",
+        tone: story.mood || "date"
+      };
+    }
+
+    function buildConflictScene(profile) {
+      const story = stories.pickConflict(profile.severity, Math.random);
+      return {
+        ...story,
+        stage: "未说出口",
+        glyph: "⌁",
+        effect: "love-knot",
+        tone: story.mood || "rain"
+      };
+    }
+
+    function buildConflictResolutionScene(conflict) {
+      return {
+        ...conflict.scene,
+        title: "话终于说开",
+        line: conflict.scene.resolution,
+        stage: "心结化开",
+        glyph: "○",
+        effect: "love-reconcile",
+        atmosphere: conflict.scene.atmosphere || "petals"
+      };
+    }
+
+    function playTargetSelection(result) {
+      const target = board.querySelector('[data-index="' + result.upgradedIndex + '"]');
+      board.classList.add("is-foreshadow-selecting");
+      ensureBoardCells().forEach((item) => {
+        if (isOrdinaryTile(tiles[Number(item.dataset.index)])) item.classList.add("is-foreshadow-candidate");
+      });
+      target?.classList.add("is-foreshadow-chosen");
+      triggerCellEffect("love-foreshadow-upgrade", result.upgradedIndex, size, size, { duration: 820 });
+      scheduleSpecial(() => {
+        board.classList.remove("is-foreshadow-selecting");
+        ensureBoardCells().forEach((item) => item.classList.remove("is-foreshadow-candidate", "is-foreshadow-chosen"));
+      }, 820);
+    }
+
+    function playForeshadowSequence(result, stageEvent) {
+      if (!result?.scene) return;
+      beginSpecialSequence();
+      pulseHaptic([12, 24, 16]);
+      pushStory(result.scene);
+      const revealDuration = 1850 + Math.floor(Math.random() * 551);
+      showCinematic(result.scene, {
+        kind: "foreshadow",
+        kicker: "伏笔成章 · 未知好事揭晓",
+        duration: revealDuration,
+        onDone: () => {
+          playTargetSelection(result);
+          if (stageEvent?.kind === "milestone") {
+            scheduleSpecial(() => playStageEvent(stageEvent, {
+              kicker: stageEvent.continuation ? "关系续章" : `首次解锁 · ${stageEvent.scene.stage}`,
+              onDone: finishSpecialSequence
+            }), 560);
+          } else {
+            scheduleSpecial(finishSpecialSequence, 860);
+          }
+        }
+      });
+    }
+
+    function playConflictEntry(conflict) {
+      beginSpecialSequence();
+      pulseHaptic(18);
+      pushStory(conflict.scene);
+      showCinematic(conflict.scene, {
+        kind: "knot",
+        kicker: "未说出口",
+        duration: conflict.profile.entryMs,
+        onDone: finishSpecialSequence
+      });
+    }
+
+    function playConflictResolution(conflict, stageEvent) {
+      const scene = buildConflictResolutionScene(conflict);
+      beginSpecialSequence();
+      pulseHaptic([10, 28, 10]);
+      pushStory(scene);
+      showCinematic(scene, {
+        kind: "reconcile",
+        kicker: "心结化开",
+        duration: conflict.profile.resolveMs,
+        onDone: () => {
+          if (stageEvent?.kind === "milestone") {
+            playStageEvent(stageEvent, { onDone: finishSpecialSequence });
+          } else {
+            finishSpecialSequence();
+          }
+        }
+      });
     }
 
     function playTileMotion(motions) {
@@ -599,14 +810,16 @@ if (soloGame) {
         ].filter(Boolean).join(" ");
         ghost.dataset.rank = String(tile?.rank || 0);
         ghost.dataset.digits = String(tile ? String(tile.value).length : 0);
-        if (special?.kind === "fate") ghost.dataset.special = "fate";
-        if (special?.kind === "conflict") ghost.dataset.special = "conflict";
+        if (special?.kind === "foreshadow") ghost.dataset.special = "foreshadow";
+        if (special?.kind === "knot") ghost.dataset.special = "knot";
+        const numberMetrics = tile ? measureTypography(tile.value, fromRect.width, "number") : null;
         ghost.style.cssText = (tile ? "--tile:" + tile.color
           + ";--tile-deep:" + tile.deep
           + ";--tile-accent:" + tile.accent
           + ";--tile-rim:" + tile.rim
           + ";--rank:" + tile.rank
-          + ";--number-scale:" + numberScaleForDigits(String(tile.value).length) + ";" : "")
+          + ";--number-size:" + numberMetrics.size + "px"
+          + ";--number-optical-x:" + numberMetrics.opticalX + "px;" : "")
           + "--ghost-x:" + fromRect.x + "px"
           + ";--ghost-y:" + fromRect.y + "px"
           + ";--ghost-w:" + fromRect.width + "px"
@@ -614,7 +827,7 @@ if (soloGame) {
           + ";--ghost-dx:" + (toRect.x - fromRect.x) + "px"
           + ";--ghost-dy:" + (toRect.y - fromRect.y) + "px"
           + ";--ghost-delay:" + (motion.merged ? (index % 2) * 8 : 0) + "ms";
-        ghost.innerHTML = motionGhostMarkup(motion.value);
+        ghost.innerHTML = motionGhostMarkup(motion.value, `ghost-${index}`);
         layer.append(ghost);
       });
 
@@ -633,9 +846,9 @@ if (soloGame) {
     function resolveDestinyTiles() {
       const destinyIndex = tiles.indexOf(TILE.DESTINY);
       if (destinyIndex < 0) return null;
-      const result = engine.resolveDestiny(tiles, { miracleUsed });
+      const highestBefore = maxTile();
+      const result = engine.resolveDestiny(tiles, { random: Math.random });
       tiles = result.tiles;
-      miracleUsed = result.state.miracleUsed;
       directorState = {
         ...directorState,
         fatePhase: "none",
@@ -645,7 +858,8 @@ if (soloGame) {
       return {
         ...result,
         effectIndex: result.upgradedIndex >= 0 ? result.upgradedIndex : destinyIndex,
-        effectName: result.miracle ? "miracle" : "destiny"
+        effectName: "foreshadow",
+        scene: buildPositiveScene(highestBefore)
       };
     }
 
@@ -662,14 +876,18 @@ if (soloGame) {
 
     function repairConflictAfterMerges(ordinaryMergeCount) {
       if (ordinaryMergeCount <= 0) return null;
-      const beforeIndex = tiles.findIndex((value) => conflictCracks(value) > 0);
+      const beforeIndex = tiles.findIndex((value) => engine.conflictRemaining(value) > 0);
       if (beforeIndex < 0) return null;
-      const beforeCracks = conflictCracks(tiles[beforeIndex]);
-      tiles = engine.repairConflict(tiles, ordinaryMergeCount).tiles;
-      const afterIndex = tiles.findIndex((value) => conflictCracks(value) > 0);
-      const afterCracks = afterIndex >= 0 ? conflictCracks(tiles[afterIndex]) : 0;
-      if (afterCracks === beforeCracks) return null;
-      return { index: afterIndex >= 0 ? afterIndex : beforeIndex };
+      const result = engine.repairConflict(tiles, ordinaryMergeCount);
+      tiles = result.tiles;
+      if (result.beforeRemaining === result.remaining) return null;
+      const conflict = activeConflict || {
+        index: beforeIndex,
+        profile: { remaining: result.beforeRemaining, resolveMs: 1000, idleMs: 2400 },
+        scene: buildConflictScene({ severity: "friction" })
+      };
+      if (result.resolved) activeConflict = null;
+      return { ...result, index: beforeIndex, conflict };
     }
 
     function registerStageResults(results) {
@@ -696,24 +914,32 @@ if (soloGame) {
 
     function prepareStageEvent(event) {
       if (!event || event.kind !== "milestone") return event;
+      if (event.scene) return event;
       const scene = pickMilestoneScene(event.nextValue);
-      pushStory(scene);
       return { ...event, scene };
     }
 
-    function playStageEvent(event) {
+    function ensureForeshadowStageEvent(event, resolution) {
+      if (!resolution?.targetWasHighest || event?.kind === "milestone") return event;
+      return {
+        kind: "milestone",
+        source: "foreshadow",
+        continuation: true,
+        cellIndex: resolution.upgradedIndex,
+        nextValue: resolution.upgradedValue,
+        scene: pickMilestoneScene(resolution.upgradedValue)
+      };
+    }
+
+    function playStageEvent(event, options = {}) {
       if (!event) return;
-      if (event.kind === "milestone") playMilestoneScene(event.scene, event.cellIndex);
+      if (event.kind === "milestone") playMilestoneScene(event.scene, event.cellIndex, options);
       else if (event.source === "merge") playRepeatMerge(event.cellIndex);
     }
 
     function playResolutionEffect(result) {
       if (!result) return;
-      if (result.effectName === "miracle") {
-        triggerCellEffect("love-miracle", result.effectIndex, size, size, { duration: 920 });
-      } else {
-        triggerCellEffect("love-destiny", result.effectIndex, size, size, { duration: 640 });
-      }
+      triggerCellEffect("love-foreshadow-open", result.effectIndex, size, size, { duration: 760 });
     }
 
     function move(dir) {
@@ -756,16 +982,19 @@ if (soloGame) {
         lastMotionTargets = [];
         lastSpawnCell = spawnOnBlockedInput && emptyIndices().length ? addFromTop() : -1;
         const safetyResolution = resolveFateDeadlock();
-        const stageEvent = prepareStageEvent(safetyResolution && isOrdinaryTile(safetyResolution.upgradedValue)
+        let stageEvent = safetyResolution && isOrdinaryTile(safetyResolution.upgradedValue)
           ? registerStageResults([{
             cellIndex: safetyResolution.upgradedIndex,
             nextValue: safetyResolution.upgradedValue,
-            source: "destiny"
+            source: "foreshadow"
           }])
-          : null);
+          : null;
+        stageEvent = ensureForeshadowStageEvent(stageEvent, safetyResolution);
+        stageEvent = prepareStageEvent(stageEvent);
         render();
         playResolutionEffect(safetyResolution);
-        playStageEvent(stageEvent);
+        if (safetyResolution?.upgradedValue) playForeshadowSequence(safetyResolution, stageEvent);
+        else playStageEvent(stageEvent);
         if (lastSpawnCell < 0 && !safetyResolution) {
           showBlockedBump(dir);
           triggerBoardEffect("love-bump", { duration: 360 });
@@ -785,10 +1014,10 @@ if (soloGame) {
         mergeResults.push({
           cellIndex: destinyResolution.upgradedIndex,
           nextValue: destinyResolution.upgradedValue,
-          source: "destiny"
+          source: "foreshadow"
         });
       }
-      const reconcileEffect = repairConflictAfterMerges(ordinaryMergeCount);
+      const conflictUpdate = repairConflictAfterMerges(ordinaryMergeCount);
       let stageEvent = registerStageResults(mergeResults);
       if (stageEvent?.kind === "milestone" && !fateSequenceWasActive) {
         directorState = { ...directorState, firstFateTurns: 0 };
@@ -804,35 +1033,60 @@ if (soloGame) {
         milestoneGraceTurns
       });
       directorState = spawn.state;
-      const spawnValue = spawn.kind === "fate"
-        ? TILE.FATE
-        : spawn.kind === "conflict" ? TILE.CONFLICT_2 : undefined;
-      lastSpawnCell = addFromTop(spawnValue);
+      let spawnedConflict = null;
+      if (spawn.kind === "fate") {
+        lastSpawnCell = addFromTop(TILE.FATE);
+      } else if (spawn.kind === "conflict" && spawn.profile) {
+        lastSpawnCell = addConflict(spawn.profile);
+        if (lastSpawnCell >= 0) {
+          spawnedConflict = {
+            index: lastSpawnCell,
+            profile: spawn.profile,
+            scene: buildConflictScene(spawn.profile)
+          };
+          activeConflict = spawnedConflict;
+        } else {
+          lastSpawnCell = addFromTop();
+        }
+      } else {
+        lastSpawnCell = addFromTop();
+      }
 
       const safetyResolution = resolveFateDeadlock();
       if (safetyResolution && isOrdinaryTile(safetyResolution.upgradedValue)) {
         stageEvent = preferStageEvent(stageEvent, registerStageResults([{
           cellIndex: safetyResolution.upgradedIndex,
           nextValue: safetyResolution.upgradedValue,
-          source: "destiny"
+          source: "foreshadow"
         }]));
       }
+      const foreshadowResolution = destinyResolution || safetyResolution;
+      stageEvent = ensureForeshadowStageEvent(stageEvent, foreshadowResolution);
       stageEvent = prepareStageEvent(stageEvent);
 
       render();
       playTileMotion(tileMotions);
       playResolutionEffect(destinyResolution);
       playResolutionEffect(safetyResolution);
-      if (reconcileEffect) {
-        triggerCellEffect("love-reconcile", reconcileEffect.index, size, size, { duration: 560 });
+      if (conflictUpdate && !conflictUpdate.resolved) {
+        triggerCellEffect("love-knot-loosen", conflictUpdate.index, size, size, { duration: conflictUpdate.conflict.profile.loosenMs || 320 });
       }
-      if (spawn.kind === "conflict" && lastSpawnCell >= 0) {
-        triggerCellEffect("love-conflict", lastSpawnCell, size, size, { duration: 620 });
+      if (conflictUpdate?.resolved) {
+        triggerCellEffect("love-reconcile", conflictUpdate.index, size, size, { duration: conflictUpdate.conflict.profile.resolveMs });
       }
       if (spawn.kind === "fate" && lastSpawnCell >= 0) {
         triggerCellEffect("love-special-spawn", lastSpawnCell, size, size, { duration: 620 });
       }
-      playStageEvent(stageEvent);
+      if (foreshadowResolution?.upgradedValue) {
+        playForeshadowSequence(foreshadowResolution, stageEvent);
+      } else if (conflictUpdate?.resolved) {
+        playConflictResolution(conflictUpdate.conflict, stageEvent);
+      } else if (spawnedConflict) {
+        triggerCellEffect("love-knot-arrive", spawnedConflict.index, size, size, { duration: spawnedConflict.profile.entryMs });
+        playConflictEntry(spawnedConflict);
+      } else {
+        playStageEvent(stageEvent);
+      }
     }
 
     function toggleMemory() {
@@ -865,42 +1119,57 @@ if (soloGame) {
       const digits = String(value).length;
       return heartMarkup(key)
         + '<span class="tile-glyph">' + tile.glyph + '</span>'
-        + '<em class="tile-number digits-' + digits + '">' + value + '</em>'
+        + '<em class="tile-number digits-' + digits + '"><span>' + value + '</span></em>'
         + '<small class="tile-label">' + escapeText(tile.label) + '</small>';
     }
 
     function specialTile(value) {
       if (value === TILE.FATE || value === TILE.DESTINY) {
-        return { kind: "fate", className: "is-fate", label: "缘分" };
+        return { kind: "foreshadow", className: "is-foreshadow", label: "伏笔" };
       }
-      const cracks = conflictCracks(value);
-      if (cracks) return { kind: "conflict", className: "is-conflict", label: "矛盾", cracks };
+      const remaining = engine.conflictRemaining(value);
+      if (remaining) return { kind: "knot", className: "is-knot", label: "心结", remaining };
       return null;
     }
 
-    function specialTileMarkup(value) {
+    function specialTileMarkup(value, key) {
       const special = specialTile(value);
-      if (special?.kind === "fate") {
-        return '<span class="special-heart fate-hearts" data-special="fate" aria-hidden="true"><i></i><i></i></span>'
+      const uid = "love-special-" + String(key).replace(/[^a-zA-Z0-9_-]/g, "-");
+      if (special?.kind === "foreshadow") {
+        return '<svg class="foreshadow-letter" viewBox="0 0 100 92" aria-hidden="true">'
+          + '<defs><linearGradient id="' + uid + '-paper" x1="18" y1="14" x2="82" y2="78"><stop offset="0" stop-color="#fff9ec"></stop><stop offset=".52" stop-color="#e9d2d1"></stop><stop offset="1" stop-color="#b66a7e"></stop></linearGradient>'
+          + '<radialGradient id="' + uid + '-seal"><stop offset="0" stop-color="#ffe8a4"></stop><stop offset=".5" stop-color="#df9b3e"></stop><stop offset="1" stop-color="#824127"></stop></radialGradient></defs>'
+          + '<path class="letter-aura" d="M12 27Q12 16 24 14H76Q88 16 88 27V67Q86 79 74 80H26Q14 79 12 67Z"></path>'
+          + '<path class="letter-paper" fill="url(#' + uid + '-paper)" d="M15 25Q15 17 24 17H76Q85 17 85 25V68Q84 75 76 76H24Q16 75 15 68Z"></path>'
+          + '<path class="letter-fold" d="M17 24L50 52L83 24M17 70L42 48M83 70L58 48"></path>'
+          + '<path class="letter-filament" d="M27 12C38 4 62 4 73 12"></path>'
+          + '<circle class="letter-seal" fill="url(#' + uid + '-seal)" cx="50" cy="52" r="11"></circle>'
+          + '<path class="letter-seal-mark" d="M50 45L52 50L58 52L52 55L50 61L47 55L42 52L47 50Z"></path></svg>'
           + '<small class="tile-label">' + escapeText(special.label) + '</small>';
       }
-      if (special?.kind === "conflict") {
-        return '<span class="special-heart conflict-heart" data-special="conflict" data-cracks="' + special.cracks + '" aria-hidden="true"><i></i><i></i></span>'
-          + '<em class="conflict-crack-count" data-cracks="' + special.cracks + '">' + special.cracks + '</em>'
+      if (special?.kind === "knot") {
+        const idleMs = activeConflict?.index === Number(key) ? activeConflict.profile.idleMs : 2400;
+        return '<span class="knot-emblem" data-remaining="' + special.remaining + '" style="--knot-idle:' + idleMs + 'ms" aria-hidden="true">'
+          + '<svg class="knot-core" viewBox="0 0 100 92"><defs><radialGradient id="' + uid + '-glass"><stop offset="0" stop-color="#a59ca8" stop-opacity=".52"></stop><stop offset=".68" stop-color="#312b35" stop-opacity=".88"></stop><stop offset="1" stop-color="#100e13"></stop></radialGradient><linearGradient id="' + uid + '-thread" x1="18" y1="16" x2="78" y2="76"><stop offset="0" stop-color="#f2bd8c"></stop><stop offset=".48" stop-color="#aa5368"></stop><stop offset="1" stop-color="#51253c"></stop></linearGradient></defs>'
+          + '<circle class="knot-glass" fill="url(#' + uid + '-glass)" cx="50" cy="45" r="36"></circle>'
+          + '<path class="knot-thread knot-thread-a" stroke="url(#' + uid + '-thread)" d="M20 48C31 20 68 20 80 47C68 73 31 73 20 48Z"></path>'
+          + '<path class="knot-thread knot-thread-b" stroke="url(#' + uid + '-thread)" d="M29 20C59 23 70 56 49 76C25 65 20 37 42 28C61 22 79 39 72 57"></path>'
+          + '<circle class="knot-pearl" cx="50" cy="47" r="7"></circle></svg>'
+          + '<span class="knot-loops"><i></i><i></i><i></i><i></i><i></i></span></span>'
           + '<small class="tile-label">' + escapeText(special.label) + '</small>';
       }
       return "";
     }
 
-    function motionGhostMarkup(value) {
-      if (specialTile(value)) return specialTileMarkup(value);
+    function motionGhostMarkup(value, key) {
+      if (specialTile(value)) return specialTileMarkup(value, key);
       const heartPath = "M50 87C44 79 7 59 7 32C7 15 20 5 35 8C43 9 48 15 50 22C52 15 57 9 65 8C80 5 93 15 93 32C93 59 56 79 50 87Z";
       return '<svg class="motion-heart" viewBox="0 0 100 94" aria-hidden="true"><path d="' + heartPath + '"></path></svg>'
-        + '<em class="motion-number">' + value + '</em>';
+        + '<em class="motion-number"><span>' + value + '</span></em>';
     }
 
     function clearTileStyle(item) {
-      for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits", "--number-scale", "--label-scale"]) {
+      for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits", "--number-size", "--number-optical-x", "--label-size"]) {
         item.style.removeProperty(property);
       }
     }
@@ -918,6 +1187,7 @@ if (soloGame) {
         item.dataset.digits = "0";
         item.dataset.labelLength = "0";
         item.dataset.romance = "";
+        item.style.setProperty("--cell-index", index);
         fragment.append(item);
         return item;
       });
@@ -944,13 +1214,17 @@ if (soloGame) {
     }
 
     function renderBoardCells(mergeSet, motionTargetSet) {
-      ensureBoardCells().forEach((item, index) => {
+      const cells = ensureBoardCells();
+      const cellWidth = cells[0]?.offsetWidth || Math.max(48, board.clientWidth / size);
+      cells.forEach((item, index) => {
         const value = tiles[index];
         const ordinary = isOrdinaryTile(value);
         const special = specialTile(value);
         const tile = ordinary ? romanceTile(value) : null;
         const digits = ordinary ? String(value).length : 0;
         const labelLength = Array.from(tile?.label || special?.label || "").length;
+        const numberMetrics = ordinary ? measureTypography(value, cellWidth, "number") : null;
+        const labelMetrics = ordinary ? measureTypography(tile.label, cellWidth, "label") : null;
         const classes = [
           "merge-cell",
           "love-tile",
@@ -968,9 +1242,10 @@ if (soloGame) {
         item.dataset.rank = String(tile?.rank || 0);
         item.dataset.digits = String(digits);
         item.dataset.labelLength = String(labelLength);
+        item.dataset.remaining = String(special?.remaining || 0);
         item.setAttribute("data-romance", tile?.label || special?.label || "");
-        if (special?.kind === "fate") item.dataset.special = "fate";
-        else if (special?.kind === "conflict") item.dataset.special = "conflict";
+        if (special?.kind === "foreshadow") item.dataset.special = "foreshadow";
+        else if (special?.kind === "knot") item.dataset.special = "knot";
         else delete item.dataset.special;
 
         if (item.dataset.renderValue === String(value)) return;
@@ -982,7 +1257,7 @@ if (soloGame) {
         }
         if (special) {
           clearTileStyle(item);
-          item.innerHTML = specialTileMarkup(value);
+          item.innerHTML = specialTileMarkup(value, index);
           return;
         }
         item.style.setProperty("--tile", tile.color);
@@ -991,10 +1266,19 @@ if (soloGame) {
         item.style.setProperty("--tile-rim", tile.rim);
         item.style.setProperty("--rank", tile.rank);
         item.style.setProperty("--digits", digits);
-        item.style.setProperty("--number-scale", numberScaleForDigits(digits));
-        item.style.setProperty("--label-scale", labelScaleForLength(labelLength));
+        item.style.setProperty("--number-size", `${numberMetrics.size}px`);
+        item.style.setProperty("--number-optical-x", `${numberMetrics.opticalX}px`);
+        item.style.setProperty("--label-size", `${labelMetrics.size}px`);
         item.innerHTML = tileContentMarkup(value, index);
       });
+    }
+
+    function refreshBoardLayout() {
+      motionGeometry = null;
+      cellNodes.forEach((item) => {
+        item.dataset.renderValue = "__layout__";
+      });
+      renderBoardCells(new Set(lastMergeCells), new Set(lastMotionTargets));
     }
 
     function render() {
@@ -1006,6 +1290,8 @@ if (soloGame) {
       board.style.setProperty("--trust-alpha", Math.min(0.62, Math.log2(Math.max(2, bestValue)) / 16).toFixed(3));
       board.dataset.showPhase = top.label;
       board.classList.toggle("is-vow-ready", bestValue >= 2048);
+      board.classList.toggle("has-foreshadow-pair", tiles.filter((value) => value === TILE.FATE).length >= 2);
+      board.classList.toggle("has-knot", hasConflictTile());
       board.classList.remove("is-date-ready", "is-duo-mode", "is-chapter-mode");
       renderBoardCells(mergeSet, motionTargetSet);
       const scoreChanged = renderedScore !== points;
@@ -1013,13 +1299,15 @@ if (soloGame) {
         renderedScore = points;
         setScore(points);
       }
-      const remainingConflictMerges = tiles.reduce((remaining, value) => Math.max(remaining, conflictCracks(value)), 0);
-      if (tiles.some((value) => value === TILE.FATE)) {
-        setStatus("缘分：两枚缘分相遇，最高阶段进一阶");
+      const remainingConflictMerges = tiles.reduce((remaining, value) => Math.max(remaining, engine.conflictRemaining(value)), 0);
+      if (!engine.canMove(tiles, size)) {
+        setStatus("棋盘已满，点重遇再开始一段故事");
+      } else if (tiles.some((value) => value === TILE.FATE)) {
+        setStatus("未知好事 · 一段伏笔正在等待回应");
       } else if (remainingConflictMerges > 0) {
-        setStatus(`矛盾：还需 ${remainingConflictMerges} 次普通合并即可化解`);
+        setStatus(`心结 · ${activeConflict?.scene.title || "一句话还没有说开"}`);
       } else {
-        setStatus(engine.canMove(tiles, size) ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
+        setStatus("滑动合并相同爱心，推进下一段关系");
       }
       const nextStoryRenderKey = [bestValue, currentScene?.title, memoryOpen, storyLog.length].join("|");
       if (scoreChanged || storyRenderKey !== nextStoryRenderKey) {
@@ -1033,6 +1321,10 @@ if (soloGame) {
       clearTimeout(stageCelebrationTimer);
       clearTimeout(tileMotionTimer);
       clearTimeout(bumpTimer);
+      specialSequenceTimers.forEach((timer) => clearTimeout(timer));
+      specialSequenceTimers.clear();
+      specialSequenceActive = false;
+      bufferedSwipeDirection = null;
       board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
       document.querySelector(".love-stage-celebration")?.remove();
       for (const name of moodClasses) board.classList.remove(name);
@@ -1041,8 +1333,8 @@ if (soloGame) {
       bestValue = 2;
       seenStageValues = new Set([2]);
       directorState = engine.createDirectorState();
-      miracleUsed = false;
       milestoneGraceTurns = 0;
+      activeConflict = null;
       lastMergeCells = [];
       lastMotionTargets = [];
       lastSpawnCell = -1;
@@ -1063,15 +1355,24 @@ if (soloGame) {
     memoryControl.innerHTML = '<span aria-hidden="true">▤</span><span>回忆</span>';
     preloadSceneBackdrops();
     restart();
-    const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
-    const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
+    const boardResizeObserver = typeof window.ResizeObserver === "function"
+      ? new window.ResizeObserver(refreshBoardLayout)
+      : null;
+    boardResizeObserver?.observe(board);
+    if (!boardResizeObserver) window.addEventListener?.("resize", refreshBoardLayout);
+    const offKey = keyHandler({ ArrowLeft: () => requestSwipe("left"), ArrowRight: () => requestSwipe("right"), ArrowUp: () => requestSwipe("up"), ArrowDown: () => requestSwipe("down") });
+    const offSwipe = enableSwipe({ left: () => requestSwipe("left"), right: () => requestSwipe("right"), up: () => requestSwipe("up"), down: () => requestSwipe("down") });
     return () => {
       clearTimeout(moodTimer);
       clearTimeout(stageCelebrationTimer);
       clearTimeout(tileMotionTimer);
       clearTimeout(bumpTimer);
+      specialSequenceTimers.forEach((timer) => clearTimeout(timer));
+      specialSequenceTimers.clear();
       document.querySelector(".love-stage-celebration")?.remove();
       board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
+      boardResizeObserver?.disconnect();
+      if (!boardResizeObserver) window.removeEventListener?.("resize", refreshBoardLayout);
       loveVfx.destroy();
       offKey();
       offSwipe();

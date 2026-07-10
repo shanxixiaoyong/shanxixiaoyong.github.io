@@ -4,6 +4,10 @@ const test = require("node:test");
 const {
   TILE,
   createDirectorState,
+  createConflictTile,
+  conflictRemaining,
+  createConflictProfile,
+  safeConflictIndices,
   slideLine,
   canMove,
   chooseSpawn,
@@ -15,11 +19,55 @@ test("slides and merges a five-cell numeric line", () => {
   assert.deepEqual(slideLine([2, 2, 4, 0, 4], 5).cells, [4, 8, 0, 0, 0]);
 });
 
-test("merges adjacent fate tiles after compaction but never conflict with ordinary tiles", () => {
+test("merges adjacent fate tiles while a conflict remains fixed", () => {
   assert.deepEqual(
     slideLine([TILE.FATE, TILE.FATE, 2, TILE.CONFLICT_2, 2], 5).cells,
-    [TILE.DESTINY, 2, TILE.CONFLICT_2, 2, 0]
+    [TILE.DESTINY, 2, 0, TILE.CONFLICT_2, 2]
   );
+});
+
+test("keeps a temporary conflict fixed and slides each side independently", () => {
+  const knot = createConflictTile(4);
+  const result = slideLine([2, 0, knot, 2, 2], 5);
+
+  assert.deepEqual(result.cells, [2, 0, knot, 4, 0]);
+  assert.equal(result.ordinaryMergeCount, 1);
+  assert.equal(result.motions.some((motion) => motion.value === knot), false);
+});
+
+test("creates two-to-five merge conflict profiles with bounded random animation timing", () => {
+  const minorRolls = [0, 0, 0, 0, 0];
+  const deepRolls = [0.99, 0.99, 0.99, 0.99, 0.99];
+  const minor = createConflictProfile(() => minorRolls.shift());
+  const deep = createConflictProfile(() => deepRolls.shift());
+
+  assert.deepEqual(
+    { severity: minor.severity, remaining: minor.remaining },
+    { severity: "minor", remaining: 2 }
+  );
+  assert.deepEqual(
+    { severity: deep.severity, remaining: deep.remaining },
+    { severity: "deep", remaining: 5 }
+  );
+  assert.ok(minor.entryMs >= 900 && minor.entryMs <= 1250);
+  assert.ok(deep.entryMs >= 1550 && deep.entryMs <= 2100);
+  assert.ok(deep.idleMs >= 1800 && deep.idleMs <= 3100);
+  assert.ok(deep.resolveMs >= 800 && deep.resolveMs <= 1400);
+  assert.ok(deep.loosenMs >= 220 && deep.loosenMs <= 420);
+});
+
+test("encodes conflict lifetime in one fixed tile and exposes only safe spawn cells", () => {
+  assert.equal(conflictRemaining(createConflictTile(2)), 2);
+  assert.equal(conflictRemaining(createConflictTile(5)), 5);
+  assert.equal(conflictRemaining(2048), 0);
+
+  const deadBoard = Array.from({ length: 25 }, (_, index) => 2 ** (index + 1));
+  deadBoard[12] = 0;
+  assert.deepEqual(safeConflictIndices(deadBoard, 5, 3), []);
+
+  const liveBoard = deadBoard.slice();
+  liveBoard[0] = liveBoard[1];
+  assert.ok(safeConflictIndices(liveBoard, 5, 3).includes(12));
 });
 
 function spawnContext(overrides = {}) {
@@ -259,39 +307,49 @@ test("canMove recognizes only empty cells and valid ordinary or fate pairs", () 
   assert.equal(canMove(conflictPair, 5), false);
 });
 
-test("resolves destiny by upgrading the highest ordinary tile and clearing four low tiles", () => {
+test("resolves a positive reveal by favoring a highest tile without clearing ordinary tiles", () => {
   const result = resolveDestiny(
     [TILE.DESTINY, 2, 4, 8, 16, TILE.CONFLICT_2, 0, 0],
-    { miracleUsed: false }
+    { random: () => 0 }
   );
 
-  assert.deepEqual(result.tiles, [0, 0, 0, 0, 32, TILE.CONFLICT_2, 0, 0]);
-  assert.equal(result.miracle, false);
-  assert.deepEqual(result.state, { miracleUsed: false });
+  assert.deepEqual(result.tiles, [0, 2, 4, 8, 32, TILE.CONFLICT_2, 0, 0]);
+  assert.equal(result.previousValue, 16);
+  assert.equal(result.upgradedValue, 32);
+  assert.equal(result.targetWasHighest, true);
+  assert.equal(result.favoredHighest, true);
+  assert.deepEqual(result.clearedIndices, [0]);
 });
 
-test("uses miracle cleanup once when destiny resolves with at most one empty cell", () => {
-  const crowded = [TILE.DESTINY, 2, 4, 8, 16, 32, 64, TILE.CONFLICT_2];
-  const miracle = resolveDestiny(crowded, { miracleUsed: false });
-  const afterMiracle = resolveDestiny(crowded, { miracleUsed: true });
+test("can select any ordinary tile while retaining a thirty-percent highest preference", () => {
+  const rolls = [0.9, 0];
+  const result = resolveDestiny(
+    [TILE.DESTINY, 2, 4, 8, 16, 32, 64, TILE.CONFLICT_2],
+    { random: () => rolls.shift() }
+  );
 
-  assert.deepEqual(miracle.tiles, [0, 0, 0, 0, 0, 0, 128, TILE.CONFLICT_2]);
-  assert.equal(miracle.miracle, true);
-  assert.deepEqual(miracle.state, { miracleUsed: true });
-  assert.deepEqual(afterMiracle.tiles, [0, 0, 0, 0, 0, 32, 128, TILE.CONFLICT_2]);
-  assert.equal(afterMiracle.miracle, false);
+  assert.deepEqual(result.tiles, [0, 4, 4, 8, 16, 32, 64, TILE.CONFLICT_2]);
+  assert.equal(result.previousValue, 2);
+  assert.equal(result.targetWasHighest, false);
+  assert.equal(result.favoredHighest, false);
 });
 
 test("clears a destiny marker even when no ordinary tile remains", () => {
-  const result = resolveDestiny([TILE.DESTINY, TILE.CONFLICT_2, 0], { miracleUsed: false });
+  const result = resolveDestiny([TILE.DESTINY, TILE.CONFLICT_2, 0], { random: () => 0 });
 
   assert.deepEqual(result.tiles, [0, TILE.CONFLICT_2, 0]);
   assert.equal(result.upgradedIndex, -1);
 });
 
-test("repairs a two-crack conflict after two ordinary numeric merges", () => {
-  const tiles = [2, TILE.CONFLICT_2, 4, TILE.CONFLICT_1];
+test("loosens one fixed conflict by every ordinary merge pair and clears it once", () => {
+  const tiles = [2, createConflictTile(5), 4, 8];
+  const loosened = repairConflict(tiles, 2);
+  const resolved = repairConflict(loosened.tiles, 3);
 
-  assert.deepEqual(repairConflict(tiles, 1).tiles, [2, TILE.CONFLICT_1, 4, 0]);
-  assert.deepEqual(repairConflict(tiles, 2).tiles, [2, 0, 4, 0]);
+  assert.deepEqual(loosened.tiles, [2, createConflictTile(3), 4, 8]);
+  assert.equal(loosened.remaining, 3);
+  assert.equal(loosened.resolved, false);
+  assert.deepEqual(resolved.tiles, [2, 0, 4, 8]);
+  assert.equal(resolved.remaining, 0);
+  assert.equal(resolved.resolved, true);
 });

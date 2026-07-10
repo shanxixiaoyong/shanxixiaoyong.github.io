@@ -16,6 +16,7 @@ const files = {
   html: readFileSync("game-2048.html", "utf8"),
   js: readFileSync("assets/games.js", "utf8"),
   engine: readOptional("assets/love-2048-engine.js"),
+  stories: readOptional("assets/love-2048-stories.js"),
   css: readFileSync("assets/world.css", "utf8"),
   loveCss: readOptional("assets/love-2048.css"),
   vfx: readOptional("assets/love-2048-vfx.js")
@@ -36,8 +37,9 @@ const expectations = [
   ["HTML heading uses exact public name", files.html, '<h1 id="game-title">心动2048</h1>'],
   ["HTML page description matches love theme", files.html, "爱心、情侣、桃花"],
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
+  ["HTML loads the Love 2048 story catalog", files.html, "assets/love-2048-stories.js"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
-  ["HTML uses the final 5x5 pacing cache version", files.html, "love-20260710k"],
+  ["HTML uses the final 5x5 story-event cache version", files.html, "love-20260710l"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
   ["Game registry uses exact public name", files.js, 'name: "心动2048"'],
@@ -95,8 +97,21 @@ const expectations = [
   ["2048 renders tile glyph crest", files.js, "tile-glyph"],
   ["2048 renders prominent tile number", files.js, "tile-number"],
   ["2048 renders compact tile label", files.js, "tile-label"],
-  ["2048 scales numbers by digit count", files.js, "function numberScaleForDigits"],
-  ["2048 scales labels by character count", files.js, "function labelScaleForLength"],
+  ["2048 measures typography against the real cell", files.js, "function measureTypography"],
+  ["2048 measures visible glyph bounds", files.js, "actualBoundingBoxLeft"],
+  ["2048 writes an optical number offset", files.js, 'setProperty("--number-optical-x"'],
+  ["2048 fits long relationship labels", files.js, 'setProperty("--label-size"'],
+  ["2048 loads the staged story catalog", files.js, "window.Love2048Stories"],
+  ["2048 picks staged positive stories", files.js, "stories.pickPositive"],
+  ["2048 picks restrained conflict stories", files.js, "stories.pickConflict"],
+  ["2048 renders sealed foreshadow letters", files.js, "foreshadow-letter"],
+  ["2048 renders fixed visual knots", files.js, "knot-emblem"],
+  ["2048 sequences positive reveals", files.js, "function playForeshadowSequence"],
+  ["2048 chains higher-stage reveals when the maximum upgrades", files.js, "function ensureForeshadowStageEvent"],
+  ["2048 renders conflict entry cinematics", files.js, "function playConflictEntry"],
+  ["2048 renders conflict resolution cinematics", files.js, "function playConflictResolution"],
+  ["2048 buffers one swipe during special cinematics", files.js, "bufferedSwipeDirection = direction"],
+  ["2048 chooses safe fixed conflict positions", files.js, "engine.safeConflictIndices"],
   ["2048 renders stage label", files.js, "data-romance"],
   ["2048 removed trust resource", files.js, "let trust =", true],
   ["2048 removed communication resource", files.js, "let communication =", true],
@@ -153,8 +168,15 @@ const expectations = [
   ["Dedicated CSS maps home backdrop", files.loveCss, 'data-backdrop="home"'],
   ["Dedicated CSS maps starlight backdrop", files.loveCss, 'data-backdrop="starlight"'],
   ["Dedicated CSS defines repeat merge sparkle", files.loveCss, ".effect-love-merge"],
-  ["Dedicated CSS centers scaled tile numbers", files.loveCss, "scale(var(--number-scale, 1))"],
-  ["Dedicated CSS scales long relationship labels", files.loveCss, "scale(var(--label-scale, 1))"],
+  ["Dedicated CSS centers measured tile numbers", files.loveCss, "font-size: var(--number-size, 24px)"],
+  ["Dedicated CSS applies optical number centering", files.loveCss, "translateX(var(--number-optical-x, 0))"],
+  ["Dedicated CSS fits measured relationship labels", files.loveCss, "font-size: var(--label-size, 8px)"],
+  ["Dedicated CSS renders the sealed letter", files.loveCss, ".foreshadow-letter"],
+  ["Dedicated CSS renders knot strands", files.loveCss, ".knot-loops"],
+  ["Dedicated CSS highlights the randomly upgraded target", files.loveCss, ".is-foreshadow-chosen"],
+  ["Dedicated CSS uses per-event cinematic timing", files.loveCss, "var(--cinematic-duration"],
+  ["Dedicated CSS renders projector atmosphere", files.loveCss, 'data-atmosphere="projector"'],
+  ["Dedicated CSS renders transit atmosphere", files.loveCss, 'data-atmosphere="transit"'],
   ["Dedicated CSS uses short tile travel", files.loveCss, "loveGhostTravel 150ms"],
   ["Dedicated CSS uses short collision feedback", files.loveCss, "loveJewelMerge 220ms"],
   ["Dedicated CSS disables inherited new-cell animation", files.loveCss, ".merge-cell.is-new {\n  animation: none;"],
@@ -169,7 +191,17 @@ const expectations = [
   ["Event director unlocks fate at 256", files.engine, "const FATE_UNLOCK_TILE = 256"],
   ["Event director unlocks conflict at 1024", files.engine, "const CONFLICT_UNLOCK_TILE = 1024"],
   ["Event director guarantees the first 256 fate by turn ten", files.engine, "{ min: 256, start: 6, guarantee: 10 }"],
-  ["Event director uses a ten-turn event cooldown", files.engine, "const EVENT_COOLDOWN_TURNS = 10"]
+  ["Event director uses a ten-turn event cooldown", files.engine, "const EVENT_COOLDOWN_TURNS = 10"],
+  ["Engine encodes two-to-five merge conflicts", files.engine, "function createConflictTile"],
+  ["Engine keeps conflicts fixed by segmenting lines", files.engine, "function slideSegment"],
+  ["Engine rolls bounded conflict profiles", files.engine, "function createConflictProfile"],
+  ["Engine rejects unsafe conflict cells", files.engine, "function safeConflictIndices"],
+  ["Engine keeps every ordinary tile eligible for a positive upgrade", files.engine, "const candidates = favoredHighest ? highestTiles : ordinaryTiles"],
+  ["Engine gives the highest tile a thirty-percent preference", files.engine, "unitRandom(nextRandom) < 0.3"],
+  ["Story catalog defines thirty positive events", files.stories, "const positiveBands"],
+  ["Story catalog defines paired conflict events", files.stories, "const conflictBands"],
+  ["Story catalog exposes deterministic positive selection", files.stories, "function pickPositive"],
+  ["Story catalog exposes deterministic conflict selection", files.stories, "function pickConflict"]
 ];
 
 for (const forbidden of [
@@ -197,7 +229,14 @@ for (const forbidden of [
   ["CSS removes per-tile large blur", files.loveCss, "filter: blur(14px)"],
   ["CSS removes motion-heart drop shadow", files.loveCss, "filter: drop-shadow(0 5px 7px"],
   ["CSS removes merge filter animation", files.loveCss, "filter: brightness(1.34) saturate(1.16)"],
-  ["2048 removes danmaku CSS", files.loveCss, ".love-scene-danmaku"]
+  ["2048 removes danmaku CSS", files.loveCss, ".love-scene-danmaku"],
+  ["2048 removes the generic fate label", files.js, "缘分"],
+  ["2048 removes the generic conflict label", files.js, "矛盾"],
+  ["Dedicated CSS removes overlapping fate hearts", files.loveCss, ".fate-hearts"],
+  ["Dedicated CSS removes broken conflict hearts", files.loveCss, ".conflict-heart"],
+  ["Dedicated CSS removes numeric conflict badges", files.loveCss, ".conflict-crack-count"],
+  ["Dedicated CSS removes transform-scaled numbers", files.loveCss, "--number-scale"],
+  ["Dedicated CSS removes transform-scaled labels", files.loveCss, "--label-scale"]
 ]) {
   expectations.push([forbidden[0], forbidden[1], forbidden[2], true]);
 }
@@ -258,10 +297,10 @@ if (backdropRoutingFailures.length) {
   process.exit(1);
 }
 
-const milestoneSceneSource = functionSource("playMilestoneScene");
+const milestoneSceneSource = functionSource("showCinematic");
 if (!milestoneSceneSource.includes("scene.line") || !milestoneSceneSource.includes("data-backdrop")) {
   console.error("Love 2048 milestone cinematic validation failed:");
-  console.error("- playMilestoneScene must render scene.line and a data-backdrop key");
+  console.error("- showCinematic must render scene.line and a data-backdrop key");
   process.exit(1);
 }
 

@@ -5,6 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const Love2048Engine = require("../assets/love-2048-engine.js");
+const Love2048Stories = require("../assets/love-2048-stories.js");
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "game-2048.html"), "utf8");
 const gamesSource = fs.readFileSync(path.join(root, "assets/games.js"), "utf8");
@@ -269,16 +270,61 @@ function createHarness(options = {}) {
   const math = Object.create(Math);
   math.random = () => randomValues.length ? randomValues.shift() : 0;
   let timerId = 0;
+  let timerNow = 0;
+  const timers = new Map();
+  const resizeObservers = new Set();
+  const setTimer = (callback, delay = 0) => {
+    timerId += 1;
+    timers.set(timerId, { callback, due: timerNow + Math.max(0, Number(delay) || 0) });
+    return timerId;
+  };
+  const clearTimer = (id) => timers.delete(id);
+  const advance = (duration) => {
+    const target = timerNow + Math.max(0, Number(duration) || 0);
+    let guard = 0;
+    while (guard < 1000) {
+      const next = [...timers.entries()]
+        .filter(([, timer]) => timer.due <= target)
+        .sort((left, right) => left[1].due - right[1].due || left[0] - right[0])[0];
+      if (!next) break;
+      const [id, timer] = next;
+      timers.delete(id);
+      timerNow = timer.due;
+      timer.callback();
+      guard += 1;
+    }
+    assert.ok(guard < 1000, "fake timers must settle");
+    timerNow = target;
+  };
+  class FakeResizeObserver {
+    constructor(callback) {
+      this.callback = callback;
+      this.targets = new Set();
+      resizeObservers.add(this);
+    }
+
+    observe(target) {
+      this.targets.add(target);
+    }
+
+    disconnect() {
+      this.targets.clear();
+      resizeObservers.delete(this);
+    }
+  }
   const window = {
     document,
     Love2048Engine: engine,
+    Love2048Stories,
+    ResizeObserver: FakeResizeObserver,
     innerWidth: 430,
     innerHeight: 932,
     requestAnimationFrame(callback) { callback(); },
     requestIdleCallback() { return 0; },
-    setTimeout() { timerId += 1; return timerId; },
-    clearTimeout() {}
+    setTimeout: setTimer,
+    clearTimeout: clearTimer
   };
+  if (options.canMoveResult !== undefined) engine.canMove = () => options.canMoveResult;
   window.window = window;
   const context = {
     window,
@@ -289,8 +335,8 @@ function createHarness(options = {}) {
       setItem(key, value) { storage.set(key, String(value)); }
     },
     Image: class {},
-    setTimeout: window.setTimeout,
-    clearTimeout: window.clearTimeout,
+    setTimeout: setTimer,
+    clearTimeout: clearTimer,
     setInterval() { timerId += 1; return timerId; },
     clearInterval() {},
     console
@@ -304,7 +350,15 @@ function createHarness(options = {}) {
     status,
     chooseCalls,
     randomValues,
+    advance,
     press(key) { return document.dispatchKey(key); },
+    resizeCells(width) {
+      board.clientWidth = width * 5;
+      this.cells().forEach((cell) => { cell.offsetWidth = width; });
+      resizeObservers.forEach((observer) => {
+        if (observer.targets.has(board)) observer.callback([{ target: board, contentRect: { width: board.clientWidth } }]);
+      });
+    },
     cells() { return board.children.filter((child) => child.classList.contains("merge-cell")); },
     occupiedCells() { return this.cells().filter((cell) => cell.dataset.value); },
     effects() { return board.children.filter((child) => child.classList.contains("board-effect")); }
@@ -315,18 +369,20 @@ test("loads the Love 2048 engine before VFX and the shared game script", () => {
   const stylesheet = html.match(/<link\s+rel="stylesheet"\s+href="(assets\/love-2048\.css\?v=[^"]+)"/);
   const scripts = [...html.matchAll(/<script\s+src="([^"]+)"/g)].map((match) => match[1]);
   const engineIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-engine.js?v="));
+  const storiesIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-stories.js?v="));
   const vfxIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-vfx.js?v="));
   const gamesIndex = scripts.findIndex((source) => source.startsWith("assets/games.js?v="));
 
   assert.ok(engineIndex >= 0, "Love 2048 engine script must be present");
-  assert.ok(engineIndex < vfxIndex, "engine must load before VFX");
+  assert.ok(engineIndex < storiesIndex, "engine must load before the story catalog");
+  assert.ok(storiesIndex < vfxIndex, "story catalog must load before VFX");
   assert.ok(vfxIndex < gamesIndex, "VFX must load before games.js");
 
-  const versions = [scripts[engineIndex], scripts[vfxIndex], scripts[gamesIndex]]
+  const versions = [scripts[engineIndex], scripts[storiesIndex], scripts[vfxIndex], scripts[gamesIndex]]
     .map((source) => new URLSearchParams(source.split("?")[1]).get("v"));
   const stylesheetVersion = new URLSearchParams(stylesheet[1].split("?")[1]).get("v");
   assert.ok(versions[0], "Love 2048 scripts must use a cache version");
-  assert.deepEqual(versions, [versions[0], versions[0], versions[0]]);
+  assert.deepEqual(versions, [versions[0], versions[0], versions[0], versions[0]]);
   assert.equal(stylesheetVersion, versions[0], "Love 2048 CSS and scripts must share one cache version");
 });
 
@@ -347,20 +403,48 @@ test("uses a compact nineteen-stage relationship arc ending at 524288", () => {
   assert.match(gamesSource, /524288: 4194304/);
 });
 
-test("scales long numbers and relationship labels around the heart center", () => {
-  assert.match(gamesSource, /function numberScaleForDigits\(digits\)/);
-  assert.match(gamesSource, /function labelScaleForLength\(length\)/);
+test("optically centers long numbers and fits relationship labels to the heart", () => {
+  assert.match(gamesSource, /function measureTypography\(text, cellWidth, kind\)/);
+  assert.match(gamesSource, /actualBoundingBoxLeft/);
+  assert.match(gamesSource, /actualBoundingBoxRight/);
   assert.match(gamesSource, /item\.dataset\.labelLength = String\(labelLength\)/);
-  assert.match(gamesSource, /setProperty\("--number-scale", numberScaleForDigits\(digits\)\)/);
-  assert.match(gamesSource, /setProperty\("--label-scale", labelScaleForLength\(labelLength\)\)/);
+  assert.match(gamesSource, /setProperty\("--number-size", `\$\{numberMetrics\.size\}px`\)/);
+  assert.match(gamesSource, /setProperty\("--number-optical-x", `\$\{numberMetrics\.opticalX\}px`\)/);
+  assert.match(gamesSource, /setProperty\("--label-size", `\$\{labelMetrics\.size\}px`\)/);
   assert.match(loveCss, /\.board-love-2048 :is\(\.merge-cell, \.love-motion-ghost\) \.tile-number \{/);
   assert.match(loveCss, /\.board-love-2048 :is\(\.merge-cell, \.love-motion-ghost\) \.tile-label \{/);
-  assert.match(loveCss, /transform: translate\(-50%, -50%\) scale\(var\(--number-scale, 1\)\)/);
-  assert.match(loveCss, /transform: translateX\(-50%\) scale\(var\(--label-scale, 1\)\)/);
+  assert.match(loveCss, /font-size: var\(--number-size, 24px\)/);
+  assert.match(loveCss, /transform: translateX\(var\(--number-optical-x, 0\)\)/);
+  assert.match(loveCss, /font-size: var\(--label-size, 8px\)/);
+  assert.equal(loveCss.includes("--number-scale"), false);
+  assert.equal(loveCss.includes("--label-scale"), false);
   assert.equal(loveCss.includes('[data-digits="4"] .tile-number'), false);
   const labelRule = loveCss.match(/\.board-love-2048 :is\(\.merge-cell, \.love-motion-ghost\) \.tile-label \{([\s\S]*?)\n\}/);
   assert.ok(labelRule);
   assert.equal(labelRule[1].includes("text-overflow: ellipsis"), false);
+});
+
+test("reveals concrete foreshadow stories and chains a higher-stage cinematic when the maximum is chosen", () => {
+  assert.match(gamesSource, /stories\.pickPositive\(positiveBandFor\(highestBefore\), Math\.random\)/);
+  assert.match(gamesSource, /function playForeshadowSequence\(result, stageEvent\)/);
+  assert.match(gamesSource, /resolution\?\.targetWasHighest/);
+  assert.match(gamesSource, /stageEvent\.continuation \? "关系续章"/);
+  assert.match(gamesSource, /function playTargetSelection\(result\)/);
+  assert.match(gamesSource, /bufferedSwipeDirection = direction/);
+  assert.match(loveCss, /\.foreshadow-letter/);
+  assert.match(loveCss, /\.is-foreshadow-chosen/);
+  assert.equal(gamesSource.includes("缘分"), false);
+});
+
+test("renders one fixed knot with hidden merge lifetime and paired conflict cinematics", () => {
+  assert.match(gamesSource, /engine\.safeConflictIndices\(tiles, size, profile\.remaining\)/);
+  assert.match(gamesSource, /stories\.pickConflict\(profile\.severity, Math\.random\)/);
+  assert.match(gamesSource, /function playConflictEntry\(conflict\)/);
+  assert.match(gamesSource, /function playConflictResolution\(conflict, stageEvent\)/);
+  assert.match(gamesSource, /class="knot-emblem" data-remaining=/);
+  assert.match(loveCss, /\.knot-loops/);
+  assert.equal(gamesSource.includes("矛盾"), false);
+  assert.equal(gamesSource.includes("conflict-crack-count"), false);
 });
 
 test("initializes 25 stable cells and blocked input adds only a normal tile", () => {
@@ -403,29 +487,30 @@ test("a randomly spawned four does not consume the first merge-to-four cinematic
   assert.match(cinematic.innerHTML, /首次解锁 · 记住/);
 });
 
-test("fate and conflict decisions replace the normal spawn and render real DOM state", () => {
+test("foreshadow and knot decisions replace the normal spawn with their full visual state", () => {
   const cases = [
     {
       kind: "fate",
       state: { fatePhase: "awaiting-second" },
-      special: "fate",
-      className: "is-fate",
-      label: "缘分",
-      status: /两枚缘分.*最高阶段.*进一阶/
+      special: "foreshadow",
+      className: "is-foreshadow",
+      label: "伏笔",
+      status: /未知好事.*伏笔/
     },
     {
       kind: "conflict",
-      state: { eventCooldown: 12 },
-      special: "conflict",
-      className: "is-conflict",
-      label: "矛盾",
-      status: /还需 2 次普通合并.*化解/
+      state: { eventCooldown: 10 },
+      profile: { severity: "minor", remaining: 2, entryMs: 900, idleMs: 1800, resolveMs: 800 },
+      special: "knot",
+      className: "is-knot",
+      label: "心结",
+      status: /心结/
     }
   ];
 
   for (const scenario of cases) {
     const harness = createHarness({
-      chooseResults: [(state) => ({ kind: scenario.kind, state: { ...state, ...scenario.state } })]
+      chooseResults: [(state) => ({ kind: scenario.kind, profile: scenario.profile, state: { ...state, ...scenario.state } })]
     });
 
     harness.press("ArrowLeft");
@@ -441,30 +526,83 @@ test("fate and conflict decisions replace the normal spawn and render real DOM s
 
     if (scenario.kind === "fate") {
       const effect = harness.effects().find((item) => item.classList.contains("effect-love-special-spawn"));
-      assert.ok(effect, "fate spawn effect must be appended to the board");
+      assert.ok(effect, "foreshadow spawn effect must be appended to the board");
       assert.equal(effect.parentElement, harness.board);
       assert.equal(effect.getAttribute("aria-hidden"), "true");
+      assert.match(special.innerHTML, /class="foreshadow-letter"/);
     } else {
-      assert.match(special.innerHTML, /data-cracks="2">2<\/em>/);
-      const effect = harness.effects().find((item) => item.classList.contains("effect-love-conflict"));
-      assert.ok(effect, "conflict effect must be appended to the board");
+      assert.match(special.innerHTML, /class="knot-emblem" data-remaining="2"/);
+      assert.equal(special.innerHTML.includes("conflict-crack-count"), false);
+      const effect = harness.effects().find((item) => item.classList.contains("effect-love-knot-arrive"));
+      assert.ok(effect, "knot arrival effect must be appended to the board");
       assert.equal(effect.parentElement, harness.board);
       assert.equal(effect.getAttribute("aria-hidden"), "true");
 
+      harness.advance(scenario.profile.entryMs);
       harness.press("ArrowUp");
       harness.press("ArrowUp");
       harness.press("ArrowLeft");
-      const repairing = harness.cells().find((cell) => cell.dataset.special === "conflict");
-      assert.match(repairing.innerHTML, /data-cracks="1">1<\/em>/);
-      assert.match(harness.status.textContent, /还需 1 次普通合并.*化解/);
+      const repairing = harness.cells().find((cell) => cell.dataset.special === "knot");
+      assert.equal(repairing.dataset.index, special.dataset.index, "the knot must remain anchored to one cell");
+      assert.match(repairing.innerHTML, /data-remaining="1"/);
+      assert.match(harness.status.textContent, /心结/);
 
       harness.press("ArrowUp");
       harness.press("ArrowLeft");
-      assert.equal(harness.cells().some((cell) => cell.dataset.special === "conflict"), false);
+      assert.equal(harness.cells().some((cell) => cell.dataset.special === "knot"), false);
       assert.equal(harness.status.textContent, "滑动合并相同爱心，推进下一段关系");
       assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-reconcile")));
     }
   }
+});
+
+test("buffers keyboard moves until a special cinematic finishes", () => {
+  const harness = createHarness({
+    chooseResults: [(state) => ({
+      kind: "conflict",
+      profile: { severity: "minor", remaining: 2, entryMs: 900, idleMs: 1800, resolveMs: 800 },
+      state: { ...state, eventCooldown: 10 }
+    })]
+  });
+
+  harness.press("ArrowLeft");
+  const before = harness.cells().map((cell) => cell.dataset.value);
+  harness.press("ArrowDown");
+
+  assert.equal(harness.chooseCalls.length, 1, "keyboard input must wait while the scene is active");
+  assert.deepEqual(harness.cells().map((cell) => cell.dataset.value), before);
+
+  harness.advance(900);
+
+  assert.equal(harness.chooseCalls.length, 2, "the latest buffered direction must run after the scene");
+  assert.notDeepEqual(harness.cells().map((cell) => cell.dataset.value), before);
+});
+
+test("recomputes tile typography when the board width changes", () => {
+  const harness = createHarness();
+  const ordinary = harness.occupiedCells()[0];
+  const before = Number.parseFloat(ordinary.style.values.get("--number-size"));
+
+  harness.resizeCells(40);
+
+  const after = Number.parseFloat(ordinary.style.values.get("--number-size"));
+  assert.ok(after < before, `number size should shrink after resize (${before} -> ${after})`);
+});
+
+test("shows game over before an unresolved knot status", () => {
+  const harness = createHarness({
+    canMoveResult: false,
+    chooseResults: [(state) => ({
+      kind: "conflict",
+      profile: { severity: "minor", remaining: 2, entryMs: 900, idleMs: 1800, resolveMs: 800 },
+      state: { ...state, eventCooldown: 10 }
+    })]
+  });
+
+  harness.press("ArrowLeft");
+
+  assert.ok(harness.cells().some((cell) => cell.dataset.special === "knot"));
+  assert.equal(harness.status.textContent, "棋盘已满，点重遇再开始一段故事");
 });
 
 test("a new natural milestone resets first-fate effort before chooseSpawn", () => {
@@ -480,7 +618,7 @@ test("a new natural milestone resets first-fate effort before chooseSpawn", () =
   assert.equal(harness.chooseCalls.length, 1);
   assert.equal(harness.chooseCalls[0].state.firstFateTurns, 0);
   assert.equal(harness.chooseCalls[0].result.kind, "normal");
-  assert.equal(harness.cells().some((cell) => cell.dataset.special === "fate"), false);
+  assert.equal(harness.cells().some((cell) => cell.dataset.special === "foreshadow"), false);
 });
 
 test("a fate sequence active at turn start preserves effort through its destiny milestone", () => {
@@ -510,7 +648,7 @@ test("a fate sequence active at turn start preserves effort through its destiny 
 
   assert.equal(harness.chooseCalls.length, 3);
   assert.equal(harness.chooseCalls[2].state.firstFateTurns, 17);
-  assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-destiny")));
-  assert.equal(harness.cells().some((cell) => cell.dataset.special === "fate"), false);
+  assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-foreshadow-open")));
+  assert.equal(harness.cells().some((cell) => cell.dataset.special === "foreshadow"), false);
   assert.equal(harness.status.textContent, "滑动合并相同爱心，推进下一段关系");
 });
