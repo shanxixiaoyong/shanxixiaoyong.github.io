@@ -978,9 +978,6 @@ if (gameHub || soloGame) {
       ordinaryResults.forEach((result) => seenStageValues.add(result.nextValue));
       if (isFirstStageReveal) {
         milestoneGraceTurns = 8;
-        if (directorState.fatePhase === "none" && !hasFateTile()) {
-          directorState = { ...directorState, firstFateTurns: 0 };
-        }
         return { kind: "milestone", ...featured };
       }
       return { kind: "repeat", ...featured };
@@ -1016,6 +1013,7 @@ if (gameHub || soloGame) {
 
     function move(dir) {
       const before = boardSignature();
+      const fateSequenceWasActive = directorState.fatePhase !== "none" || hasFateTile();
       let mergedThisMove = 0;
       let ordinaryMergeCount = 0;
       const mergedCells = [];
@@ -1087,6 +1085,9 @@ if (gameHub || soloGame) {
       }
       const reconcileEffect = repairConflictAfterMerges(ordinaryMergeCount);
       let stageEvent = registerStageResults(mergeResults);
+      if (stageEvent?.kind === "milestone" && !fateSequenceWasActive) {
+        directorState = { ...directorState, firstFateTurns: 0 };
+      }
 
       const spawn = engine.chooseSpawn(directorState, {
         highestTile: maxTile(),
@@ -1110,9 +1111,6 @@ if (gameHub || soloGame) {
           nextValue: safetyResolution.upgradedValue,
           source: "destiny"
         }]));
-      }
-      if (stageEvent?.kind === "milestone" && directorState.fatePhase === "none" && !hasFateTile()) {
-        directorState = { ...directorState, firstFateTurns: 0 };
       }
       stageEvent = prepareStageEvent(stageEvent);
 
