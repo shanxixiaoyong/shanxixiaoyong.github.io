@@ -186,7 +186,7 @@ if (gameHub || soloGame) {
   function triggerBoardEffect(name, options = {}) {
     if (!board) return;
     const isLoveBoard = board.classList.contains("board-love-2048");
-    const effectLimit = options.effectLimit || (isLoveBoard ? 10 : Number.POSITIVE_INFINITY);
+    const effectLimit = options.effectLimit || (isLoveBoard ? 4 : Number.POSITIVE_INFINITY);
     if (Number.isFinite(effectLimit)) {
       const activeEffects = [...board.querySelectorAll(":scope > .board-effect")];
       activeEffects.slice(0, Math.max(0, activeEffects.length - effectLimit + 1)).forEach((effect) => effect.remove());
@@ -485,16 +485,12 @@ if (gameHub || soloGame) {
     let seenStageValues = new Set([2]);
     let lastMergeCells = [];
     let lastSpawnCell = -1;
-    let lastMoveDir = "start";
-    let loveTempo = 1;
     let storyLog = [];
     let currentScene = null;
     let memoryOpen = false;
     let moodTimer = 0;
     let stageCelebrationTimer = 0;
     let tileMotionTimer = 0;
-    let touchFeedbackTimer = 0;
-    let touchFrame = 0;
     let bumpTimer = 0;
     let lastMotionTargets = [];
     let cellNodes = [];
@@ -890,16 +886,8 @@ if (gameHub || soloGame) {
       stageCelebrationTimer = window.setTimeout(() => item.remove(), 2680);
     }
 
-    function playRepeatMerge(cellIndex, value) {
-      triggerCellEffect("love-merge", cellIndex, size, size, { duration: 360 });
-      const target = board.querySelector('[data-index="' + cellIndex + '"]');
-      const rect = target?.getBoundingClientRect();
-      loveVfx.burst({
-        x: rect ? rect.left + rect.width / 2 : window.innerWidth / 2,
-        y: rect ? rect.top + rect.height / 2 : window.innerHeight / 2,
-        mood: value >= 2048 ? "vow" : "meet",
-        count: 6
-      });
+    function playRepeatMerge(cellIndex) {
+      triggerCellEffect("love-merge", cellIndex, size, size, { duration: 260 });
     }
 
     function playTileMotion(motions) {
@@ -938,7 +926,7 @@ if (gameHub || soloGame) {
       });
 
       board.append(layer);
-      tileMotionTimer = window.setTimeout(() => layer.remove(), 280);
+      tileMotionTimer = window.setTimeout(() => layer.remove(), 190);
     }
 
     function showBlockedBump(dir) {
@@ -947,80 +935,6 @@ if (gameHub || soloGame) {
       board.classList.remove("is-bumped");
       window.requestAnimationFrame(() => board.classList.add("is-bumped"));
       bumpTimer = window.setTimeout(() => board.classList.remove("is-bumped"), 320);
-    }
-
-    function enableLoveTouchFeedback() {
-      let active = false;
-      let startX = 0;
-      let startY = 0;
-      let pendingX = 0;
-      let pendingY = 0;
-      let touchRect = null;
-
-      function scheduleTouchFrame() {
-        if (touchFrame) return;
-        touchFrame = window.requestAnimationFrame(() => {
-          touchFrame = 0;
-          if (!active || !touchRect) return;
-          const x = Math.max(0, Math.min(100, (pendingX - touchRect.left) / touchRect.width * 100));
-          const y = Math.max(0, Math.min(100, (pendingY - touchRect.top) / touchRect.height * 100));
-          const dx = pendingX - startX;
-          const dy = pendingY - startY;
-          board.style.setProperty("--touch-x", x.toFixed(2) + "%");
-          board.style.setProperty("--touch-y", y.toFixed(2) + "%");
-          board.style.setProperty("--drag-x", Math.max(-1, Math.min(1, dx / 90)).toFixed(3));
-          board.style.setProperty("--drag-y", Math.max(-1, Math.min(1, dy / 90)).toFixed(3));
-          board.classList.toggle("is-dragging", Math.hypot(dx, dy) > 8);
-        });
-      }
-
-      const updateTouchPosition = (event) => {
-        pendingX = event.clientX;
-        pendingY = event.clientY;
-        scheduleTouchFrame();
-      };
-
-      const down = (event) => {
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        active = true;
-        startX = event.clientX;
-        startY = event.clientY;
-        touchRect = board.getBoundingClientRect();
-        updateTouchPosition(event);
-        board.classList.add("is-touching");
-      };
-
-      const moveTouch = (event) => {
-        if (!active) return;
-        updateTouchPosition(event);
-      };
-
-      const up = () => {
-        if (!active) return;
-        active = false;
-        touchRect = null;
-        window.cancelAnimationFrame(touchFrame);
-        touchFrame = 0;
-        board.classList.remove("is-touching", "is-dragging");
-        board.style.setProperty("--drag-x", "0");
-        board.style.setProperty("--drag-y", "0");
-        clearTimeout(touchFeedbackTimer);
-        board.classList.add("is-touch-release");
-        touchFeedbackTimer = window.setTimeout(() => board.classList.remove("is-touch-release"), 280);
-      };
-
-      board.addEventListener("pointerdown", down, { passive: true });
-      window.addEventListener("pointermove", moveTouch, { passive: true });
-      window.addEventListener("pointerup", up, { passive: true });
-      window.addEventListener("pointercancel", up, { passive: true });
-      return () => {
-        window.cancelAnimationFrame(touchFrame);
-        touchFrame = 0;
-        board.removeEventListener("pointerdown", down);
-        window.removeEventListener("pointermove", moveTouch);
-        window.removeEventListener("pointerup", up);
-        window.removeEventListener("pointercancel", up);
-      };
     }
 
     function move(dir) {
@@ -1058,18 +972,15 @@ if (gameHub || soloGame) {
       if (boardSignature() === before) {
         lastMergeCells = [];
         lastMotionTargets = [];
-        lastMoveDir = dir;
         lastSpawnCell = spawnOnBlockedInput && emptyIndices().length ? addFromTop() : -1;
         render();
-        if (lastSpawnCell >= 0) triggerCellEffect("love-top-spawn", lastSpawnCell, size, size, { duration: 620 });
-        else {
+        if (lastSpawnCell < 0) {
           showBlockedBump(dir);
           triggerBoardEffect("love-bump", { duration: 360 });
         }
         return;
       }
 
-      lastMoveDir = dir;
       lastMergeCells = mergedCells;
       lastMotionTargets = [...new Set(tileMotions
         .filter((motion) => motion.from !== motion.to || motion.merged)
@@ -1079,7 +990,6 @@ if (gameHub || soloGame) {
       let repeatMerge = null;
       if (mergedThisMove) {
         points += mergedThisMove;
-        loveTempo = Math.max(0.58, 1 - Math.min(5, mergedCells.length) * 0.06);
         const featured = mergeResults.sort((a, b) => b.nextValue - a.nextValue)[0];
         if (featured) {
           const isFirstStageReveal = featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue);
@@ -1093,14 +1003,11 @@ if (gameHub || soloGame) {
           }
           mergeResults.forEach((result) => seenStageValues.add(result.nextValue));
         }
-      } else {
-        loveTempo = 1;
       }
       render();
       playTileMotion(tileMotions);
       if (milestone) playMilestoneScene(milestone.scene, milestone.cellIndex);
-      else if (repeatMerge) playRepeatMerge(repeatMerge.cellIndex, repeatMerge.nextValue);
-      if (!mergedThisMove && lastSpawnCell >= 0) triggerCellEffect("love-top-spawn", lastSpawnCell, size, size, { duration: 620 });
+      else if (repeatMerge) playRepeatMerge(repeatMerge.cellIndex);
     }
 
     function toggleMemory() {
@@ -1222,8 +1129,6 @@ if (gameHub || soloGame) {
     }
 
     function render() {
-      const moveVectors = { left: ["-1", "0"], right: ["1", "0"], up: ["0", "-1"], down: ["0", "1"], start: ["0", "0"] };
-      const [moveX, moveY] = moveVectors[lastMoveDir] || moveVectors.start;
       const mergeSet = new Set(lastMergeCells);
       const motionTargetSet = new Set(lastMotionTargets);
       const top = romanceTile(maxTile());
@@ -1231,12 +1136,7 @@ if (gameHub || soloGame) {
       board.style.setProperty("--affinity-alpha", Math.min(0.62, Math.log2(Math.max(2, bestValue)) / 18).toFixed(3));
       board.style.setProperty("--meet-alpha", Math.min(0.58, storyLog.length / 12).toFixed(3));
       board.style.setProperty("--trust-alpha", Math.min(0.62, Math.log2(Math.max(2, bestValue)) / 16).toFixed(3));
-      board.style.setProperty("--tempo", loveTempo.toFixed(2));
-      board.style.setProperty("--move-x", moveX);
-      board.style.setProperty("--move-y", moveY);
-      board.dataset.move = lastMoveDir;
       board.dataset.showPhase = top.label;
-      board.classList.toggle("is-accelerated", lastMergeCells.length >= 2);
       board.classList.toggle("is-vow-ready", bestValue >= 2048);
       board.classList.remove("is-date-ready", "is-duo-mode", "is-chapter-mode");
       renderBoardCells(mergeSet, motionTargetSet);
@@ -1257,7 +1157,6 @@ if (gameHub || soloGame) {
       clearTimeout(moodTimer);
       clearTimeout(stageCelebrationTimer);
       clearTimeout(tileMotionTimer);
-      clearTimeout(touchFeedbackTimer);
       clearTimeout(bumpTimer);
       board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
       document.querySelector(".love-stage-celebration")?.remove();
@@ -1266,11 +1165,9 @@ if (gameHub || soloGame) {
       points = 0;
       bestValue = 2;
       seenStageValues = new Set([2]);
-      lastMoveDir = "start";
       lastMergeCells = [];
       lastMotionTargets = [];
       lastSpawnCell = -1;
-      loveTempo = 1;
       storyLog = [];
       currentScene = pickMilestoneScene(2);
       memoryOpen = false;
@@ -1290,19 +1187,16 @@ if (gameHub || soloGame) {
     restart();
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
-    const offTouchFeedback = enableLoveTouchFeedback();
     return () => {
       clearTimeout(moodTimer);
       clearTimeout(stageCelebrationTimer);
       clearTimeout(tileMotionTimer);
-      clearTimeout(touchFeedbackTimer);
       clearTimeout(bumpTimer);
       document.querySelector(".love-stage-celebration")?.remove();
       board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
       loveVfx.destroy();
       offKey();
       offSwipe();
-      offTouchFeedback();
     };
   }
 

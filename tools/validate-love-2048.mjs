@@ -22,6 +22,7 @@ const expectations = [
   ["HTML page description matches love theme", files.html, "爱心、情侣、桃花"],
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
+  ["HTML uses the smooth-motion cache version", files.html, "love-20260710g"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
   ["2048 keeps pure tile state", files.js, "let tiles = []"],
@@ -36,11 +37,9 @@ const expectations = [
   ["2048 initializes dedicated visual effects", files.js, "Love2048Vfx.createLoveVfx"],
   ["2048 disables continuous ambient VFX", files.js, "ambient: false"],
   ["2048 identifies its board before shared effects", files.js, 'const isLoveBoard = board.classList.contains("board-love-2048")'],
-  ["2048 caps transient board effects", files.js, "isLoveBoard ? 10"],
+  ["2048 caps transient board effects", files.js, "isLoveBoard ? 4"],
   ["2048 skips shared board pulse reflows", files.js, "if (!isLoveBoard)"],
   ["2048 plays real tile motion", files.js, "function playTileMotion"],
-  ["2048 enables touch surface feedback", files.js, "function enableLoveTouchFeedback"],
-  ["2048 throttles touch feedback", files.js, "function scheduleTouchFrame"],
   ["2048 keeps persistent board cells", files.js, "function ensureBoardCells"],
   ["2048 updates persistent board cells", files.js, "function renderBoardCells"],
   ["2048 chooses scenes only for milestones", files.js, "function pickMilestoneScene"],
@@ -137,6 +136,9 @@ const expectations = [
   ["Dedicated CSS maps home backdrop", files.loveCss, 'data-backdrop="home"'],
   ["Dedicated CSS maps starlight backdrop", files.loveCss, 'data-backdrop="starlight"'],
   ["Dedicated CSS defines repeat merge sparkle", files.loveCss, ".effect-love-merge"],
+  ["Dedicated CSS uses short tile travel", files.loveCss, "loveGhostTravel 150ms"],
+  ["Dedicated CSS uses short collision feedback", files.loveCss, "loveJewelMerge 220ms"],
+  ["Dedicated CSS disables inherited new-cell animation", files.loveCss, ".merge-cell.is-new {\n  animation: none;"],
   ["Dedicated CSS honors reduced motion", files.loveCss, "prefers-reduced-motion"],
   ["VFX module exposes Love2048Vfx", files.vfx, "window.Love2048Vfx"],
   ["VFX module creates one canvas engine", files.vfx, "function createLoveVfx"],
@@ -154,6 +156,26 @@ for (const forbidden of [
   ["2048 removes scene danmaku", files.js, "function showSceneDanmaku"],
   ["2048 removes repeat-memory rewriting", files.js, "function rememberScene"],
   ["2048 removes per-move swipe trace", files.js, "showSwipeTrace(dir)"],
+  ["2048 removes per-frame board tilt feedback", files.js, "function enableLoveTouchFeedback"],
+  ["2048 removes redundant top-spawn board effects", files.js, 'triggerCellEffect("love-top-spawn"'],
+  ["2048 removes touch feedback timer", files.js, "touchFeedbackTimer"],
+  ["2048 removes touch animation frame loop", files.js, "touchFrame"],
+  ["2048 removes obsolete animation tempo state", files.js, "loveTempo"],
+  ["2048 removes obsolete accelerated board state", files.js, "is-accelerated"],
+  ["2048 stops writing obsolete tempo variable", files.js, 'setProperty("--tempo"'],
+  ["2048 stops writing obsolete movement x variable", files.js, 'setProperty("--move-x"'],
+  ["2048 stops writing obsolete movement y variable", files.js, 'setProperty("--move-y"'],
+  ["CSS removes dynamic touch x coordinate", files.loveCss, "--touch-x"],
+  ["CSS removes dynamic touch y coordinate", files.loveCss, "--touch-y"],
+  ["CSS removes dynamic board x tilt", files.loveCss, "--drag-x"],
+  ["CSS removes dynamic board y tilt", files.loveCss, "--drag-y"],
+  ["CSS removes obsolete movement x variable", files.loveCss, "--move-x"],
+  ["CSS removes obsolete movement y variable", files.loveCss, "--move-y"],
+  ["CSS removes whole-board release filter", files.loveCss, ".is-touch-release"],
+  ["CSS removes whole-board release keyframes", files.loveCss, "loveBoardRelease"],
+  ["CSS removes per-tile large blur", files.loveCss, "filter: blur(14px)"],
+  ["CSS removes motion-heart drop shadow", files.loveCss, "filter: drop-shadow(0 5px 7px"],
+  ["CSS removes merge filter animation", files.loveCss, "filter: brightness(1.34) saturate(1.16)"],
   ["2048 removes danmaku CSS", files.loveCss, ".love-scene-danmaku"]
 ]) {
   expectations.push([forbidden[0], forbidden[1], forbidden[2], true]);
@@ -278,7 +300,7 @@ if (!milestoneSceneSource.includes("scene.line") || !milestoneSceneSource.includ
 }
 
 const repeatMergeSource = functionSource("playRepeatMerge");
-for (const forbidden of ["scene.line", "pushStory", "pickMilestoneScene", "love-cinematic-scene"]) {
+for (const forbidden of ["scene.line", "pushStory", "pickMilestoneScene", "love-cinematic-scene", "loveVfx.burst"]) {
   if (repeatMergeSource.includes(forbidden)) {
     console.error(`Love 2048 repeated merge validation failed: playRepeatMerge contains ${forbidden}`);
     process.exit(1);
@@ -288,6 +310,13 @@ for (const forbidden of ["scene.line", "pushStory", "pickMilestoneScene", "love-
 const renderSource = run2048FunctionSource("render");
 if (renderSource.includes("board.innerHTML")) {
   console.error("Love 2048 performance validation failed: render still replaces board.innerHTML");
+  process.exit(1);
+}
+
+const tileMotionSource = run2048FunctionSource("playTileMotion");
+if (!tileMotionSource.includes("window.setTimeout(() => layer.remove(), 190)")) {
+  console.error("Love 2048 motion lifetime validation failed:");
+  console.error("- playTileMotion must clean up the lightweight layer after 190ms");
   process.exit(1);
 }
 
