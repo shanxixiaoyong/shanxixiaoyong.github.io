@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>合成大西瓜 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="合成大西瓜：在暮色果房里拖动落果，让相同水果相拥长大，收获属于两个人的盛夏。">
+  <meta name="theme-color" content="#1b131d">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
+  <link rel="stylesheet" href="assets/watermelon.css?v=melon-20260710a">
+</head>
+<body class="solo-game-watermelon">
+  <main class="wm-app" id="watermelon-game" aria-label="合成大西瓜">
+    <header class="wm-topbar">
+      <a class="wm-icon wm-back" href="index.html" aria-label="返回首页" title="返回首页">‹</a>
+      <div class="wm-title">
+        <span>Love Orchard</span>
+        <h1>合成大西瓜</h1>
+      </div>
+      <div class="wm-score" aria-label="当前得分">
+        <span>心动值</span>
+        <strong id="wm-score">0</strong>
+      </div>
+      <button class="wm-icon" id="wm-sound" type="button" aria-label="关闭声音" title="声音">♪</button>
+      <button class="wm-icon" id="wm-pause" type="button" aria-label="暂停游戏" title="暂停">Ⅱ</button>
+    </header>
+
+    <section class="wm-forecast" aria-label="落果预告">
+      <div class="wm-current">
+        <span>此刻</span>
+        <canvas id="wm-current-fruit" width="96" height="96" aria-hidden="true"></canvas>
+        <strong id="wm-current-name">蓝莓</strong>
+      </div>
+      <div class="wm-next">
+        <span>接下来</span>
+        <canvas id="wm-next-one" width="64" height="64" aria-hidden="true"></canvas>
+        <canvas id="wm-next-two" width="64" height="64" aria-hidden="true"></canvas>
+      </div>
+      <div class="wm-affinity" aria-label="心意进度">
+        <span>心意</span>
+        <div id="wm-hearts" aria-hidden="true"><i></i><i></i><i></i></div>
+        <small id="wm-affinity-copy">默契相遇会点亮</small>
+      </div>
+    </section>
+
+    <section class="wm-stage" id="wm-stage" aria-label="合成大西瓜游戏区域">
+      <canvas id="wm-canvas" tabindex="0" aria-label="拖动水果后松手落下，相同水果碰撞会合成"></canvas>
+      <div class="wm-coach" id="wm-coach" aria-hidden="true">
+        <span><b>左右拖动</b><small>选好落点</small></span>
+        <i></i>
+        <span><b>松手落下</b><small>同果相拥长大</small></span>
+        <i></i>
+        <span><b>长按催熟</b><small>需要三颗心意</small></span>
+      </div>
+      <div class="wm-toast" id="wm-toast" role="status" aria-live="polite"></div>
+      <div class="wm-combo" id="wm-combo" aria-hidden="true"></div>
+
+      <div class="wm-cinematic" id="wm-cinematic" aria-live="polite" aria-atomic="true" hidden>
+        <div class="wm-cinematic-sky"></div>
+        <div class="wm-cinematic-frame"></div>
+        <div class="wm-cinematic-copy">
+          <span id="wm-cinematic-kicker">盛夏来信</span>
+          <strong id="wm-cinematic-title">西瓜熟了</strong>
+          <p id="wm-cinematic-line">晚风刚好，你们把这一整个夏天分着吃完。</p>
+        </div>
+      </div>
+
+      <div class="wm-pause-sheet" id="wm-pause-sheet" hidden>
+        <span>晚风暂停</span>
+        <strong>果房在等你回来</strong>
+        <button type="button" id="wm-resume">继续</button>
+      </div>
+
+      <div class="wm-result" id="wm-result" hidden>
+        <span>这一篮装满了</span>
+        <strong id="wm-result-score">0</strong>
+        <p id="wm-result-copy">你们已经收下了很多甜。</p>
+        <div>
+          <button type="button" id="wm-revive">再靠近一次</button>
+          <button type="button" id="wm-restart-result">重新种下</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="wm-dock">
+      <button class="wm-icon" id="wm-restart" type="button" aria-label="重新开始" title="重新开始">↻</button>
+      <p id="wm-status">拖动水果，松手落下</p>
+      <div class="wm-best"><span>Best</span><strong id="wm-best">0</strong></div>
+    </footer>
+  </main>
+
+  <script src="assets/vendor/matter-0.20.0.min.js?v=0.20.0"></script>
+  <script src="assets/watermelon-rules.js?v=melon-20260710a"></script>
+  <script src="assets/watermelon-game.js?v=melon-20260710a"></script>
+</body>
+</html>

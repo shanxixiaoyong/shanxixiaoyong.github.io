@@ -8,6 +8,9 @@
   --portal-red: #e46c57;
   --portal-gold: #e9b953;
   --portal-rose: #ed8ca4;
+  --portal-watermelon-berry: #e8627d;
+  --portal-watermelon-leaf: #72b879;
+  --portal-watermelon-melon: #f2cd62;
   --portal-gutter: 18px;
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   background: var(--portal-bg);
@@ -261,6 +264,15 @@ body.portal-page {
   filter: saturate(0.92) contrast(1.04) brightness(0.86);
 }
 
+.portal-watermelon {
+  --portal-accent: var(--portal-watermelon-berry);
+}
+
+.portal-watermelon > img {
+  object-position: center 54%;
+  filter: saturate(0.96) contrast(1.03) brightness(0.88);
+}
+
 .portal-door::before,
 .portal-door::after,
 .portal-door-tint {
@@ -288,6 +300,32 @@ body.portal-page {
   background: linear-gradient(120deg, color-mix(in srgb, var(--portal-accent) 18%, transparent), transparent 48%);
   mix-blend-mode: screen;
   opacity: 0.42;
+}
+
+.portal-watermelon::after {
+  box-shadow: none;
+  background: linear-gradient(
+    90deg,
+    var(--portal-watermelon-berry) 0 34%,
+    var(--portal-watermelon-melon) 34% 67%,
+    var(--portal-watermelon-leaf) 67% 100%
+  ) bottom / 100% 3px no-repeat;
+}
+
+.portal-watermelon .portal-door-tint {
+  background:
+    linear-gradient(125deg, color-mix(in srgb, var(--portal-watermelon-berry) 24%, transparent), transparent 46%),
+    linear-gradient(35deg, color-mix(in srgb, var(--portal-watermelon-leaf) 22%, transparent), transparent 54%),
+    linear-gradient(210deg, color-mix(in srgb, var(--portal-watermelon-melon) 18%, transparent), transparent 42%);
+}
+
+.portal-watermelon .portal-door-head b,
+.portal-watermelon .portal-door-copy i span {
+  color: var(--portal-watermelon-melon);
+}
+
+.portal-watermelon .portal-door-copy small {
+  color: var(--portal-watermelon-leaf);
 }
 
 .portal-door-head {
@@ -434,7 +472,7 @@ body.portal-page {
 .portal-progress-line i {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 25%;
+  width: 20%;
   background: var(--portal-paper);
   transform: scaleX(var(--portal-progress, 1));
   transform-origin: left;
@@ -589,12 +627,12 @@ body.portal-page {
   }
 
   .portal-academic {
-    grid-column: 1 / 6;
+    grid-column: 1 / 5;
     grid-row: 1 / 3;
   }
 
   .portal-knowledge {
-    grid-column: 6 / 10;
+    grid-column: 5 / 10;
     grid-row: 1;
   }
 
@@ -604,7 +642,12 @@ body.portal-page {
   }
 
   .portal-game {
-    grid-column: 6 / 13;
+    grid-column: 5 / 9;
+    grid-row: 2;
+  }
+
+  .portal-watermelon {
+    grid-column: 9 / 13;
     grid-row: 2;
   }
 
@@ -612,8 +655,9 @@ body.portal-page {
     font-size: 43px;
   }
 
-  .portal-game .portal-door-copy strong {
-    font-size: 35px;
+  .portal-game .portal-door-copy strong,
+  .portal-watermelon .portal-door-copy strong {
+    font-size: 32px;
   }
 
   .portal-door-copy strong {
@@ -636,6 +680,10 @@ body.portal-page {
     object-position: center 64%;
   }
 
+  .portal-watermelon > img {
+    object-position: center 56%;
+  }
+
   .portal-progress {
     display: none;
   }
@@ -650,17 +698,34 @@ body.portal-page {
 @media (min-width: 768px) and (max-width: 1080px) {
   .portal-rail {
     height: auto;
-    min-height: 680px;
+    min-height: 770px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, 330px);
+    grid-template-rows: repeat(3, 250px);
   }
 
-  .portal-academic,
-  .portal-knowledge,
-  .portal-tools,
+  .portal-academic {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+
+  .portal-knowledge {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .portal-tools {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
   .portal-game {
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .portal-watermelon {
+    grid-column: 2;
+    grid-row: 3;
   }
 
   .portal-main {

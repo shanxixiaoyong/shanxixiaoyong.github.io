@@ -1,13 +1,11 @@
 import { readFileSync, existsSync, statSync } from "node:fs";
 import {
-  SOLE_GAME_PAGE,
+  ACTIVE_GAME_PAGES,
   readGameContractSources,
-  validateSingleGameContract
+  validateTwoGameContract
 } from "./game-contract.mjs";
 
-const standaloneGamePages = [
-  SOLE_GAME_PAGE
-];
+const standaloneGamePages = [...ACTIVE_GAME_PAGES];
 
 const siteFiles = [
   "index.html",
@@ -20,11 +18,15 @@ const siteFiles = [
   "assets/portal.css",
   "assets/academic-v2.css",
   "assets/love-2048.css",
+  "assets/watermelon.css",
   "assets/world.js",
   "assets/portal.js",
   "assets/academic.js",
   "assets/games.js",
   "assets/love-2048-vfx.js",
+  "assets/vendor/matter-0.20.0.min.js",
+  "assets/watermelon-rules.js",
+  "assets/watermelon-game.js",
   "data/knowledge.json",
   "tools/sync-obsidian.mjs"
 ];
@@ -58,9 +60,11 @@ const required = [
   'href="knowledge.html"',
   'href="tools.html"',
   'href="game-2048.html"',
+  'href="game-watermelon.html"',
   "个人知识库",
   "个人小工具箱",
   "心动2048",
+  "合成大西瓜",
   "knowledge-search",
   "text-input",
   "citation-form",
@@ -77,13 +81,19 @@ const required = [
   "assets/academic.js",
   "assets/world.js",
   "assets/portal.js",
+  "assets/watermelon.css",
+  "assets/vendor/matter-0.20.0.min.js",
+  "assets/watermelon-rules.js",
+  "assets/watermelon-game.js",
   'class="portal-page"',
   'class="portal-rail"',
   'class="portal-door portal-academic"',
   'class="portal-door portal-game"',
+  'class="portal-door portal-watermelon"',
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
+  "assets/portal/watermelon-summer.webp",
   "assets/games.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
@@ -248,6 +258,7 @@ const requiredAssets = [
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
+  "assets/portal/watermelon-summer.webp",
   "assets/academic-v2.css",
   "assets/academic.js",
   "assets/world/workspace-grid.svg",
@@ -289,7 +300,7 @@ const requiredLinks = [
 
 const failures = [];
 const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
-failures.push(...validateSingleGameContract({ sources: gameContractSources, exists: existsSync }));
+failures.push(...validateTwoGameContract({ sources: gameContractSources, exists: existsSync }));
 
 const academicThemeContracts = [
   'body[data-theme="classic"]',
@@ -304,10 +315,11 @@ const academicThemeContracts = [
 ];
 
 const portalContracts = [
-  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260710a">'],
-  [indexHtml, '<script src="assets/portal.js?v=portal-20260710a" defer></script>'],
+  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260710b">'],
+  [indexHtml, '<script src="assets/portal.js?v=portal-20260710b" defer></script>'],
   [indexHtml, 'class="portal-rail"'],
   [indexHtml, 'class="portal-door portal-game"'],
+  [indexHtml, 'class="portal-door portal-watermelon"'],
   [portalCss, "scroll-snap-type: inline mandatory"],
   [portalCss, "grid-template-columns: repeat(12, minmax(0, 1fr))"],
   [portalScript, "function setActive(index)"],
@@ -318,8 +330,8 @@ for (const [source, token] of portalContracts) {
   if (!source.includes(token)) failures.push(`Personal portal missing contract: ${token}`);
 }
 
-if ((indexHtml.match(/data-portal-index="\d"/g) || []).length !== 4) {
-  failures.push("Personal portal must contain exactly four destinations");
+if ((indexHtml.match(/data-portal-index="\d"/g) || []).length !== 5) {
+  failures.push("Personal portal must contain exactly five destinations");
 }
 
 if (indexHtml.includes('href="assets/world.css"') || indexHtml.includes('class="portal-card"')) {

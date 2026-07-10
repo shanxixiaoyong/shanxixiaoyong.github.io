@@ -1,4 +1,12 @@
-export const SOLE_GAME_PAGE = "game-2048.html";
+export const HEARTBEAT_GAME_PAGE = "game-2048.html";
+export const WATERMELON_GAME_PAGE = "game-watermelon.html";
+
+export const ACTIVE_GAMES = [
+  { file: HEARTBEAT_GAME_PAGE, name: "心动2048" },
+  { file: WATERMELON_GAME_PAGE, name: "合成大西瓜" }
+];
+
+export const ACTIVE_GAME_PAGES = ACTIVE_GAMES.map(({ file }) => file);
 
 export const ACTIVE_PUBLIC_HTML_FILES = [
   "index.html",
@@ -6,7 +14,7 @@ export const ACTIVE_PUBLIC_HTML_FILES = [
   "knowledge.html",
   "tools.html",
   "games.html",
-  SOLE_GAME_PAGE
+  ...ACTIVE_GAME_PAGES
 ];
 
 export const ACTIVE_PUBLIC_JS_FILES = [
@@ -15,12 +23,16 @@ export const ACTIVE_PUBLIC_JS_FILES = [
   "assets/academic.js",
   "assets/games.js",
   "assets/love-2048-engine.js",
-  "assets/love-2048-vfx.js"
+  "assets/love-2048-vfx.js",
+  "assets/vendor/matter-0.20.0.min.js",
+  "assets/watermelon-rules.js",
+  "assets/watermelon-game.js"
 ];
 
 export const ACTIVE_PUBLIC_STYLE_FILES = [
   "assets/world.css",
-  "assets/portal.css"
+  "assets/portal.css",
+  "assets/watermelon.css"
 ];
 
 export const ACTIVE_PUBLIC_FILES = [
@@ -69,7 +81,7 @@ export function readGameContractSources(readText) {
   }));
 }
 
-export function validateSingleGameContract({ sources, exists = () => false }) {
+export function validateTwoGameContract({ sources, exists = () => false }) {
   const failures = [];
   const source = (file) => String(sources[file] || "");
 
@@ -80,7 +92,8 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
   const htmlSources = Object.fromEntries(ACTIVE_PUBLIC_HTML_FILES.map((file) => [file, stripHtmlComments(source(file))]));
   const indexHtml = htmlSources["index.html"];
   const redirectHtml = htmlSources["games.html"];
-  const gameHtml = htmlSources[SOLE_GAME_PAGE];
+  const heartbeatHtml = htmlSources[HEARTBEAT_GAME_PAGE];
+  const watermelonHtml = htmlSources[WATERMELON_GAME_PAGE];
   const gamesScript = source("assets/games.js");
   const activePublicSurface = [
     ...ACTIVE_PUBLIC_HTML_FILES.map((file) => htmlSources[file]),
@@ -89,14 +102,20 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
   ].join("\n");
 
   const homepageGameLinks = [...indexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
-  if (JSON.stringify(homepageGameLinks) !== JSON.stringify([SOLE_GAME_PAGE])) {
-    failures.push(`Homepage must expose exactly one direct game link: ${JSON.stringify(homepageGameLinks)}`);
+  if (JSON.stringify(homepageGameLinks) !== JSON.stringify(ACTIVE_GAME_PAGES)) {
+    failures.push(`Homepage must expose exactly two direct game links in public order: ${JSON.stringify(homepageGameLinks)}`);
   }
-  if (!indexHtml.includes('<a class="portal-door portal-game" href="game-2048.html"')) {
-    failures.push("Homepage game portal must point directly to game-2048.html outside comments");
-  }
-  if (!indexHtml.includes("<strong>心动2048</strong>")) {
-    failures.push("Homepage game portal must display the exact name 心动2048 outside comments");
+  const homepageAnchors = indexHtml.match(/<a\b[^>]*>[\s\S]*?<\/a>/g) || [];
+  for (const game of ACTIVE_GAMES) {
+    const portal = homepageAnchors.find((anchor) => (
+      /class="[^"]*\bportal-door\b[^"]*"/.test(anchor)
+      && anchor.includes(`href="${game.file}"`)
+    ));
+    if (!portal) {
+      failures.push(`Homepage game portal must point directly to ${game.file} outside comments`);
+    } else if (!portal.includes(`<strong>${game.name}</strong>`)) {
+      failures.push(`Homepage game portal must display the exact name ${game.name} outside comments`);
+    }
   }
 
   for (const token of [
@@ -104,7 +123,7 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
     '<link rel="canonical" href="game-2048.html">',
     '<a href="game-2048.html">心动2048</a>'
   ]) {
-    if (!redirectHtml.includes(token)) failures.push(`games.html redirect missing active markup: ${token}`);
+    if (!redirectHtml.includes(token)) failures.push(`games.html Heartbeat redirect missing active markup: ${token}`);
   }
   if (redirectHtml.includes('id="game-board"') || redirectHtml.includes("game-lobby-page")) {
     failures.push("games.html must be an immediate redirect, not a game lobby or playable page");
@@ -120,14 +139,30 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
     'id="solo-game"',
     'data-game="merge2048"'
   ]) {
-    if (!gameHtml.includes(token)) failures.push(`心动2048 page missing exact contract: ${token}`);
+    if (!heartbeatHtml.includes(token)) failures.push(`心动2048 page missing exact contract: ${token}`);
+  }
+
+  for (const token of [
+    "<title>合成大西瓜 - 刘勇 / Yong Liu</title>",
+    'content="合成大西瓜：',
+    'aria-label="合成大西瓜"',
+    "<h1>合成大西瓜</h1>",
+    'href="index.html"',
+    'class="solo-game-watermelon"',
+    'id="watermelon-game"',
+    'id="wm-canvas"'
+  ]) {
+    if (!watermelonHtml.includes(token)) failures.push(`合成大西瓜 page missing exact contract: ${token}`);
   }
 
   const registryEntries = gamesScript.match(/\bid:\s*"/g) || [];
   const runtimeFunctions = gamesScript.match(/\bfunction run\w*\s*\(/g) || [];
   if (registryEntries.length !== 1 || runtimeFunctions.length !== 1
       || !gamesScript.includes('name: "心动2048"') || !gamesScript.includes("function run2048()")) {
-    failures.push("Game registry and executable runtime must contain only 心动2048");
+    failures.push("assets/games.js registry and executable runtime must remain Heartbeat-only");
+  }
+  for (const token of [WATERMELON_GAME_PAGE, "合成大西瓜", "watermelon-game", "WatermelonRules", "Matter."]) {
+    if (gamesScript.includes(token)) failures.push(`assets/games.js must not absorb the Watermelon runtime: ${token}`);
   }
 
   for (const oldName of OLD_PUBLIC_NAMES) {
