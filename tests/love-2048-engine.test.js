@@ -5,6 +5,7 @@ const {
   TILE,
   createDirectorState,
   slideLine,
+  canMove,
   chooseSpawn,
   resolveDestiny,
   repairConflict
@@ -25,6 +26,7 @@ function spawnContext(overrides = {}) {
   return {
     highestTile: 2048,
     emptyCount: 4,
+    ordinaryMergeCount: 1,
     inputBlocked: false,
     fateActive: false,
     conflictActive: false,
@@ -56,6 +58,30 @@ test("does not roll or accrue event effort for blocked input or pre-2048 boards"
   assert.deepEqual(blocked.state, state);
   assert.equal(preFate.kind, "normal");
   assert.deepEqual(preFate.state, state);
+});
+
+test("advances fate effort and the second-fate guarantee only after ordinary merges", () => {
+  const firstFateState = { ...createDirectorState(), firstFateTurns: 9 };
+  const movementOnly = chooseSpawn(firstFateState, spawnContext({ ordinaryMergeCount: 0 }), () => 0);
+  const firstFate = chooseSpawn(movementOnly.state, spawnContext(), () => 0);
+  const secondFateState = {
+    ...createDirectorState(),
+    fatePhase: "awaiting-second",
+    secondFateTurns: 3
+  };
+  const secondMovementOnly = chooseSpawn(
+    secondFateState,
+    spawnContext({ fateActive: true, ordinaryMergeCount: 0 }),
+    () => 0
+  );
+  const secondFate = chooseSpawn(secondMovementOnly.state, spawnContext({ fateActive: true }), () => 1);
+
+  assert.equal(movementOnly.kind, "normal");
+  assert.equal(movementOnly.state.firstFateTurns, 9);
+  assert.equal(firstFate.kind, "fate");
+  assert.equal(secondMovementOnly.kind, "normal");
+  assert.equal(secondMovementOnly.state.secondFateTurns, 3);
+  assert.equal(secondFate.kind, "fate");
 });
 
 test("uses stage-scaled first-fate starts and guarantees", () => {
@@ -103,6 +129,70 @@ test("allows conflicts only when their event gates are open", () => {
   ]) {
     assert.equal(chooseSpawn(createDirectorState(), context, () => 0).kind, "normal");
   }
+});
+
+test("uses an exact 2.5 percent conflict roll", () => {
+  const context = spawnContext({ emptyCount: 5 });
+
+  assert.equal(chooseSpawn(createDirectorState(), context, () => 0.0249).kind, "conflict");
+  assert.equal(chooseSpawn(createDirectorState(), context, () => 0.025).kind, "normal");
+});
+
+test("paces first-fate and conflict events with a twelve-merge cooldown", () => {
+  const firstFate = chooseSpawn(
+    { ...createDirectorState(), firstFateTurns: 9 },
+    spawnContext(),
+    () => 0
+  );
+
+  assert.equal(firstFate.kind, "fate");
+  assert.equal(firstFate.state.eventCooldown, 12);
+
+  let state = chooseSpawn(createDirectorState(), spawnContext({ emptyCount: 5 }), () => 0).state;
+  assert.equal(state.eventCooldown, 12);
+
+  for (let turn = 0; turn < 12; turn += 1) {
+    const result = chooseSpawn(state, spawnContext({ emptyCount: 5, conflictActive: true }), () => 0);
+    assert.equal(result.kind, "normal");
+    state = result.state;
+  }
+  assert.equal(state.eventCooldown, 0);
+  assert.equal(chooseSpawn(state, spawnContext({ emptyCount: 5 }), () => 0).kind, "conflict");
+
+  const secondFate = chooseSpawn(
+    { ...createDirectorState(), fatePhase: "awaiting-second", secondFateTurns: 3, eventCooldown: 12 },
+    spawnContext({ fateActive: true }),
+    () => 1
+  );
+  assert.equal(secondFate.kind, "fate");
+});
+
+test("does not spawn first fate while conflict is active but retains accumulated effort", () => {
+  const state = { ...createDirectorState(), firstFateTurns: 9 };
+  const blockedByConflict = chooseSpawn(state, spawnContext({ conflictActive: true }), () => 0);
+  const afterConflict = chooseSpawn(blockedByConflict.state, spawnContext(), () => 0);
+
+  assert.equal(blockedByConflict.kind, "normal");
+  assert.equal(blockedByConflict.state.firstFateTurns, 9);
+  assert.equal(afterConflict.kind, "fate");
+});
+
+test("canMove recognizes only empty cells and valid ordinary or fate pairs", () => {
+  const fullBoard = Array.from({ length: 25 }, (_, index) => 2 ** (index + 1));
+  const ordinaryPair = fullBoard.slice();
+  const fatePair = fullBoard.slice();
+  const conflictPair = fullBoard.slice();
+  ordinaryPair[1] = ordinaryPair[0];
+  fatePair[0] = TILE.FATE;
+  fatePair[1] = TILE.FATE;
+  conflictPair[0] = TILE.CONFLICT_2;
+  conflictPair[1] = TILE.CONFLICT_2;
+
+  assert.equal(canMove([...fullBoard.slice(0, 24), 0], 5), true);
+  assert.equal(canMove(ordinaryPair, 5), true);
+  assert.equal(canMove(fatePair, 5), true);
+  assert.equal(canMove(fullBoard, 5), false);
+  assert.equal(canMove(conflictPair, 5), false);
 });
 
 test("resolves destiny by upgrading the highest ordinary tile and clearing four low tiles", () => {

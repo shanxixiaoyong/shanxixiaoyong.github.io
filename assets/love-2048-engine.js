@@ -15,13 +15,15 @@
     { min: 2048, start: 10, guarantee: 18 }
   ];
   const FATE_CHANCE = 0.25;
-  const CONFLICT_CHANCE = 0.1;
+  const CONFLICT_CHANCE = 0.025;
+  const EVENT_COOLDOWN_TURNS = 12;
 
   function createDirectorState() {
     return {
       firstFateTurns: 0,
       secondFateTurns: 0,
-      fatePhase: "none"
+      fatePhase: "none",
+      eventCooldown: 0
     };
   }
 
@@ -98,13 +100,20 @@
       && !context.milestoneGraceTurns;
   }
 
+  function decrementCooldown(state) {
+    if (state.eventCooldown > 0) state.eventCooldown -= 1;
+  }
+
   function chooseSpawn(state, context, random) {
     const nextState = { ...createDirectorState(), ...state };
     const nextRandom = typeof random === "function" ? random : Math.random;
     const highestTile = context.highestTile || 0;
     const inputBlocked = context.inputBlocked || context.blocked || context.changed === false;
+    const ordinaryMergeCount = Number(context.ordinaryMergeCount) || 0;
 
-    if (inputBlocked || highestTile < 2048) return { kind: "normal", state: nextState };
+    if (inputBlocked || highestTile < 2048 || ordinaryMergeCount <= 0) {
+      return { kind: "normal", state: nextState };
+    }
 
     const hasFateTile = Boolean(context.fateActive || context.hasFateTile);
     if (nextState.fatePhase !== "none" && !hasFateTile) {
@@ -113,6 +122,7 @@
     }
 
     if (nextState.fatePhase === "awaiting-second") {
+      decrementCooldown(nextState);
       nextState.secondFateTurns += 1;
       if (nextState.secondFateTurns >= 4 || nextRandom() < FATE_CHANCE) {
         nextState.fatePhase = "awaiting-resolution";
@@ -123,6 +133,17 @@
     }
 
     if (nextState.fatePhase === "awaiting-resolution" || hasFateTile) {
+      decrementCooldown(nextState);
+      return { kind: "normal", state: nextState };
+    }
+
+    if (context.conflictActive) {
+      decrementCooldown(nextState);
+      return { kind: "normal", state: nextState };
+    }
+
+    if (nextState.eventCooldown > 0) {
+      decrementCooldown(nextState);
       return { kind: "normal", state: nextState };
     }
 
@@ -133,10 +154,12 @@
       nextState.firstFateTurns = 0;
       nextState.secondFateTurns = 0;
       nextState.fatePhase = "awaiting-second";
+      nextState.eventCooldown = EVENT_COOLDOWN_TURNS;
       return { kind: "fate", state: nextState };
     }
 
     if (canSpawnConflict(context, false) && nextRandom() < CONFLICT_CHANCE) {
+      nextState.eventCooldown = EVENT_COOLDOWN_TURNS;
       return { kind: "conflict", state: nextState };
     }
     return { kind: "normal", state: nextState };
