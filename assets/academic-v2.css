@@ -2087,6 +2087,71 @@ body[data-theme="gallery"] .profile-layout {
   }
 }
 
+@media (min-width: 721px) and (max-width: 1020px) {
+  .cover,
+  .chapter,
+  .contact-inner,
+  body[data-theme="journal"] .cover,
+  body[data-theme="journal"] .chapter,
+  body[data-theme="journal"] .contact-inner,
+  body[data-theme="minimal"] .cover,
+  body[data-theme="minimal"] .chapter,
+  body[data-theme="minimal"] .contact-inner,
+  body[data-theme="gallery"] .cover,
+  body[data-theme="gallery"] .chapter,
+  body[data-theme="gallery"] .contact-inner {
+    width: calc(100% - 76px);
+  }
+
+  .mobile-progress {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    z-index: 110;
+    width: 32px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border: 1px solid var(--rule-strong);
+    border-right: 0;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    transform: translateY(-50%);
+  }
+
+  .mobile-progress a {
+    width: 23px;
+    min-height: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--quiet);
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  .mobile-progress .progress-label {
+    display: none;
+  }
+
+  .mobile-progress a.is-active {
+    min-height: 43px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .mobile-progress a.is-active .progress-label {
+    display: block;
+    max-width: 22px;
+    margin-top: 3px;
+    overflow: hidden;
+    font-size: 7px;
+    text-overflow: ellipsis;
+  }
+}
+
 @media (max-width: 720px) {
   html {
     scroll-padding-top: 72px;

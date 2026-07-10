@@ -62,6 +62,7 @@ const requiredCss = [
   'body[data-theme="lab"] .publication-list',
   'body[data-theme="gallery"] .publication-spread',
   "object-fit: contain",
+  "@media (min-width: 721px) and (max-width: 1020px)",
   "@media (max-width: 720px)",
   "@media (prefers-reduced-motion: reduce)"
 ];
