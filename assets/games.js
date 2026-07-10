@@ -478,11 +478,17 @@ if (gameHub || soloGame) {
   }
 
   function run2048() {
-    const size = 4;
+    const engine = window.Love2048Engine;
+    if (!engine) throw new Error("Love2048Engine is required for Love 2048");
+    const { TILE } = engine;
+    const size = 5;
     let tiles = [];
     let points = 0;
     let bestValue = 2;
     let seenStageValues = new Set([2]);
+    let directorState = engine.createDirectorState();
+    let miracleUsed = false;
+    let milestoneGraceTurns = 0;
     let lastMergeCells = [];
     let lastSpawnCell = -1;
     let storyLog = [];
@@ -713,6 +719,24 @@ if (gameHub || soloGame) {
       return tiles.join(",");
     }
 
+    function isOrdinaryTile(value) {
+      return typeof value === "number" && value > 0;
+    }
+
+    function hasFateTile() {
+      return tiles.some((value) => value === TILE.FATE || value === TILE.DESTINY);
+    }
+
+    function conflictCracks(value) {
+      if (value === TILE.CONFLICT_2) return 2;
+      if (value === TILE.CONFLICT_1) return 1;
+      return 0;
+    }
+
+    function hasConflictTile() {
+      return tiles.some((value) => conflictCracks(value) > 0);
+    }
+
     function addFromTop(value = Math.random() > 0.88 ? 4 : 2) {
       const empty = emptyIndices();
       if (!empty.length) return -1;
@@ -736,7 +760,7 @@ if (gameHub || soloGame) {
     }
 
     function maxTile() {
-      return tiles.reduce((best, value) => Math.max(best, value || 0), 0);
+      return tiles.reduce((best, value) => isOrdinaryTile(value) ? Math.max(best, value) : best, 0);
     }
 
     function pickMilestoneScene(nextValue) {
@@ -780,48 +804,6 @@ if (gameHub || soloGame) {
         + '<h3>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.stage) + ' · ' + escapeText(scene.title) + '</h3>'
         + '<p>' + escapeText(scene.line) + '</p>'
         + '</div>' + memories;
-    }
-
-    function slideLine(line) {
-      const values = line
-        .map((value, source) => ({ value, source }))
-        .filter((entry) => entry.value);
-      const result = [];
-      const mergedSlots = [];
-      const mergedValues = [];
-      const motions = [];
-      let merged = 0;
-      for (let i = 0; i < values.length; i += 1) {
-        const destination = result.length;
-        if (values[i + 1] && values[i].value === values[i + 1].value) {
-          const nextValue = values[i].value * 2;
-          result.push(nextValue);
-          mergedSlots.push(destination);
-          mergedValues.push(nextValue);
-          merged += nextValue;
-          motions.push(
-            { source: values[i].source, destination, value: values[i].value, merged: true },
-            { source: values[i + 1].source, destination, value: values[i + 1].value, merged: true }
-          );
-          i += 1;
-        } else {
-          result.push(values[i].value);
-          motions.push({ source: values[i].source, destination, value: values[i].value, merged: false });
-        }
-      }
-      while (result.length < size) result.push(0);
-      return { cells: result, merged, mergedSlots, mergedValues, motions };
-    }
-
-    function canMove() {
-      if (emptyIndices().length) return true;
-      for (let i = 0; i < tiles.length; i += 1) {
-        const col = i % size;
-        const row = Math.floor(i / size);
-        if (col < size - 1 && tiles[i] === tiles[i + 1]) return true;
-        if (row < size - 1 && tiles[i] === tiles[i + size]) return true;
-      }
-      return false;
     }
 
     const sceneBackdropSources = [
@@ -905,16 +887,24 @@ if (gameHub || soloGame) {
         const fromRect = geometry[motion.from];
         const toRect = geometry[motion.to];
         if (!fromRect || !toRect) return;
+        const special = specialTile(motion.value);
+        if (!special && !isOrdinaryTile(motion.value)) return;
         const ghost = document.createElement("span");
-        const tile = romanceTile(motion.value);
-        ghost.className = "love-motion-ghost" + (motion.merged ? " is-merge-ghost" : "");
-        ghost.dataset.rank = String(tile.rank);
-        ghost.style.cssText = "--tile:" + tile.color
+        const tile = isOrdinaryTile(motion.value) ? romanceTile(motion.value) : null;
+        ghost.className = [
+          "love-motion-ghost",
+          motion.merged ? "is-merge-ghost" : "",
+          special?.className || ""
+        ].filter(Boolean).join(" ");
+        ghost.dataset.rank = String(tile?.rank || 0);
+        if (special?.kind === "fate") ghost.dataset.special = "fate";
+        if (special?.kind === "conflict") ghost.dataset.special = "conflict";
+        ghost.style.cssText = (tile ? "--tile:" + tile.color
           + ";--tile-deep:" + tile.deep
           + ";--tile-accent:" + tile.accent
           + ";--tile-rim:" + tile.rim
-          + ";--rank:" + tile.rank
-          + ";--ghost-x:" + fromRect.x + "px"
+          + ";--rank:" + tile.rank + ";" : "")
+          + "--ghost-x:" + fromRect.x + "px"
           + ";--ghost-y:" + fromRect.y + "px"
           + ";--ghost-w:" + fromRect.width + "px"
           + ";--ghost-h:" + fromRect.height + "px"
@@ -937,9 +927,97 @@ if (gameHub || soloGame) {
       bumpTimer = window.setTimeout(() => board.classList.remove("is-bumped"), 320);
     }
 
+    function resolveDestinyTiles() {
+      const destinyIndex = tiles.indexOf(TILE.DESTINY);
+      if (destinyIndex < 0) return null;
+      const result = engine.resolveDestiny(tiles, { miracleUsed });
+      tiles = result.tiles;
+      miracleUsed = result.state.miracleUsed;
+      directorState = {
+        ...directorState,
+        fatePhase: "none",
+        secondFateTurns: 0
+      };
+      if (isOrdinaryTile(result.upgradedValue)) points += result.upgradedValue;
+      return {
+        ...result,
+        effectIndex: result.upgradedIndex >= 0 ? result.upgradedIndex : destinyIndex,
+        effectName: result.miracle ? "miracle" : "destiny"
+      };
+    }
+
+    function resolveFateDeadlock() {
+      if (engine.canMove(tiles, size)) return null;
+      const fateIndices = tiles
+        .map((value, index) => value === TILE.FATE ? index : -1)
+        .filter((index) => index >= 0);
+      if (!fateIndices.length) return null;
+      tiles = tiles.map((value) => value === TILE.FATE ? 0 : value);
+      tiles[fateIndices[0]] = TILE.DESTINY;
+      return resolveDestinyTiles();
+    }
+
+    function repairConflictAfterMerges(ordinaryMergeCount) {
+      if (ordinaryMergeCount <= 0) return null;
+      const beforeIndex = tiles.findIndex((value) => conflictCracks(value) > 0);
+      if (beforeIndex < 0) return null;
+      const beforeCracks = conflictCracks(tiles[beforeIndex]);
+      tiles = engine.repairConflict(tiles, ordinaryMergeCount).tiles;
+      const afterIndex = tiles.findIndex((value) => conflictCracks(value) > 0);
+      const afterCracks = afterIndex >= 0 ? conflictCracks(tiles[afterIndex]) : 0;
+      if (afterCracks === beforeCracks) return null;
+      return { index: afterIndex >= 0 ? afterIndex : beforeIndex };
+    }
+
+    function registerStageResults(results) {
+      const ordinaryResults = results.filter((result) => isOrdinaryTile(result.nextValue));
+      if (!ordinaryResults.length) return null;
+      const featured = ordinaryResults.slice().sort((left, right) => right.nextValue - left.nextValue)[0];
+      const isFirstStageReveal = featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue);
+      bestValue = Math.max(bestValue, featured.nextValue);
+      ordinaryResults.forEach((result) => seenStageValues.add(result.nextValue));
+      if (isFirstStageReveal) {
+        milestoneGraceTurns = 8;
+        if (directorState.fatePhase === "none" && !hasFateTile()) {
+          directorState = { ...directorState, firstFateTurns: 0 };
+        }
+        return { kind: "milestone", ...featured };
+      }
+      return { kind: "repeat", ...featured };
+    }
+
+    function preferStageEvent(current, next) {
+      if (!next) return current;
+      if (!current || next.kind === "milestone") return next;
+      return current;
+    }
+
+    function prepareStageEvent(event) {
+      if (!event || event.kind !== "milestone") return event;
+      const scene = pickMilestoneScene(event.nextValue);
+      pushStory(scene);
+      return { ...event, scene };
+    }
+
+    function playStageEvent(event) {
+      if (!event) return;
+      if (event.kind === "milestone") playMilestoneScene(event.scene, event.cellIndex);
+      else if (event.source === "merge") playRepeatMerge(event.cellIndex);
+    }
+
+    function playResolutionEffect(result) {
+      if (!result) return;
+      if (result.effectName === "miracle") {
+        triggerCellEffect("love-miracle", result.effectIndex, size, size, { duration: 920 });
+      } else {
+        triggerCellEffect("love-destiny", result.effectIndex, size, size, { duration: 640 });
+      }
+    }
+
     function move(dir) {
       const before = boardSignature();
       let mergedThisMove = 0;
+      let ordinaryMergeCount = 0;
       const mergedCells = [];
       const mergeResults = [];
       const tileMotions = [];
@@ -950,8 +1028,9 @@ if (gameHub || soloGame) {
           rawIndices.push(idx);
         }
         const orientedIndices = dir === "right" || dir === "down" ? rawIndices.slice().reverse() : rawIndices;
-        const shifted = slideLine(orientedIndices.map((idx) => tiles[idx]));
+        const shifted = engine.slideLine(orientedIndices.map((idx) => tiles[idx]), size);
         mergedThisMove += shifted.merged;
+        ordinaryMergeCount += shifted.ordinaryMergeCount;
         shifted.motions.forEach((motion) => {
           tileMotions.push({
             from: orientedIndices[motion.source],
@@ -965,7 +1044,7 @@ if (gameHub || soloGame) {
           const cellIndex = orientedIndices[slot];
           const nextValue = shifted.mergedValues[index];
           mergedCells.push(cellIndex);
-          mergeResults.push({ cellIndex, nextValue });
+          if (isOrdinaryTile(nextValue)) mergeResults.push({ cellIndex, nextValue, source: "merge" });
         });
       }
 
@@ -973,8 +1052,18 @@ if (gameHub || soloGame) {
         lastMergeCells = [];
         lastMotionTargets = [];
         lastSpawnCell = spawnOnBlockedInput && emptyIndices().length ? addFromTop() : -1;
+        const safetyResolution = resolveFateDeadlock();
+        const stageEvent = prepareStageEvent(safetyResolution && isOrdinaryTile(safetyResolution.upgradedValue)
+          ? registerStageResults([{
+            cellIndex: safetyResolution.upgradedIndex,
+            nextValue: safetyResolution.upgradedValue,
+            source: "destiny"
+          }])
+          : null);
         render();
-        if (lastSpawnCell < 0) {
+        playResolutionEffect(safetyResolution);
+        playStageEvent(stageEvent);
+        if (lastSpawnCell < 0 && !safetyResolution) {
           showBlockedBump(dir);
           triggerBoardEffect("love-bump", { duration: 360 });
         }
@@ -985,29 +1074,59 @@ if (gameHub || soloGame) {
       lastMotionTargets = [...new Set(tileMotions
         .filter((motion) => motion.from !== motion.to || motion.merged)
         .map((motion) => motion.to))];
-      lastSpawnCell = addFromTop();
-      let milestone = null;
-      let repeatMerge = null;
-      if (mergedThisMove) {
-        points += mergedThisMove;
-        const featured = mergeResults.sort((a, b) => b.nextValue - a.nextValue)[0];
-        if (featured) {
-          const isFirstStageReveal = featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue);
-          bestValue = Math.max(bestValue, featured.nextValue);
-          if (isFirstStageReveal) {
-            const scene = pickMilestoneScene(featured.nextValue);
-            milestone = { ...featured, scene, isFirstStageReveal };
-            pushStory(scene);
-          } else {
-            repeatMerge = featured;
-          }
-          mergeResults.forEach((result) => seenStageValues.add(result.nextValue));
-        }
+      milestoneGraceTurns = Math.max(0, milestoneGraceTurns - 1);
+      points += mergedThisMove;
+
+      const destinyResolution = resolveDestinyTiles();
+      if (destinyResolution && isOrdinaryTile(destinyResolution.upgradedValue)) {
+        mergeResults.push({
+          cellIndex: destinyResolution.upgradedIndex,
+          nextValue: destinyResolution.upgradedValue,
+          source: "destiny"
+        });
       }
+      const reconcileEffect = repairConflictAfterMerges(ordinaryMergeCount);
+      let stageEvent = registerStageResults(mergeResults);
+
+      const spawn = engine.chooseSpawn(directorState, {
+        highestTile: maxTile(),
+        emptyCount: emptyIndices().length,
+        ordinaryMergeCount,
+        inputBlocked: false,
+        fateActive: hasFateTile(),
+        conflictActive: hasConflictTile(),
+        milestoneGraceTurns
+      });
+      directorState = spawn.state;
+      const spawnValue = spawn.kind === "fate"
+        ? TILE.FATE
+        : spawn.kind === "conflict" ? TILE.CONFLICT_2 : undefined;
+      lastSpawnCell = addFromTop(spawnValue);
+
+      const safetyResolution = resolveFateDeadlock();
+      if (safetyResolution && isOrdinaryTile(safetyResolution.upgradedValue)) {
+        stageEvent = preferStageEvent(stageEvent, registerStageResults([{
+          cellIndex: safetyResolution.upgradedIndex,
+          nextValue: safetyResolution.upgradedValue,
+          source: "destiny"
+        }]));
+      }
+      if (stageEvent?.kind === "milestone" && directorState.fatePhase === "none" && !hasFateTile()) {
+        directorState = { ...directorState, firstFateTurns: 0 };
+      }
+      stageEvent = prepareStageEvent(stageEvent);
+
       render();
       playTileMotion(tileMotions);
-      if (milestone) playMilestoneScene(milestone.scene, milestone.cellIndex);
-      else if (repeatMerge) playRepeatMerge(repeatMerge.cellIndex);
+      playResolutionEffect(destinyResolution);
+      playResolutionEffect(safetyResolution);
+      if (reconcileEffect) {
+        triggerCellEffect("love-reconcile", reconcileEffect.index, size, size, { duration: 560 });
+      }
+      if (spawn.kind === "conflict" && lastSpawnCell >= 0) {
+        triggerCellEffect("love-conflict", lastSpawnCell, size, size, { duration: 620 });
+      }
+      playStageEvent(stageEvent);
     }
 
     function toggleMemory() {
@@ -1044,10 +1163,40 @@ if (gameHub || soloGame) {
         + '<small class="tile-label">' + escapeText(tile.label) + '</small>';
     }
 
+    function specialTile(value) {
+      if (value === TILE.FATE || value === TILE.DESTINY) {
+        return { kind: "fate", className: "is-fate", label: "命运碎片" };
+      }
+      const cracks = conflictCracks(value);
+      if (cracks) return { kind: "conflict", className: "is-conflict", label: "心结", cracks };
+      return null;
+    }
+
+    function specialTileMarkup(value) {
+      const special = specialTile(value);
+      if (special?.kind === "fate") {
+        return '<span class="special-heart fate-hearts" data-special="fate" aria-hidden="true"><i></i><i></i></span>'
+          + '<small class="tile-label">' + escapeText(special.label) + '</small>';
+      }
+      if (special?.kind === "conflict") {
+        return '<span class="special-heart conflict-heart" data-special="conflict" aria-hidden="true"></span>'
+          + '<em class="conflict-crack-count" data-cracks="' + special.cracks + '">' + special.cracks + '</em>'
+          + '<small class="tile-label">' + escapeText(special.label) + '</small>';
+      }
+      return "";
+    }
+
     function motionGhostMarkup(value) {
+      if (specialTile(value)) return specialTileMarkup(value);
       const heartPath = "M50 87C44 79 7 59 7 32C7 15 20 5 35 8C43 9 48 15 50 22C52 15 57 9 65 8C80 5 93 15 93 32C93 59 56 79 50 87Z";
       return '<svg class="motion-heart" viewBox="0 0 100 94" aria-hidden="true"><path d="' + heartPath + '"></path></svg>'
         + '<em class="motion-number">' + value + '</em>';
+    }
+
+    function clearTileStyle(item) {
+      for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits"]) {
+        item.style.removeProperty(property);
+      }
     }
 
     function ensureBoardCells() {
@@ -1090,32 +1239,41 @@ if (gameHub || soloGame) {
     function renderBoardCells(mergeSet, motionTargetSet) {
       ensureBoardCells().forEach((item, index) => {
         const value = tiles[index];
-        const tile = romanceTile(value);
-        const digits = value ? String(value).length : 0;
+        const ordinary = isOrdinaryTile(value);
+        const special = specialTile(value);
+        const tile = ordinary ? romanceTile(value) : null;
+        const digits = ordinary ? String(value).length : 0;
         const classes = [
           "merge-cell",
           "love-tile",
-          `v${value || 0}`,
-          value >= 128 ? "is-hot" : "",
+          ordinary ? `v${value}` : "v0",
+          ordinary && value >= 128 ? "is-hot" : "",
+          special?.className || "",
           mergeSet.has(index) ? "is-collision" : "",
           index === lastSpawnCell ? "is-new is-top-spawn" : "",
           motionTargetSet.has(index) ? "is-motion-target" : "",
-          value >= 1024 ? "is-vow" : ""
+          ordinary && value >= 1024 ? "is-vow" : ""
         ].filter(Boolean).join(" ");
 
         item.className = classes;
         item.dataset.value = value ? String(value) : "";
-        item.dataset.rank = String(tile.rank);
+        item.dataset.rank = String(tile?.rank || 0);
         item.dataset.digits = String(digits);
-        item.setAttribute("data-romance", tile.label);
+        item.setAttribute("data-romance", tile?.label || special?.label || "");
+        if (special?.kind === "fate") item.dataset.special = "fate";
+        else if (special?.kind === "conflict") item.dataset.special = "conflict";
+        else delete item.dataset.special;
 
         if (item.dataset.renderValue === String(value)) return;
         item.dataset.renderValue = String(value);
         if (!value) {
           item.replaceChildren();
-          for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits"]) {
-            item.style.removeProperty(property);
-          }
+          clearTileStyle(item);
+          return;
+        }
+        if (special) {
+          clearTileStyle(item);
+          item.innerHTML = specialTileMarkup(value);
           return;
         }
         item.style.setProperty("--tile", tile.color);
@@ -1145,7 +1303,7 @@ if (gameHub || soloGame) {
         renderedScore = points;
         setScore(points);
       }
-      setStatus(canMove() ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
+      setStatus(engine.canMove(tiles, size) ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
       const nextStoryRenderKey = [bestValue, currentScene?.title, memoryOpen, storyLog.length].join("|");
       if (scoreChanged || storyRenderKey !== nextStoryRenderKey) {
         meta.innerHTML = renderStoryCard();
@@ -1165,6 +1323,9 @@ if (gameHub || soloGame) {
       points = 0;
       bestValue = 2;
       seenStageValues = new Set([2]);
+      directorState = engine.createDirectorState();
+      miracleUsed = false;
+      milestoneGraceTurns = 0;
       lastMergeCells = [];
       lastMotionTargets = [];
       lastSpawnCell = -1;
