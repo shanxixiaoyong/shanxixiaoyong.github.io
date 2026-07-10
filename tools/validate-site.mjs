@@ -22,8 +22,10 @@ const siteFiles = [
   ...standaloneGamePages,
   "assets/world.css",
   "assets/academic-v2.css",
+  "assets/love-2048.css",
   "assets/world.js",
   "assets/games.js",
+  "assets/love-2048-vfx.js",
   "data/knowledge.json",
   "tools/sync-obsidian.mjs"
 ];
@@ -266,7 +268,13 @@ const requiredAssets = [
   "assets/game-art/orchard-suika-ui.jpg",
   "assets/game-art/lunar-jump-ui.jpg",
   "assets/game-art/canyon-tower-ui.jpg",
-  "assets/game-art/starship-cards-ui.jpg"
+  "assets/game-art/starship-cards-ui.jpg",
+  "assets/love-scenes/rain-night.webp",
+  "assets/love-scenes/cafe-evening.webp",
+  "assets/love-scenes/campus-library.webp",
+  "assets/love-scenes/city-night.webp",
+  "assets/love-scenes/warm-home.webp",
+  "assets/love-scenes/starlight-vow.webp"
 ];
 
 const distinctGameChecks = [
@@ -384,6 +392,8 @@ for (const asset of requiredAssets) {
     failures.push(`Missing required asset file: ${asset}`);
   } else if (asset.startsWith("assets/game-art/") && statSync(asset).size < 100000) {
     failures.push(`Generated game art file is unexpectedly small: ${asset}`);
+  } else if (asset.startsWith("assets/love-scenes/") && statSync(asset).size < 50000) {
+    failures.push(`Love 2048 scene art file is unexpectedly small: ${asset}`);
   }
 }
 

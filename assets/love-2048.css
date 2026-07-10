@@ -96,7 +96,7 @@ body.solo-game-2048::after {
 .love-vfx-canvas {
   position: fixed;
   inset: 0;
-  z-index: 12;
+  z-index: 82;
   display: block;
   width: 100vw;
   height: 100svh;
@@ -338,9 +338,12 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
     0 0 40px var(--love-scene-light),
     inset 0 1px 0 rgba(255, 248, 231, 0.18),
     inset 0 -16px 30px rgba(0, 0, 0, 0.4);
-  transform: perspective(900px) rotateX(calc(var(--drag-y) * -0.8deg)) rotateY(calc(var(--drag-x) * 0.8deg));
+  contain: layout paint style;
+  backface-visibility: hidden;
+  transform: translateZ(0) perspective(900px) rotateX(calc(var(--drag-y) * -0.8deg)) rotateY(calc(var(--drag-x) * 0.8deg));
   transform-origin: center;
   transition: transform 140ms ease-out, border-color 420ms ease, box-shadow 420ms ease, background 620ms ease;
+  will-change: transform;
 }
 
 .board-love-2048::before {
@@ -373,7 +376,7 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
 }
 
 .board-love-2048.is-dragging {
-  transition-duration: 40ms;
+  transition: none;
 }
 
 .board-love-2048.is-touch-release {
@@ -653,41 +656,33 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   animation-name: loveGhostConverge;
 }
 
-.love-swipe-trace {
-  position: absolute !important;
-  left: 50%;
-  top: 50%;
-  z-index: 9 !important;
-  width: 42%;
-  height: 2px;
-  pointer-events: none;
-  transform-origin: left center;
-  animation: loveSwipeTrace 400ms ease-out both;
-}
-
-.love-swipe-trace i {
+.love-motion-ghost .motion-heart {
   position: absolute;
-  inset: -1px 0;
+  left: 8%;
+  top: 5%;
   display: block;
-  background: linear-gradient(90deg, transparent, rgba(255, 248, 230, 0.82) 58%, rgba(239, 137, 160, 0.76));
-  box-shadow: 0 0 10px rgba(255, 187, 176, 0.56);
+  width: 84%;
+  height: 82%;
+  overflow: visible;
+  fill: color-mix(in srgb, var(--tile-accent) 70%, var(--tile));
+  stroke: color-mix(in srgb, var(--tile-rim) 72%, #fff);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 5px 7px color-mix(in srgb, var(--tile-deep) 54%, transparent));
 }
 
-.love-swipe-trace i::after {
-  content: "";
+.love-motion-ghost .motion-number {
   position: absolute;
-  right: -2px;
-  top: -4px;
-  width: 8px;
-  height: 8px;
-  border-top: 2px solid rgba(255, 245, 222, 0.88);
-  border-right: 2px solid rgba(255, 245, 222, 0.88);
-  transform: rotate(45deg);
+  left: 50%;
+  top: 43%;
+  color: #fff8ed;
+  font-size: clamp(14px, 4.6vw, 24px);
+  font-style: normal;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 2px 5px rgba(30, 4, 12, 0.62);
+  transform: translate(-50%, -50%);
 }
-
-.love-swipe-trace.is-left { transform: rotate(180deg); }
-.love-swipe-trace.is-up { transform: rotate(-90deg); }
-.love-swipe-trace.is-down { transform: rotate(90deg); }
 
 .love-story-card {
   position: relative;
@@ -787,216 +782,222 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   line-height: 1.42;
 }
 
-.love-scene-bloom {
-  top: 50%;
-  z-index: 13;
-  width: min(78%, 310px);
-  color: #fff8eb;
-  filter: drop-shadow(0 7px 24px rgba(0, 0, 0, 0.54));
-  animation: loveTitleBloom 680ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
-}
-
-.love-scene-bloom::before {
-  width: min(58vmin, 260px);
-  border: 1px solid rgba(240, 201, 127, 0.26);
-  background:
-    conic-gradient(from 18deg, transparent, rgba(232, 91, 127, 0.34), transparent 32%, rgba(231, 197, 115, 0.34), transparent 66%);
-  filter: blur(1px);
-  animation: loveTitleHalo 680ms ease-out both;
-}
-
-.love-scene-bloom span {
-  color: rgba(255, 224, 193, 0.82);
-  font-size: 10px;
-  font-weight: 820;
-}
-
-.love-scene-bloom strong {
-  margin-top: 5px;
-  background: linear-gradient(90deg, #fff7e9, #ffb5c5 48%, #f3d58c 80%, #fff7e9);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(23px, 7vw, 32px);
-  font-weight: 880;
-  line-height: 1.05;
-  text-shadow: none;
-}
-
 .love-cinematic-scene {
   position: fixed;
   inset: 0;
   z-index: 80;
   display: grid;
-  grid-template-rows: 1fr;
   place-items: center;
   overflow: hidden;
-  padding: 24px;
+  padding: max(26px, env(safe-area-inset-top)) 22px max(30px, env(safe-area-inset-bottom));
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(7, 5, 8, 0.82), rgba(50, 12, 25, 0.5) 52%, rgba(7, 5, 8, 0.84));
-  animation: loveCinematicScene 1080ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
+  isolation: isolate;
+  background: #09070a;
+  animation: loveCinematicScene 2680ms cubic-bezier(0.18, 0.78, 0.22, 1) both;
 }
 
 .love-cinematic-scene::before,
 .love-cinematic-scene::after {
   content: "";
   position: absolute;
-  left: 50%;
-  top: 50%;
-  border-radius: 50%;
+  inset: 0;
+  width: auto;
+  aspect-ratio: auto;
+  border-radius: 0;
   pointer-events: none;
-  transform: translate(-50%, -50%);
+  transform: none;
 }
 
 .love-cinematic-scene::before {
-  width: min(96vw, 520px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(237, 201, 126, 0.36);
-  box-shadow:
-    0 0 0 24px rgba(224, 86, 121, 0.035),
-    0 0 0 48px rgba(236, 204, 137, 0.025),
-    inset 0 0 64px rgba(227, 99, 132, 0.12);
-  animation: loveCinematicRing 1080ms ease-out both;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(4, 5, 8, 0.42) 0%, rgba(5, 4, 7, 0.08) 26%, rgba(8, 5, 8, 0.28) 62%, rgba(4, 3, 5, 0.76) 100%),
+    radial-gradient(ellipse at center, transparent 26%, rgba(2, 2, 4, 0.58) 100%);
 }
 
 .love-cinematic-scene::after {
-  width: min(132vw, 720px);
-  aspect-ratio: 1;
-  background: repeating-conic-gradient(from 12deg, transparent 0 13deg, rgba(244, 211, 142, 0.16) 14deg, transparent 15deg 28deg);
-  mix-blend-mode: screen;
-  animation: loveCinematicRays 1080ms ease-out both;
+  z-index: 4;
+  border-top: 8px solid rgba(2, 2, 3, 0.84);
+  border-bottom: 8px solid rgba(2, 2, 3, 0.84);
+  box-shadow: inset 0 0 86px rgba(0, 0, 0, 0.44);
 }
 
-.love-cinematic-scene .cinematic-veil {
+.love-cinematic-scene .cinematic-backdrop {
   position: absolute;
   inset: 0;
   z-index: 0;
-  width: auto;
+  background-color: #171116;
+  background-position: center;
+  background-size: cover;
+  filter: saturate(0.9) contrast(1.04) brightness(0.82);
+  transform: scale(1.06);
+  animation: loveCinematicBackdrop 2680ms cubic-bezier(0.18, 0.78, 0.22, 1) both;
+}
+
+.love-cinematic-scene > * {
   max-width: none;
-  background:
-    linear-gradient(108deg, transparent 0 38%, rgba(255, 231, 206, 0.13) 49%, transparent 62%),
-    linear-gradient(180deg, transparent, rgba(210, 68, 105, 0.12), transparent);
-  animation: loveCinematicVeil 1080ms ease-out both;
 }
 
-.love-cinematic-scene .cinematic-orbit {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  width: min(42vw, 180px);
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid rgba(244, 211, 145, 0.46);
-  border-radius: 50%;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(184, 51, 86, 0.08)),
-    rgba(24, 9, 16, 0.56);
-  box-shadow:
-    0 0 0 7px rgba(234, 190, 111, 0.06),
-    0 18px 52px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0 48px rgba(222, 78, 116, 0.24);
-  transform: translateY(-46px);
-  animation: loveCinematicOrbit 1080ms cubic-bezier(0.16, 0.9, 0.22, 1) both;
+.love-cinematic-scene[data-backdrop="rain"] .cinematic-backdrop {
+  background-image: url("love-scenes/rain-night.webp");
+  background-position: 52% center;
 }
 
-.love-cinematic-scene .cinematic-orbit::before,
-.love-cinematic-scene .cinematic-orbit::after {
-  content: "";
+.love-cinematic-scene[data-backdrop="cafe"] .cinematic-backdrop {
+  background-image: url("love-scenes/cafe-evening.webp");
+  background-position: center 48%;
+}
+
+.love-cinematic-scene[data-backdrop="campus"] .cinematic-backdrop {
+  background-image: url("love-scenes/campus-library.webp");
+  background-position: center 52%;
+}
+
+.love-cinematic-scene[data-backdrop="city"] .cinematic-backdrop {
+  background-image: url("love-scenes/city-night.webp");
+  background-position: 48% center;
+}
+
+.love-cinematic-scene[data-backdrop="home"] .cinematic-backdrop {
+  background-image: url("love-scenes/warm-home.webp");
+  background-position: center 46%;
+}
+
+.love-cinematic-scene[data-backdrop="starlight"] .cinematic-backdrop {
+  background-image: url("love-scenes/starlight-vow.webp");
+  background-position: center 42%;
+}
+
+.love-cinematic-scene .cinematic-atmosphere {
   position: absolute;
-  inset: -18px;
-  border: 1px solid rgba(237, 199, 124, 0.22);
-  border-radius: 50%;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  opacity: 0.74;
+  mix-blend-mode: screen;
 }
 
-.love-cinematic-scene .cinematic-orbit::after {
-  inset: -34px;
-  border-style: dashed;
-  animation: loveOrbitSpin 3200ms linear infinite;
-}
-
-.love-cinematic-scene .cinematic-orbit i {
+.love-cinematic-scene .cinematic-atmosphere i {
+  position: absolute;
+  left: 18%;
+  top: -18%;
+  width: 1px;
+  height: 136%;
+  background: linear-gradient(180deg, transparent, rgba(255, 238, 210, 0.3), transparent 66%);
+  opacity: 0.54;
+  transform: rotate(17deg);
+  animation: loveCinematicAtmosphere 2280ms ease-out both;
   margin: 0;
-  font-size: clamp(44px, 15vw, 70px);
-  font-style: normal;
-  line-height: 1;
-  filter: drop-shadow(0 0 16px rgba(255, 207, 151, 0.46));
+  font-size: 0;
+  text-shadow: none;
+}
+
+.love-cinematic-scene .cinematic-atmosphere i:nth-child(1) { left: 18%; animation-delay: 80ms; }
+.love-cinematic-scene .cinematic-atmosphere i:nth-child(2) { left: 46%; animation-delay: 180ms; }
+.love-cinematic-scene .cinematic-atmosphere i:nth-child(3) { left: 74%; animation-delay: 310ms; }
+
+.love-cinematic-scene[data-backdrop="rain"] .cinematic-atmosphere {
+  background: repeating-linear-gradient(108deg, transparent 0 20px, rgba(190, 221, 249, 0.12) 21px, transparent 22px 42px);
+  animation: loveCinematicRain 900ms linear infinite;
+}
+
+.love-cinematic-scene[data-backdrop="rain"] .cinematic-atmosphere i {
+  background: linear-gradient(180deg, transparent, rgba(199, 226, 250, 0.56), transparent);
+}
+
+.love-cinematic-scene[data-backdrop="cafe"] .cinematic-atmosphere,
+.love-cinematic-scene[data-backdrop="home"] .cinematic-atmosphere {
+  background: linear-gradient(106deg, transparent 22%, rgba(255, 197, 119, 0.14) 49%, transparent 68%);
+}
+
+.love-cinematic-scene[data-backdrop="starlight"] .cinematic-atmosphere {
+  background-image: radial-gradient(circle, rgba(255, 239, 185, 0.72) 0 1px, transparent 1.5px);
+  background-size: 47px 53px;
+  animation: loveCinematicStars 2680ms ease-out both;
 }
 
 .love-cinematic-scene .cinematic-copy {
-  position: absolute;
-  left: 50%;
-  top: calc(50% + 84px);
-  z-index: 3;
-  width: min(84vw, 380px);
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(calc(100vw - 44px), 382px);
+  gap: 12px;
+  justify-items: center;
+  padding: 28px 12px 30px;
   text-align: center;
-  transform: translateX(-50%);
+  text-wrap: balance;
+  animation: loveCinematicCopy 2680ms cubic-bezier(0.16, 0.88, 0.22, 1) both;
+}
+
+.love-cinematic-scene .cinematic-copy::before,
+.love-cinematic-scene .cinematic-copy::after {
+  content: "";
+  width: min(72%, 230px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 231, 185, 0.76), transparent);
 }
 
 .love-cinematic-scene .cinematic-copy span {
   display: block;
-  color: rgba(244, 211, 152, 0.78);
-  font-size: 11px;
-  font-weight: 820;
+  color: rgba(255, 232, 191, 0.92);
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: 0;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.7);
 }
 
 .love-cinematic-scene .cinematic-copy strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #fff8ec;
+  font-family: ui-serif, "Songti SC", "STSong", serif;
+  font-size: clamp(30px, 8.6vw, 42px);
+  font-weight: 760;
+  line-height: 1.12;
+  text-shadow: 0 4px 22px rgba(0, 0, 0, 0.82), 0 0 30px rgba(255, 190, 165, 0.22);
+}
+
+.love-cinematic-scene .cinematic-copy strong i {
+  color: #ffd9b0;
+  font-size: 0.72em;
+  font-style: normal;
+  filter: drop-shadow(0 0 8px rgba(255, 203, 142, 0.48));
+}
+
+.love-cinematic-scene .cinematic-copy p {
+  max-width: 354px;
+  margin: 0;
+  color: rgba(255, 248, 238, 0.94);
+  font-family: ui-serif, "Songti SC", "STSong", serif;
+  font-size: clamp(15px, 4.15vw, 18px);
+  font-weight: 520;
+  line-height: 1.78;
+  text-align: center;
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.92), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.love-cinematic-scene .cinematic-timeline {
+  position: absolute;
+  left: 50%;
+  bottom: max(26px, env(safe-area-inset-bottom));
+  z-index: 5;
+  width: min(calc(100vw - 72px), 320px);
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateX(-50%);
+}
+
+.love-cinematic-scene .cinematic-timeline::before {
+  content: "";
   display: block;
-  margin-top: 8px;
-  background: linear-gradient(90deg, #fff6e8, #ffadbf 46%, #f0d484 78%, #fff6e8);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(34px, 10vw, 48px);
-  font-weight: 900;
-  line-height: 1.02;
-}
-
-.love-cinematic-scene[data-mood="rain"] {
-  background:
-    repeating-linear-gradient(108deg, transparent 0 17px, rgba(182, 215, 246, 0.08) 18px, transparent 19px 34px),
-    linear-gradient(180deg, rgba(5, 10, 19, 0.86), rgba(24, 44, 70, 0.52), rgba(7, 9, 16, 0.88));
-}
-
-.love-cinematic-scene[data-mood="starlight"],
-.love-cinematic-scene[data-mood="vow"] {
-  background:
-    linear-gradient(118deg, transparent 0 42%, rgba(239, 215, 148, 0.11) 50%, transparent 59%),
-    linear-gradient(180deg, rgba(7, 6, 17, 0.88), rgba(39, 28, 65, 0.54), rgba(7, 6, 12, 0.88));
-}
-
-.love-scene-danmaku-layer {
-  z-index: 78;
-  pointer-events: none;
-}
-
-.love-scene-danmaku {
-  border: 1px solid rgba(239, 211, 176, 0.22);
-  border-radius: 6px;
-  padding: 7px 12px 8px;
-  color: rgba(255, 247, 236, 0.92);
-  background:
-    linear-gradient(90deg, rgba(222, 77, 112, 0.18), rgba(232, 196, 122, 0.08)),
-    rgba(9, 7, 9, 0.58);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  font-size: clamp(12px, 3.2vw, 14px);
-  font-weight: 720;
-  backdrop-filter: blur(12px);
-}
-
-.love-scene-danmaku::before {
-  width: 5px;
-  margin-right: 8px;
-  background: linear-gradient(135deg, #f5d98b, #df5678);
-  box-shadow: 0 0 10px rgba(235, 159, 121, 0.56);
-}
-
-.love-scene-danmaku.is-milestone {
-  border-color: rgba(239, 202, 126, 0.38);
-  background:
-    linear-gradient(90deg, rgba(229, 185, 91, 0.18), rgba(213, 72, 111, 0.16)),
-    rgba(9, 7, 9, 0.62);
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ef849e, #ffe1a4);
+  transform-origin: left;
+  animation: loveCinematicTimeline 2500ms 90ms linear both;
 }
 
 .board-love-2048 .board-effect {
@@ -1019,6 +1020,17 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
 .board-love-2048 .effect-love-petal { animation: loveEffectPetal 840ms ease-out both; }
 .board-love-2048 .effect-love-starlight { animation: loveEffectStar 980ms ease-out both; }
 .board-love-2048 .effect-love-top-spawn { animation: loveEffectDrop 580ms ease-out both; }
+
+.board-love-2048 .effect-love-merge {
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(255, 226, 181, 0.72);
+  border-radius: 50%;
+  background:
+    conic-gradient(from 18deg, transparent 0 14%, rgba(255, 240, 205, 0.86) 15% 17%, transparent 18% 48%, rgba(239, 110, 142, 0.72) 49% 52%, transparent 53%);
+  box-shadow: 0 0 16px rgba(255, 181, 160, 0.52), inset 0 0 10px rgba(255, 246, 222, 0.22);
+  animation: loveEffectMerge 340ms cubic-bezier(0.2, 0.82, 0.22, 1) both;
+}
 
 .board-love-2048 .effect-love-bump {
   width: 64px;
@@ -1069,12 +1081,6 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   100% { opacity: 0; transform: scale(1.8); }
 }
 
-@keyframes loveSwipeTrace {
-  0% { opacity: 0; clip-path: inset(0 100% 0 0); }
-  28% { opacity: 0.92; clip-path: inset(0 0 0 0); }
-  100% { opacity: 0; clip-path: inset(0 0 0 70%); }
-}
-
 @keyframes loveBoardRelease {
   0% { filter: brightness(1.06); }
   100% { filter: brightness(1); }
@@ -1085,52 +1091,47 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
 @keyframes loveBoardBumpUp { 0%, 100% { translate: 0; } 42% { translate: 0 -4px; } }
 @keyframes loveBoardBumpDown { 0%, 100% { translate: 0; } 42% { translate: 0 4px; } }
 
-@keyframes loveTitleBloom {
-  0% { opacity: 0; transform: translate(-50%, -45%) scale(0.8); filter: blur(5px); }
-  18% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
-  66% { opacity: 0.96; transform: translate(-50%, -51%) scale(1.01); filter: blur(0); }
-  100% { opacity: 0; transform: translate(-50%, -57%) scale(1.08); filter: blur(4px); }
-}
-
-@keyframes loveTitleHalo {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-12deg); }
-  32% { opacity: 0.88; transform: translate(-50%, -50%) scale(0.9) rotate(4deg); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4) rotate(36deg); }
-}
-
 @keyframes loveCinematicScene {
-  0% { opacity: 0; backdrop-filter: blur(0); }
-  12% { opacity: 1; backdrop-filter: blur(2px); }
-  74% { opacity: 1; backdrop-filter: blur(1.5px); }
-  100% { opacity: 0; backdrop-filter: blur(0); }
+  0% { opacity: 0; }
+  8%, 84% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
-@keyframes loveCinematicRing {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.26); }
-  28% { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.32); }
+@keyframes loveCinematicBackdrop {
+  0% { opacity: 0; transform: scale(1.1) translate3d(0, 1.2%, 0); }
+  12% { opacity: 1; }
+  84% { opacity: 1; }
+  100% { opacity: 0.7; transform: scale(1.035) translate3d(0, -0.8%, 0); }
 }
 
-@keyframes loveCinematicRays {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.72) rotate(-16deg); }
-  30% { opacity: 0.76; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.18) rotate(38deg); }
+@keyframes loveCinematicCopy {
+  0% { opacity: 0; transform: translate3d(0, 18px, 0); filter: blur(7px); }
+  15% { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
+  78% { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
+  100% { opacity: 0; transform: translate3d(0, -12px, 0); filter: blur(4px); }
 }
 
-@keyframes loveCinematicVeil {
-  0% { opacity: 0; transform: translateX(-12%); }
-  30% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(12%); }
+@keyframes loveCinematicAtmosphere {
+  0% { opacity: 0; transform: translate3d(-26px, -6%, 0) rotate(17deg); }
+  28% { opacity: 0.72; }
+  100% { opacity: 0; transform: translate3d(34px, 8%, 0) rotate(17deg); }
 }
 
-@keyframes loveCinematicOrbit {
-  0% { opacity: 0; transform: translateY(-28px) scale(0.5) rotate(-8deg); }
-  28% { opacity: 1; transform: translateY(-46px) scale(1.05) rotate(2deg); }
-  72% { opacity: 1; transform: translateY(-46px) scale(1) rotate(0); }
-  100% { opacity: 0; transform: translateY(-58px) scale(1.08); }
+@keyframes loveCinematicRain {
+  from { background-position: 0 -48px; }
+  to { background-position: 42px 48px; }
 }
 
-@keyframes loveOrbitSpin { to { transform: rotate(360deg); } }
+@keyframes loveCinematicStars {
+  0% { opacity: 0; background-position: 0 14px; }
+  24%, 78% { opacity: 0.74; }
+  100% { opacity: 0; background-position: 16px -18px; }
+}
+
+@keyframes loveCinematicTimeline {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 @keyframes loveEffectRing {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.22) rotate(-12deg); }
@@ -1154,6 +1155,12 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   0% { opacity: 0; transform: translate(-50%, -74%) scale(0.24); }
   42% { opacity: 0.92; }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes loveEffectMerge {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.38) rotate(-18deg); }
+  42% { opacity: 1; transform: translate(-50%, -50%) scale(0.92) rotate(4deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.34) rotate(22deg); }
 }
 
 @keyframes loveEffectBump {
@@ -1188,18 +1195,37 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   .board-love-2048::after,
   .board-love-2048 *,
   .love-cinematic-scene,
-  .love-cinematic-scene *,
-  .love-scene-bloom,
-  .love-scene-danmaku {
+  .love-cinematic-scene * {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;
   }
 
+  .love-cinematic-scene {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  .love-cinematic-scene .cinematic-backdrop {
+    opacity: 1 !important;
+    transform: scale(1.035);
+    animation: none !important;
+  }
+
+  .love-cinematic-scene .cinematic-copy {
+    opacity: 1 !important;
+    filter: none;
+    transform: none;
+    animation: none !important;
+  }
+
+  .love-cinematic-scene .cinematic-timeline::before {
+    transform: scaleX(1);
+    animation: none !important;
+  }
+
   .love-motion-layer,
-  .love-swipe-trace,
-  .love-cinematic-scene::before,
-  .love-cinematic-scene::after {
+  .love-cinematic-scene .cinematic-atmosphere {
     display: none !important;
   }
 }

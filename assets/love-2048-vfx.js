@@ -20,6 +20,7 @@
     activeEngine?.destroy();
 
     const root = options.root || document.body;
+    const ambientEnabled = options.ambient === true;
     const reducedQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const canvas = document.createElement("canvas");
     canvas.className = "love-vfx-canvas";
@@ -50,7 +51,7 @@
     function resize() {
       width = Math.max(1, window.innerWidth);
       height = Math.max(1, window.innerHeight);
-      dpr = Math.min(1.5, window.devicePixelRatio || 1);
+      dpr = Math.min(1.25, window.devicePixelRatio || 1);
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       canvas.style.width = `${width}px`;
@@ -75,7 +76,7 @@
     }
 
     function addParticle(config = {}) {
-      if (particles.length >= 72) return;
+      if (particles.length >= 48) return;
       const kind = config.kind || particleKind(config.mood || mood);
       const life = config.life || (kind === "rain" ? 1150 : 1700 + Math.random() * 1500);
       particles.push({
@@ -99,8 +100,8 @@
 
     function spawnAmbient() {
       window.clearTimeout(ambientTimer);
-      if (destroyed || reducedQuery.matches || document.hidden) return;
-      const available = Math.max(0, 22 - particles.length);
+      if (!ambientEnabled || destroyed || reducedQuery.matches || document.hidden) return;
+      const available = Math.max(0, 16 - particles.length);
       const count = Math.min(3, available);
       for (let i = 0; i < count; i += 1) {
         const kind = particleKind();
@@ -211,12 +212,12 @@
       mood = moodPalettes[nextMood] ? nextMood : "meet";
       root.dataset.loveMood = mood;
       particles = particles.slice(-10);
-      spawnAmbient();
+      if (ambientEnabled) spawnAmbient();
     }
 
     function burst(config = {}) {
       const effectMood = config.mood || config.tone || mood;
-      const count = reducedQuery.matches ? 5 : Math.min(30, config.count || 18);
+      const count = reducedQuery.matches ? 4 : Math.min(18, config.count || 12);
       const x = Number.isFinite(config.x) ? config.x : width / 2;
       const y = Number.isFinite(config.y) ? config.y : height / 2;
       for (let i = 0; i < count; i += 1) {
@@ -240,7 +241,7 @@
 
     function celebrate(config = {}) {
       const effectMood = config.mood || config.tone || mood;
-      const count = reducedQuery.matches ? 10 : 52;
+      const count = reducedQuery.matches ? 8 : 40;
       for (let i = 0; i < count; i += 1) {
         const edge = i % 4;
         const x = edge === 0 ? Math.random() * width : edge === 1 ? -16 : edge === 2 ? width + 16 : Math.random() * width;
@@ -270,7 +271,7 @@
         window.clearTimeout(ambientTimer);
       } else {
         lastTime = 0;
-        spawnAmbient();
+        if (ambientEnabled) spawnAmbient();
         scheduleFrame();
       }
     }
@@ -281,7 +282,7 @@
         particles = [];
         context.clearRect(0, 0, width, height);
       } else {
-        spawnAmbient();
+        if (ambientEnabled) spawnAmbient();
       }
     }
 

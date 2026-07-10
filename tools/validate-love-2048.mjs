@@ -32,18 +32,23 @@ const expectations = [
   ["2048 defines narrative scene pools", files.js, "const narrativeScenes"],
   ["2048 spawns from top first", files.js, "function addFromTop"],
   ["2048 handles blocked-input spawning", files.js, "spawnOnBlockedInput"],
-  ["2048 tracks scene bloom timer", files.js, "let sceneBloomTimer = 0"],
   ["2048 tracks stage celebration timer", files.js, "let stageCelebrationTimer = 0"],
-  ["2048 tracks danmaku cleanup timers", files.js, "let sceneDanmakuTimers = []"],
   ["2048 initializes dedicated visual effects", files.js, "Love2048Vfx.createLoveVfx"],
+  ["2048 disables continuous ambient VFX", files.js, "ambient: false"],
+  ["2048 identifies its board before shared effects", files.js, 'const isLoveBoard = board.classList.contains("board-love-2048")'],
+  ["2048 caps transient board effects", files.js, "isLoveBoard ? 10"],
+  ["2048 skips shared board pulse reflows", files.js, "if (!isLoveBoard)"],
   ["2048 plays real tile motion", files.js, "function playTileMotion"],
-  ["2048 shows swipe direction trace", files.js, "function showSwipeTrace"],
   ["2048 enables touch surface feedback", files.js, "function enableLoveTouchFeedback"],
-  ["2048 shows centered scene text bloom", files.js, "function showSceneBloom"],
-  ["2048 shows first-stage full-screen celebration", files.js, "function showStageCelebration"],
-  ["2048 floats detailed scene text as danmaku", files.js, "function showSceneDanmaku"],
-  ["2048 rewrites repeat stages as memories", files.js, "function rememberScene"],
+  ["2048 throttles touch feedback", files.js, "function scheduleTouchFrame"],
+  ["2048 keeps persistent board cells", files.js, "function ensureBoardCells"],
+  ["2048 updates persistent board cells", files.js, "function renderBoardCells"],
+  ["2048 chooses scenes only for milestones", files.js, "function pickMilestoneScene"],
+  ["2048 derives event backdrop keys", files.js, "function sceneBackdropKey"],
+  ["2048 shows milestone full-screen events", files.js, "function playMilestoneScene"],
+  ["2048 keeps repeated merges lightweight", files.js, "function playRepeatMerge"],
   ["2048 detects first higher-stage reveal", files.js, "isFirstStageReveal"],
+  ["2048 gates cinematics to a new highest stage", files.js, "featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue)"],
   ["2048 includes first-meet scene pool", files.js, '"初见"'],
   ["2048 includes remember stage", files.js, '"记住"'],
   ["2048 includes testing stage", files.js, '"试探"'],
@@ -62,15 +67,13 @@ const expectations = [
   ["2048 includes rain date scene", files.js, "雨天共享伞"],
   ["2048 includes night market date scene", files.js, "夜市灯火"],
   ["2048 includes home light scene", files.js, "家的灯"],
-  ["2048 picks random merge scenes", files.js, "function pickMergeScene"],
+  ["2048 picks random milestone scenes", files.js, "function pickMilestoneScene"],
   ["2048 applies mood classes", files.js, "function applyMood"],
   ["2048 renders story card", files.js, "function renderStoryCard"],
   ["2048 story card shows current highest only", files.js, "当前最高 "],
   ["2048 toggles memory log", files.js, "function toggleMemory"],
   ["2048 line slide keeps valued numeric entries", files.js, ".filter((entry) => entry.value)"],
-  ["2048 merge selects narrative by destination value", files.js, "pickMergeScene(nextValue)"],
-  ["2048 emits merge story effect", files.js, 'triggerBoardEffect("love-story"'],
-  ["2048 emits merge cell effect", files.js, 'triggerCellEffect(scene.effect'],
+  ["2048 emits lightweight repeat merge effect", files.js, 'triggerCellEffect("love-merge"'],
   ["2048 keeps restart button", files.js, 'button("重遇"'],
   ["2048 keeps memory button", files.js, 'button("回忆"'],
   ["2048 renders svg heart core", files.js, '<svg class="heart-core"'],
@@ -100,10 +103,7 @@ const expectations = [
   ["CSS defines love board", files.css, ".board-love-2048"],
   ["CSS defines story card", files.css, ".love-story-card"],
   ["CSS defines memory drawer", files.css, ".love-memory-drawer"],
-  ["CSS defines centered scene text bloom", files.css, ".love-scene-bloom"],
   ["CSS defines full-screen stage celebration", files.css, ".love-stage-celebration"],
-  ["CSS defines nonblocking scene danmaku", files.css, ".love-scene-danmaku"],
-  ["CSS animates scene danmaku", files.css, "@keyframes loveSceneDanmaku"],
   ["CSS defines mood meet", files.css, ".board-love-2048.mood-meet"],
   ["CSS defines mood chat", files.css, ".board-love-2048.mood-chat"],
   ["CSS defines mood date", files.css, ".board-love-2048.mood-date"],
@@ -127,11 +127,20 @@ const expectations = [
   ["Dedicated CSS defines mobile game surface", files.loveCss, ".solo-game-2048"],
   ["Dedicated CSS defines jewel heart model", files.loveCss, ".heart-bevel"],
   ["Dedicated CSS defines movement ghosts", files.loveCss, ".love-motion-ghost"],
-  ["Dedicated CSS defines swipe trace", files.loveCss, ".love-swipe-trace"],
   ["Dedicated CSS defines cinematic scene", files.loveCss, ".love-cinematic-scene"],
+  ["Dedicated CSS defines cinematic backdrop", files.loveCss, ".cinematic-backdrop"],
+  ["Dedicated CSS defines full cinematic narrative", files.loveCss, ".cinematic-copy p"],
+  ["Dedicated CSS maps rainy backdrop", files.loveCss, 'data-backdrop="rain"'],
+  ["Dedicated CSS maps cafe backdrop", files.loveCss, 'data-backdrop="cafe"'],
+  ["Dedicated CSS maps campus backdrop", files.loveCss, 'data-backdrop="campus"'],
+  ["Dedicated CSS maps city backdrop", files.loveCss, 'data-backdrop="city"'],
+  ["Dedicated CSS maps home backdrop", files.loveCss, 'data-backdrop="home"'],
+  ["Dedicated CSS maps starlight backdrop", files.loveCss, 'data-backdrop="starlight"'],
+  ["Dedicated CSS defines repeat merge sparkle", files.loveCss, ".effect-love-merge"],
   ["Dedicated CSS honors reduced motion", files.loveCss, "prefers-reduced-motion"],
   ["VFX module exposes Love2048Vfx", files.vfx, "window.Love2048Vfx"],
   ["VFX module creates one canvas engine", files.vfx, "function createLoveVfx"],
+  ["VFX module makes ambient particles opt-in", files.vfx, "const ambientEnabled = options.ambient === true"],
   ["VFX module changes scene mood", files.vfx, "setMood"],
   ["VFX module emits local bursts", files.vfx, "burst"],
   ["VFX module emits stage celebrations", files.vfx, "celebrate"],
@@ -139,6 +148,16 @@ const expectations = [
   ["Site validator tracks love theme", files.siteValidator, 'theme: "love-2048"'],
   ["Site validator tracks love board", files.siteValidator, 'board: "board-love-2048"']
 ];
+
+for (const forbidden of [
+  ["2048 removes scene bloom", files.js, "function showSceneBloom"],
+  ["2048 removes scene danmaku", files.js, "function showSceneDanmaku"],
+  ["2048 removes repeat-memory rewriting", files.js, "function rememberScene"],
+  ["2048 removes per-move swipe trace", files.js, "showSwipeTrace(dir)"],
+  ["2048 removes danmaku CSS", files.loveCss, ".love-scene-danmaku"]
+]) {
+  expectations.push([forbidden[0], forbidden[1], forbidden[2], true]);
+}
 
 const failures = expectations.filter(([, source, needle, forbidden]) => forbidden ? source.includes(needle) : !source.includes(needle));
 
@@ -155,6 +174,16 @@ function functionSource(name) {
   if (start === -1) return "";
   const next = files.js.indexOf("\n    function ", start + 1);
   return files.js.slice(start, next === -1 ? files.js.length : next);
+}
+
+function run2048FunctionSource(name) {
+  const scopeStart = files.js.indexOf("  function run2048() {");
+  const scopeEnd = files.js.indexOf("\n  function runMines()", scopeStart);
+  const scope = files.js.slice(scopeStart, scopeEnd === -1 ? files.js.length : scopeEnd);
+  const start = scope.indexOf(`    function ${name}`);
+  if (start === -1) return "";
+  const next = scope.indexOf("\n    function ", start + 1);
+  return scope.slice(start, next === -1 ? scope.length : next);
 }
 
 function validateSlideMotion() {
@@ -211,16 +240,54 @@ if (slideMotionFailures.length) {
   process.exit(1);
 }
 
-const blockingSceneTextFailures = [
-  ["showSceneBloom", functionSource("showSceneBloom")],
-  ["showStageCelebration", functionSource("showStageCelebration")]
-].filter(([, source]) => source.includes("scene.line"));
-
-if (blockingSceneTextFailures.length) {
-  console.error("Love 2048 nonblocking narrative validation failed:");
-  for (const [name] of blockingSceneTextFailures) {
-    console.error(`- ${name}: still renders detailed scene.line in the flash layer`);
+function validateBackdropRouting() {
+  const source = functionSource("sceneBackdropKey").trim();
+  if (!source) return ["sceneBackdropKey source is missing"];
+  let sceneBackdropKey;
+  try {
+    sceneBackdropKey = Function(`return (${source});`)();
+  } catch (error) {
+    return [`sceneBackdropKey could not be evaluated: ${error.message}`];
   }
+  const cases = [
+    [{ title: "雨夜电话", mood: "chat" }, "rain"],
+    [{ title: "第一次晚餐", mood: "date" }, "cafe"],
+    [{ title: "图书馆相遇", mood: "meet" }, "campus"],
+    [{ title: "厨房日常", mood: "home" }, "home"],
+    [{ title: "未来誓言", mood: "vow" }, "starlight"],
+    [{ title: "路口重逢", mood: "street" }, "city"]
+  ];
+  return cases.flatMap(([scene, expected]) => {
+    const actual = sceneBackdropKey(scene);
+    return actual === expected ? [] : [`${scene.title} routed to ${actual}, expected ${expected}`];
+  });
+}
+
+const backdropRoutingFailures = validateBackdropRouting();
+if (backdropRoutingFailures.length) {
+  console.error("Love 2048 backdrop routing validation failed:");
+  for (const failure of backdropRoutingFailures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+
+const milestoneSceneSource = functionSource("playMilestoneScene");
+if (!milestoneSceneSource.includes("scene.line") || !milestoneSceneSource.includes("data-backdrop")) {
+  console.error("Love 2048 milestone cinematic validation failed:");
+  console.error("- playMilestoneScene must render scene.line and a data-backdrop key");
+  process.exit(1);
+}
+
+const repeatMergeSource = functionSource("playRepeatMerge");
+for (const forbidden of ["scene.line", "pushStory", "pickMilestoneScene", "love-cinematic-scene"]) {
+  if (repeatMergeSource.includes(forbidden)) {
+    console.error(`Love 2048 repeated merge validation failed: playRepeatMerge contains ${forbidden}`);
+    process.exit(1);
+  }
+}
+
+const renderSource = run2048FunctionSource("render");
+if (renderSource.includes("board.innerHTML")) {
+  console.error("Love 2048 performance validation failed: render still replaces board.innerHTML");
   process.exit(1);
 }
 

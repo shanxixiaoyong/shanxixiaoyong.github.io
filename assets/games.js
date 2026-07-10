@@ -185,6 +185,12 @@ if (gameHub || soloGame) {
 
   function triggerBoardEffect(name, options = {}) {
     if (!board) return;
+    const isLoveBoard = board.classList.contains("board-love-2048");
+    const effectLimit = options.effectLimit || (isLoveBoard ? 10 : Number.POSITIVE_INFINITY);
+    if (Number.isFinite(effectLimit)) {
+      const activeEffects = [...board.querySelectorAll(":scope > .board-effect")];
+      activeEffects.slice(0, Math.max(0, activeEffects.length - effectLimit + 1)).forEach((effect) => effect.remove());
+    }
     const item = document.createElement("span");
     item.className = `board-effect effect-${name}`;
     item.setAttribute("aria-hidden", "true");
@@ -194,11 +200,13 @@ if (gameHub || soloGame) {
     const duration = options.duration || 760;
     board.append(item);
     window.setTimeout(() => item.remove(), duration);
-    const fxClass = `fx-${name}`;
-    board.classList.remove(fxClass);
-    void board.offsetWidth;
-    board.classList.add(fxClass);
-    window.setTimeout(() => board.classList.remove(fxClass), duration);
+    if (!isLoveBoard) {
+      const fxClass = `fx-${name}`;
+      board.classList.remove(fxClass);
+      void board.offsetWidth;
+      board.classList.add(fxClass);
+      window.setTimeout(() => board.classList.remove(fxClass), duration);
+    }
   }
 
   function triggerCellEffect(name, index, cols, rows, options = {}) {
@@ -483,20 +491,21 @@ if (gameHub || soloGame) {
     let currentScene = null;
     let memoryOpen = false;
     let moodTimer = 0;
-    let sceneBloomTimer = 0;
     let stageCelebrationTimer = 0;
-    let sceneDanmakuTimers = [];
-    let sceneDanmakuLane = 0;
     let tileMotionTimer = 0;
-    let swipeTraceTimer = 0;
     let touchFeedbackTimer = 0;
+    let touchFrame = 0;
     let bumpTimer = 0;
     let lastMotionTargets = [];
+    let cellNodes = [];
+    let motionGeometry = null;
+    let storyRenderKey = "";
+    let renderedScore = -1;
     const spawnOnBlockedInput = true;
 
     const loveVfxFactory = window.Love2048Vfx?.createLoveVfx;
     const loveVfx = loveVfxFactory
-      ? window.Love2048Vfx.createLoveVfx({ root: document.body, mood: "meet" })
+      ? window.Love2048Vfx.createLoveVfx({ root: document.body, mood: "meet", ambient: false })
       : { setMood() {}, burst() {}, celebrate() {}, destroy() {} };
 
     const tileStory = [
@@ -734,7 +743,7 @@ if (gameHub || soloGame) {
       return tiles.reduce((best, value) => Math.max(best, value || 0), 0);
     }
 
-    function pickMergeScene(nextValue) {
+    function pickMilestoneScene(nextValue) {
       const finalStage = tileStory[tileStory.length - 1][0];
       const pool = narrativeScenes[nextValue] || narrativeScenes[finalStage];
       const tile = romanceTile(nextValue);
@@ -757,22 +766,8 @@ if (gameHub || soloGame) {
     function pushStory(scene) {
       currentScene = scene;
       storyLog = [scene, ...storyLog].slice(0, 10);
+      storyRenderKey = "";
       applyMood(scene);
-    }
-
-    function rememberScene(scene) {
-      const variants = [
-        {
-          title: "还记得 · " + scene.title,
-          line: "还记得之前的「" + scene.title + "」吗？" + scene.line
-        },
-        {
-          title: "回忆 · " + scene.title,
-          line: "回忆又翻到「" + scene.title + "」那一页：" + scene.line
-        }
-      ];
-      const picked = variants[Math.floor(Math.random() * variants.length)];
-      return { ...scene, title: picked.title, line: picked.line, memory: true };
     }
 
     function renderStoryCard() {
@@ -833,9 +828,38 @@ if (gameHub || soloGame) {
       return false;
     }
 
-    function playScene(scene, cellIndex, isFirstStageReveal = false) {
-      triggerBoardEffect("love-story", { duration: 920 });
-      triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 940 });
+    const sceneBackdropSources = [
+      "assets/love-scenes/rain-night.webp",
+      "assets/love-scenes/cafe-evening.webp",
+      "assets/love-scenes/campus-library.webp",
+      "assets/love-scenes/city-night.webp",
+      "assets/love-scenes/warm-home.webp",
+      "assets/love-scenes/starlight-vow.webp"
+    ];
+
+    function preloadSceneBackdrops() {
+      const load = () => sceneBackdropSources.forEach((source) => {
+        const image = new Image();
+        image.decoding = "async";
+        image.src = source;
+      });
+      if ("requestIdleCallback" in window) window.requestIdleCallback(load, { timeout: 700 });
+      else window.setTimeout(load, 80);
+    }
+
+    function sceneBackdropKey(scene) {
+      const text = `${scene?.title || ""} ${scene?.line || ""}`;
+      if (/雨|伞|rain|storm/i.test(text) || scene?.mood === "rain") return "rain";
+      if (/咖啡|奶茶|晚餐|甜点|花店|cafe/i.test(text) || scene?.mood === "cafe") return "cafe";
+      if (/图书|书店|校园|上课|座位|毕业|library|campus/i.test(text) || scene?.mood === "campus") return "campus";
+      if (/家|同居|厨房|钥匙|拖鞋|阳台|日常|home/i.test(text) || scene?.mood === "home") return "home";
+      if (/婚|求婚|戒指|誓|未来|星|烟花|月|天台|纪念|vow|star/i.test(text) || ["starlight", "vow"].includes(scene?.mood)) return "starlight";
+      return "city";
+    }
+
+    function playMilestoneScene(scene, cellIndex) {
+      triggerBoardEffect("love-story", { duration: 840 });
+      triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 860 });
       const target = board.querySelector('[data-index="' + cellIndex + '"]');
       const targetRect = target?.getBoundingClientRect();
       loveVfx.burst({
@@ -843,112 +867,55 @@ if (gameHub || soloGame) {
         y: targetRect ? targetRect.top + targetRect.height / 2 : window.innerHeight / 2,
         mood: scene.mood,
         tone: scene.tone,
-        count: isFirstStageReveal ? 28 : 18
+        count: 20
       });
-      showSceneBloom(scene);
-      showSceneDanmaku(scene, isFirstStageReveal);
-      if (isFirstStageReveal) showStageCelebration(scene);
-    }
-
-    function showSceneBloom(scene) {
-      clearTimeout(sceneBloomTimer);
-      board.querySelector(".love-scene-bloom")?.remove();
-      const item = document.createElement("div");
-      item.className = "love-scene-bloom";
-      item.setAttribute("aria-hidden", "true");
-      item.dataset.tone = scene.tone || scene.mood || "story";
-      item.innerHTML = '<span>' + escapeText(scene.stage) + '</span>'
-        + '<strong>' + escapeText(scene.glyph || "♡") + ' ' + escapeText(scene.title) + '</strong>';
-      board.append(item);
-      sceneBloomTimer = window.setTimeout(() => item.remove(), 760);
-    }
-
-    function showStageCelebration(scene) {
       clearTimeout(stageCelebrationTimer);
       document.querySelector(".love-stage-celebration")?.remove();
       const item = document.createElement("div");
       item.className = "love-stage-celebration love-cinematic-scene";
-      item.setAttribute("aria-hidden", "true");
+      item.setAttribute("role", "status");
+      item.setAttribute("aria-live", "polite");
+      item.setAttribute("aria-atomic", "true");
       item.dataset.tone = scene.tone || scene.mood || "story";
       item.dataset.mood = scene.mood || "meet";
-      item.innerHTML = '<div class="cinematic-veil"></div>'
-        + '<div class="cinematic-orbit"><i>' + escapeText(scene.glyph || "♡") + '</i></div>'
-        + '<div class="cinematic-copy"><span>初次抵达 · ' + escapeText(scene.stage) + '</span>'
-        + '<strong>' + escapeText(scene.title) + '</strong></div>';
+      item.setAttribute("data-backdrop", sceneBackdropKey(scene));
+      item.innerHTML = '<div class="cinematic-backdrop"></div>'
+        + '<div class="cinematic-atmosphere"><i></i><i></i><i></i></div>'
+        + '<div class="cinematic-copy"><span>首次解锁 · ' + escapeText(scene.stage) + '</span>'
+        + '<strong><i>' + escapeText(scene.glyph || "♡") + '</i>' + escapeText(scene.title) + '</strong>'
+        + '<p>' + escapeText(scene.line) + '</p></div>'
+        + '<div class="cinematic-timeline"></div>';
       document.body.append(item);
       loveVfx.celebrate({ mood: scene.mood, tone: scene.tone });
-      stageCelebrationTimer = window.setTimeout(() => item.remove(), 1080);
+      stageCelebrationTimer = window.setTimeout(() => item.remove(), 2680);
     }
 
-    function clearSceneDanmaku() {
-      sceneDanmakuTimers.forEach((timer) => clearTimeout(timer));
-      sceneDanmakuTimers = [];
-      document.querySelector(".love-scene-danmaku-layer")?.remove();
-    }
-
-    function danmakuLanes() {
-      const rect = board.getBoundingClientRect();
-      const vh = window.innerHeight || document.documentElement.clientHeight || 932;
-      const controlsRect = controls?.getBoundingClientRect();
-      const lowerStart = Math.max(rect.bottom + 32, (controlsRect?.bottom || rect.bottom) + 24);
-      const lower = [lowerStart, lowerStart + 42, lowerStart + 84]
-        .filter((lane) => lane < vh - 52);
-      const upper = rect.top > 168 ? [rect.top - 86, rect.top - 44] : [];
-      const candidates = [...lower, ...upper].map((lane) => Math.max(56, Math.min(vh - 64, lane)));
-      const safeLanes = candidates.filter((lane, index, list) => {
-        const outsideBoard = lane < rect.top - 28 || lane > rect.bottom + 18;
-        return outsideBoard && list.indexOf(lane) === index;
+    function playRepeatMerge(cellIndex, value) {
+      triggerCellEffect("love-merge", cellIndex, size, size, { duration: 360 });
+      const target = board.querySelector('[data-index="' + cellIndex + '"]');
+      const rect = target?.getBoundingClientRect();
+      loveVfx.burst({
+        x: rect ? rect.left + rect.width / 2 : window.innerWidth / 2,
+        y: rect ? rect.top + rect.height / 2 : window.innerHeight / 2,
+        mood: value >= 2048 ? "vow" : "meet",
+        count: 6
       });
-      return safeLanes.length ? safeLanes : [Math.max(56, Math.min(vh - 96, rect.bottom + 34))];
-    }
-
-    function showSceneDanmaku(scene, isFirstStageReveal = false) {
-      let layer = document.querySelector(".love-scene-danmaku-layer");
-      if (!layer) {
-        layer = document.createElement("div");
-        layer.className = "love-scene-danmaku-layer";
-        layer.setAttribute("aria-hidden", "true");
-        document.body.append(layer);
-      }
-      const lanes = danmakuLanes();
-      const lines = isFirstStageReveal
-        ? [scene.glyph + " " + scene.stage + " · " + scene.title, scene.line]
-        : [scene.line];
-      lines.forEach((text, index) => {
-        const item = document.createElement("div");
-        item.className = "love-scene-danmaku" + (isFirstStageReveal ? " is-milestone" : "");
-        item.dataset.tone = scene.tone || scene.mood || "story";
-        item.textContent = text;
-        const lane = lanes.length ? lanes[(sceneDanmakuLane + index) % lanes.length] : 120 + index * 42;
-        const duration = Math.min(9800, Math.max(6200, 5200 + text.length * 95));
-        item.style.setProperty("--danmaku-y", lane + "px");
-        item.style.setProperty("--danmaku-duration", duration + "ms");
-        layer.append(item);
-        const timer = window.setTimeout(() => {
-          item.remove();
-          sceneDanmakuTimers = sceneDanmakuTimers.filter((entry) => entry !== timer);
-          if (!layer.children.length) layer.remove();
-        }, duration + 260);
-        sceneDanmakuTimers.push(timer);
-      });
-      sceneDanmakuLane += 1;
     }
 
     function playTileMotion(motions) {
       clearTimeout(tileMotionTimer);
       board.querySelector(".love-motion-layer")?.remove();
-      const activeMotions = motions.filter((motion) => motion.from !== motion.to || motion.merged);
+      const activeMotions = motions.filter((motion) => motion.from !== motion.to);
       if (!activeMotions.length) return;
 
-      const cells = [...board.querySelectorAll(".merge-cell")];
-      const boardRect = board.getBoundingClientRect();
+      const geometry = boardMotionGeometry();
       const layer = document.createElement("div");
       layer.className = "love-motion-layer";
       layer.setAttribute("aria-hidden", "true");
 
       activeMotions.forEach((motion, index) => {
-        const fromRect = cells[motion.from]?.getBoundingClientRect();
-        const toRect = cells[motion.to]?.getBoundingClientRect();
+        const fromRect = geometry[motion.from];
+        const toRect = geometry[motion.to];
         if (!fromRect || !toRect) return;
         const ghost = document.createElement("span");
         const tile = romanceTile(motion.value);
@@ -959,14 +926,14 @@ if (gameHub || soloGame) {
           + ";--tile-accent:" + tile.accent
           + ";--tile-rim:" + tile.rim
           + ";--rank:" + tile.rank
-          + ";--ghost-x:" + (fromRect.left - boardRect.left) + "px"
-          + ";--ghost-y:" + (fromRect.top - boardRect.top) + "px"
+          + ";--ghost-x:" + fromRect.x + "px"
+          + ";--ghost-y:" + fromRect.y + "px"
           + ";--ghost-w:" + fromRect.width + "px"
           + ";--ghost-h:" + fromRect.height + "px"
-          + ";--ghost-dx:" + (toRect.left - fromRect.left) + "px"
-          + ";--ghost-dy:" + (toRect.top - fromRect.top) + "px"
+          + ";--ghost-dx:" + (toRect.x - fromRect.x) + "px"
+          + ";--ghost-dy:" + (toRect.y - fromRect.y) + "px"
           + ";--ghost-delay:" + (motion.merged ? (index % 2) * 8 : 0) + "ms";
-        ghost.innerHTML = tileContentMarkup(motion.value, "ghost-" + index + "-" + Date.now());
+        ghost.innerHTML = motionGhostMarkup(motion.value);
         layer.append(ghost);
       });
 
@@ -974,23 +941,11 @@ if (gameHub || soloGame) {
       tileMotionTimer = window.setTimeout(() => layer.remove(), 280);
     }
 
-    function showSwipeTrace(dir) {
-      clearTimeout(swipeTraceTimer);
-      board.querySelector(".love-swipe-trace")?.remove();
-      const trace = document.createElement("span");
-      trace.className = "love-swipe-trace is-" + dir;
-      trace.setAttribute("aria-hidden", "true");
-      trace.innerHTML = "<i></i>";
-      board.append(trace);
-      swipeTraceTimer = window.setTimeout(() => trace.remove(), 420);
-    }
-
     function showBlockedBump(dir) {
       clearTimeout(bumpTimer);
       board.dataset.bump = dir;
       board.classList.remove("is-bumped");
-      void board.offsetWidth;
-      board.classList.add("is-bumped");
+      window.requestAnimationFrame(() => board.classList.add("is-bumped"));
       bumpTimer = window.setTimeout(() => board.classList.remove("is-bumped"), 320);
     }
 
@@ -998,13 +953,31 @@ if (gameHub || soloGame) {
       let active = false;
       let startX = 0;
       let startY = 0;
+      let pendingX = 0;
+      let pendingY = 0;
+      let touchRect = null;
+
+      function scheduleTouchFrame() {
+        if (touchFrame) return;
+        touchFrame = window.requestAnimationFrame(() => {
+          touchFrame = 0;
+          if (!active || !touchRect) return;
+          const x = Math.max(0, Math.min(100, (pendingX - touchRect.left) / touchRect.width * 100));
+          const y = Math.max(0, Math.min(100, (pendingY - touchRect.top) / touchRect.height * 100));
+          const dx = pendingX - startX;
+          const dy = pendingY - startY;
+          board.style.setProperty("--touch-x", x.toFixed(2) + "%");
+          board.style.setProperty("--touch-y", y.toFixed(2) + "%");
+          board.style.setProperty("--drag-x", Math.max(-1, Math.min(1, dx / 90)).toFixed(3));
+          board.style.setProperty("--drag-y", Math.max(-1, Math.min(1, dy / 90)).toFixed(3));
+          board.classList.toggle("is-dragging", Math.hypot(dx, dy) > 8);
+        });
+      }
 
       const updateTouchPosition = (event) => {
-        const rect = board.getBoundingClientRect();
-        const x = Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100));
-        const y = Math.max(0, Math.min(100, (event.clientY - rect.top) / rect.height * 100));
-        board.style.setProperty("--touch-x", x.toFixed(2) + "%");
-        board.style.setProperty("--touch-y", y.toFixed(2) + "%");
+        pendingX = event.clientX;
+        pendingY = event.clientY;
+        scheduleTouchFrame();
       };
 
       const down = (event) => {
@@ -1012,6 +985,7 @@ if (gameHub || soloGame) {
         active = true;
         startX = event.clientX;
         startY = event.clientY;
+        touchRect = board.getBoundingClientRect();
         updateTouchPosition(event);
         board.classList.add("is-touching");
       };
@@ -1019,16 +993,14 @@ if (gameHub || soloGame) {
       const moveTouch = (event) => {
         if (!active) return;
         updateTouchPosition(event);
-        const dx = event.clientX - startX;
-        const dy = event.clientY - startY;
-        board.style.setProperty("--drag-x", Math.max(-1, Math.min(1, dx / 90)).toFixed(3));
-        board.style.setProperty("--drag-y", Math.max(-1, Math.min(1, dy / 90)).toFixed(3));
-        board.classList.toggle("is-dragging", Math.hypot(dx, dy) > 8);
       };
 
       const up = () => {
         if (!active) return;
         active = false;
+        touchRect = null;
+        window.cancelAnimationFrame(touchFrame);
+        touchFrame = 0;
         board.classList.remove("is-touching", "is-dragging");
         board.style.setProperty("--drag-x", "0");
         board.style.setProperty("--drag-y", "0");
@@ -1042,6 +1014,8 @@ if (gameHub || soloGame) {
       window.addEventListener("pointerup", up, { passive: true });
       window.addEventListener("pointercancel", up, { passive: true });
       return () => {
+        window.cancelAnimationFrame(touchFrame);
+        touchFrame = 0;
         board.removeEventListener("pointerdown", down);
         window.removeEventListener("pointermove", moveTouch);
         window.removeEventListener("pointerup", up);
@@ -1053,9 +1027,8 @@ if (gameHub || soloGame) {
       const before = boardSignature();
       let mergedThisMove = 0;
       const mergedCells = [];
-      const mergeScenes = [];
+      const mergeResults = [];
       const tileMotions = [];
-      showSwipeTrace(dir);
       for (let i = 0; i < size; i += 1) {
         const rawIndices = [];
         for (let j = 0; j < size; j += 1) {
@@ -1078,7 +1051,7 @@ if (gameHub || soloGame) {
           const cellIndex = orientedIndices[slot];
           const nextValue = shifted.mergedValues[index];
           mergedCells.push(cellIndex);
-          mergeScenes.push({ cellIndex, nextValue, scene: pickMergeScene(nextValue) });
+          mergeResults.push({ cellIndex, nextValue });
         });
       }
 
@@ -1102,30 +1075,37 @@ if (gameHub || soloGame) {
         .filter((motion) => motion.from !== motion.to || motion.merged)
         .map((motion) => motion.to))];
       lastSpawnCell = addFromTop();
-      let featured = null;
+      let milestone = null;
+      let repeatMerge = null;
       if (mergedThisMove) {
         points += mergedThisMove;
         loveTempo = Math.max(0.58, 1 - Math.min(5, mergedCells.length) * 0.06);
-        featured = mergeScenes.sort((a, b) => b.nextValue - a.nextValue)[0];
+        const featured = mergeResults.sort((a, b) => b.nextValue - a.nextValue)[0];
         if (featured) {
           const isFirstStageReveal = featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue);
-          if (!isFirstStageReveal && seenStageValues.has(featured.nextValue)) featured.scene = rememberScene(featured.scene);
-          featured.isFirstStageReveal = isFirstStageReveal;
           bestValue = Math.max(bestValue, featured.nextValue);
-          seenStageValues.add(featured.nextValue);
-          pushStory(featured.scene);
+          if (isFirstStageReveal) {
+            const scene = pickMilestoneScene(featured.nextValue);
+            milestone = { ...featured, scene, isFirstStageReveal };
+            pushStory(scene);
+          } else {
+            repeatMerge = featured;
+          }
+          mergeResults.forEach((result) => seenStageValues.add(result.nextValue));
         }
       } else {
         loveTempo = 1;
       }
       render();
       playTileMotion(tileMotions);
-      if (featured) playScene(featured.scene, featured.cellIndex, featured.isFirstStageReveal);
+      if (milestone) playMilestoneScene(milestone.scene, milestone.cellIndex);
+      else if (repeatMerge) playRepeatMerge(repeatMerge.cellIndex, repeatMerge.nextValue);
       if (!mergedThisMove && lastSpawnCell >= 0) triggerCellEffect("love-top-spawn", lastSpawnCell, size, size, { duration: 620 });
     }
 
     function toggleMemory() {
       memoryOpen = !memoryOpen;
+      storyRenderKey = "";
       render();
     }
 
@@ -1157,6 +1137,90 @@ if (gameHub || soloGame) {
         + '<small class="tile-label">' + escapeText(tile.label) + '</small>';
     }
 
+    function motionGhostMarkup(value) {
+      const heartPath = "M50 87C44 79 7 59 7 32C7 15 20 5 35 8C43 9 48 15 50 22C52 15 57 9 65 8C80 5 93 15 93 32C93 59 56 79 50 87Z";
+      return '<svg class="motion-heart" viewBox="0 0 100 94" aria-hidden="true"><path d="' + heartPath + '"></path></svg>'
+        + '<em class="motion-number">' + value + '</em>';
+    }
+
+    function ensureBoardCells() {
+      if (cellNodes.length === size * size && cellNodes.every((item) => item.parentElement === board)) return cellNodes;
+      const fragment = document.createDocumentFragment();
+      cellNodes = Array.from({ length: size * size }, (_, index) => {
+        const item = document.createElement("span");
+        item.className = "merge-cell love-tile v0";
+        item.dataset.index = String(index);
+        item.dataset.renderValue = "0";
+        item.dataset.value = "";
+        item.dataset.rank = "0";
+        item.dataset.digits = "0";
+        item.dataset.romance = "";
+        fragment.append(item);
+        return item;
+      });
+      board.replaceChildren(fragment);
+      motionGeometry = null;
+      return cellNodes;
+    }
+
+    function boardMotionGeometry() {
+      const cells = ensureBoardCells();
+      const key = `${board.clientWidth}x${board.clientHeight}`;
+      if (!motionGeometry || motionGeometry.key !== key) {
+        motionGeometry = {
+          key,
+          cells: cells.map((item) => ({
+            x: item.offsetLeft,
+            y: item.offsetTop,
+            width: item.offsetWidth,
+            height: item.offsetHeight
+          }))
+        };
+      }
+      return motionGeometry.cells;
+    }
+
+    function renderBoardCells(mergeSet, motionTargetSet) {
+      ensureBoardCells().forEach((item, index) => {
+        const value = tiles[index];
+        const tile = romanceTile(value);
+        const digits = value ? String(value).length : 0;
+        const classes = [
+          "merge-cell",
+          "love-tile",
+          `v${value || 0}`,
+          value >= 128 ? "is-hot" : "",
+          mergeSet.has(index) ? "is-collision" : "",
+          index === lastSpawnCell ? "is-new is-top-spawn" : "",
+          motionTargetSet.has(index) ? "is-motion-target" : "",
+          value >= 1024 ? "is-vow" : ""
+        ].filter(Boolean).join(" ");
+
+        item.className = classes;
+        item.dataset.value = value ? String(value) : "";
+        item.dataset.rank = String(tile.rank);
+        item.dataset.digits = String(digits);
+        item.setAttribute("data-romance", tile.label);
+
+        if (item.dataset.renderValue === String(value)) return;
+        item.dataset.renderValue = String(value);
+        if (!value) {
+          item.replaceChildren();
+          for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits"]) {
+            item.style.removeProperty(property);
+          }
+          return;
+        }
+        item.style.setProperty("--tile", tile.color);
+        item.style.setProperty("--tile-deep", tile.deep);
+        item.style.setProperty("--tile-accent", tile.accent);
+        item.style.setProperty("--tile-rim", tile.rim);
+        item.style.setProperty("--rank", tile.rank);
+        item.style.setProperty("--digits", digits);
+        item.innerHTML = tileContentMarkup(value, index);
+      });
+    }
+
     function render() {
       const moveVectors = { left: ["-1", "0"], right: ["1", "0"], up: ["0", "-1"], down: ["0", "1"], start: ["0", "0"] };
       const [moveX, moveY] = moveVectors[lastMoveDir] || moveVectors.start;
@@ -1175,50 +1239,43 @@ if (gameHub || soloGame) {
       board.classList.toggle("is-accelerated", lastMergeCells.length >= 2);
       board.classList.toggle("is-vow-ready", bestValue >= 2048);
       board.classList.remove("is-date-ready", "is-duo-mode", "is-chapter-mode");
-      board.innerHTML = tiles.map((value, index) => {
-        const tile = romanceTile(value);
-        const hot = value && value >= 128 ? "is-hot" : "";
-        const collision = mergeSet.has(index) ? "is-collision" : "";
-        const newborn = index === lastSpawnCell ? "is-new is-top-spawn" : "";
-        const movingTarget = motionTargetSet.has(index) ? "is-motion-target" : "";
-        const vowTile = value && value >= 1024 ? "is-vow" : "";
-        const digits = value ? String(value).length : 0;
-        const style = value ? ' style="--tile:' + tile.color + ';--tile-deep:' + tile.deep + ';--tile-accent:' + tile.accent + ';--tile-rim:' + tile.rim + ';--rank:' + tile.rank + ';--digits:' + digits + ';"' : "";
-        const content = value ? tileContentMarkup(value, index) : "";
-        return '<span class="merge-cell love-tile v' + (value || 0) + ' ' + hot + ' ' + collision + ' ' + newborn + ' ' + movingTarget + ' ' + vowTile + '" data-index="' + index + '" data-value="' + (value || "") + '" data-rank="' + tile.rank + '" data-digits="' + digits + '" data-romance="' + escapeText(tile.label) + '"' + style + '>' + content + '</span>';
-      }).join("");
-      setScore(points);
+      renderBoardCells(mergeSet, motionTargetSet);
+      const scoreChanged = renderedScore !== points;
+      if (scoreChanged) {
+        renderedScore = points;
+        setScore(points);
+      }
       setStatus(canMove() ? "滑动合并相同爱心，推进下一段关系" : "棋盘已满，点重遇再开始一段故事");
-      meta.innerHTML = renderStoryCard();
+      const nextStoryRenderKey = [bestValue, currentScene?.title, memoryOpen, storyLog.length].join("|");
+      if (scoreChanged || storyRenderKey !== nextStoryRenderKey) {
+        meta.innerHTML = renderStoryCard();
+        storyRenderKey = nextStoryRenderKey;
+      }
     }
 
     function restart() {
       clearTimeout(moodTimer);
-      clearTimeout(sceneBloomTimer);
       clearTimeout(stageCelebrationTimer);
       clearTimeout(tileMotionTimer);
-      clearTimeout(swipeTraceTimer);
       clearTimeout(touchFeedbackTimer);
       clearTimeout(bumpTimer);
-      board.querySelector(".love-scene-bloom")?.remove();
-      board.querySelector(".love-motion-layer")?.remove();
-      board.querySelector(".love-swipe-trace")?.remove();
+      board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
       document.querySelector(".love-stage-celebration")?.remove();
-      clearSceneDanmaku();
       for (const name of moodClasses) board.classList.remove(name);
       tiles = Array(size * size).fill(0);
       points = 0;
       bestValue = 2;
       seenStageValues = new Set([2]);
-      sceneDanmakuLane = 0;
       lastMoveDir = "start";
       lastMergeCells = [];
       lastMotionTargets = [];
       lastSpawnCell = -1;
       loveTempo = 1;
       storyLog = [];
-      currentScene = pickMergeScene(2);
+      currentScene = pickMilestoneScene(2);
       memoryOpen = false;
+      renderedScore = -1;
+      storyRenderKey = "";
       applyMood(currentScene);
       addFromTop();
       lastSpawnCell = addFromTop();
@@ -1229,20 +1286,19 @@ if (gameHub || soloGame) {
     restartControl.innerHTML = '<span aria-hidden="true">↻</span><span>重遇</span>';
     const memoryControl = button("回忆", toggleMemory);
     memoryControl.innerHTML = '<span aria-hidden="true">▤</span><span>回忆</span>';
+    preloadSceneBackdrops();
     restart();
     const offKey = keyHandler({ ArrowLeft: () => move("left"), ArrowRight: () => move("right"), ArrowUp: () => move("up"), ArrowDown: () => move("down") });
     const offSwipe = enableSwipe({ left: () => move("left"), right: () => move("right"), up: () => move("up"), down: () => move("down") });
     const offTouchFeedback = enableLoveTouchFeedback();
     return () => {
       clearTimeout(moodTimer);
-      clearTimeout(sceneBloomTimer);
       clearTimeout(stageCelebrationTimer);
       clearTimeout(tileMotionTimer);
-      clearTimeout(swipeTraceTimer);
       clearTimeout(touchFeedbackTimer);
       clearTimeout(bumpTimer);
       document.querySelector(".love-stage-celebration")?.remove();
-      clearSceneDanmaku();
+      board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
       loveVfx.destroy();
       offKey();
       offSwipe();
