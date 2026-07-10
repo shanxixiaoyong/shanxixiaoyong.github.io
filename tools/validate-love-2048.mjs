@@ -15,6 +15,7 @@ function readOptional(path) {
 const files = {
   html: readFileSync("game-2048.html", "utf8"),
   js: readFileSync("assets/games.js", "utf8"),
+  engine: readOptional("assets/love-2048-engine.js"),
   css: readFileSync("assets/world.css", "utf8"),
   loveCss: readOptional("assets/love-2048.css"),
   vfx: readOptional("assets/love-2048-vfx.js")
@@ -36,7 +37,7 @@ const expectations = [
   ["HTML page description matches love theme", files.html, "爱心、情侣、桃花"],
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
-  ["HTML uses the final 5x5 event cache version", files.html, "love-20260710j"],
+  ["HTML uses the final 5x5 pacing cache version", files.html, "love-20260710k"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
   ["Game registry uses exact public name", files.js, 'name: "心动2048"'],
@@ -62,7 +63,7 @@ const expectations = [
   ["2048 shows milestone full-screen events", files.js, "function playMilestoneScene"],
   ["2048 keeps repeated merges lightweight", files.js, "function playRepeatMerge"],
   ["2048 detects first higher-stage reveal", files.js, "isFirstStageReveal"],
-  ["2048 gates cinematics to a new highest stage", files.js, "featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue)"],
+  ["2048 gates cinematics to named relationship stages", files.js, "stageValues.has(featured.nextValue)"],
   ["2048 includes first-meet scene pool", files.js, '"初见"'],
   ["2048 includes remember stage", files.js, '"记住"'],
   ["2048 includes testing stage", files.js, '"试探"'],
@@ -70,10 +71,9 @@ const expectations = [
   ["2048 includes stable relationship stage", files.js, '"稳定相处"'],
   ["2048 includes marriage discussion stage", files.js, '"谈及婚姻"'],
   ["2048 includes proposal stage", files.js, '"求婚时刻"'],
-  ["2048 includes pre-wedding stage", files.js, '"婚礼之前"'],
   ["2048 includes date scene pool", files.js, '"第一次约会"'],
   ["2048 includes future scene pool", files.js, '"未来计划"'],
-  ["2048 includes final stage", files.js, '"长久相爱"'],
+  ["2048 finishes the relationship arc at 524288", files.js, '[524288, "∞", "长久相爱"'],
   ["2048 keeps mutual-romance event", files.js, '"双向奔赴"'],
   ["2048 includes rainy convenience scene", files.js, "雨停便利店"],
   ["2048 includes cafe date scene", files.js, "咖啡馆"],
@@ -95,6 +95,8 @@ const expectations = [
   ["2048 renders tile glyph crest", files.js, "tile-glyph"],
   ["2048 renders prominent tile number", files.js, "tile-number"],
   ["2048 renders compact tile label", files.js, "tile-label"],
+  ["2048 scales numbers by digit count", files.js, "function numberScaleForDigits"],
+  ["2048 scales labels by character count", files.js, "function labelScaleForLength"],
   ["2048 renders stage label", files.js, "data-romance"],
   ["2048 removed trust resource", files.js, "let trust =", true],
   ["2048 removed communication resource", files.js, "let communication =", true],
@@ -151,6 +153,8 @@ const expectations = [
   ["Dedicated CSS maps home backdrop", files.loveCss, 'data-backdrop="home"'],
   ["Dedicated CSS maps starlight backdrop", files.loveCss, 'data-backdrop="starlight"'],
   ["Dedicated CSS defines repeat merge sparkle", files.loveCss, ".effect-love-merge"],
+  ["Dedicated CSS centers scaled tile numbers", files.loveCss, "scale(var(--number-scale, 1))"],
+  ["Dedicated CSS scales long relationship labels", files.loveCss, "scale(var(--label-scale, 1))"],
   ["Dedicated CSS uses short tile travel", files.loveCss, "loveGhostTravel 150ms"],
   ["Dedicated CSS uses short collision feedback", files.loveCss, "loveJewelMerge 220ms"],
   ["Dedicated CSS disables inherited new-cell animation", files.loveCss, ".merge-cell.is-new {\n  animation: none;"],
@@ -161,7 +165,11 @@ const expectations = [
   ["VFX module changes scene mood", files.vfx, "setMood"],
   ["VFX module emits local bursts", files.vfx, "burst"],
   ["VFX module emits stage celebrations", files.vfx, "celebrate"],
-  ["VFX module cleans up", files.vfx, "destroy"]
+  ["VFX module cleans up", files.vfx, "destroy"],
+  ["Event director unlocks fate at 256", files.engine, "const FATE_UNLOCK_TILE = 256"],
+  ["Event director unlocks conflict at 1024", files.engine, "const CONFLICT_UNLOCK_TILE = 1024"],
+  ["Event director guarantees the first 256 fate by turn ten", files.engine, "{ min: 256, start: 6, guarantee: 10 }"],
+  ["Event director uses a ten-turn event cooldown", files.engine, "const EVENT_COOLDOWN_TURNS = 10"]
 ];
 
 for (const forbidden of [

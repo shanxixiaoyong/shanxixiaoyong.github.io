@@ -24,7 +24,7 @@ test("merges adjacent fate tiles after compaction but never conflict with ordina
 
 function spawnContext(overrides = {}) {
   return {
-    highestTile: 2048,
+    highestTile: 1024,
     emptyCount: 4,
     ordinaryMergeCount: 1,
     inputBlocked: false,
@@ -49,10 +49,10 @@ function chooseTurns(state, turns, context) {
   return { result, state };
 }
 
-test("does not roll or accrue event effort for blocked input or pre-2048 boards", () => {
+test("does not roll or accrue event effort for blocked input or pre-256 boards", () => {
   const state = createDirectorState();
   const blocked = chooseSpawn(state, spawnContext({ inputBlocked: true }), () => 0);
-  const preFate = chooseSpawn(state, spawnContext({ highestTile: 1024 }), () => 0);
+  const preFate = chooseSpawn(state, spawnContext({ highestTile: 128 }), () => 0);
 
   assert.equal(blocked.kind, "normal");
   assert.deepEqual(blocked.state, state);
@@ -61,7 +61,7 @@ test("does not roll or accrue event effort for blocked input or pre-2048 boards"
 });
 
 test("advances fate effort and the second-fate guarantee only after ordinary merges", () => {
-  const firstFateState = { ...createDirectorState(), firstFateTurns: 9 };
+  const firstFateState = { ...createDirectorState(), firstFateTurns: 4 };
   const movementOnly = chooseSpawn(firstFateState, spawnContext({ ordinaryMergeCount: 0 }), () => 0);
   const firstFate = chooseSpawn(movementOnly.state, spawnContext(), () => 0);
   const secondFateState = {
@@ -77,7 +77,7 @@ test("advances fate effort and the second-fate guarantee only after ordinary mer
   const secondFate = chooseSpawn(secondMovementOnly.state, spawnContext({ fateActive: true }), () => 1);
 
   assert.equal(movementOnly.kind, "normal");
-  assert.equal(movementOnly.state.firstFateTurns, 9);
+  assert.equal(movementOnly.state.firstFateTurns, 4);
   assert.equal(firstFate.kind, "fate");
   assert.equal(secondMovementOnly.kind, "normal");
   assert.equal(secondMovementOnly.state.secondFateTurns, 3);
@@ -105,9 +105,10 @@ test("counts a multi-merge swipe as one eligible relationship turn", () => {
 
 test("uses stage-scaled first-fate starts and guarantees", () => {
   const tiers = [
-    { highestTile: 2048, start: 10, guarantee: 18 },
-    { highestTile: 16384, start: 8, guarantee: 15 },
-    { highestTile: 262144, start: 6, guarantee: 12 }
+    { highestTile: 256, start: 6, guarantee: 10 },
+    { highestTile: 1024, start: 5, guarantee: 9 },
+    { highestTile: 8192, start: 4, guarantee: 8 },
+    { highestTile: 65536, start: 3, guarantee: 7 }
   ];
 
   for (const tier of tiers) {
@@ -124,9 +125,20 @@ test("uses stage-scaled first-fate starts and guarantees", () => {
   }
 });
 
+test("completes a guaranteed fate pair within fourteen eligible turns at 256", () => {
+  const firstContext = spawnContext({ highestTile: 256 });
+  const firstFate = chooseAfterTurns(10, firstContext);
+  const secondContext = spawnContext({ highestTile: 256, fateActive: true });
+  const secondFate = chooseTurns(firstFate.state, 4, secondContext);
+
+  assert.equal(firstFate.result.kind, "fate");
+  assert.equal(secondFate.result.kind, "fate");
+  assert.equal(secondFate.state.fatePhase, "awaiting-resolution");
+});
+
 test("guarantees the second fate tile on the fourth eligible turn", () => {
   const context = spawnContext({ fateActive: true });
-  let state = chooseAfterTurns(9, spawnContext()).state;
+  let state = chooseAfterTurns(4, spawnContext()).state;
   state = chooseSpawn(state, spawnContext(), () => 0).state;
 
   const firstThree = chooseTurns(state, 3, context);
@@ -142,6 +154,7 @@ test("allows conflicts only when their event gates are open", () => {
 
   for (const context of [
     spawnContext({ emptyCount: 4 }),
+    spawnContext({ highestTile: 512, emptyCount: 5 }),
     spawnContext({ emptyCount: 5, fateActive: true }),
     spawnContext({ emptyCount: 5, conflictActive: true }),
     spawnContext({ emptyCount: 5, milestoneGraceTurns: 8 })
@@ -158,7 +171,7 @@ test("uses an exact 2.5 percent conflict roll", () => {
 });
 
 test("keeps the conflict window at exactly 2.5 percent once fate rolls begin", () => {
-  const state = { ...createDirectorState(), firstFateTurns: 9 };
+  const state = { ...createDirectorState(), firstFateTurns: 4 };
   const context = spawnContext({ emptyCount: 5 });
 
   assert.equal(chooseSpawn(state, context, () => 0.2499).kind, "fate");
@@ -167,20 +180,20 @@ test("keeps the conflict window at exactly 2.5 percent once fate rolls begin", (
   assert.equal(chooseSpawn(state, context, () => 0.275).kind, "normal");
 });
 
-test("paces first-fate and conflict events with a twelve-merge cooldown", () => {
+test("paces first-fate and conflict events with a ten-turn cooldown", () => {
   const firstFate = chooseSpawn(
-    { ...createDirectorState(), firstFateTurns: 9 },
+    { ...createDirectorState(), firstFateTurns: 4 },
     spawnContext(),
     () => 0
   );
 
   assert.equal(firstFate.kind, "fate");
-  assert.equal(firstFate.state.eventCooldown, 12);
+  assert.equal(firstFate.state.eventCooldown, 10);
 
   let state = chooseSpawn(createDirectorState(), spawnContext({ emptyCount: 5 }), () => 0).state;
-  assert.equal(state.eventCooldown, 12);
+  assert.equal(state.eventCooldown, 10);
 
-  for (let turn = 0; turn < 12; turn += 1) {
+  for (let turn = 0; turn < 10; turn += 1) {
     const result = chooseSpawn(state, spawnContext({ emptyCount: 5, conflictActive: true }), () => 0);
     assert.equal(result.kind, "normal");
     state = result.state;
@@ -189,7 +202,7 @@ test("paces first-fate and conflict events with a twelve-merge cooldown", () => 
   assert.equal(chooseSpawn(state, spawnContext({ emptyCount: 5 }), () => 0).kind, "conflict");
 
   const secondFate = chooseSpawn(
-    { ...createDirectorState(), fatePhase: "awaiting-second", secondFateTurns: 3, eventCooldown: 12 },
+    { ...createDirectorState(), fatePhase: "awaiting-second", secondFateTurns: 3, eventCooldown: 10 },
     spawnContext({ fateActive: true }),
     () => 1
   );
@@ -197,13 +210,35 @@ test("paces first-fate and conflict events with a twelve-merge cooldown", () => 
 });
 
 test("does not spawn first fate while conflict is active but retains accumulated effort", () => {
-  const state = { ...createDirectorState(), firstFateTurns: 9 };
+  const state = { ...createDirectorState(), firstFateTurns: 4 };
   const blockedByConflict = chooseSpawn(state, spawnContext({ conflictActive: true }), () => 0);
   const afterConflict = chooseSpawn(blockedByConflict.state, spawnContext(), () => 0);
 
   assert.equal(blockedByConflict.kind, "normal");
-  assert.equal(blockedByConflict.state.firstFateTurns, 9);
+  assert.equal(blockedByConflict.state.firstFateTurns, 4);
   assert.equal(afterConflict.kind, "fate");
+});
+
+test("unlocks helpful fate at 256 but keeps conflict locked until 1024", () => {
+  const fate = chooseSpawn(
+    { ...createDirectorState(), firstFateTurns: 5 },
+    spawnContext({ highestTile: 256 }),
+    () => 0
+  );
+  const earlyConflict = chooseSpawn(
+    createDirectorState(),
+    spawnContext({ highestTile: 512, emptyCount: 5 }),
+    () => 0
+  );
+  const unlockedConflict = chooseSpawn(
+    createDirectorState(),
+    spawnContext({ highestTile: 1024, emptyCount: 5 }),
+    () => 0
+  );
+
+  assert.equal(fate.kind, "fate");
+  assert.equal(earlyConflict.kind, "normal");
+  assert.equal(unlockedConflict.kind, "conflict");
 });
 
 test("canMove recognizes only empty cells and valid ordinary or fate pairs", () => {

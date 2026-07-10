@@ -10,13 +10,16 @@
     CONFLICT_1: "conflict:1"
   });
   const FATE_TIERS = [
-    { min: 262144, start: 6, guarantee: 12 },
-    { min: 16384, start: 8, guarantee: 15 },
-    { min: 2048, start: 10, guarantee: 18 }
+    { min: 65536, start: 3, guarantee: 7 },
+    { min: 8192, start: 4, guarantee: 8 },
+    { min: 1024, start: 5, guarantee: 9 },
+    { min: 256, start: 6, guarantee: 10 }
   ];
+  const FATE_UNLOCK_TILE = 256;
+  const CONFLICT_UNLOCK_TILE = 1024;
   const FATE_CHANCE = 0.25;
   const CONFLICT_CHANCE = 0.025;
-  const EVENT_COOLDOWN_TURNS = 12;
+  const EVENT_COOLDOWN_TURNS = 10;
 
   function createDirectorState() {
     return {
@@ -95,6 +98,7 @@
 
   function canSpawnConflict(context, fateIsActive) {
     return !fateIsActive
+      && Number(context.highestTile || 0) >= CONFLICT_UNLOCK_TILE
       && !context.conflictActive
       && context.emptyCount >= 5
       && !context.milestoneGraceTurns;
@@ -111,7 +115,7 @@
     const inputBlocked = context.inputBlocked || context.blocked || context.changed === false;
     const ordinaryMergeCount = Number(context.ordinaryMergeCount) || 0;
 
-    if (inputBlocked || highestTile < 2048 || ordinaryMergeCount <= 0) {
+    if (inputBlocked || highestTile < FATE_UNLOCK_TILE || ordinaryMergeCount <= 0) {
       return { kind: "normal", state: nextState };
     }
 

@@ -534,42 +534,39 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.32));
 }
 
-.board-love-2048 .tile-number {
-  top: 32%;
+.board-love-2048 :is(.merge-cell, .love-motion-ghost) .tile-number {
+  top: 47%;
+  width: 94%;
+  max-width: 94%;
   color: #fffaf0;
   font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, sans-serif;
   font-size: clamp(23px, 7.2vw, 32px);
   font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) scale(var(--number-scale, 1));
+  transform-origin: center;
   text-shadow:
     0 1px 0 color-mix(in srgb, var(--tile-deep) 80%, #000),
     0 3px 8px rgba(0, 0, 0, 0.45),
     0 0 8px rgba(255, 255, 255, 0.24);
 }
 
-.board-love-2048 [data-digits="4"] .tile-number { top: 38%; font-size: clamp(18px, 4.8vw, 22px); }
-.board-love-2048 [data-digits="5"] .tile-number { top: 40%; font-size: clamp(16px, 4.5vw, 20px); }
-.board-love-2048 [data-digits="6"] .tile-number { top: 41%; font-size: clamp(14px, 4vw, 18px); }
-.board-love-2048 [data-digits="7"] .tile-number { top: 42%; font-size: clamp(12px, 3.5vw, 16px); }
-.board-love-2048 [data-digits="8"] .tile-number { top: 42%; font-size: clamp(10px, 3vw, 14px); }
-
-.board-love-2048 .tile-label {
+.board-love-2048 :is(.merge-cell, .love-motion-ghost) .tile-label {
   bottom: 8%;
-  overflow: hidden;
+  width: 94%;
+  max-width: 94%;
+  overflow: visible;
   color: rgba(255, 249, 239, 0.84);
   font-size: clamp(6px, 1.9vw, 8px);
   font-weight: 800;
   line-height: 1;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.42);
   white-space: nowrap;
-}
-
-.board-love-2048 [data-digits="7"] .tile-label,
-.board-love-2048 [data-digits="8"] .tile-label {
-  bottom: 8%;
-  font-size: 6px;
+  transform: translateX(-50%) scale(var(--label-scale, 1));
+  transform-origin: center bottom;
 }
 
 .board-love-2048 .merge-cell.is-top-spawn .heart-core {
@@ -642,21 +639,17 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   left: 50%;
   top: 43%;
   color: #fff8ed;
-  width: 82%;
+  width: 94%;
   font-size: clamp(12px, 4vw, 20px);
   font-style: normal;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   text-shadow: 0 2px 5px rgba(30, 4, 12, 0.62);
-  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  transform: translate(-50%, -50%) scale(var(--number-scale, 1));
+  transform-origin: center;
 }
-
-.love-motion-ghost[data-digits="4"] .motion-number { font-size: clamp(11px, 3.3vw, 16px); }
-.love-motion-ghost[data-digits="5"] .motion-number { font-size: clamp(10px, 3vw, 14px); }
-.love-motion-ghost[data-digits="6"] .motion-number { font-size: clamp(9px, 2.7vw, 12px); }
-.love-motion-ghost[data-digits="7"] .motion-number,
-.love-motion-ghost[data-digits="8"] .motion-number { font-size: clamp(8px, 2.35vw, 10px); }
 
 .board-love-2048 :is(.merge-cell, .love-motion-ghost).is-fate,
 .board-love-2048 :is(.merge-cell, .love-motion-ghost).is-conflict {

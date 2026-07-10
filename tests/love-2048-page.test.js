@@ -8,6 +8,7 @@ const Love2048Engine = require("../assets/love-2048-engine.js");
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "game-2048.html"), "utf8");
 const gamesSource = fs.readFileSync(path.join(root, "assets/games.js"), "utf8");
+const loveCss = fs.readFileSync(path.join(root, "assets/love-2048.css"), "utf8");
 
 class FakeClassList {
   constructor(element) {
@@ -327,6 +328,39 @@ test("loads the Love 2048 engine before VFX and the shared game script", () => {
   assert.ok(versions[0], "Love 2048 scripts must use a cache version");
   assert.deepEqual(versions, [versions[0], versions[0], versions[0]]);
   assert.equal(stylesheetVersion, versions[0], "Love 2048 CSS and scripts must share one cache version");
+});
+
+test("uses a compact nineteen-stage relationship arc ending at 524288", () => {
+  const block = gamesSource.match(/const tileStory = \[([\s\S]*?)\n    \];/);
+  assert.ok(block, "tileStory must remain a readable stage table");
+  const stages = [...block[1].matchAll(/\[(\d+),\s*"[^"]+",\s*"([^"]+)"/g)]
+    .map((match) => [Number(match[1]), match[2]]);
+
+  assert.deepEqual(stages, [
+    [2, "初见"], [4, "记住"], [8, "有好感"], [16, "试探"], [32, "暧昧"],
+    [64, "约见"], [128, "第一次约会"], [256, "频繁联系"], [512, "告白前夜"],
+    [1024, "确认关系"], [2048, "热恋期"], [4096, "磨合期"], [8192, "稳定相处"],
+    [16384, "共同旅行"], [32768, "同居日常"], [65536, "见过家人"],
+    [131072, "谈及婚姻"], [262144, "求婚时刻"], [524288, "长久相爱"]
+  ]);
+  assert.match(gamesSource, /const narrativeSceneSource = \{/);
+  assert.match(gamesSource, /524288: 4194304/);
+});
+
+test("scales long numbers and relationship labels around the heart center", () => {
+  assert.match(gamesSource, /function numberScaleForDigits\(digits\)/);
+  assert.match(gamesSource, /function labelScaleForLength\(length\)/);
+  assert.match(gamesSource, /item\.dataset\.labelLength = String\(labelLength\)/);
+  assert.match(gamesSource, /setProperty\("--number-scale", numberScaleForDigits\(digits\)\)/);
+  assert.match(gamesSource, /setProperty\("--label-scale", labelScaleForLength\(labelLength\)\)/);
+  assert.match(loveCss, /\.board-love-2048 :is\(\.merge-cell, \.love-motion-ghost\) \.tile-number \{/);
+  assert.match(loveCss, /\.board-love-2048 :is\(\.merge-cell, \.love-motion-ghost\) \.tile-label \{/);
+  assert.match(loveCss, /transform: translate\(-50%, -50%\) scale\(var\(--number-scale, 1\)\)/);
+  assert.match(loveCss, /transform: translateX\(-50%\) scale\(var\(--label-scale, 1\)\)/);
+  assert.equal(loveCss.includes('[data-digits="4"] .tile-number'), false);
+  const labelRule = loveCss.match(/\.board-love-2048 :is\(\.merge-cell, \.love-motion-ghost\) \.tile-label \{([\s\S]*?)\n\}/);
+  assert.ok(labelRule);
+  assert.equal(labelRule[1].includes("text-overflow: ellipsis"), false);
 });
 
 test("initializes 25 stable cells and blocked input adds only a normal tile", () => {

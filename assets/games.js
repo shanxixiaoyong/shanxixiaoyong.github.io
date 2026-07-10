@@ -196,21 +196,19 @@ if (soloGame) {
       [64, "○", "约见", "#af558b", "#4c1e43", "#e582ba", "#f7d8e9"],
       [128, "◉", "第一次约会", "#3f8fc0", "#173e60", "#76c8e5", "#daf3ff"],
       [256, "↗", "频繁联系", "#2f9a89", "#164e49", "#6dd4bd", "#d9fff4"],
-      [512, "☾", "心照不宣", "#6069b5", "#2a3066", "#959ee4", "#e8eaff"],
-      [1024, "✉", "告白前夜", "#bd6d72", "#592637", "#f09ba1", "#ffe1df"],
-      [2048, "♥", "确认关系", "#d62f49", "#630d20", "#ff6073", "#ffe7c8"],
-      [4096, "✹", "热恋期", "#d87931", "#682d15", "#ffad59", "#fff0cb"],
-      [8192, "◇", "磨合期", "#4e7097", "#1d304c", "#80a9cf", "#dceaff"],
-      [16384, "∞", "稳定相处", "#3b8a68", "#164d3c", "#68c08f", "#ddf8e8"],
-      [32768, "◌", "见过朋友", "#366caf", "#173662", "#65a0e0", "#e0efff"],
-      [65536, "⌁", "共同旅行", "#df6d55", "#6e2a24", "#ff9a78", "#ffe3d5"],
-      [131072, "⌂", "同居日常", "#845da1", "#3d2753", "#b58ad0", "#f0e4fa"],
-      [262144, "◎", "见过家人", "#d1982e", "#6d4714", "#f2c45a", "#fff0bd"],
-      [524288, "⌘", "谈及婚姻", "#b99647", "#5a461d", "#e6c66b", "#fff1c6"],
-      [1048576, "◈", "求婚时刻", "#d7bc6c", "#6b531f", "#f4db8b", "#fff7d8"],
-      [2097152, "✦", "婚礼之前", "#d4a0ae", "#684052", "#f1c4cc", "#fff0e9"],
-      [4194304, "∞", "长久相爱", "#b8c3df", "#3c466e", "#e8b8d0", "#fff7d5"]
+      [512, "✉", "告白前夜", "#bd6d72", "#592637", "#f09ba1", "#ffe1df"],
+      [1024, "♥", "确认关系", "#d62f49", "#630d20", "#ff6073", "#ffe7c8"],
+      [2048, "✹", "热恋期", "#d87931", "#682d15", "#ffad59", "#fff0cb"],
+      [4096, "◇", "磨合期", "#4e7097", "#1d304c", "#80a9cf", "#dceaff"],
+      [8192, "∞", "稳定相处", "#3b8a68", "#164d3c", "#68c08f", "#ddf8e8"],
+      [16384, "⌁", "共同旅行", "#df6d55", "#6e2a24", "#ff9a78", "#ffe3d5"],
+      [32768, "⌂", "同居日常", "#845da1", "#3d2753", "#b58ad0", "#f0e4fa"],
+      [65536, "◎", "见过家人", "#d1982e", "#6d4714", "#f2c45a", "#fff0bd"],
+      [131072, "⌘", "谈及婚姻", "#b99647", "#5a461d", "#e6c66b", "#fff1c6"],
+      [262144, "◈", "求婚时刻", "#d7bc6c", "#6b531f", "#f4db8b", "#fff7d8"],
+      [524288, "∞", "长久相爱", "#b8c3df", "#3c466e", "#e8b8d0", "#fff7d5"]
     ];
+    const stageValues = new Set(tileStory.map((item) => item[0]));
 
     const narrativeScenes = {
       2: [
@@ -383,6 +381,20 @@ if (soloGame) {
       ]
     };
 
+    const narrativeSceneSource = {
+      512: 1024,
+      1024: 2048,
+      2048: 4096,
+      4096: 8192,
+      8192: 16384,
+      16384: 65536,
+      32768: 131072,
+      65536: 262144,
+      131072: 524288,
+      262144: 1048576,
+      524288: 4194304
+    };
+
     const moodClasses = ["mood-meet", "mood-campus", "mood-chat", "mood-date", "mood-cafe", "mood-rain", "mood-street", "mood-home", "mood-starlight", "mood-vow"];
 
     board.style.setProperty("--cols", size);
@@ -436,13 +448,25 @@ if (soloGame) {
       return { value, glyph: selected[1], label: selected[2], rank, color: selected[3], deep: selected[4], accent: selected[5], rim: selected[6] };
     }
 
+    function numberScaleForDigits(digits) {
+      if (digits <= 3) return 1;
+      return ({ 4: 0.8, 5: 0.66, 6: 0.56, 7: 0.48, 8: 0.42 }[digits] || 0.38);
+    }
+
+    function labelScaleForLength(length) {
+      if (length <= 4) return 1;
+      return ({ 5: 0.9, 6: 0.78, 7: 0.68, 8: 0.6 }[length] || 0.54);
+    }
+
     function maxTile() {
       return tiles.reduce((best, value) => isOrdinaryTile(value) ? Math.max(best, value) : best, 0);
     }
 
     function pickMilestoneScene(nextValue) {
       const finalStage = tileStory[tileStory.length - 1][0];
-      const pool = narrativeScenes[nextValue] || narrativeScenes[finalStage];
+      const sceneSource = narrativeSceneSource[nextValue] || nextValue;
+      const finalSceneSource = narrativeSceneSource[finalStage] || finalStage;
+      const pool = narrativeScenes[sceneSource] || narrativeScenes[finalSceneSource];
       const tile = romanceTile(nextValue);
       const base = pool[Math.floor(Math.random() * pool.length)];
       return { ...base, value: nextValue, stage: tile.label, glyph: tile.glyph };
@@ -581,7 +605,8 @@ if (soloGame) {
           + ";--tile-deep:" + tile.deep
           + ";--tile-accent:" + tile.accent
           + ";--tile-rim:" + tile.rim
-          + ";--rank:" + tile.rank + ";" : "")
+          + ";--rank:" + tile.rank
+          + ";--number-scale:" + numberScaleForDigits(String(tile.value).length) + ";" : "")
           + "--ghost-x:" + fromRect.x + "px"
           + ";--ghost-y:" + fromRect.y + "px"
           + ";--ghost-w:" + fromRect.width + "px"
@@ -651,7 +676,9 @@ if (soloGame) {
       const ordinaryResults = results.filter((result) => isOrdinaryTile(result.nextValue));
       if (!ordinaryResults.length) return null;
       const featured = ordinaryResults.slice().sort((left, right) => right.nextValue - left.nextValue)[0];
-      const isFirstStageReveal = featured.nextValue > bestValue && !seenStageValues.has(featured.nextValue);
+      const isFirstStageReveal = stageValues.has(featured.nextValue)
+        && featured.nextValue > bestValue
+        && !seenStageValues.has(featured.nextValue);
       bestValue = Math.max(bestValue, featured.nextValue);
       ordinaryResults.forEach((result) => seenStageValues.add(result.nextValue));
       if (isFirstStageReveal) {
@@ -873,7 +900,7 @@ if (soloGame) {
     }
 
     function clearTileStyle(item) {
-      for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits"]) {
+      for (const property of ["--tile", "--tile-deep", "--tile-accent", "--tile-rim", "--rank", "--digits", "--number-scale", "--label-scale"]) {
         item.style.removeProperty(property);
       }
     }
@@ -889,6 +916,7 @@ if (soloGame) {
         item.dataset.value = "";
         item.dataset.rank = "0";
         item.dataset.digits = "0";
+        item.dataset.labelLength = "0";
         item.dataset.romance = "";
         fragment.append(item);
         return item;
@@ -922,6 +950,7 @@ if (soloGame) {
         const special = specialTile(value);
         const tile = ordinary ? romanceTile(value) : null;
         const digits = ordinary ? String(value).length : 0;
+        const labelLength = Array.from(tile?.label || special?.label || "").length;
         const classes = [
           "merge-cell",
           "love-tile",
@@ -938,6 +967,7 @@ if (soloGame) {
         item.dataset.value = value ? String(value) : "";
         item.dataset.rank = String(tile?.rank || 0);
         item.dataset.digits = String(digits);
+        item.dataset.labelLength = String(labelLength);
         item.setAttribute("data-romance", tile?.label || special?.label || "");
         if (special?.kind === "fate") item.dataset.special = "fate";
         else if (special?.kind === "conflict") item.dataset.special = "conflict";
@@ -961,6 +991,8 @@ if (soloGame) {
         item.style.setProperty("--tile-rim", tile.rim);
         item.style.setProperty("--rank", tile.rank);
         item.style.setProperty("--digits", digits);
+        item.style.setProperty("--number-scale", numberScaleForDigits(digits));
+        item.style.setProperty("--label-scale", labelScaleForLength(labelLength));
         item.innerHTML = tileContentMarkup(value, index);
       });
     }
