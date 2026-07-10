@@ -36,7 +36,7 @@ const expectations = [
   ["HTML page description matches love theme", files.html, "爱心、情侣、桃花"],
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
-  ["HTML uses the smooth-motion cache version", files.html, "love-20260710g"],
+  ["HTML uses the smooth-motion cache version", files.html, "love-20260710i"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
   ["Game registry uses exact public name", files.js, 'name: "心动2048"'],
