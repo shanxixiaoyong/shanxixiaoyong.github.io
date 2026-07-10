@@ -355,6 +355,20 @@ test("a changed numeric merge calls chooseSpawn once with its merge-pair count",
   assert.equal(harness.occupiedCells().length, 2);
 });
 
+test("a randomly spawned four does not consume the first merge-to-four cinematic", () => {
+  const harness = createHarness();
+  harness.randomValues.splice(0, harness.randomValues.length, 0.99, 0.99);
+
+  harness.press("ArrowUp");
+  assert.ok(harness.occupiedCells().some((cell) => cell.dataset.value === "4"));
+  assert.equal(harness.document.body.querySelector(".love-stage-celebration"), null);
+
+  harness.press("ArrowLeft");
+  const cinematic = harness.document.body.querySelector(".love-stage-celebration");
+  assert.ok(cinematic, "the first natural merge to four must still unlock its cinematic");
+  assert.match(cinematic.innerHTML, /首次解锁 · 记住/);
+});
+
 test("fate and conflict decisions replace the normal spawn and render real DOM state", () => {
   const cases = [
     {

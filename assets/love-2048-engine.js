@@ -149,8 +149,12 @@
 
     const tier = fateTier(highestTile);
     nextState.firstFateTurns += 1;
-    if (nextState.firstFateTurns >= tier.guarantee
-      || (nextState.firstFateTurns >= tier.start && nextRandom() < FATE_CHANCE)) {
+    const fateGuaranteed = nextState.firstFateTurns >= tier.guarantee;
+    const fateChance = nextState.firstFateTurns >= tier.start ? FATE_CHANCE : 0;
+    const conflictEligible = canSpawnConflict(context, false);
+    const eventRoll = fateGuaranteed || (!fateChance && !conflictEligible) ? 1 : nextRandom();
+
+    if (fateGuaranteed || eventRoll < fateChance) {
       nextState.firstFateTurns = 0;
       nextState.secondFateTurns = 0;
       nextState.fatePhase = "awaiting-second";
@@ -158,7 +162,7 @@
       return { kind: "fate", state: nextState };
     }
 
-    if (canSpawnConflict(context, false) && nextRandom() < CONFLICT_CHANCE) {
+    if (conflictEligible && eventRoll < fateChance + CONFLICT_CHANCE) {
       nextState.eventCooldown = EVENT_COOLDOWN_TURNS;
       return { kind: "conflict", state: nextState };
     }

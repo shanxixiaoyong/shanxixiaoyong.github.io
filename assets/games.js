@@ -969,7 +969,6 @@ if (soloGame) {
       const mergeSet = new Set(lastMergeCells);
       const motionTargetSet = new Set(lastMotionTargets);
       const top = romanceTile(maxTile());
-      bestValue = Math.max(bestValue, top.value || 2);
       board.style.setProperty("--affinity-alpha", Math.min(0.62, Math.log2(Math.max(2, bestValue)) / 18).toFixed(3));
       board.style.setProperty("--meet-alpha", Math.min(0.58, storyLog.length / 12).toFixed(3));
       board.style.setProperty("--trust-alpha", Math.min(0.62, Math.log2(Math.max(2, bestValue)) / 16).toFixed(3));

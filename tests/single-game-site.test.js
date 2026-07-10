@@ -12,6 +12,7 @@ const indexHtml = read("index.html");
 const redirectHtml = read("games.html");
 const gameHtml = read("game-2048.html");
 const gamesSource = read("assets/games.js");
+const worldCss = read("assets/world.css");
 const validators = ["tools/validate-site.mjs", "tools/validate-love-2048.mjs"];
 let gameContract;
 
@@ -93,8 +94,10 @@ test("legacy game pages and executable runtimes are absent", () => {
 
   for (const legacy of gameContract.LEGACY_GAMES) {
     assert.equal(fs.existsSync(path.join(root, legacy.file)), false, legacy.file);
+    assert.equal(fs.existsSync(path.join(root, legacy.asset)), false, legacy.asset);
     assert.equal(gamesSource.includes(legacy.title), false, legacy.title);
     assert.equal(gamesSource.includes(legacy.runtime), false, legacy.runtime);
+    assert.equal(worldCss.includes(legacy.asset.replace(/^assets\//, "")), false, legacy.asset);
     assert.equal(indexHtml.includes(legacy.file), false, legacy.file);
     assert.equal(redirectHtml.includes(legacy.file), false, legacy.file);
   }

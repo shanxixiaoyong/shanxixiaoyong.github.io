@@ -84,6 +84,25 @@ test("advances fate effort and the second-fate guarantee only after ordinary mer
   assert.equal(secondFate.kind, "fate");
 });
 
+test("counts a multi-merge swipe as one eligible relationship turn", () => {
+  const cooldownResult = chooseSpawn(
+    { ...createDirectorState(), firstFateTurns: 2, eventCooldown: 5 },
+    spawnContext({ ordinaryMergeCount: 4 }),
+    () => 1
+  );
+
+  assert.equal(cooldownResult.kind, "normal");
+  assert.equal(cooldownResult.state.firstFateTurns, 2);
+  assert.equal(cooldownResult.state.eventCooldown, 4);
+
+  const openResult = chooseSpawn(
+    { ...createDirectorState(), firstFateTurns: 2 },
+    spawnContext({ ordinaryMergeCount: 4 }),
+    () => 1
+  );
+  assert.equal(openResult.state.firstFateTurns, 3);
+});
+
 test("uses stage-scaled first-fate starts and guarantees", () => {
   const tiers = [
     { highestTile: 2048, start: 10, guarantee: 18 },
@@ -136,6 +155,16 @@ test("uses an exact 2.5 percent conflict roll", () => {
 
   assert.equal(chooseSpawn(createDirectorState(), context, () => 0.0249).kind, "conflict");
   assert.equal(chooseSpawn(createDirectorState(), context, () => 0.025).kind, "normal");
+});
+
+test("keeps the conflict window at exactly 2.5 percent once fate rolls begin", () => {
+  const state = { ...createDirectorState(), firstFateTurns: 9 };
+  const context = spawnContext({ emptyCount: 5 });
+
+  assert.equal(chooseSpawn(state, context, () => 0.2499).kind, "fate");
+  assert.equal(chooseSpawn(state, context, () => 0.25).kind, "conflict");
+  assert.equal(chooseSpawn(state, context, () => 0.2749).kind, "conflict");
+  assert.equal(chooseSpawn(state, context, () => 0.275).kind, "normal");
 });
 
 test("paces first-fate and conflict events with a twelve-merge cooldown", () => {

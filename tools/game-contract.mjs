@@ -17,18 +17,26 @@ export const ACTIVE_PUBLIC_JS_FILES = [
   "assets/love-2048-vfx.js"
 ];
 
-export const ACTIVE_PUBLIC_FILES = [...ACTIVE_PUBLIC_HTML_FILES, ...ACTIVE_PUBLIC_JS_FILES];
+export const ACTIVE_PUBLIC_STYLE_FILES = [
+  "assets/world.css"
+];
+
+export const ACTIVE_PUBLIC_FILES = [
+  ...ACTIVE_PUBLIC_HTML_FILES,
+  ...ACTIVE_PUBLIC_JS_FILES,
+  ...ACTIVE_PUBLIC_STYLE_FILES
+];
 
 export const LEGACY_GAMES = [
-  { file: "game-tetris.html", title: "熔炉方块", runtime: "runTetris" },
-  { file: "game-mines.html", title: "声呐扫雷", runtime: "runMines" },
-  { file: "game-sudoku.html", title: "墨格数独", runtime: "runSudoku" },
-  { file: "game-snake.html", title: "霓虹列车", runtime: "runSnake" },
-  { file: "game-bubble.html", title: "潮汐泡泡", runtime: "runBubble" },
-  { file: "game-suika.html", title: "重力果园", runtime: "runSuika" },
-  { file: "game-jump.html", title: "月面跳台", runtime: "runJump" },
-  { file: "game-tower.html", title: "峡谷塔防", runtime: "runTower" },
-  { file: "game-cards.html", title: "星舰卡牌", runtime: "runCards" }
+  { file: "game-tetris.html", title: "熔炉方块", runtime: "runTetris", asset: "assets/game-art/tetris-forge-ui.jpg" },
+  { file: "game-mines.html", title: "声呐扫雷", runtime: "runMines", asset: "assets/game-art/sonar-mines-ui.jpg" },
+  { file: "game-sudoku.html", title: "墨格数独", runtime: "runSudoku", asset: "assets/game-art/ink-sudoku-ui.jpg" },
+  { file: "game-snake.html", title: "霓虹列车", runtime: "runSnake", asset: "assets/game-art/neon-snake-ui.jpg" },
+  { file: "game-bubble.html", title: "潮汐泡泡", runtime: "runBubble", asset: "assets/game-art/tide-bubble-ui.jpg" },
+  { file: "game-suika.html", title: "重力果园", runtime: "runSuika", asset: "assets/game-art/orchard-suika-ui.jpg" },
+  { file: "game-jump.html", title: "月面跳台", runtime: "runJump", asset: "assets/game-art/lunar-jump-ui.jpg" },
+  { file: "game-tower.html", title: "峡谷塔防", runtime: "runTower", asset: "assets/game-art/canyon-tower-ui.jpg" },
+  { file: "game-cards.html", title: "星舰卡牌", runtime: "runCards", asset: "assets/game-art/starship-cards-ui.jpg" }
 ];
 
 export const LEGACY_LOBBY_COPY = [
@@ -74,7 +82,8 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
   const gamesScript = source("assets/games.js");
   const activePublicSurface = [
     ...ACTIVE_PUBLIC_HTML_FILES.map((file) => htmlSources[file]),
-    ...ACTIVE_PUBLIC_JS_FILES.map(source)
+    ...ACTIVE_PUBLIC_JS_FILES.map(source),
+    ...ACTIVE_PUBLIC_STYLE_FILES.map(source)
   ].join("\n");
 
   const homepageGameLinks = [...indexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
@@ -126,8 +135,13 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
     if (activePublicSurface.includes(copy)) failures.push(`Legacy multi-game or lobby copy still public: ${copy}`);
   }
   for (const legacy of LEGACY_GAMES) {
+    const relativeAsset = legacy.asset.replace(/^assets\//, "");
     if (exists(legacy.file)) failures.push(`Legacy game page still exists: ${legacy.file}`);
+    if (exists(legacy.asset)) failures.push(`Legacy game art still exists: ${legacy.asset}`);
     if (activePublicSurface.includes(legacy.file)) failures.push(`Legacy game link still public: ${legacy.file}`);
+    if (activePublicSurface.includes(legacy.asset) || activePublicSurface.includes(relativeAsset)) {
+      failures.push(`Legacy game art still referenced: ${legacy.asset}`);
+    }
     if (activePublicSurface.includes(legacy.title)) failures.push(`Legacy game title still public: ${legacy.title}`);
     if (activePublicSurface.includes(legacy.runtime)) failures.push(`Legacy game runtime still public: ${legacy.runtime}`);
   }
