@@ -33,6 +33,8 @@ const forbiddenHtml = [
   'class="paper-card"',
   'class="patent-card"',
   'class="affiliation-card"',
+  "论文不是缩略图",
+  "Research should be read, not reduced to thumbnails",
   '<style>'
 ];
 

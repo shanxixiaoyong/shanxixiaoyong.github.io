@@ -135,7 +135,7 @@ const required = [
   '教育、工作与那些构成训练底色的细节',
   '更新日期：2026-07-10',
   'Three research lines, one evidence chain from signals to health decisions',
-  'Research should be read, not reduced to thumbnails',
+  'Medical Vision, Tactile Sensing, and Health Assessment',
   'A technical register from research methods to working systems',
   'Education, work, and the details behind the training',
   'readPreference(storageKeys.theme',

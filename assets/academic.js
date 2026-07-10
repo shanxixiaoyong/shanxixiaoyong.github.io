@@ -49,7 +49,7 @@
         },
         publications: {
           kicker: "Publications",
-          title: "论文不是缩略图，而是可以被阅读的研究现场",
+          title: "医学视觉、触觉感知与健康评估",
           intro: "论文与会议成果覆盖医学影像、自监督学习、压电触摸力感知、可穿戴传感和康复评估。"
         },
         patents: {
@@ -139,7 +139,7 @@
         },
         publications: {
           kicker: "Publications",
-          title: "Research should be read, not reduced to thumbnails",
+          title: "Medical Vision, Tactile Sensing, and Health Assessment",
           intro: "Journal and conference work covers medical imaging, self-supervised learning, piezoelectric force sensing, wearable sensing, and rehabilitation assessment."
         },
         patents: {
@@ -563,7 +563,7 @@
       if (visible) visible.textContent = label.label;
     });
 
-    setText(".cover-edition", `${text.coverEdition} 2026`);
+    setText(".cover-edition-label", text.coverEdition);
     setText(".cover-kicker", text.coverKicker);
     setText(".name-primary", text.namePrimary);
     setText(".name-secondary", text.nameSecondary);

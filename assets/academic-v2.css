@@ -404,7 +404,7 @@ ul {
   text-transform: uppercase;
 }
 
-.cover-edition span {
+.cover-edition-year {
   float: right;
   color: var(--accent-two);
 }
@@ -2730,7 +2730,7 @@ body[data-theme="gallery"] .profile-layout {
   body[data-theme="minimal"] .cover,
   body[data-theme="minimal"] .chapter,
   body[data-theme="minimal"] .contact-inner {
-    width: calc(100% - 24px);
+    width: calc(100% - 52px);
   }
 
   body[data-theme="minimal"] .mobile-progress {
@@ -2762,7 +2762,7 @@ body[data-theme="gallery"] .profile-layout {
   }
 
   body[data-theme="lab"] .cover {
-    width: calc(100% - 20px);
+    width: calc(100% - 52px);
     padding-right: 8px;
     padding-left: 8px;
     border-right: 1px solid var(--rule);
@@ -2833,10 +2833,10 @@ body[data-theme="gallery"] .profile-layout {
   body[data-theme="lab"] .mobile-progress,
   body[data-theme="gallery"] .mobile-progress {
     top: 50%;
-    right: 2px;
+    right: 0;
     bottom: auto;
     left: auto;
-    width: 28px;
+    width: 26px;
     height: auto;
     margin: 0;
     padding: 3px;
