@@ -158,7 +158,7 @@ Expected: JavaScript syntax passes; structural validator may still report missin
 
 - [ ] **Step 1: Establish shared foundations and the Folio default**
 
-Define neutral surfaces plus teal, vermilion, and blue accents. Build a floating header, asymmetric cover, staggered uncropped figure plates, numbered chapter heads, horizontal research tracks, alternating publication spreads, ruled patent ledger, timeline, course matrix, honors wall, and compact contact close. Use borders and typography for hierarchy rather than floating section cards.
+Define neutral surfaces plus teal, vermilion, and blue accents. Build a floating header, asymmetric cover with one uncropped evidence plate, numbered chapter heads, horizontal research tracks, alternating publication spreads, ruled patent ledger, timeline, course matrix, honors wall, and compact contact close. Use borders and typography for hierarchy rather than floating section cards.
 
 - [ ] **Step 2: Add four structurally different theme layouts**
 
@@ -175,7 +175,7 @@ Also change cover composition, navigation treatment, research-track layout, pate
 
 - [ ] **Step 3: Implement the 430 x 932 mobile composition**
 
-At `max-width: 720px`, keep the content width aligned to 18px margins, hide desktop chapter links, display the bottom progress dock, keep controls within the viewport, use stable figure aspect ratios, and ensure the first chapter peeks below the cover. Add bottom padding so the dock never obscures links.
+At `max-width: 720px`, keep the primary content width aligned to 26px margins, hide desktop chapter links, display a 28px floating right-edge progress rail that does not shift the centered content, keep controls within the viewport, use stable format-aware figure aspect ratios, and ensure the first chapter peeks below the cover.
 
 - [ ] **Step 4: Add accessible motion and interaction states**
 

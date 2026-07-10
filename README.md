@@ -31,7 +31,7 @@ Public profile links:
 
 ## Maintenance
 
-The site is implemented as static HTML, CSS, and JavaScript. Publication and patent records are stored as structured JavaScript arrays in `home.html`, so academic updates only require editing the relevant data entries and pushing to `master`.
+The site is implemented as static HTML, CSS, and JavaScript. Publication, patent, bilingual copy, and academic-page interaction data are maintained in `assets/academic.js`, while `home.html` provides the semantic document shell.
 
 The knowledge base index can be regenerated from the local Obsidian-style markdown vault:
 

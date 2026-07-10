@@ -29,7 +29,7 @@ The first viewport reads like a research folio cover rather than a profile card.
 - a large bilingual name lockup;
 - a concise research statement;
 - three contact links;
-- a staggered strip of three uncropped local paper figures;
+- one uncropped representative evidence plate with full-screen inspection;
 - both current affiliations as typographic credits;
 - a visible continuation into the first research chapter.
 
@@ -37,7 +37,7 @@ The cover does not display publication or patent counts. It does not include exp
 
 ### Research tracks
 
-The three research areas become numbered horizontal tracks. Each track pairs a concise argument with one real local paper figure and a compact keyword line. They are not standalone cards and do not repeat the same layout as publications.
+The three research areas become numbered horizontal tracks. Each track pairs a concise argument with a compact keyword line. They are not standalone cards, and paper figures remain concentrated in the publication record instead of being repeated as decorative thumbnails.
 
 ### Publications
 
