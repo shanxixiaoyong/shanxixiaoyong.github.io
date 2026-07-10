@@ -1,5 +1,7 @@
 const assert = require("node:assert/strict");
+const childProcess = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
@@ -10,19 +12,45 @@ const indexHtml = read("index.html");
 const redirectHtml = read("games.html");
 const gameHtml = read("game-2048.html");
 const gamesSource = read("assets/games.js");
-const validatorSource = `${read("tools/validate-site.mjs")}\n${read("tools/validate-love-2048.mjs")}`;
+const validators = ["tools/validate-site.mjs", "tools/validate-love-2048.mjs"];
+let gameContract;
 
-const legacyGames = [
-  { page: "game-tetris.html", name: "熔炉方块", runtime: "runTetris" },
-  { page: "game-mines.html", name: "声呐扫雷", runtime: "runMines" },
-  { page: "game-sudoku.html", name: "墨格数独", runtime: "runSudoku" },
-  { page: "game-snake.html", name: "霓虹列车", runtime: "runSnake" },
-  { page: "game-bubble.html", name: "潮汐泡泡", runtime: "runBubble" },
-  { page: "game-suika.html", name: "重力果园", runtime: "runSuika" },
-  { page: "game-jump.html", name: "月面跳台", runtime: "runJump" },
-  { page: "game-tower.html", name: "峡谷塔防", runtime: "runTower" },
-  { page: "game-cards.html", name: "星舰卡牌", runtime: "runCards" }
-];
+test.before(async () => {
+  gameContract = await import("../tools/game-contract.mjs");
+});
+
+function linkOverlay(sourceDir, targetDir, mutationParts) {
+  fs.mkdirSync(targetDir, { recursive: true });
+  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+    const source = path.join(sourceDir, entry.name);
+    const target = path.join(targetDir, entry.name);
+    if (entry.name !== mutationParts[0]) {
+      fs.symlinkSync(source, target, entry.isDirectory() ? "dir" : "file");
+    } else if (mutationParts.length > 1) {
+      linkOverlay(source, target, mutationParts.slice(1));
+    }
+  }
+}
+
+function assertValidatorsRejectMutation(file, mutate) {
+  const overlay = fs.mkdtempSync(path.join(os.tmpdir(), "single-game-contract-"));
+  try {
+    linkOverlay(root, overlay, file.split("/"));
+    const target = path.join(overlay, file);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, mutate(read(file)));
+
+    for (const validator of validators) {
+      const result = childProcess.spawnSync(process.execPath, [path.join(root, validator)], {
+        cwd: overlay,
+        encoding: "utf8"
+      });
+      assert.notEqual(result.status, 0, `${validator} accepted mutation in ${file}`);
+    }
+  } finally {
+    fs.rmSync(overlay, { recursive: true, force: true });
+  }
+}
 
 test("publishes the sole game under the exact name 心动2048", () => {
   assert.match(gameHtml, /<title>心动2048 - 刘勇 \/ Yong Liu<\/title>/);
@@ -31,24 +59,27 @@ test("publishes the sole game under the exact name 心动2048", () => {
   assert.match(gameHtml, /<h1 id="game-title">心动2048<\/h1>/);
   assert.match(gamesSource, /name: "心动2048"/);
 
-  for (const source of [indexHtml, redirectHtml, gameHtml, gamesSource]) {
+  for (const file of gameContract.ACTIVE_PUBLIC_FILES) {
+    const source = read(file);
     assert.equal(source.includes("桃花心动"), false);
     assert.equal(source.includes("心动 2048"), false);
   }
 });
 
 test("homepage has one direct game destination", () => {
-  const gameLinks = [...indexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
+  const activeIndexHtml = gameContract.stripHtmlComments(indexHtml);
+  const gameLinks = [...activeIndexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
   assert.deepEqual(gameLinks, ["game-2048.html"]);
-  assert.match(indexHtml, /<a class="portal-card" href="game-2048\.html">/);
-  assert.match(indexHtml, /<h2>心动2048<\/h2>/);
+  assert.match(activeIndexHtml, /<a class="portal-card" href="game-2048\.html">/);
+  assert.match(activeIndexHtml, /<h2>心动2048<\/h2>/);
 });
 
 test("games.html immediately redirects old bookmarks to 心动2048", () => {
-  assert.match(redirectHtml, /<link rel="canonical" href="game-2048\.html">/);
-  assert.match(redirectHtml, /<meta http-equiv="refresh" content="0; url=game-2048\.html">/);
-  assert.match(redirectHtml, /<a href="game-2048\.html">心动2048<\/a>/);
-  assert.equal(redirectHtml.includes("game-lobby-page"), false);
+  const activeRedirectHtml = gameContract.stripHtmlComments(redirectHtml);
+  assert.match(activeRedirectHtml, /<link rel="canonical" href="game-2048\.html">/);
+  assert.match(activeRedirectHtml, /<meta http-equiv="refresh" content="0; url=game-2048\.html">/);
+  assert.match(activeRedirectHtml, /<a href="game-2048\.html">心动2048<\/a>/);
+  assert.equal(activeRedirectHtml.includes("game-lobby-page"), false);
 });
 
 test("the game returns directly to the homepage", () => {
@@ -60,20 +91,55 @@ test("legacy game pages and executable runtimes are absent", () => {
   assert.equal((gamesSource.match(/\bfunction run\w*\s*\(/g) || []).length, 1);
   assert.match(gamesSource, /function run2048\(\)/);
 
-  for (const legacy of legacyGames) {
-    assert.equal(fs.existsSync(path.join(root, legacy.page)), false, legacy.page);
-    assert.equal(gamesSource.includes(legacy.name), false, legacy.name);
+  for (const legacy of gameContract.LEGACY_GAMES) {
+    assert.equal(fs.existsSync(path.join(root, legacy.file)), false, legacy.file);
+    assert.equal(gamesSource.includes(legacy.title), false, legacy.title);
     assert.equal(gamesSource.includes(legacy.runtime), false, legacy.runtime);
-    assert.equal(indexHtml.includes(legacy.page), false, legacy.page);
-    assert.equal(redirectHtml.includes(legacy.page), false, legacy.page);
+    assert.equal(indexHtml.includes(legacy.file), false, legacy.file);
+    assert.equal(redirectHtml.includes(legacy.file), false, legacy.file);
   }
 });
 
-test("validators explicitly reject every legacy game surface", () => {
-  for (const legacy of legacyGames) {
-    assert.equal(validatorSource.includes(legacy.page), true, legacy.page);
-    assert.equal(validatorSource.includes(legacy.name), true, legacy.name);
-    assert.equal(validatorSource.includes(legacy.runtime), true, legacy.runtime);
+test("validators reject commented requirements and forbidden content across every active surface", () => {
+  assertValidatorsRejectMutation("index.html", (source) => source.replace(
+    /(<a class="portal-card" href="game-2048\.html">[\s\S]*?<\/a>)/,
+    "<!-- $1 -->"
+  ));
+  for (const requiredMarkup of [
+    /(<meta http-equiv="refresh"[^>]+>)/,
+    /(<link rel="canonical"[^>]+>)/,
+    /(<a href="game-2048\.html">心动2048<\/a>)/
+  ]) {
+    assertValidatorsRejectMutation("games.html", (source) => source.replace(requiredMarkup, "<!-- $1 -->"));
   }
-  assert.match(validatorSource, /Legacy game/);
+
+  for (const legacy of gameContract.LEGACY_GAMES) {
+    assertValidatorsRejectMutation("index.html", (source) => source.replace(
+      "</body>",
+      `<a href="${legacy.file}">${legacy.title}</a></body>`
+    ));
+    assertValidatorsRejectMutation(
+      "assets/games.js",
+      (source) => `${source}\nfunction ${legacy.runtime}() { return "${legacy.title} ${legacy.file}"; }\n`
+    );
+  }
+
+  const legacy = gameContract.LEGACY_GAMES[0];
+  for (const file of gameContract.ACTIVE_PUBLIC_HTML_FILES) {
+    assertValidatorsRejectMutation(file, (source) => source.replace(
+      "</body>",
+      `<a href="${legacy.file}">${legacy.title}</a></body>`
+    ));
+  }
+  for (const file of gameContract.ACTIVE_PUBLIC_JS_FILES) {
+    assertValidatorsRejectMutation(
+      file,
+      (source) => `${source}\nfunction ${legacy.runtime}() { return "${legacy.title} ${legacy.file}"; }\n`
+    );
+  }
+
+  for (const file of gameContract.ACTIVE_PUBLIC_FILES) {
+    const copy = gameContract.LEGACY_LOBBY_COPY.join(" / ");
+    assertValidatorsRejectMutation(file, (source) => `${source}\n${copy}\n`);
+  }
 });

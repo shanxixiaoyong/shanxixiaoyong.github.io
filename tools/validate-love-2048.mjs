@@ -1,4 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
+import {
+  readGameContractSources,
+  validateSingleGameContract
+} from "./game-contract.mjs";
 
 function readOptional(path) {
   try {
@@ -10,14 +14,19 @@ function readOptional(path) {
 
 const files = {
   html: readFileSync("game-2048.html", "utf8"),
-  index: readFileSync("index.html", "utf8"),
-  redirect: readFileSync("games.html", "utf8"),
   js: readFileSync("assets/games.js", "utf8"),
   css: readFileSync("assets/world.css", "utf8"),
   loveCss: readOptional("assets/love-2048.css"),
-  vfx: readOptional("assets/love-2048-vfx.js"),
-  siteValidator: readFileSync("tools/validate-site.mjs", "utf8")
+  vfx: readOptional("assets/love-2048-vfx.js")
 };
+
+const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
+const gameContractFailures = validateSingleGameContract({ sources: gameContractSources, exists: existsSync });
+if (gameContractFailures.length) {
+  console.error("Love 2048 single-game contract validation failed:");
+  for (const failure of gameContractFailures) console.error(`- ${failure}`);
+  process.exit(1);
+}
 
 const expectations = [
   ["HTML page title uses exact public name", files.html, "<title>心动2048 - 刘勇 / Yong Liu</title>"],
@@ -152,15 +161,10 @@ const expectations = [
   ["VFX module changes scene mood", files.vfx, "setMood"],
   ["VFX module emits local bursts", files.vfx, "burst"],
   ["VFX module emits stage celebrations", files.vfx, "celebrate"],
-  ["VFX module cleans up", files.vfx, "destroy"],
-  ["Site validator tracks love theme", files.siteValidator, 'theme: "love-2048"'],
-  ["Site validator tracks love board", files.siteValidator, 'board: "board-love-2048"']
+  ["VFX module cleans up", files.vfx, "destroy"]
 ];
 
 for (const forbidden of [
-  ["Public pages remove old 桃花-prefixed name", `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`, "桃花心动 2048"],
-  ["Public pages remove old unspaced 桃花-prefixed name", `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`, "桃花心动2048"],
-  ["Public pages remove spaced public name", `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`, "心动 2048"],
   ["2048 removes scene bloom", files.js, "function showSceneBloom"],
   ["2048 removes scene danmaku", files.js, "function showSceneDanmaku"],
   ["2048 removes repeat-memory rewriting", files.js, "function rememberScene"],
@@ -214,27 +218,6 @@ function run2048FunctionSource(name) {
   if (start === -1) return "";
   const next = scope.indexOf("\n    function ", start + 1);
   return scope.slice(start, next === -1 ? scope.length : next);
-}
-
-const legacyGames = [
-  { file: "game-tetris.html", title: "熔炉方块", runtime: "runTetris" },
-  { file: "game-mines.html", title: "声呐扫雷", runtime: "runMines" },
-  { file: "game-sudoku.html", title: "墨格数独", runtime: "runSudoku" },
-  { file: "game-snake.html", title: "霓虹列车", runtime: "runSnake" },
-  { file: "game-bubble.html", title: "潮汐泡泡", runtime: "runBubble" },
-  { file: "game-suika.html", title: "重力果园", runtime: "runSuika" },
-  { file: "game-jump.html", title: "月面跳台", runtime: "runJump" },
-  { file: "game-tower.html", title: "峡谷塔防", runtime: "runTower" },
-  { file: "game-cards.html", title: "星舰卡牌", runtime: "runCards" }
-];
-
-const publicGameSurface = `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`;
-for (const legacy of legacyGames) {
-  if (existsSync(legacy.file) || publicGameSurface.includes(legacy.file)
-      || publicGameSurface.includes(legacy.title) || files.js.includes(legacy.runtime)) {
-    console.error(`Legacy game surface still present: ${legacy.file} / ${legacy.title} / ${legacy.runtime}`);
-    process.exit(1);
-  }
 }
 
 function validateBackdropRouting() {
