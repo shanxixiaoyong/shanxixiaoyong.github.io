@@ -1,4 +1,8 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import {
+  readGameContractSources,
+  validateSingleGameContract
+} from "./game-contract.mjs";
 
 function readOptional(path) {
   try {
@@ -13,18 +17,29 @@ const files = {
   js: readFileSync("assets/games.js", "utf8"),
   css: readFileSync("assets/world.css", "utf8"),
   loveCss: readOptional("assets/love-2048.css"),
-  vfx: readOptional("assets/love-2048-vfx.js"),
-  siteValidator: readFileSync("tools/validate-site.mjs", "utf8")
+  vfx: readOptional("assets/love-2048-vfx.js")
 };
 
+const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
+const gameContractFailures = validateSingleGameContract({ sources: gameContractSources, exists: existsSync });
+if (gameContractFailures.length) {
+  console.error("Love 2048 single-game contract validation failed:");
+  for (const failure of gameContractFailures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+
 const expectations = [
-  ["HTML page title is romantic 2048", files.html, "桃花心动 2048"],
+  ["HTML page title uses exact public name", files.html, "<title>心动2048 - 刘勇 / Yong Liu</title>"],
+  ["HTML description uses exact public name", files.html, 'content="心动2048：'],
+  ["HTML ARIA uses exact public name", files.html, 'aria-label="心动2048"'],
+  ["HTML heading uses exact public name", files.html, '<h1 id="game-title">心动2048</h1>'],
   ["HTML page description matches love theme", files.html, "爱心、情侣、桃花"],
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
-  ["HTML uses the smooth-motion cache version", files.html, "love-20260710g"],
+  ["HTML uses the final 5x5 event cache version", files.html, "love-20260710j"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
+  ["Game registry uses exact public name", files.js, 'name: "心动2048"'],
   ["2048 keeps pure tile state", files.js, "let tiles = []"],
   ["2048 tracks best relationship value", files.js, "let bestValue = 2"],
   ["2048 tracks seen relationship stages", files.js, "let seenStageValues = new Set"],
@@ -71,7 +86,7 @@ const expectations = [
   ["2048 renders story card", files.js, "function renderStoryCard"],
   ["2048 story card shows current highest only", files.js, "当前最高 "],
   ["2048 toggles memory log", files.js, "function toggleMemory"],
-  ["2048 line slide keeps valued numeric entries", files.js, ".filter((entry) => entry.value)"],
+  ["2048 delegates five-cell line slides to the engine", files.js, "engine.slideLine(orientedIndices.map((idx) => tiles[idx]), size)"],
   ["2048 emits lightweight repeat merge effect", files.js, 'triggerCellEffect("love-merge"'],
   ["2048 keeps restart button", files.js, 'button("重遇"'],
   ["2048 keeps memory button", files.js, 'button("回忆"'],
@@ -146,9 +161,7 @@ const expectations = [
   ["VFX module changes scene mood", files.vfx, "setMood"],
   ["VFX module emits local bursts", files.vfx, "burst"],
   ["VFX module emits stage celebrations", files.vfx, "celebrate"],
-  ["VFX module cleans up", files.vfx, "destroy"],
-  ["Site validator tracks love theme", files.siteValidator, 'theme: "love-2048"'],
-  ["Site validator tracks love board", files.siteValidator, 'board: "board-love-2048"']
+  ["VFX module cleans up", files.vfx, "destroy"]
 ];
 
 for (const forbidden of [
@@ -200,66 +213,11 @@ function functionSource(name) {
 
 function run2048FunctionSource(name) {
   const scopeStart = files.js.indexOf("  function run2048() {");
-  const scopeEnd = files.js.indexOf("\n  function runMines()", scopeStart);
-  const scope = files.js.slice(scopeStart, scopeEnd === -1 ? files.js.length : scopeEnd);
+  const scope = files.js.slice(scopeStart);
   const start = scope.indexOf(`    function ${name}`);
   if (start === -1) return "";
   const next = scope.indexOf("\n    function ", start + 1);
   return scope.slice(start, next === -1 ? scope.length : next);
-}
-
-function validateSlideMotion() {
-  const source = functionSource("slideLine").trim();
-  if (!source) return ["slideLine source is missing"];
-  let slideLine;
-  try {
-    slideLine = Function("size", `return (${source});`)(4);
-  } catch (error) {
-    return [`slideLine could not be evaluated: ${error.message}`];
-  }
-
-  const cases = [
-    {
-      label: "single merge",
-      input: [2, 0, 2, 4],
-      cells: [4, 4, 0, 0],
-      motions: [
-        { source: 0, destination: 0, value: 2, merged: true },
-        { source: 2, destination: 0, value: 2, merged: true },
-        { source: 3, destination: 1, value: 4, merged: false }
-      ]
-    },
-    {
-      label: "double merge",
-      input: [2, 2, 4, 4],
-      cells: [4, 8, 0, 0],
-      motions: [
-        { source: 0, destination: 0, value: 2, merged: true },
-        { source: 1, destination: 0, value: 2, merged: true },
-        { source: 2, destination: 1, value: 4, merged: true },
-        { source: 3, destination: 1, value: 4, merged: true }
-      ]
-    }
-  ];
-
-  const failures = [];
-  for (const test of cases) {
-    const result = slideLine(test.input);
-    if (JSON.stringify(result.cells) !== JSON.stringify(test.cells)) {
-      failures.push(`${test.label} cells: ${JSON.stringify(result.cells)}`);
-    }
-    if (JSON.stringify(result.motions) !== JSON.stringify(test.motions)) {
-      failures.push(`${test.label} motions: ${JSON.stringify(result.motions)}`);
-    }
-  }
-  return failures;
-}
-
-const slideMotionFailures = validateSlideMotion();
-if (slideMotionFailures.length) {
-  console.error("Love 2048 motion validation failed:");
-  for (const failure of slideMotionFailures) console.error(`- ${failure}`);
-  process.exit(1);
 }
 
 function validateBackdropRouting() {

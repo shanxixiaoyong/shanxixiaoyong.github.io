@@ -9,7 +9,7 @@ The root page is a framework-free GitHub Pages portal with four public entries:
 - personal academic homepage: `home.html`
 - personal knowledge base: `knowledge.html`, generated from `data/knowledge.json`
 - small toolbox: `tools.html`
-- mini games: `games.html`
+- Heartbeat 2048: `game-2048.html`
 
 The academic homepage is focused on:
 

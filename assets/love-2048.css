@@ -318,11 +318,11 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
   width: min(100%, 418px);
   height: auto;
   aspect-ratio: 1;
-  gap: 8px;
+  gap: 6px;
   touch-action: none;
-  border: 7px solid rgba(40, 17, 24, 0.98);
-  border-radius: 28px;
-  padding: 15px;
+  border: 6px solid rgba(40, 17, 24, 0.98);
+  border-radius: 22px;
+  padding: 12px;
   overflow: hidden;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.11), transparent 28%),
@@ -338,9 +338,9 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048 {
 }
 
 .board-love-2048::before {
-  inset: 5px;
+  inset: 4px;
   border: 1px solid rgba(238, 199, 129, 0.18);
-  border-radius: 19px;
+  border-radius: 15px;
   background:
     linear-gradient(90deg, transparent, rgba(255, 236, 207, 0.09) 50%, transparent),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 12px);
@@ -378,7 +378,7 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   place-items: center;
   overflow: visible;
   border: 1px solid rgba(237, 211, 184, 0.15);
-  border-radius: 18px;
+  border-radius: 12px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.045), transparent 36%),
     rgba(7, 6, 8, 0.46);
@@ -394,14 +394,14 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
 .board-love-2048 .merge-cell.v0::before {
   content: "";
   position: absolute;
-  inset: 8px;
-  left: 8px;
-  top: 8px;
+  inset: 6px;
+  left: 6px;
+  top: 6px;
   width: auto;
   height: auto;
   aspect-ratio: auto;
   border: 1px solid rgba(242, 219, 195, 0.055);
-  border-radius: 12px;
+  border-radius: 8px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.022), transparent 50%),
     rgba(0, 0, 0, 0.08);
@@ -526,19 +526,19 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
 }
 
 .board-love-2048 .tile-glyph {
-  top: 16%;
+  top: 15%;
   color: rgba(255, 246, 225, 0.9);
-  font-size: clamp(11px, 3.2vw, 15px);
+  font-size: clamp(9px, 2.5vw, 12px);
   font-weight: 780;
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.32));
 }
 
 .board-love-2048 .tile-number {
-  top: 35%;
+  top: 32%;
   color: #fffaf0;
   font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, sans-serif;
-  font-size: clamp(28px, 8.5vw, 38px);
+  font-size: clamp(23px, 7.2vw, 32px);
   font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1;
@@ -548,17 +548,17 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
     0 0 8px rgba(255, 255, 255, 0.24);
 }
 
-.board-love-2048 [data-digits="4"] .tile-number { top: 40%; font-size: clamp(23px, 6.6vw, 30px); }
-.board-love-2048 [data-digits="5"] .tile-number { top: 42%; font-size: clamp(19px, 5.4vw, 25px); }
-.board-love-2048 [data-digits="6"] .tile-number { top: 43%; font-size: clamp(16px, 4.6vw, 21px); }
-.board-love-2048 [data-digits="7"] .tile-number { top: 44%; font-size: clamp(13px, 3.9vw, 18px); }
-.board-love-2048 [data-digits="8"] .tile-number { top: 44%; font-size: clamp(11px, 3.4vw, 16px); }
+.board-love-2048 [data-digits="4"] .tile-number { top: 38%; font-size: clamp(18px, 4.8vw, 22px); }
+.board-love-2048 [data-digits="5"] .tile-number { top: 40%; font-size: clamp(16px, 4.5vw, 20px); }
+.board-love-2048 [data-digits="6"] .tile-number { top: 41%; font-size: clamp(14px, 4vw, 18px); }
+.board-love-2048 [data-digits="7"] .tile-number { top: 42%; font-size: clamp(12px, 3.5vw, 16px); }
+.board-love-2048 [data-digits="8"] .tile-number { top: 42%; font-size: clamp(10px, 3vw, 14px); }
 
 .board-love-2048 .tile-label {
   bottom: 8%;
   overflow: hidden;
   color: rgba(255, 249, 239, 0.84);
-  font-size: clamp(7px, 2.25vw, 9.5px);
+  font-size: clamp(6px, 1.9vw, 8px);
   font-weight: 800;
   line-height: 1;
   text-overflow: ellipsis;
@@ -569,7 +569,7 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
 .board-love-2048 [data-digits="7"] .tile-label,
 .board-love-2048 [data-digits="8"] .tile-label {
   bottom: 8%;
-  font-size: 7px;
+  font-size: 6px;
 }
 
 .board-love-2048 .merge-cell.is-top-spawn .heart-core {
@@ -642,13 +642,189 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   left: 50%;
   top: 43%;
   color: #fff8ed;
-  font-size: clamp(14px, 4.6vw, 24px);
+  width: 82%;
+  font-size: clamp(12px, 4vw, 20px);
   font-style: normal;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   text-shadow: 0 2px 5px rgba(30, 4, 12, 0.62);
   transform: translate(-50%, -50%);
+}
+
+.love-motion-ghost[data-digits="4"] .motion-number { font-size: clamp(11px, 3.3vw, 16px); }
+.love-motion-ghost[data-digits="5"] .motion-number { font-size: clamp(10px, 3vw, 14px); }
+.love-motion-ghost[data-digits="6"] .motion-number { font-size: clamp(9px, 2.7vw, 12px); }
+.love-motion-ghost[data-digits="7"] .motion-number,
+.love-motion-ghost[data-digits="8"] .motion-number { font-size: clamp(8px, 2.35vw, 10px); }
+
+.board-love-2048 :is(.merge-cell, .love-motion-ghost).is-fate,
+.board-love-2048 :is(.merge-cell, .love-motion-ghost).is-conflict {
+  isolation: isolate;
+  overflow: visible;
+}
+
+.board-love-2048 .merge-cell:is(.is-fate, .is-conflict) {
+  border: 1px solid rgba(255, 235, 205, 0.2);
+  background: rgba(16, 9, 13, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 5px 12px rgba(0, 0, 0, 0.24);
+}
+
+.board-love-2048 .merge-cell:is(.is-fate, .is-conflict)::before {
+  inset: 6%;
+  left: 6%;
+  top: 6%;
+  border: 0;
+  border-radius: 50%;
+  opacity: 1;
+  transform: none;
+}
+
+.board-love-2048 .merge-cell.is-fate {
+  border-color: rgba(255, 218, 145, 0.52);
+  background: rgba(63, 15, 35, 0.86);
+}
+
+.board-love-2048 .merge-cell.is-fate::before {
+  background: radial-gradient(circle, rgba(255, 224, 151, 0.34), rgba(211, 58, 100, 0.16) 48%, transparent 72%);
+  box-shadow: 0 0 18px rgba(244, 106, 139, 0.44), inset 0 0 12px rgba(255, 225, 156, 0.18);
+}
+
+.board-love-2048 .special-heart {
+  position: absolute;
+  inset: 7% 8% 14%;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+}
+
+.board-love-2048 .fate-hearts i {
+  position: absolute;
+  top: 25%;
+  width: 37%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 245, 221, 0.66);
+  border-radius: 4px 5px 6px 5px;
+  transform: rotate(45deg);
+  box-shadow: 0 5px 9px rgba(0, 0, 0, 0.32), inset 2px 2px 4px rgba(255, 255, 255, 0.28);
+}
+
+.board-love-2048 .fate-hearts i::before,
+.board-love-2048 .fate-hearts i::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.board-love-2048 .fate-hearts i::before { left: -50%; }
+.board-love-2048 .fate-hearts i::after { top: -50%; }
+
+.board-love-2048 .fate-hearts i:first-child {
+  left: 20%;
+  z-index: 2;
+  background: linear-gradient(145deg, #ff8fa9, #a61f4c 68%, #551126);
+  transform: rotate(45deg) translate(-2px, 2px);
+}
+
+.board-love-2048 .fate-hearts i:last-child {
+  right: 20%;
+  z-index: 1;
+  border-color: rgba(255, 249, 219, 0.82);
+  background: linear-gradient(145deg, #ffe19a, #d69a31 65%, #76501c);
+  transform: rotate(45deg) translate(2px, -2px);
+}
+
+.board-love-2048 .fate-hearts::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  z-index: 4;
+  width: 15%;
+  aspect-ratio: 1;
+  border: 2px solid #fff8d4;
+  border-radius: 50%;
+  box-shadow: 0 0 7px #fff1ae, 0 0 13px rgba(255, 126, 160, 0.86);
+  transform: translate(-50%, -50%);
+}
+
+.board-love-2048 :is(.is-fate, .is-conflict) .tile-label {
+  bottom: 6%;
+  z-index: 4;
+  width: 74%;
+  overflow: visible;
+  color: #fff8e8;
+  font-size: clamp(9px, 2.5vw, 11px);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.88);
+}
+
+.board-love-2048 .merge-cell.is-conflict {
+  border-color: rgba(177, 172, 178, 0.34);
+  background: rgba(24, 24, 28, 0.94);
+}
+
+.board-love-2048 .merge-cell.is-conflict::before {
+  background: radial-gradient(circle, rgba(161, 157, 164, 0.16), rgba(15, 15, 18, 0.18) 56%, transparent 72%);
+  box-shadow: 0 0 14px rgba(112, 106, 116, 0.22);
+}
+
+.board-love-2048 .conflict-heart {
+  inset: 11% 15% 19%;
+  clip-path: polygon(50% 94%, 12% 57%, 5% 36%, 8% 20%, 19% 10%, 34% 9%, 50% 22%, 66% 9%, 81% 10%, 92% 20%, 95% 36%, 88% 57%);
+  background: linear-gradient(145deg, #858087, #49454d 54%, #201f24);
+  box-shadow: inset 0 0 0 2px rgba(220, 214, 219, 0.2);
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.48));
+}
+
+.board-love-2048 .conflict-heart::before {
+  content: "";
+  position: absolute;
+  left: 43%;
+  top: 15%;
+  width: 18%;
+  height: 68%;
+  clip-path: polygon(40% 0, 100% 22%, 42% 38%, 88% 55%, 22% 73%, 58% 100%, 0 75%, 46% 56%, 5% 37%, 62% 20%);
+  background: #17161a;
+  filter: drop-shadow(1px 0 rgba(239, 205, 161, 0.42));
+}
+
+.board-love-2048 .conflict-heart i {
+  position: absolute;
+  left: 39%;
+  z-index: 2;
+  width: 29%;
+  height: 3px;
+  border-radius: 2px;
+  background: #f1c77f;
+  box-shadow: 0 0 5px rgba(242, 194, 113, 0.48);
+  transform: rotate(-18deg);
+}
+
+.board-love-2048 .conflict-heart i:first-child { top: 40%; }
+.board-love-2048 .conflict-heart i:last-child { top: 58%; transform: rotate(17deg); }
+.board-love-2048 .conflict-heart[data-cracks="1"] i:last-child { display: none; }
+
+.board-love-2048 .conflict-crack-count {
+  position: absolute;
+  right: 9%;
+  top: 8%;
+  z-index: 5;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid rgba(255, 224, 174, 0.66);
+  border-radius: 50%;
+  background: #332a29;
+  color: #ffe0a5;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.46);
 }
 
 .love-story-card {
@@ -972,6 +1148,70 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   pointer-events: none;
 }
 
+.board-love-2048 .effect-love-special-spawn,
+.board-love-2048 .effect-love-destiny,
+.board-love-2048 .effect-love-miracle,
+.board-love-2048 .effect-love-conflict,
+.board-love-2048 .effect-love-reconcile {
+  pointer-events: none;
+}
+
+.board-love-2048 .effect-love-special-spawn {
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255, 235, 183, 0.72);
+  background:
+    radial-gradient(circle, #fff8cf 0 7%, transparent 9%),
+    conic-gradient(from 12deg, rgba(205, 52, 95, 0.86), transparent 24%, rgba(242, 190, 79, 0.9) 36%, transparent 58%, rgba(211, 55, 102, 0.82) 74%, transparent 92%);
+  box-shadow: 0 0 16px rgba(239, 102, 137, 0.54), inset 0 0 10px rgba(255, 222, 145, 0.34);
+  animation: loveSpecialSpawn 620ms cubic-bezier(0.2, 0.82, 0.22, 1) both;
+}
+
+.board-love-2048 .effect-love-destiny {
+  width: 52px;
+  height: 52px;
+  border: 2px double rgba(255, 240, 190, 0.92);
+  background:
+    radial-gradient(circle, rgba(255, 250, 213, 0.94) 0 8%, rgba(222, 65, 108, 0.52) 10% 30%, transparent 32%),
+    conic-gradient(from 45deg, transparent, rgba(255, 214, 116, 0.9), transparent 28%, rgba(239, 91, 132, 0.86), transparent 58%, rgba(255, 226, 141, 0.82), transparent);
+  box-shadow: 0 0 20px rgba(255, 204, 112, 0.54);
+  animation: loveDestinyLock 640ms ease-out both;
+}
+
+.board-love-2048 .effect-love-miracle {
+  left: 50%;
+  top: 50%;
+  width: 118%;
+  height: 42%;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, transparent 4%, rgba(255, 245, 205, 0.18) 30%, rgba(255, 255, 240, 0.92) 49%, rgba(232, 128, 160, 0.3) 68%, transparent 96%),
+    repeating-linear-gradient(90deg, transparent 0 24px, rgba(255, 221, 150, 0.34) 25px 27px, transparent 28px 48px);
+  box-shadow: 0 0 24px rgba(255, 228, 164, 0.34);
+  animation: loveMiracleSweep 920ms cubic-bezier(0.18, 0.78, 0.22, 1) both;
+}
+
+.board-love-2048 .effect-love-conflict {
+  width: 46px;
+  height: 46px;
+  border: 2px solid rgba(166, 157, 167, 0.68);
+  background:
+    linear-gradient(108deg, transparent 42%, rgba(18, 17, 20, 0.94) 43% 49%, rgba(242, 197, 125, 0.65) 50% 52%, transparent 53%),
+    radial-gradient(circle, rgba(102, 96, 106, 0.6), rgba(30, 29, 34, 0.22) 54%, transparent 56%);
+  box-shadow: 0 0 14px rgba(74, 69, 79, 0.62);
+  animation: loveConflictStrike 620ms ease-out both;
+}
+
+.board-love-2048 .effect-love-reconcile {
+  width: 46px;
+  height: 46px;
+  border: 2px dashed rgba(255, 218, 148, 0.9);
+  background: radial-gradient(circle, rgba(255, 246, 208, 0.9) 0 6%, rgba(223, 94, 125, 0.3) 8% 32%, transparent 34%);
+  box-shadow: 0 0 16px rgba(255, 190, 132, 0.46);
+  animation: loveReconcileStitch 560ms ease-out both;
+}
+
 .board-love-2048 .effect-love-story,
 .board-love-2048 .effect-love-petal,
 .board-love-2048 .effect-love-starlight,
@@ -989,8 +1229,8 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
 .board-love-2048 .effect-love-top-spawn { animation: loveEffectDrop 580ms ease-out both; }
 
 .board-love-2048 .effect-love-merge {
-  width: 54px;
-  height: 54px;
+  width: 46px;
+  height: 46px;
   border: 1px solid rgba(255, 226, 181, 0.72);
   border-radius: 50%;
   background:
@@ -1000,8 +1240,8 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
 }
 
 .board-love-2048 .effect-love-bump {
-  width: 64px;
-  height: 64px;
+  width: 54px;
+  height: 54px;
   border: 1px solid rgba(237, 181, 158, 0.36);
   background: transparent;
   animation: loveEffectBump 340ms ease-out both;
@@ -1123,12 +1363,44 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
 }
 
-@media (max-width: 380px), (max-height: 760px) {
+@keyframes loveSpecialSpawn {
+  0% { opacity: 0; transform: translate(-50%, -68%) scale(0.3) rotate(-24deg); }
+  38% { opacity: 1; transform: translate(-50%, -50%) scale(0.84) rotate(5deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28) rotate(36deg); }
+}
+
+@keyframes loveDestinyLock {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.36) rotate(-36deg); }
+  44% { opacity: 1; transform: translate(-50%, -50%) scale(0.9) rotate(0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.42) rotate(46deg); }
+}
+
+@keyframes loveMiracleSweep {
+  0% { opacity: 0; transform: translate(-72%, -50%) skewX(-16deg) scaleX(0.22); }
+  24% { opacity: 0.92; }
+  72% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-28%, -50%) skewX(-16deg) scaleX(1); }
+}
+
+@keyframes loveConflictStrike {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.24) rotate(-12deg); }
+  28% { opacity: 1; transform: translate(-50%, -50%) scale(0.82) rotate(4deg); }
+  58% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.18) rotate(8deg); }
+}
+
+@keyframes loveReconcileStitch {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.58) rotate(-34deg); }
+  44% { opacity: 1; transform: translate(-50%, -50%) scale(0.94) rotate(3deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28) rotate(42deg); }
+}
+
+@media (max-width: 400px), (max-height: 760px) {
   body:is(.arcade-page, .solo-game-page) .board-love-2048 {
-    width: min(100%, 366px);
-    gap: 7px;
+    width: min(100%, 418px);
+    gap: 6px;
     border-width: 6px;
-    border-radius: 24px;
+    border-radius: 22px;
     padding: 12px;
   }
 
@@ -1140,6 +1412,8 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   body.solo-game-2048 .solo-topbar h1 { font-size: 21px; }
   .love-story-card { min-height: 96px; padding-top: 10px; padding-bottom: 10px; }
   .love-story-card p { -webkit-line-clamp: 2; }
+  .love-cinematic-scene .cinematic-copy { width: min(calc(100vw - 36px), 360px); padding-inline: 8px; }
+  .love-cinematic-scene .cinematic-copy p { max-width: 330px; line-height: 1.68; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1182,5 +1456,18 @@ body:is(.arcade-page, .solo-game-page) .board-love-2048::after {
   .love-motion-layer,
   .love-cinematic-scene .cinematic-atmosphere {
     display: none !important;
+  }
+
+  .board-love-2048 :is(.effect-love-special-spawn, .effect-love-destiny, .effect-love-miracle, .effect-love-conflict, .effect-love-reconcile) {
+    opacity: 0.9 !important;
+    animation: none !important;
+  }
+
+  .board-love-2048 .merge-cell.is-fate {
+    box-shadow: inset 0 0 0 2px rgba(255, 226, 157, 0.34), 0 0 12px rgba(230, 82, 122, 0.42);
+  }
+
+  .board-love-2048 .merge-cell.is-conflict {
+    box-shadow: inset 0 0 0 2px rgba(222, 207, 190, 0.2), 0 0 10px rgba(28, 27, 31, 0.72);
   }
 }
