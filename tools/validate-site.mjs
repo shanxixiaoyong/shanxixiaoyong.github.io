@@ -1,16 +1,19 @@
 import { readFileSync, existsSync, statSync } from "node:fs";
 
 const standaloneGamePages = [
-  "game-tetris.html",
-  "game-2048.html",
-  "game-mines.html",
-  "game-sudoku.html",
-  "game-snake.html",
-  "game-bubble.html",
-  "game-suika.html",
-  "game-jump.html",
-  "game-tower.html",
-  "game-cards.html"
+  "game-2048.html"
+];
+
+const legacyGames = [
+  { file: "game-tetris.html", title: "熔炉方块", runtime: "runTetris" },
+  { file: "game-mines.html", title: "声呐扫雷", runtime: "runMines" },
+  { file: "game-sudoku.html", title: "墨格数独", runtime: "runSudoku" },
+  { file: "game-snake.html", title: "霓虹列车", runtime: "runSnake" },
+  { file: "game-bubble.html", title: "潮汐泡泡", runtime: "runBubble" },
+  { file: "game-suika.html", title: "重力果园", runtime: "runSuika" },
+  { file: "game-jump.html", title: "月面跳台", runtime: "runJump" },
+  { file: "game-tower.html", title: "峡谷塔防", runtime: "runTower" },
+  { file: "game-cards.html", title: "星舰卡牌", runtime: "runCards" }
 ];
 
 const siteFiles = [
@@ -45,6 +48,7 @@ const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "ga
 const indexHtml = readFileSync("index.html", "utf8");
 const homeHtml = readFileSync("home.html", "utf8");
 const gamesHtml = readFileSync("games.html", "utf8");
+const gameHtml = readFileSync("game-2048.html", "utf8");
 const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
 const gamesScript = readFileSync("assets/games.js", "utf8");
@@ -58,30 +62,16 @@ const required = [
   'href="home.html"',
   'href="knowledge.html"',
   'href="tools.html"',
-  'href="games.html"',
+  'href="game-2048.html"',
   "个人知识库",
   "个人小工具箱",
-  "游戏厅",
+  "心动2048",
   "knowledge-search",
   "text-input",
   "citation-form",
-  "game-hub",
-  "game-menu",
   "game-board",
   "game-controls",
-  "arcade-app",
-  "arcade-playfield",
-  "arcade-hud",
-  "俄罗斯方块",
   "2048",
-  "扫雷",
-  "数独",
-  "贪吃蛇",
-  "泡泡龙",
-  "合成大西瓜",
-  "跳一跳",
-  "塔防",
-  "肉鸽卡牌",
   "unit-output",
   "log-output",
   "data/knowledge.json",
@@ -283,29 +273,11 @@ const requiredAssets = [
 ];
 
 const distinctGameChecks = [
-  { theme: "block-forge", board: "board-tetris-forge", mechanic: "tetrisGhostCells", css: ".board-tetris-forge" },
-  { theme: "love-2048", board: "board-love-2048", mechanic: "narrativeScenes", css: ".board-love-2048" },
-  { theme: "sonar-mines", board: "board-sonar-mines", mechanic: "firstSafeOpen", css: ".board-sonar-mines" },
-  { theme: "ink-sudoku", board: "board-ink-sudoku", mechanic: "conflictMarks", css: ".board-ink-sudoku" },
-  { theme: "neon-snake", board: "board-neon-snake", mechanic: "portalWrap", css: ".board-neon-snake" },
-  { theme: "tide-bubble", board: "board-tide-bubble", mechanic: "tideDrops", css: ".board-tide-bubble" },
-  { theme: "orchard-suika", board: "board-orchard-suika", mechanic: "chainCombo", css: ".board-orchard-suika" },
-  { theme: "lunar-jump", board: "board-lunar-jump", mechanic: "landingArc", css: ".board-lunar-jump" },
-  { theme: "canyon-tower", board: "board-canyon-tower", mechanic: "towerTypes", css: ".board-canyon-tower" },
-  { theme: "starship-cards", board: "board-starship-cards", mechanic: "energyCards", css: ".board-starship-cards" }
+  { theme: "love-2048", board: "board-love-2048", mechanic: "narrativeScenes", css: ".board-love-2048" }
 ];
 
 const standaloneGameChecks = [
-  { file: "game-tetris.html", href: 'href="game-tetris.html"', id: "tetris", title: "熔炉方块" },
-  { file: "game-2048.html", href: 'href="game-2048.html"', id: "merge2048", title: "桃花心动 2048" },
-  { file: "game-mines.html", href: 'href="game-mines.html"', id: "mines", title: "声呐扫雷" },
-  { file: "game-sudoku.html", href: 'href="game-sudoku.html"', id: "sudoku", title: "墨格数独" },
-  { file: "game-snake.html", href: 'href="game-snake.html"', id: "snake", title: "霓虹列车" },
-  { file: "game-bubble.html", href: 'href="game-bubble.html"', id: "bubble", title: "潮汐泡泡" },
-  { file: "game-suika.html", href: 'href="game-suika.html"', id: "suika", title: "重力果园" },
-  { file: "game-jump.html", href: 'href="game-jump.html"', id: "jump", title: "月面跳台" },
-  { file: "game-tower.html", href: 'href="game-tower.html"', id: "tower", title: "峡谷塔防" },
-  { file: "game-cards.html", href: 'href="game-cards.html"', id: "cards", title: "星舰卡牌" }
+  { file: "game-2048.html", href: 'href="game-2048.html"', id: "merge2048", title: "心动2048" }
 ];
 
 const requiredLinks = [
@@ -413,17 +385,28 @@ for (const item of distinctGameChecks) {
   }
 }
 
-if (gamesHtml.includes('id="game-board"') || gamesHtml.includes('id="game-hub"')) {
-  failures.push("games.html must be a lobby, not the integrated playable game page");
+const homepageGameLinks = [...indexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
+if (JSON.stringify(homepageGameLinks) !== JSON.stringify(["game-2048.html"])) {
+  failures.push(`Homepage must expose exactly one direct game link: ${JSON.stringify(homepageGameLinks)}`);
+}
+
+if (!indexHtml.includes('<a class="portal-card" href="game-2048.html">')) {
+  failures.push("Homepage game portal must point directly to game-2048.html");
+}
+
+for (const token of [
+  '<meta http-equiv="refresh" content="0; url=game-2048.html">',
+  '<link rel="canonical" href="game-2048.html">',
+  '<a href="game-2048.html">心动2048</a>'
+]) {
+  if (!gamesHtml.includes(token)) failures.push(`games.html redirect missing: ${token}`);
+}
+
+if (gamesHtml.includes('id="game-board"') || gamesHtml.includes("game-lobby-page")) {
+  failures.push("games.html must be an immediate redirect, not a game lobby or playable page");
 }
 
 for (const item of standaloneGameChecks) {
-  if (!indexHtml.includes(item.href)) {
-    failures.push(`Homepage missing direct game link: ${item.href}`);
-  }
-  if (!gamesHtml.includes(item.href)) {
-    failures.push(`Game lobby missing standalone game link: ${item.href}`);
-  }
   const fileHtml = readFileSync(item.file, "utf8");
   if (!fileHtml.includes('class="solo-game-page') || !fileHtml.includes('id="solo-game"')) {
     failures.push(`${item.file} must use standalone solo game shell`);
@@ -436,10 +419,41 @@ for (const item of standaloneGameChecks) {
   }
 }
 
-for (const token of ["soloGame", "dataset.game", "solo-game-page"]) {
+for (const token of ["soloGame", "dataset.game", "solo-game-page", 'name: "心动2048"']) {
   if (!gamesScript.includes(token) && !worldCss.includes(token)) {
     failures.push(`Standalone game runtime/style missing token: ${token}`);
   }
+}
+
+if (!gameHtml.includes('<a class="solo-back" href="index.html">首页</a>')) {
+  failures.push("心动2048 back navigation must return to index.html");
+}
+
+for (const token of [
+  "<title>心动2048 - 刘勇 / Yong Liu</title>",
+  'content="心动2048：',
+  'aria-label="心动2048"',
+  '<h1 id="game-title">心动2048</h1>'
+]) {
+  if (!gameHtml.includes(token)) failures.push(`心动2048 page missing exact public name contract: ${token}`);
+}
+
+const registryEntries = gamesScript.match(/\bid:\s*"/g) || [];
+const runtimeFunctions = gamesScript.match(/\bfunction run\w*\s*\(/g) || [];
+if (registryEntries.length !== 1 || runtimeFunctions.length !== 1 || !gamesScript.includes("function run2048()")) {
+  failures.push("Game registry and executable runtime must contain only 心动2048");
+}
+
+const publicGameSurface = [indexHtml, gamesHtml, gameHtml, gamesScript].join("\n");
+for (const oldName of ["桃花心动 2048", "桃花心动2048", "心动 2048"]) {
+  if (publicGameSurface.includes(oldName)) failures.push(`Legacy game name still public: ${oldName}`);
+}
+
+for (const legacy of legacyGames) {
+  if (existsSync(legacy.file)) failures.push(`Legacy game page still exists: ${legacy.file}`);
+  if (publicGameSurface.includes(legacy.file)) failures.push(`Legacy game link still public: ${legacy.file}`);
+  if (publicGameSurface.includes(legacy.title)) failures.push(`Legacy game title still public: ${legacy.title}`);
+  if (gamesScript.includes(legacy.runtime)) failures.push(`Legacy game runtime still executable: ${legacy.runtime}`);
 }
 
 for (const file of ["index.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]) {

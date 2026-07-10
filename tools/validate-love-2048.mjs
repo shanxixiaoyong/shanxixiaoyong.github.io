@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 function readOptional(path) {
   try {
@@ -10,6 +10,8 @@ function readOptional(path) {
 
 const files = {
   html: readFileSync("game-2048.html", "utf8"),
+  index: readFileSync("index.html", "utf8"),
+  redirect: readFileSync("games.html", "utf8"),
   js: readFileSync("assets/games.js", "utf8"),
   css: readFileSync("assets/world.css", "utf8"),
   loveCss: readOptional("assets/love-2048.css"),
@@ -18,13 +20,17 @@ const files = {
 };
 
 const expectations = [
-  ["HTML page title is romantic 2048", files.html, "桃花心动 2048"],
+  ["HTML page title uses exact public name", files.html, "<title>心动2048 - 刘勇 / Yong Liu</title>"],
+  ["HTML description uses exact public name", files.html, 'content="心动2048：'],
+  ["HTML ARIA uses exact public name", files.html, 'aria-label="心动2048"'],
+  ["HTML heading uses exact public name", files.html, '<h1 id="game-title">心动2048</h1>'],
   ["HTML page description matches love theme", files.html, "爱心、情侣、桃花"],
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
   ["HTML uses the smooth-motion cache version", files.html, "love-20260710g"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
+  ["Game registry uses exact public name", files.js, 'name: "心动2048"'],
   ["2048 keeps pure tile state", files.js, "let tiles = []"],
   ["2048 tracks best relationship value", files.js, "let bestValue = 2"],
   ["2048 tracks seen relationship stages", files.js, "let seenStageValues = new Set"],
@@ -71,7 +77,7 @@ const expectations = [
   ["2048 renders story card", files.js, "function renderStoryCard"],
   ["2048 story card shows current highest only", files.js, "当前最高 "],
   ["2048 toggles memory log", files.js, "function toggleMemory"],
-  ["2048 line slide keeps valued numeric entries", files.js, ".filter((entry) => entry.value)"],
+  ["2048 delegates five-cell line slides to the engine", files.js, "engine.slideLine(orientedIndices.map((idx) => tiles[idx]), size)"],
   ["2048 emits lightweight repeat merge effect", files.js, 'triggerCellEffect("love-merge"'],
   ["2048 keeps restart button", files.js, 'button("重遇"'],
   ["2048 keeps memory button", files.js, 'button("回忆"'],
@@ -152,6 +158,9 @@ const expectations = [
 ];
 
 for (const forbidden of [
+  ["Public pages remove old 桃花-prefixed name", `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`, "桃花心动 2048"],
+  ["Public pages remove old unspaced 桃花-prefixed name", `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`, "桃花心动2048"],
+  ["Public pages remove spaced public name", `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`, "心动 2048"],
   ["2048 removes scene bloom", files.js, "function showSceneBloom"],
   ["2048 removes scene danmaku", files.js, "function showSceneDanmaku"],
   ["2048 removes repeat-memory rewriting", files.js, "function rememberScene"],
@@ -200,66 +209,32 @@ function functionSource(name) {
 
 function run2048FunctionSource(name) {
   const scopeStart = files.js.indexOf("  function run2048() {");
-  const scopeEnd = files.js.indexOf("\n  function runMines()", scopeStart);
-  const scope = files.js.slice(scopeStart, scopeEnd === -1 ? files.js.length : scopeEnd);
+  const scope = files.js.slice(scopeStart);
   const start = scope.indexOf(`    function ${name}`);
   if (start === -1) return "";
   const next = scope.indexOf("\n    function ", start + 1);
   return scope.slice(start, next === -1 ? scope.length : next);
 }
 
-function validateSlideMotion() {
-  const source = functionSource("slideLine").trim();
-  if (!source) return ["slideLine source is missing"];
-  let slideLine;
-  try {
-    slideLine = Function("size", `return (${source});`)(4);
-  } catch (error) {
-    return [`slideLine could not be evaluated: ${error.message}`];
+const legacyGames = [
+  { file: "game-tetris.html", title: "熔炉方块", runtime: "runTetris" },
+  { file: "game-mines.html", title: "声呐扫雷", runtime: "runMines" },
+  { file: "game-sudoku.html", title: "墨格数独", runtime: "runSudoku" },
+  { file: "game-snake.html", title: "霓虹列车", runtime: "runSnake" },
+  { file: "game-bubble.html", title: "潮汐泡泡", runtime: "runBubble" },
+  { file: "game-suika.html", title: "重力果园", runtime: "runSuika" },
+  { file: "game-jump.html", title: "月面跳台", runtime: "runJump" },
+  { file: "game-tower.html", title: "峡谷塔防", runtime: "runTower" },
+  { file: "game-cards.html", title: "星舰卡牌", runtime: "runCards" }
+];
+
+const publicGameSurface = `${files.index}\n${files.redirect}\n${files.html}\n${files.js}`;
+for (const legacy of legacyGames) {
+  if (existsSync(legacy.file) || publicGameSurface.includes(legacy.file)
+      || publicGameSurface.includes(legacy.title) || files.js.includes(legacy.runtime)) {
+    console.error(`Legacy game surface still present: ${legacy.file} / ${legacy.title} / ${legacy.runtime}`);
+    process.exit(1);
   }
-
-  const cases = [
-    {
-      label: "single merge",
-      input: [2, 0, 2, 4],
-      cells: [4, 4, 0, 0],
-      motions: [
-        { source: 0, destination: 0, value: 2, merged: true },
-        { source: 2, destination: 0, value: 2, merged: true },
-        { source: 3, destination: 1, value: 4, merged: false }
-      ]
-    },
-    {
-      label: "double merge",
-      input: [2, 2, 4, 4],
-      cells: [4, 8, 0, 0],
-      motions: [
-        { source: 0, destination: 0, value: 2, merged: true },
-        { source: 1, destination: 0, value: 2, merged: true },
-        { source: 2, destination: 1, value: 4, merged: true },
-        { source: 3, destination: 1, value: 4, merged: true }
-      ]
-    }
-  ];
-
-  const failures = [];
-  for (const test of cases) {
-    const result = slideLine(test.input);
-    if (JSON.stringify(result.cells) !== JSON.stringify(test.cells)) {
-      failures.push(`${test.label} cells: ${JSON.stringify(result.cells)}`);
-    }
-    if (JSON.stringify(result.motions) !== JSON.stringify(test.motions)) {
-      failures.push(`${test.label} motions: ${JSON.stringify(result.motions)}`);
-    }
-  }
-  return failures;
-}
-
-const slideMotionFailures = validateSlideMotion();
-if (slideMotionFailures.length) {
-  console.error("Love 2048 motion validation failed:");
-  for (const failure of slideMotionFailures) console.error(`- ${failure}`);
-  process.exit(1);
 }
 
 function validateBackdropRouting() {
