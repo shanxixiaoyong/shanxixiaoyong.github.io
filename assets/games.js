@@ -197,6 +197,20 @@ if (soloGame) {
     const loveVfx = loveVfxFactory
       ? window.Love2048Vfx.createLoveVfx({ root: document.body, mood: "meet", ambient: false })
       : { setMood() {}, burst() {}, celebrate() {}, destroy() {} };
+    const heartbeatAudio = window.Love2048Audio?.createHeartbeatAudio?.({ window, document }) || {
+      isSupported: () => false,
+      isEnabled: () => false,
+      toggle: () => false,
+      setStage() {},
+      setMood() {},
+      cueMerge() {},
+      cueBlocked() {},
+      cueDestiny() {},
+      cueConflict() {},
+      cueStage() {},
+      resetJourney() {},
+      destroy() {}
+    };
 
     const tileStory = [
       [2, "✦", "初见", "#ef6f91", "#741739", "#ff9cb4", "#ffe4e9"],
@@ -523,6 +537,7 @@ if (soloGame) {
     function applyMood(scene) {
       clearTimeout(moodTimer);
       for (const name of moodClasses) board.classList.remove(name);
+      heartbeatAudio.setMood(scene?.mood || "meet");
       if (scene?.mood) {
         board.classList.add("mood-" + scene.mood);
         loveVfx.setMood(scene.mood);
@@ -657,6 +672,7 @@ if (soloGame) {
     }
 
     function playMilestoneScene(scene, cellIndex, options = {}) {
+      if (options.firstTime !== false && scene?.value) heartbeatAudio.cueStage(scene.value);
       triggerBoardEffect("love-story", { duration: 840 });
       triggerCellEffect(scene.effect, cellIndex, size, size, { duration: 860 });
       const target = board.querySelector('[data-index="' + cellIndex + '"]');
@@ -732,6 +748,7 @@ if (soloGame) {
     function playForeshadowSequence(result, stageEvent) {
       if (!result?.scene) return;
       beginSpecialSequence();
+      heartbeatAudio.cueDestiny("reveal");
       pulseHaptic([12, 24, 16]);
       pushStory(result.scene);
       const revealDuration = 1850 + Math.floor(Math.random() * 551);
@@ -755,6 +772,7 @@ if (soloGame) {
 
     function playConflictEntry(conflict) {
       beginSpecialSequence();
+      heartbeatAudio.cueConflict("entry");
       pulseHaptic(18);
       pushStory(conflict.scene);
       showCinematic(conflict.scene, {
@@ -898,6 +916,7 @@ if (soloGame) {
         && featured.nextValue > bestValue
         && !seenStageValues.has(featured.nextValue);
       bestValue = Math.max(bestValue, featured.nextValue);
+      heartbeatAudio.setStage(bestValue);
       ordinaryResults.forEach((result) => seenStageValues.add(result.nextValue));
       if (isFirstStageReveal) {
         milestoneGraceTurns = 8;
@@ -933,7 +952,12 @@ if (soloGame) {
 
     function playStageEvent(event, options = {}) {
       if (!event) return;
-      if (event.kind === "milestone") playMilestoneScene(event.scene, event.cellIndex, options);
+      if (event.kind === "milestone") {
+        playMilestoneScene(event.scene, event.cellIndex, {
+          ...options,
+          firstTime: options.firstTime ?? !event.continuation
+        });
+      }
       else if (event.source === "merge") playRepeatMerge(event.cellIndex);
     }
 
@@ -978,6 +1002,7 @@ if (soloGame) {
       }
 
       if (boardSignature() === before) {
+        heartbeatAudio.cueBlocked();
         lastMergeCells = [];
         lastMotionTargets = [];
         lastSpawnCell = spawnOnBlockedInput && emptyIndices().length ? addFromTop() : -1;
@@ -1066,15 +1091,24 @@ if (soloGame) {
 
       render();
       playTileMotion(tileMotions);
+      const mergeValues = mergeResults
+        .filter((result) => result.source === "merge")
+        .map((result) => result.nextValue);
+      if (mergeValues.length) {
+        heartbeatAudio.cueMerge({ values: mergeValues, combo: ordinaryMergeCount });
+      }
       playResolutionEffect(destinyResolution);
       playResolutionEffect(safetyResolution);
       if (conflictUpdate && !conflictUpdate.resolved) {
+        heartbeatAudio.cueConflict("loosen", conflictUpdate.remaining);
         triggerCellEffect("love-knot-loosen", conflictUpdate.index, size, size, { duration: conflictUpdate.conflict.profile.loosenMs || 320 });
       }
       if (conflictUpdate?.resolved) {
+        heartbeatAudio.cueConflict("resolve");
         triggerCellEffect("love-reconcile", conflictUpdate.index, size, size, { duration: conflictUpdate.conflict.profile.resolveMs });
       }
       if (spawn.kind === "fate" && lastSpawnCell >= 0) {
+        heartbeatAudio.cueDestiny("spawn");
         triggerCellEffect("love-special-spawn", lastSpawnCell, size, size, { duration: 620 });
       }
       if (foreshadowResolution?.upgradedValue) {
@@ -1343,6 +1377,7 @@ if (soloGame) {
       memoryOpen = false;
       renderedScore = -1;
       storyRenderKey = "";
+      heartbeatAudio.resetJourney();
       applyMood(currentScene);
       addFromTop();
       lastSpawnCell = addFromTop();
@@ -1353,6 +1388,26 @@ if (soloGame) {
     restartControl.innerHTML = '<span aria-hidden="true">↻</span><span>重遇</span>';
     const memoryControl = button("回忆", toggleMemory);
     memoryControl.innerHTML = '<span aria-hidden="true">▤</span><span>回忆</span>';
+    let audioControl;
+    function syncAudioControl() {
+      const supported = heartbeatAudio.isSupported();
+      const enabled = supported && heartbeatAudio.isEnabled();
+      const label = supported
+        ? (enabled ? "关闭声音" : "开启声音")
+        : "当前浏览器不支持声音";
+      audioControl.classList.toggle("is-muted", !enabled);
+      audioControl.setAttribute("aria-pressed", String(enabled));
+      audioControl.setAttribute("aria-label", label);
+      audioControl.title = label;
+      audioControl.disabled = !supported;
+      audioControl.innerHTML = `<span class="audio-toggle-icon" aria-hidden="true">${enabled ? "🔊" : "🔇"}</span>`;
+    }
+    audioControl = button("", () => {
+      heartbeatAudio.toggle();
+      syncAudioControl();
+    });
+    audioControl.className = "audio-toggle";
+    syncAudioControl();
     preloadSceneBackdrops();
     restart();
     const boardResizeObserver = typeof window.ResizeObserver === "function"
@@ -1373,6 +1428,7 @@ if (soloGame) {
       board.querySelectorAll(":scope > .board-effect, :scope > .love-motion-layer").forEach((item) => item.remove());
       boardResizeObserver?.disconnect();
       if (!boardResizeObserver) window.removeEventListener?.("resize", refreshBoardLayout);
+      heartbeatAudio.destroy();
       loveVfx.destroy();
       offKey();
       offSwipe();

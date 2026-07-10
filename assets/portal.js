@@ -1,7 +1,6 @@
 (() => {
   const rail = document.querySelector("[data-portal-rail]");
   const doors = Array.from(document.querySelectorAll("[data-portal-index]"));
-  const dots = Array.from(document.querySelectorAll("[data-portal-dot]"));
   const currentNumber = document.querySelector("[data-portal-current]");
   const currentName = document.querySelector("[data-portal-current-name]");
   const nextName = document.querySelector("[data-portal-next]");
@@ -22,15 +21,11 @@
     if (currentName) currentName.textContent = labels[nextIndex];
     if (nextName) nextName.textContent = labels[(nextIndex + 1) % labels.length];
     if (progress) progress.style.width = `${((nextIndex + 1) / doors.length) * 100}%`;
-    dots.forEach((dot, dotIndex) => {
-      const selected = dotIndex === nextIndex;
-      dot.classList.toggle("is-active", selected);
-      dot.setAttribute("aria-current", selected ? "true" : "false");
-    });
   }
 
   function nearestDoor() {
-    const railLeft = rail.getBoundingClientRect().left;
+    const padding = Number.parseFloat(getComputedStyle(rail).paddingLeft) || 0;
+    const railLeft = rail.getBoundingClientRect().left + padding;
     let nearestIndex = 0;
     let nearestDistance = Number.POSITIVE_INFINITY;
     doors.forEach((door, index) => {
@@ -66,8 +61,6 @@
     else if (event.key === "End") scrollToDoor(doors.length - 1);
     else scrollToDoor(activeIndex + (event.key === "ArrowRight" ? 1 : -1));
   });
-
-  dots.forEach((dot, index) => dot.addEventListener("click", () => scrollToDoor(index)));
 
   doors.forEach((door) => {
     door.addEventListener("pointermove", (event) => {

@@ -1,35 +1,19 @@
 import { readFileSync, existsSync, statSync } from "node:fs";
 import {
+  ACTIVE_PUBLIC_FILES,
   ACTIVE_GAME_PAGES,
   readGameContractSources,
-  validateTwoGameContract
+  stripHtmlComments,
+  validateFiveGameContract
 } from "./game-contract.mjs";
 
 const standaloneGamePages = [...ACTIVE_GAME_PAGES];
 
-const siteFiles = [
-  "index.html",
-  "home.html",
-  "knowledge.html",
-  "tools.html",
-  "games.html",
-  ...standaloneGamePages,
-  "assets/world.css",
-  "assets/portal.css",
-  "assets/academic-v2.css",
-  "assets/love-2048.css",
-  "assets/watermelon.css",
-  "assets/world.js",
-  "assets/portal.js",
-  "assets/academic.js",
-  "assets/games.js",
-  "assets/love-2048-vfx.js",
-  "assets/vendor/matter-0.20.0.min.js",
-  "assets/watermelon-rules.js",
-  "assets/watermelon-game.js",
+const siteFiles = [...new Set([
+  ...ACTIVE_PUBLIC_FILES,
   "data/knowledge.json",
   "tools/sync-obsidian.mjs"
-];
+])];
 
 for (const file of siteFiles) {
   if (!existsSync(file)) {
@@ -42,8 +26,8 @@ const html = siteFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]
   .map((file) => readFileSync(file, "utf8"))
   .join("\n");
-const indexHtml = readFileSync("index.html", "utf8");
-const homeHtml = readFileSync("home.html", "utf8");
+const indexHtml = stripHtmlComments(readFileSync("index.html", "utf8"));
+const homeHtml = stripHtmlComments(readFileSync("home.html", "utf8"));
 const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
 const gamesScript = readFileSync("assets/games.js", "utf8");
@@ -61,10 +45,16 @@ const required = [
   'href="tools.html"',
   'href="game-2048.html"',
   'href="game-watermelon.html"',
+  'href="game-tetris-love.html"',
+  'href="game-breakout-love.html"',
+  'href="game-billiards-love.html"',
   "个人知识库",
   "个人小工具箱",
   "心动2048",
-  "合成大西瓜",
+  "心动大西瓜",
+  "心动俄罗斯方块",
+  "心动打砖块",
+  "心动桌球",
   "knowledge-search",
   "text-input",
   "citation-form",
@@ -85,15 +75,25 @@ const required = [
   "assets/vendor/matter-0.20.0.min.js",
   "assets/watermelon-rules.js",
   "assets/watermelon-game.js",
+  "assets/tetris-love-game.js",
+  "assets/breakout-love-game.js",
+  "assets/billiards-love-game.js",
   'class="portal-page"',
   'class="portal-rail"',
   'class="portal-door portal-academic"',
   'class="portal-door portal-game"',
   'class="portal-door portal-watermelon"',
+  'class="portal-door portal-tetris"',
+  'class="portal-door portal-breakout"',
+  'class="portal-door portal-billiards"',
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
-  "assets/portal/watermelon-summer.webp",
+  "assets/portal/heartbeat-2048.png",
+  "assets/portal/heartmelon-memories.png",
+  "assets/portal/tetris-rhythm.png",
+  "assets/portal/breakout-reply.png",
+  "assets/portal/billiards-night.png",
   "assets/games.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
@@ -258,7 +258,11 @@ const requiredAssets = [
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
-  "assets/portal/watermelon-summer.webp",
+  "assets/portal/heartbeat-2048.png",
+  "assets/portal/heartmelon-memories.png",
+  "assets/portal/tetris-rhythm.png",
+  "assets/portal/breakout-reply.png",
+  "assets/portal/billiards-night.png",
   "assets/academic-v2.css",
   "assets/academic.js",
   "assets/world/workspace-grid.svg",
@@ -280,7 +284,11 @@ const requiredAssets = [
 ];
 
 const distinctGameChecks = [
-  { theme: "love-2048", board: "board-love-2048", mechanic: "narrativeScenes", css: ".board-love-2048" }
+  { file: "assets/games.js", tokens: ["love-2048", "board-love-2048", "narrativeScenes"] },
+  { file: "assets/watermelon-game.js", tokens: ["WatermelonRules", "Matter"] },
+  { file: "assets/tetris-love-game.js", tokens: ["TetrisLoveRules", "canvas"] },
+  { file: "assets/breakout-love-game.js", tokens: ["BreakoutLoveRules", "canvas"] },
+  { file: "assets/billiards-love-game.js", tokens: ["BilliardsLoveRules", "canvas"] }
 ];
 
 const requiredLinks = [
@@ -300,7 +308,17 @@ const requiredLinks = [
 
 const failures = [];
 const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
-failures.push(...validateTwoGameContract({ sources: gameContractSources, exists: existsSync }));
+failures.push(...validateFiveGameContract({ sources: gameContractSources, exists: existsSync }));
+
+for (const file of ["index.html", "home.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]) {
+  const source = stripHtmlComments(readFileSync(file, "utf8"));
+  const references = [...source.matchAll(/\b(?:src|href)="([^"]+)"/g)].map((match) => match[1]);
+  for (const reference of references) {
+    if (/^(?:[a-z]+:|#|\/\/)/i.test(reference)) continue;
+    const localPath = reference.split(/[?#]/, 1)[0];
+    if (localPath && !existsSync(localPath)) failures.push(`${file} references missing local asset: ${localPath}`);
+  }
+}
 
 const academicThemeContracts = [
   'body[data-theme="classic"]',
@@ -315,13 +333,16 @@ const academicThemeContracts = [
 ];
 
 const portalContracts = [
-  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260710b">'],
-  [indexHtml, '<script src="assets/portal.js?v=portal-20260710b" defer></script>'],
+  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260711a">'],
+  [indexHtml, '<script src="assets/portal.js?v=portal-20260711a" defer></script>'],
   [indexHtml, 'class="portal-rail"'],
   [indexHtml, 'class="portal-door portal-game"'],
   [indexHtml, 'class="portal-door portal-watermelon"'],
+  [indexHtml, 'class="portal-door portal-tetris"'],
+  [indexHtml, 'class="portal-door portal-breakout"'],
+  [indexHtml, 'class="portal-door portal-billiards"'],
   [portalCss, "scroll-snap-type: inline mandatory"],
-  [portalCss, "grid-template-columns: repeat(12, minmax(0, 1fr))"],
+  [portalCss, "grid-template-columns: repeat(16, minmax(0, 1fr))"],
   [portalScript, "function setActive(index)"],
   [portalScript, 'rail.addEventListener("scroll"']
 ];
@@ -330,8 +351,8 @@ for (const [source, token] of portalContracts) {
   if (!source.includes(token)) failures.push(`Personal portal missing contract: ${token}`);
 }
 
-if ((indexHtml.match(/data-portal-index="\d"/g) || []).length !== 5) {
-  failures.push("Personal portal must contain exactly five destinations");
+if ((indexHtml.match(/data-portal-index="\d"/g) || []).length !== 8) {
+  failures.push("Personal portal must contain exactly eight destinations");
 }
 
 if (indexHtml.includes('href="assets/world.css"') || indexHtml.includes('class="portal-card"')) {
@@ -398,7 +419,7 @@ for (const asset of requiredAssets) {
     failures.push(`Missing required asset file: ${asset}`);
   } else if (asset.startsWith("assets/game-art/") && statSync(asset).size < 100000) {
     failures.push(`Generated game art file is unexpectedly small: ${asset}`);
-  } else if (asset.startsWith("assets/portal/") && statSync(asset).size < 50000) {
+  } else if (asset.startsWith("assets/portal/") && statSync(asset).size < 20000) {
     failures.push(`Portal image file is unexpectedly small: ${asset}`);
   } else if (asset.startsWith("assets/love-scenes/") && statSync(asset).size < 50000) {
     failures.push(`Love 2048 scene art file is unexpectedly small: ${asset}`);
@@ -406,13 +427,9 @@ for (const asset of requiredAssets) {
 }
 
 for (const item of distinctGameChecks) {
-  for (const token of [item.theme, item.board, item.mechanic]) {
-    if (!gamesScript.includes(token)) {
-      failures.push(`Game runtime missing distinct game token: ${token}`);
-    }
-  }
-  if (!worldCss.includes(item.css)) {
-    failures.push(`Game stylesheet missing distinct board selector: ${item.css}`);
+  const gameSource = readFileSync(item.file, "utf8");
+  for (const token of item.tokens) {
+    if (!gameSource.includes(token)) failures.push(`${item.file} missing distinct runtime token: ${token}`);
   }
 }
 

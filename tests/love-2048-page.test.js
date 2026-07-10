@@ -239,13 +239,13 @@ function createDom() {
   document.register("game-score", document.createElement("strong"));
   const status = document.register("game-status", document.createElement("p"));
   const board = document.register("game-board", document.createElement("div"));
-  document.register("game-controls", document.createElement("div"));
+  const controls = document.register("game-controls", document.createElement("div"));
   document.register("game-meta", document.createElement("div"));
-  return { document, board, status };
+  return { document, board, controls, status };
 }
 
 function createHarness(options = {}) {
-  const { document, board, status } = createDom();
+  const { document, board, controls, status } = createDom();
   const randomValues = [0, 0, 0, 0, 0];
   const chooseCalls = [];
   const chooseResults = [...(options.chooseResults || [])];
@@ -273,6 +273,26 @@ function createHarness(options = {}) {
   let timerNow = 0;
   const timers = new Map();
   const resizeObservers = new Set();
+  const audioCalls = [];
+  let audioEnabled = options.audioEnabled !== false;
+  const heartbeatAudio = {
+    isSupported() { return options.audioSupported !== false; },
+    isEnabled() { return audioEnabled; },
+    toggle() {
+      audioEnabled = !audioEnabled;
+      audioCalls.push({ name: "toggle", args: [] });
+      return audioEnabled;
+    },
+    setStage(...args) { audioCalls.push({ name: "setStage", args }); },
+    setMood(...args) { audioCalls.push({ name: "setMood", args }); },
+    cueMerge(...args) { audioCalls.push({ name: "cueMerge", args }); },
+    cueBlocked(...args) { audioCalls.push({ name: "cueBlocked", args }); },
+    cueDestiny(...args) { audioCalls.push({ name: "cueDestiny", args }); },
+    cueConflict(...args) { audioCalls.push({ name: "cueConflict", args }); },
+    cueStage(...args) { audioCalls.push({ name: "cueStage", args }); },
+    resetJourney(...args) { audioCalls.push({ name: "resetJourney", args }); },
+    destroy(...args) { audioCalls.push({ name: "destroy", args }); }
+  };
   const setTimer = (callback, delay = 0) => {
     timerId += 1;
     timers.set(timerId, { callback, due: timerNow + Math.max(0, Number(delay) || 0) });
@@ -316,6 +336,12 @@ function createHarness(options = {}) {
     document,
     Love2048Engine: engine,
     Love2048Stories,
+    Love2048Audio: {
+      createHeartbeatAudio() {
+        audioCalls.push({ name: "create", args: [] });
+        return heartbeatAudio;
+      }
+    },
     ResizeObserver: FakeResizeObserver,
     innerWidth: 430,
     innerHeight: 932,
@@ -346,8 +372,10 @@ function createHarness(options = {}) {
 
   return {
     board,
+    controls,
     document,
     status,
+    audioCalls,
     chooseCalls,
     randomValues,
     advance,
@@ -365,25 +393,45 @@ function createHarness(options = {}) {
   };
 }
 
-test("loads the Love 2048 engine before VFX and the shared game script", () => {
+test("loads the Love 2048 engine and heartbeat audio before the shared game script", () => {
   const stylesheet = html.match(/<link\s+rel="stylesheet"\s+href="(assets\/love-2048\.css\?v=[^"]+)"/);
   const scripts = [...html.matchAll(/<script\s+src="([^"]+)"/g)].map((match) => match[1]);
   const engineIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-engine.js?v="));
   const storiesIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-stories.js?v="));
   const vfxIndex = scripts.findIndex((source) => source.startsWith("assets/love-2048-vfx.js?v="));
+  const audioIndex = scripts.findIndex((source) => source.startsWith("assets/heartbeat-audio.js?v="));
   const gamesIndex = scripts.findIndex((source) => source.startsWith("assets/games.js?v="));
 
   assert.ok(engineIndex >= 0, "Love 2048 engine script must be present");
   assert.ok(engineIndex < storiesIndex, "engine must load before the story catalog");
   assert.ok(storiesIndex < vfxIndex, "story catalog must load before VFX");
-  assert.ok(vfxIndex < gamesIndex, "VFX must load before games.js");
+  assert.ok(vfxIndex < audioIndex, "VFX must load before heartbeat audio");
+  assert.ok(audioIndex < gamesIndex, "heartbeat audio must load before games.js");
 
-  const versions = [scripts[engineIndex], scripts[storiesIndex], scripts[vfxIndex], scripts[gamesIndex]]
+  const versions = [scripts[engineIndex], scripts[storiesIndex], scripts[vfxIndex], scripts[audioIndex], scripts[gamesIndex]]
     .map((source) => new URLSearchParams(source.split("?")[1]).get("v"));
   const stylesheetVersion = new URLSearchParams(stylesheet[1].split("?")[1]).get("v");
   assert.ok(versions[0], "Love 2048 scripts must use a cache version");
-  assert.deepEqual(versions, [versions[0], versions[0], versions[0], versions[0]]);
+  assert.deepEqual(versions, [versions[0], versions[0], versions[0], versions[0], versions[0]]);
   assert.equal(stylesheetVersion, versions[0], "Love 2048 CSS and scripts must share one cache version");
+});
+
+test("renders a familiar icon-only sound toggle with an accessible state label", () => {
+  const harness = createHarness();
+  const control = harness.controls.querySelector(".audio-toggle");
+
+  assert.ok(control);
+  assert.equal(control.getAttribute("aria-pressed"), "true");
+  assert.equal(control.getAttribute("aria-label"), "关闭声音");
+  assert.match(control.innerHTML, /🔊/);
+  assert.match(loveCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) 44px/);
+
+  control.dispatchEvent({ type: "click" });
+
+  assert.equal(control.getAttribute("aria-pressed"), "false");
+  assert.equal(control.getAttribute("aria-label"), "开启声音");
+  assert.match(control.innerHTML, /🔇/);
+  assert.equal(harness.audioCalls.filter((call) => call.name === "toggle").length, 1);
 });
 
 test("uses a compact nineteen-stage relationship arc ending at 524288", () => {
@@ -460,6 +508,7 @@ test("initializes 25 stable cells and blocked input adds only a normal tile", ()
   assert.equal(harness.cells().length, 25);
   assert.equal(harness.occupiedCells().length, 3);
   assert.ok(harness.occupiedCells().every((cell) => ["2", "4"].includes(cell.dataset.value)));
+  assert.equal(harness.audioCalls.filter((call) => call.name === "cueBlocked").length, 1);
 });
 
 test("a changed numeric merge calls chooseSpawn once with its merge-pair count", () => {
@@ -471,6 +520,9 @@ test("a changed numeric merge calls chooseSpawn once with its merge-pair count",
   assert.equal(harness.chooseCalls[0].context.ordinaryMergeCount, 1);
   assert.equal(harness.chooseCalls[0].context.inputBlocked, false);
   assert.equal(harness.occupiedCells().length, 2);
+  const mergeCue = harness.audioCalls.find((call) => call.name === "cueMerge");
+  assert.deepEqual(Array.from(mergeCue.args[0].values), [4]);
+  assert.equal(mergeCue.args[0].combo, 1);
 });
 
 test("a randomly spawned four does not consume the first merge-to-four cinematic", () => {
@@ -485,6 +537,7 @@ test("a randomly spawned four does not consume the first merge-to-four cinematic
   const cinematic = harness.document.body.querySelector(".love-stage-celebration");
   assert.ok(cinematic, "the first natural merge to four must still unlock its cinematic");
   assert.match(cinematic.innerHTML, /首次解锁 · 记住/);
+  assert.equal(harness.audioCalls.some((call) => call.name === "cueStage" && call.args[0] === 4), true);
 });
 
 test("foreshadow and knot decisions replace the normal spawn with their full visual state", () => {
@@ -525,12 +578,20 @@ test("foreshadow and knot decisions replace the normal spawn with their full vis
     assert.equal(harness.document.body.querySelector(".love-special-guide"), null, "special guidance must stay in status text");
 
     if (scenario.kind === "fate") {
+      assert.equal(
+        harness.audioCalls.some((call) => call.name === "cueDestiny" && call.args[0] === "spawn"),
+        true
+      );
       const effect = harness.effects().find((item) => item.classList.contains("effect-love-special-spawn"));
       assert.ok(effect, "foreshadow spawn effect must be appended to the board");
       assert.equal(effect.parentElement, harness.board);
       assert.equal(effect.getAttribute("aria-hidden"), "true");
       assert.match(special.innerHTML, /class="foreshadow-letter"/);
     } else {
+      assert.equal(
+        harness.audioCalls.some((call) => call.name === "cueConflict" && call.args[0] === "entry"),
+        true
+      );
       assert.match(special.innerHTML, /class="knot-emblem" data-remaining="2"/);
       assert.equal(special.innerHTML.includes("conflict-crack-count"), false);
       const effect = harness.effects().find((item) => item.classList.contains("effect-love-knot-arrive"));
@@ -552,6 +613,10 @@ test("foreshadow and knot decisions replace the normal spawn with their full vis
       assert.equal(harness.cells().some((cell) => cell.dataset.special === "knot"), false);
       assert.equal(harness.status.textContent, "滑动合并相同爱心，推进下一段关系");
       assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-reconcile")));
+      assert.equal(
+        harness.audioCalls.some((call) => call.name === "cueConflict" && call.args[0] === "resolve"),
+        true
+      );
     }
   }
 });
@@ -651,4 +716,8 @@ test("a fate sequence active at turn start preserves effort through its destiny 
   assert.ok(harness.effects().some((item) => item.classList.contains("effect-love-foreshadow-open")));
   assert.equal(harness.cells().some((cell) => cell.dataset.special === "foreshadow"), false);
   assert.equal(harness.status.textContent, "滑动合并相同爱心，推进下一段关系");
+  assert.equal(
+    harness.audioCalls.some((call) => call.name === "cueDestiny" && call.args[0] === "reveal"),
+    true
+  );
 });

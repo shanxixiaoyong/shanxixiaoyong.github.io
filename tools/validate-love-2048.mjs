@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
   readGameContractSources,
-  validateTwoGameContract
+  validateFiveGameContract
 } from "./game-contract.mjs";
 
 function readOptional(path) {
@@ -19,13 +19,14 @@ const files = {
   stories: readOptional("assets/love-2048-stories.js"),
   css: readFileSync("assets/world.css", "utf8"),
   loveCss: readOptional("assets/love-2048.css"),
-  vfx: readOptional("assets/love-2048-vfx.js")
+  vfx: readOptional("assets/love-2048-vfx.js"),
+  audio: readOptional("assets/heartbeat-audio.js")
 };
 
 const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
-const gameContractFailures = validateTwoGameContract({ sources: gameContractSources, exists: existsSync });
+const gameContractFailures = validateFiveGameContract({ sources: gameContractSources, exists: existsSync });
 if (gameContractFailures.length) {
-  console.error("Love 2048 two-game site contract validation failed:");
+  console.error("Love 2048 five-game site contract validation failed:");
   for (const failure of gameContractFailures) console.error(`- ${failure}`);
   process.exit(1);
 }
@@ -39,7 +40,8 @@ const expectations = [
   ["HTML loads dedicated Love 2048 CSS", files.html, "assets/love-2048.css"],
   ["HTML loads the Love 2048 story catalog", files.html, "assets/love-2048-stories.js"],
   ["HTML loads Love 2048 VFX before games", files.html, "assets/love-2048-vfx.js"],
-  ["HTML uses the final 5x5 story-event cache version", files.html, "love-20260710l"],
+  ["HTML loads Heartbeat audio before games", files.html, "assets/heartbeat-audio.js"],
+  ["HTML uses the final audio cache version", files.html, "love-20260711a"],
   ["Game registry uses love theme id", files.js, 'theme: "love-2048"'],
   ["Game registry uses love board class", files.js, 'boardClass: "board-love-2048"'],
   ["Game registry uses exact public name", files.js, 'name: "心动2048"'],
@@ -188,6 +190,13 @@ const expectations = [
   ["VFX module emits local bursts", files.vfx, "burst"],
   ["VFX module emits stage celebrations", files.vfx, "celebrate"],
   ["VFX module cleans up", files.vfx, "destroy"],
+  ["Audio module exposes Love2048Audio", files.audio, "Love2048Audio"],
+  ["Audio module unlocks after a gesture", files.audio, "function armUnlock"],
+  ["Audio module schedules adaptive ambience", files.audio, "function scheduleAmbientBar"],
+  ["Audio module maps merge cues", files.audio, "function cueMerge"],
+  ["Audio module maps first-stage motifs", files.audio, "function cueStage"],
+  ["Audio module suspends on lifecycle changes", files.audio, "function suspendForLifecycle"],
+  ["Audio module cleans up", files.audio, "function destroy"],
   ["Event director unlocks fate at 256", files.engine, "const FATE_UNLOCK_TILE = 256"],
   ["Event director unlocks conflict at 1024", files.engine, "const CONFLICT_UNLOCK_TILE = 1024"],
   ["Event director guarantees the first 256 fate by turn ten", files.engine, "{ min: 256, start: 6, guarantee: 10 }"],

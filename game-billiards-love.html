@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>心动桌球 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="心动桌球：在雨夜球房里认真瞄准每一次靠近，让碰撞、绕行与落袋写完两个人的深夜故事。">
+  <meta name="theme-color" content="#0a1114">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-20260711b">
+</head>
+<body class="solo-game-billiards-love">
+  <main class="bl-app" id="billiards-love-game" aria-label="心动桌球">
+    <header class="bl-topbar">
+      <a class="bl-icon bl-back" href="index.html" aria-label="返回首页" title="返回首页">‹</a>
+      <div class="bl-title">
+        <span>AFTER HOURS · 00:17</span>
+        <h1>心动桌球</h1>
+      </div>
+      <div class="bl-score" aria-label="当前心动值">
+        <span>心动值</span>
+        <strong id="bl-score">0</strong>
+      </div>
+      <button class="bl-icon" id="bl-sound" type="button" aria-label="关闭声音" title="声音">♪</button>
+      <button class="bl-icon" id="bl-pause" type="button" aria-label="暂停游戏" title="暂停">Ⅱ</button>
+    </header>
+
+    <section class="bl-chapter" aria-label="当前章节进度">
+      <div class="bl-chapter-copy">
+        <span id="bl-chapter-number">CHAPTER 01</span>
+        <strong id="bl-chapter-title">雨夜站台</strong>
+        <small id="bl-chapter-subtitle">第一次并肩</small>
+      </div>
+      <div class="bl-memory-progress">
+        <span>今晚的片段</span>
+        <div id="bl-memory-pips" aria-label="已收下的片段"></div>
+      </div>
+      <div class="bl-turns" aria-label="剩余回合">
+        <span>回合</span>
+        <strong><b id="bl-turn-count">6</b><small id="bl-turn-total">/ 6</small></strong>
+      </div>
+    </section>
+
+    <section class="bl-stage" id="bl-stage" aria-label="心动桌球游戏区域">
+      <canvas id="bl-canvas" width="672" height="1096" tabindex="0" aria-label="按住球桌向后拉动，松开击球；方向键瞄准，空格键蓄力并击球"></canvas>
+
+      <div class="bl-coach" id="bl-coach" aria-hidden="true">
+        <div class="bl-coach-gesture"><i></i><b></b><span></span></div>
+        <p><strong>拉开一点距离</strong><small>松手，选择这次靠近</small></p>
+      </div>
+
+      <div class="bl-aim-hud" id="bl-aim-hud" hidden aria-hidden="true">
+        <span>靠近</span>
+        <i><b id="bl-power-fill"></b></i>
+        <strong id="bl-power-copy">0%</strong>
+      </div>
+
+      <div class="bl-toast" id="bl-toast" role="status" aria-live="polite"></div>
+      <div class="bl-shot-callout" id="bl-shot-callout" aria-hidden="true"></div>
+
+      <div class="bl-cinematic" id="bl-cinematic" data-scene="rain" aria-live="polite" aria-atomic="true" hidden>
+        <div class="bl-scene-sky"></div>
+        <div class="bl-scene-rain"></div>
+        <div class="bl-scene-city"></div>
+        <div class="bl-scene-motif"><i></i><b></b><em></em></div>
+        <button class="bl-scene-skip" id="bl-scene-skip" type="button" aria-label="略过场景" title="略过">×</button>
+        <div class="bl-scene-copy">
+          <span id="bl-scene-kicker">第一次落袋 · 共伞</span>
+          <strong id="bl-scene-title">雨声靠近了一点</strong>
+          <p id="bl-scene-line">你没有说出口的心意，先在桌面上抵达了她。</p>
+          <button id="bl-scene-action" type="button" hidden>继续今晚</button>
+        </div>
+      </div>
+
+      <div class="bl-sheet bl-pause-sheet" id="bl-pause-sheet" hidden>
+        <span>00:17 · PAUSED</span>
+        <strong>雨声还在窗外</strong>
+        <p>这一杆可以等你回来。</p>
+        <div>
+          <button id="bl-resume" type="button">继续</button>
+          <button id="bl-restart-pause" type="button">重新开始</button>
+        </div>
+      </div>
+
+      <div class="bl-sheet bl-result" id="bl-result" hidden>
+        <span id="bl-result-kicker">今晚未完</span>
+        <strong id="bl-result-title">差一点抵达</strong>
+        <p id="bl-result-copy">有些心意，需要再认真瞄准一次。</p>
+        <div class="bl-result-stats">
+          <span><small>心动值</small><b id="bl-result-score">0</b></span>
+          <span><small>收下片段</small><b id="bl-result-memories">0</b></span>
+          <span><small>间接回应</small><b id="bl-result-echoes">0</b></span>
+        </div>
+        <div class="bl-result-actions">
+          <button id="bl-retry" type="button">再试这一桌</button>
+          <button id="bl-new-night" type="button">从雨夜开始</button>
+        </div>
+      </div>
+
+      <div class="bl-sheet bl-journal" id="bl-journal-sheet" hidden>
+        <button class="bl-journal-close" id="bl-journal-close" type="button" aria-label="关闭回忆" title="关闭">×</button>
+        <span>TONIGHT'S CUTS</span>
+        <strong>今晚收下的片段</strong>
+        <div class="bl-journal-list" id="bl-journal-list"></div>
+      </div>
+    </section>
+
+    <footer class="bl-dock">
+      <button class="bl-icon" id="bl-restart" type="button" aria-label="重新开始" title="重新开始">↻</button>
+      <div class="bl-status-wrap">
+        <p id="bl-status">按住球桌，向后拉开这一杆</p>
+        <div class="bl-pulse-line" aria-hidden="true"><i id="bl-pulse-fill"></i></div>
+      </div>
+      <button class="bl-icon bl-journal-button" id="bl-journal" type="button" aria-label="查看今晚回忆" title="今晚回忆">♥</button>
+    </footer>
+  </main>
+
+  <script src="assets/vendor/matter-0.20.0.min.js?v=0.20.0"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-20260711a"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-20260711a"></script>
+</body>
+</html>

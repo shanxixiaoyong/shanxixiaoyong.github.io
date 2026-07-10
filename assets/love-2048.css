@@ -277,7 +277,7 @@ body.solo-game-2048 .solo-panel .arcade-meta {
 body.solo-game-2048 .solo-panel .arcade-controls {
   grid-area: controls;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr)) 44px;
   gap: 8px;
   margin: 0;
 }
@@ -312,6 +312,31 @@ body.solo-game-2048 .solo-panel .arcade-controls button.primary {
     linear-gradient(135deg, rgba(230, 91, 112, 0.88), rgba(178, 49, 78, 0.88)),
     #b2314e;
   color: #fff8ef;
+}
+
+body.solo-game-2048 .solo-panel .arcade-controls button.audio-toggle {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  color: #ffe6aa;
+}
+
+body.solo-game-2048 .solo-panel .arcade-controls button.audio-toggle.is-muted {
+  color: rgba(255, 245, 233, 0.52);
+}
+
+body.solo-game-2048 .solo-panel .arcade-controls button.audio-toggle:focus-visible {
+  outline: 2px solid #ffe19c;
+  outline-offset: 2px;
+}
+
+body.solo-game-2048 .solo-panel .arcade-controls .audio-toggle-icon {
+  display: block;
+  width: 22px;
+  font-family: system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1;
+  text-align: center;
 }
 
 body:is(.arcade-page, .solo-game-page) .board-love-2048 {
