@@ -20,7 +20,7 @@ The selected system combines the editorial confidence of the first direction wit
 
 ### Floating navigation
 
-The old full-width sticky bar is removed. A compact floating header contains identity, section links, a style menu, language switching, and a return to the personal world. It occupies no full-width colored band. On mobile, section links move to a translucent bottom progress dock so the content remains centered.
+The old full-width sticky bar is removed. A compact floating header contains identity, section links, a style menu, language switching, and a return to the personal world. It occupies no full-width colored band. On mobile and tablet, section links move to a translucent right-edge progress rail positioned outside the centered content boundary, so it neither shifts nor covers the reading column.
 
 ### Cover
 
@@ -72,8 +72,8 @@ Changing themes must alter layout, typography, image scale, spacing rhythm, navi
 - Primary mobile reference: 430 x 932 CSS pixels, representing a common high-density 1.5K-class phone.
 - Desktop reference: 1440 x 1000 CSS pixels.
 - No horizontal overflow at either reference.
-- The mobile cover must show identity, research statement, a meaningful part of the figure composition, and a hint of the next chapter without an oversized empty forehead.
-- The bottom section dock must remain compact, centered, translucent, and clear of actionable content.
+- The mobile cover must show identity, research statement, and a hint of the next chapter without an oversized empty forehead. Folio, Manuscript, Signal, and Cinema show a complete representative figure; Grid intentionally uses a type-only cover and introduces the original figures in its dense publication index.
+- The right-edge progress rail must remain compact, translucent, outside the centered content boundary, and clear of actionable content.
 - Publication figures must remain fully visible; no content-bearing figure may be cropped for decoration.
 - Text cannot overlap controls, figures, or subsequent sections.
 

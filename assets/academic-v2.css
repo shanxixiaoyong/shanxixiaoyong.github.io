@@ -2085,6 +2085,52 @@ body[data-theme="gallery"] .profile-layout {
   body[data-theme="gallery"] .evidence-plate {
     grid-column: 1 / 9;
   }
+
+  body[data-theme="lab"] .cover-grid {
+    min-height: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto auto;
+    gap: 0 26px;
+  }
+
+  body[data-theme="lab"] .cover-edition {
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
+
+  body[data-theme="lab"] .cover-copy {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    max-width: 760px;
+  }
+
+  body[data-theme="lab"] .name-primary {
+    font-size: 68px;
+  }
+
+  body[data-theme="lab"] .evidence-plate {
+    grid-column: 1;
+    grid-row: 3;
+    width: 100%;
+    margin: 42px 0 0;
+  }
+
+  body[data-theme="lab"] .affiliation-credit {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: center;
+    grid-template-columns: 1fr;
+    margin-top: 42px;
+  }
+
+  body[data-theme="lab"] .affiliation-list {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  body[data-theme="lab"] .cover-line {
+    display: none;
+  }
 }
 
 @media (min-width: 721px) and (max-width: 1020px) {
