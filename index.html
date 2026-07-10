@@ -2,88 +2,113 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>刘勇 / Yong Liu - 个人天地</title>
-  <meta name="description" content="刘勇 / Yong Liu 的个人天地：学术主页、知识库、工具箱和关系主题游戏心动2048。">
+  <meta name="description" content="刘勇 / Yong Liu 的个人天地：学术主页、知识库、工具箱与心动2048。">
   <meta name="author" content="Yong Liu">
+  <meta name="theme-color" content="#0b0d0d">
   <meta property="og:title" content="刘勇 / Yong Liu - 个人天地">
-  <meta property="og:description" content="A calm personal hub for academic work, knowledge, tools, and the relationship game 心动2048.">
+  <meta property="og:description" content="Academic work, knowledge, tools, and Heartbeat 2048 by Yong Liu.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://shanxixiaoyong.github.io/">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
-  <link rel="stylesheet" href="assets/world.css">
+  <link rel="preload" as="image" href="assets/portal/academic-workspace.webp" fetchpriority="high">
+  <link rel="stylesheet" href="assets/portal.css?v=portal-20260710a">
+  <script src="assets/portal.js?v=portal-20260710a" defer></script>
 </head>
-<body>
-  <a class="skip-link" href="#main">Skip to content</a>
-  <header class="world-header">
-    <nav class="world-nav" aria-label="Main navigation">
-      <a class="world-brand" href="index.html" aria-label="个人天地首页">
-        <span class="brand-mark">YL</span>
-        <span class="brand-copy">
-          <span>Yong Liu</span>
-          <span>个人天地</span>
-        </span>
-      </a>
-      <div class="world-links">
-        <a class="is-active" href="index.html">首页</a>
-        <a href="home.html">主页</a>
-        <a href="knowledge.html">知识库</a>
-        <a href="tools.html">工具箱</a>
-        <a href="#game">心动2048</a>
-      </div>
+<body class="portal-page">
+  <a class="portal-skip" href="#main">Skip to content</a>
+
+  <header class="portal-header">
+    <a class="portal-brand" href="index.html" aria-label="刘勇的个人天地首页">
+      <span class="portal-brand-mark">YL</span>
+      <span class="portal-brand-name">Yong Liu</span>
+    </a>
+    <nav class="portal-external" aria-label="公开资料">
+      <a href="https://github.com/shanxixiaoyong" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+      <a href="https://orcid.org/0000-0002-7584-2953" target="_blank" rel="noopener">ORCID <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
 
-  <main id="main">
-    <section class="world-hero" aria-label="个人天地">
+  <main class="portal-main" id="main">
+    <section class="portal-intro" aria-labelledby="portal-title">
       <div>
-        <p class="kicker">Personal Space</p>
-        <h1>刘勇的个人天地</h1>
-        <p class="lead">
-          学术主页、知识沉淀、日常工具与轻量互动。
-        </p>
-        <div class="hero-actions">
-          <a class="button-link primary" href="home.html">个人主页</a>
-          <a class="button-link" href="knowledge.html">知识库</a>
-        </div>
+        <p class="portal-kicker">Personal Space · Xi'an</p>
+        <h1 id="portal-title">刘勇 <span>/ Yong Liu</span></h1>
+      </div>
+      <p class="portal-lead">研究、知识、工具与一场心动游戏。</p>
+    </section>
+
+    <section class="portal-stage" aria-label="内容入口">
+      <div class="portal-rail" data-portal-rail tabindex="0" role="region" aria-roledescription="carousel" aria-label="个人天地内容入口">
+        <a class="portal-door portal-academic" href="home.html" data-portal-index="0">
+          <img src="assets/portal/academic-workspace.webp" width="1024" height="1536" alt="" fetchpriority="high" draggable="false">
+          <span class="portal-door-tint" aria-hidden="true"></span>
+          <span class="portal-door-head"><b>01</b><em>Academic</em></span>
+          <span class="portal-door-copy">
+            <small>Research &amp; Profile</small>
+            <strong>个人主页</strong>
+            <span>从医学影像到智能感知，查看论文、专利与研究轨迹。</span>
+            <i>进入 <span aria-hidden="true">↗</span></i>
+          </span>
+        </a>
+
+        <a class="portal-door portal-knowledge" href="knowledge.html" data-portal-index="1">
+          <img src="assets/portal/knowledge-archive.webp" width="1024" height="1536" alt="" loading="lazy" draggable="false">
+          <span class="portal-door-tint" aria-hidden="true"></span>
+          <span class="portal-door-head"><b>02</b><em>Knowledge</em></span>
+          <span class="portal-door-copy">
+            <small>Notes &amp; Maps</small>
+            <strong>个人知识库</strong>
+            <span>研究方法、阅读笔记与长期积累。</span>
+            <i>进入 <span aria-hidden="true">↗</span></i>
+          </span>
+        </a>
+
+        <a class="portal-door portal-tools" href="tools.html" data-portal-index="2">
+          <img src="assets/portal/tool-workbench.webp" width="1024" height="1536" alt="" loading="lazy" draggable="false">
+          <span class="portal-door-tint" aria-hidden="true"></span>
+          <span class="portal-door-head"><b>03</b><em>Utility</em></span>
+          <span class="portal-door-copy">
+            <small>Everyday Workbench</small>
+            <strong>小工具箱</strong>
+            <span>写作、计时、换算与整理。</span>
+            <i>进入 <span aria-hidden="true">↗</span></i>
+          </span>
+        </a>
+
+        <a class="portal-door portal-game" href="game-2048.html" data-portal-index="3">
+          <img src="assets/love-scenes/city-night.webp" width="768" height="1152" alt="" loading="lazy" draggable="false">
+          <span class="portal-door-tint" aria-hidden="true"></span>
+          <span class="portal-door-head"><b>04</b><em>Play</em></span>
+          <span class="portal-door-copy">
+            <small>Relationship 2048</small>
+            <strong>心动2048</strong>
+            <span>在 5×5 棋盘里，合成一段关系的所有阶段。</span>
+            <i>开始 <span aria-hidden="true">↗</span></i>
+          </span>
+        </a>
       </div>
 
-      <div class="portal-grid" id="game" aria-label="内容分区">
-        <a class="portal-card" href="home.html">
-          <img src="assets/world/portal-home.svg" alt="">
-          <span>Academic Homepage</span>
-          <h2>个人主页</h2>
-          <p>论文、专利、单位、教育经历、荣誉与联系方式。</p>
-        </a>
-        <a class="portal-card" href="knowledge.html">
-          <img src="assets/world/portal-knowledge.svg" alt="">
-          <span>Knowledge Base</span>
-          <h2>个人知识库</h2>
-          <p>研究方向、方法笔记、阅读地图与写作资料。</p>
-        </a>
-        <a class="portal-card" href="tools.html">
-          <img src="assets/world/portal-tools.svg" alt="">
-          <span>Small Toolbox</span>
-          <h2>小工具箱</h2>
-          <p>文本统计、引用格式、日期倒计时和专注计时等轻量工具。</p>
-        </a>
-        <a class="portal-card" href="game-2048.html">
-          <img src="assets/world/portal-games.svg" alt="">
-          <span>Relationship 2048</span>
-          <h2>心动2048</h2>
-          <p>在 5×5 棋盘合并心意，经历相遇、磨合与长久相爱的关系故事。</p>
-        </a>
+      <div class="portal-progress" aria-label="入口进度">
+        <span class="portal-progress-current"><b data-portal-current>01</b><em data-portal-current-name>个人主页</em></span>
+        <span class="portal-progress-line" aria-hidden="true"><i data-portal-progress></i></span>
+        <span class="portal-progress-next"><small>Next</small><b data-portal-next>个人知识库</b></span>
+        <span class="portal-progress-dots">
+          <button type="button" class="is-active" data-portal-dot="0" aria-label="查看个人主页" title="个人主页"></button>
+          <button type="button" data-portal-dot="1" aria-label="查看个人知识库" title="个人知识库"></button>
+          <button type="button" data-portal-dot="2" aria-label="查看小工具箱" title="小工具箱"></button>
+          <button type="button" data-portal-dot="3" aria-label="查看心动2048" title="心动2048"></button>
+        </span>
       </div>
     </section>
+
+    <footer class="portal-footer">
+      <span>© <span data-portal-year>2026</span> Yong Liu</span>
+      <span>Research · Build · Play</span>
+    </footer>
   </main>
-
-  <footer class="world-footer">
-    <span>© <span id="year">2026</span> Yong Liu</span>
-    <span><a href="https://github.com/shanxixiaoyong" target="_blank" rel="noopener">GitHub</a> · <a href="https://orcid.org/0000-0002-7584-2953" target="_blank" rel="noopener">ORCID</a></span>
-  </footer>
-
-  <script src="assets/world.js"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ export const ACTIVE_PUBLIC_HTML_FILES = [
 
 export const ACTIVE_PUBLIC_JS_FILES = [
   "assets/world.js",
+  "assets/portal.js",
   "assets/academic.js",
   "assets/games.js",
   "assets/love-2048-engine.js",
@@ -18,7 +19,8 @@ export const ACTIVE_PUBLIC_JS_FILES = [
 ];
 
 export const ACTIVE_PUBLIC_STYLE_FILES = [
-  "assets/world.css"
+  "assets/world.css",
+  "assets/portal.css"
 ];
 
 export const ACTIVE_PUBLIC_FILES = [
@@ -90,10 +92,10 @@ export function validateSingleGameContract({ sources, exists = () => false }) {
   if (JSON.stringify(homepageGameLinks) !== JSON.stringify([SOLE_GAME_PAGE])) {
     failures.push(`Homepage must expose exactly one direct game link: ${JSON.stringify(homepageGameLinks)}`);
   }
-  if (!indexHtml.includes('<a class="portal-card" href="game-2048.html">')) {
+  if (!indexHtml.includes('<a class="portal-door portal-game" href="game-2048.html"')) {
     failures.push("Homepage game portal must point directly to game-2048.html outside comments");
   }
-  if (!indexHtml.includes("<h2>心动2048</h2>")) {
+  if (!indexHtml.includes("<strong>心动2048</strong>")) {
     failures.push("Homepage game portal must display the exact name 心动2048 outside comments");
   }
 

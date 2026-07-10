@@ -71,8 +71,8 @@ test("homepage has one direct game destination", () => {
   const activeIndexHtml = gameContract.stripHtmlComments(indexHtml);
   const gameLinks = [...activeIndexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
   assert.deepEqual(gameLinks, ["game-2048.html"]);
-  assert.match(activeIndexHtml, /<a class="portal-card" href="game-2048\.html">/);
-  assert.match(activeIndexHtml, /<h2>心动2048<\/h2>/);
+  assert.match(activeIndexHtml, /<a class="portal-door portal-game" href="game-2048\.html"/);
+  assert.match(activeIndexHtml, /<strong>心动2048<\/strong>/);
 });
 
 test("games.html immediately redirects old bookmarks to 心动2048", () => {
@@ -105,7 +105,7 @@ test("legacy game pages and executable runtimes are absent", () => {
 
 test("validators reject commented requirements and forbidden content across every active surface", () => {
   assertValidatorsRejectMutation("index.html", (source) => source.replace(
-    /(<a class="portal-card" href="game-2048\.html">[\s\S]*?<\/a>)/,
+    /(<a class="portal-door portal-game" href="game-2048\.html"[\s\S]*?<\/a>)/,
     "<!-- $1 -->"
   ));
   for (const requiredMarkup of [

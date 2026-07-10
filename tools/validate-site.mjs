@@ -17,9 +17,11 @@ const siteFiles = [
   "games.html",
   ...standaloneGamePages,
   "assets/world.css",
+  "assets/portal.css",
   "assets/academic-v2.css",
   "assets/love-2048.css",
   "assets/world.js",
+  "assets/portal.js",
   "assets/academic.js",
   "assets/games.js",
   "assets/love-2048-vfx.js",
@@ -38,11 +40,14 @@ const html = siteFiles.map((file) => readFileSync(file, "utf8")).join("\n");
 const pageHtml = ["index.html", "home.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]
   .map((file) => readFileSync(file, "utf8"))
   .join("\n");
+const indexHtml = readFileSync("index.html", "utf8");
 const homeHtml = readFileSync("home.html", "utf8");
 const knowledge = JSON.parse(readFileSync("data/knowledge.json", "utf8"));
 const readme = readFileSync("README.md", "utf8");
 const gamesScript = readFileSync("assets/games.js", "utf8");
 const worldCss = readFileSync("assets/world.css", "utf8");
+const portalCss = readFileSync("assets/portal.css", "utf8");
+const portalScript = readFileSync("assets/portal.js", "utf8");
 const academicCss = readFileSync("assets/academic-v2.css", "utf8");
 
 const required = [
@@ -67,9 +72,18 @@ const required = [
   "data/knowledge.json",
   "sync-obsidian",
   "assets/world.css",
+  "assets/portal.css",
   "assets/academic-v2.css",
   "assets/academic.js",
   "assets/world.js",
+  "assets/portal.js",
+  'class="portal-page"',
+  'class="portal-rail"',
+  'class="portal-door portal-academic"',
+  'class="portal-door portal-game"',
+  "assets/portal/academic-workspace.webp",
+  "assets/portal/knowledge-archive.webp",
+  "assets/portal/tool-workbench.webp",
   "assets/games.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
@@ -229,10 +243,11 @@ const requiredAssets = [
   "favicon.svg",
   "favicon.png",
   "favicon.ico",
-  "assets/world/portal-home.svg",
   "assets/world/portal-knowledge.svg",
   "assets/world/portal-tools.svg",
-  "assets/world/portal-games.svg",
+  "assets/portal/academic-workspace.webp",
+  "assets/portal/knowledge-archive.webp",
+  "assets/portal/tool-workbench.webp",
   "assets/academic-v2.css",
   "assets/academic.js",
   "assets/world/workspace-grid.svg",
@@ -287,6 +302,29 @@ const academicThemeContracts = [
   'object-fit: contain',
   'prefers-reduced-motion'
 ];
+
+const portalContracts = [
+  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260710a">'],
+  [indexHtml, '<script src="assets/portal.js?v=portal-20260710a" defer></script>'],
+  [indexHtml, 'class="portal-rail"'],
+  [indexHtml, 'class="portal-door portal-game"'],
+  [portalCss, "scroll-snap-type: inline mandatory"],
+  [portalCss, "grid-template-columns: repeat(12, minmax(0, 1fr))"],
+  [portalScript, "function setActive(index)"],
+  [portalScript, 'rail.addEventListener("scroll"']
+];
+
+for (const [source, token] of portalContracts) {
+  if (!source.includes(token)) failures.push(`Personal portal missing contract: ${token}`);
+}
+
+if ((indexHtml.match(/data-portal-index="\d"/g) || []).length !== 4) {
+  failures.push("Personal portal must contain exactly four destinations");
+}
+
+if (indexHtml.includes('href="assets/world.css"') || indexHtml.includes('class="portal-card"')) {
+  failures.push("Personal portal must not fall back to the legacy card homepage");
+}
 
 for (const token of academicThemeContracts) {
   if (!academicCss.includes(token)) {
@@ -348,6 +386,8 @@ for (const asset of requiredAssets) {
     failures.push(`Missing required asset file: ${asset}`);
   } else if (asset.startsWith("assets/game-art/") && statSync(asset).size < 100000) {
     failures.push(`Generated game art file is unexpectedly small: ${asset}`);
+  } else if (asset.startsWith("assets/portal/") && statSync(asset).size < 50000) {
+    failures.push(`Portal image file is unexpectedly small: ${asset}`);
   } else if (asset.startsWith("assets/love-scenes/") && statSync(asset).size < 50000) {
     failures.push(`Love 2048 scene art file is unexpectedly small: ${asset}`);
   }
