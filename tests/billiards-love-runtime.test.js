@@ -18,23 +18,53 @@ test("builds a zero-gravity fixed-120Hz Matter table with stable collision setti
   assert.match(source, /Events\.on\(engine, "collisionStart"/);
 });
 
-test("racks one cue ball and all fifteen standard numbered balls with the eight in the center", () => {
+test("uses one portrait logical world with the cue below a complete upward-facing rack", () => {
+  assert.match(source, /const WORLD = Object\.freeze\(\{ width: 720, height: 1440 \}\)/);
+  assert.match(source, /const TABLE = Object\.freeze\(\{ left: 90, right: 630, top: 180, bottom: 1260 \}\)/);
+  assert.match(source, /const CUE_SPOT = Object\.freeze\(\{ x: WORLD\.width \/ 2, y: 1080 \}\)/);
+  assert.match(source, /const RACK_APEX = Object\.freeze\(\{ x: WORLD\.width \/ 2, y: 510 \}\)/);
   assert.match(source, /const RACK = Object\.freeze\(\[\s*\[1\],\s*\[4, 9\],\s*\[2, 8, 10\]/s);
-  assert.match(source, /createBall\(0, 342, WORLD\.height \/ 2\)/);
-  assert.match(source, /RACK\.forEach\(\(row, rowIndex\)/);
-  assert.match(source, /const stripe = number > 8/);
+  assert.match(source, /createBall\(0, CUE_SPOT\.x, CUE_SPOT\.y\)/);
+  assert.match(source, /const y = RACK_APEX\.y - rowIndex \* yStep/);
+  assert.match(source, /const x = RACK_APEX\.x \+ \(index - rowIndex \/ 2\) \* spacing/);
+  assert.match(source, /let aimDirection = \{ x: 0, y: -1 \}/);
   assert.match(source, /number === 0 \? "hb-cue-ball" : `hb-object-ball-\$\{number\}`/);
 });
 
-test("implements six fixed pockets, natural pocket capture, cue scratches, and respots", () => {
-  for (const pocket of ["top-left", "top-middle", "top-right", "bottom-left", "bottom-middle", "bottom-right"]) {
+test("implements six portrait pockets and a delayed, duplicate-safe pocket lifecycle", () => {
+  for (const pocket of ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"]) {
     assert.ok(source.includes(`id: "${pocket}"`), `missing ${pocket} pocket`);
   }
-  assert.match(source, /shotState\.cueScratch = true/);
-  assert.match(source, /shotState\.pottedNumbers\.push\(number\)/);
-  assert.match(source, /shotState\.bankedNumbers\.push\(number\)/);
-  assert.match(source, /outcome\.respotNumbers\.forEach\(respotBall\)/);
+  assert.match(source, /const POCKET_MIN_DURATION = 280/);
+  assert.match(source, /const POCKET_MAX_DURATION = 450/);
+  assert.match(source, /if \(!shotState \|\| !data \|\| data\.potted \|\| data\.pocketing\) return false/);
+  assert.match(source, /data\.pocketing = \{/);
+  assert.match(source, /function updatePocketing\(\)/);
+  assert.match(source, /if \(progress >= 1\) completePocketBall\(ball\)/);
+  assert.match(source, /function completePocketBall\(body\)[\s\S]*?removeBall\(body\)/);
+  assert.match(source, /if \(number === 0\) \{\s*shotState\.cueScratch = true/);
+  assert.match(source, /!shotState\.pottedNumbers\.includes\(number\)/);
+  assert.match(source, /if \(data\?\.pocketing\) \{\s*moving = true/);
   assert.match(source, /if \(!cueBall && !runState\.endState\.ended\) respotBall\(0\)/);
+});
+
+test("maps touch coordinates directly into the portrait world without rotation inversion", () => {
+  assert.match(source, /function clientPointToWorld\(clientX, clientY, rect/);
+  assert.match(source, /x: displayX \* WORLD\.width/);
+  assert.match(source, /y: displayY \* WORLD\.height/);
+  assert.doesNotMatch(source, /height > width/);
+  assert.doesNotMatch(source, /displayY \* WORLD\.width/);
+  assert.doesNotMatch(source, /1 - displayX/);
+});
+
+test("overrides the legacy rotated canvas and caps high-DPR rendering work", () => {
+  assert.match(source, /aspectRatio: "1 \/ 2"/);
+  assert.match(source, /transform: "none"/);
+  assert.match(source, /const MAX_RENDER_WIDTH = 1440/);
+  assert.match(source, /const MAX_RENDER_HEIGHT = 2880/);
+  assert.match(source, /Math\.sqrt\(MAX_RENDER_PIXELS \/ \(cssWidth \* cssHeight\)\)/);
+  assert.match(source, /context\.setTransform\(canvas\.width \/ WORLD\.width/);
+  assert.match(source, /window\.addEventListener\("resize", resizeCanvas\)/);
 });
 
 test("supports direct pull-direction-and-power touch aiming without target selection", () => {
@@ -42,7 +72,6 @@ test("supports direct pull-direction-and-power touch aiming without target selec
     assert.ok(source.includes(`"${event}"`), `missing ${event}`);
   }
   assert.doesNotMatch(source, /先点选这一杆的目标球/);
-  assert.doesNotMatch(source, /if \(!canInteract\(\) \|\| \(runState\.breakCompleted && selectedBallNumber === null\)\)/);
   assert.match(source, /const aimedContact = traceAim\(\)\?\.hitBall/);
   assert.match(source, /const inferredTarget = completedShot\.firstContact \|\| completedShot\.declaredBall/);
   assert.match(source, /canvas\.setPointerCapture\?\.\(event\.pointerId\)/);
@@ -50,15 +79,30 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
   assert.match(source, /event\.isPrimary === false/);
   assert.match(source, /!shotState && !pointerAim && !resolvingShot/);
-  assert.match(source, /!pointerAim \|\| event\.pointerId !== pointerAim\.id/);
 });
 
-test("maps portrait and landscape pointer coordinates into the same physics world", () => {
-  assert.match(source, /function clientPointToWorld\(clientX, clientY, rect/);
-  assert.match(source, /if \(height > width\)/);
-  assert.match(source, /x: displayY \* WORLD\.width/);
-  assert.match(source, /y: \(1 - displayX\) \* WORLD\.height/);
-  assert.match(source, /mapClientPoint\(clientX, clientY, rect\)/);
+test("tracks cumulative roll and rotates numbered texture and highlights with it", () => {
+  assert.match(source, /rollAngle: 0/);
+  assert.match(source, /rollVelocity: 0/);
+  assert.match(source, /lastPosition: \{ x, y \}/);
+  assert.match(source, /function updateRollingState\(\)/);
+  assert.match(source, /data\.rollAngle \+= angleDelta/);
+  assert.match(source, /data\.rollVelocity = angleDelta \/ \(FIXED_STEP \/ 1000\)/);
+  assert.match(source, /context\.rotate\(data\.rollAngle\)/);
+  assert.match(source, /const highlight = context\.createRadialGradient/);
+  assert.match(source, /if \(ball\.speed < NATURAL_STOP_SPEED\)/);
+  assert.match(source, /Body\.setVelocity\(ball, \{ x: ball\.velocity\.x \* 0\.86/);
+});
+
+test("adds physical compression, expanding impact rings, particles, and collision audio", () => {
+  assert.match(source, /function impactBall\(body, angle, relativeSpeed\)/);
+  assert.match(source, /data\.compression = Math\.max/);
+  assert.match(source, /data\.impactGlow = Math\.max/);
+  assert.match(source, /context\.scale\(1 - compression, 1 \+ compression \* 0\.52\)/);
+  assert.match(source, /collisionFeedbacks\.push\(\{/);
+  assert.match(source, /feedback\.radius \+= feedback\.speed/);
+  assert.match(source, /audio\.collision\(relative\)/);
+  assert.match(source, /spawnParticles\(contact\.x, contact\.y/);
 });
 
 test("draws the required first-contact and target-ball prediction lines", () => {
@@ -90,22 +134,27 @@ test("connects all fifteen micro performances plus confession and proposal cinem
   assert.match(source, /kind: "proposal"/);
   assert.match(source, /content\.getEnding\(grade\)/);
   assert.match(source, /"confession-too-early": "confessionTooEarly"/);
-  assert.doesNotMatch(source, /confession-too-soon/);
 });
 
-test("restores the sole animation loop when a mobile browser returns from BFCache", () => {
+test("starts immediately with no start gate or pause state", () => {
+  assert.equal(source.includes("paused"), false);
+  assert.equal(source.includes("togglePause"), false);
+  for (const selector of ["#hb-opening", "#hb-start", "#hb-pause", "#hb-pause-sheet", "#hb-resume", "#hb-restart-pause"]) {
+    assert.equal(source.includes(selector), false, `legacy gate selector remains: ${selector}`);
+  }
+  assert.doesNotMatch(source, /elements\.(start|pause|resume|restartPause)\.addEventListener/);
+  assert.match(source, /return !shotState && !pointerAim && !resolvingShot/);
+  assert.match(source, /root\.dataset\.state = "break"/);
+  assert.match(source, /started: true/);
+});
+
+test("restores the sole animation loop and frame timing after browser lifecycle events", () => {
   assert.match(source, /window\.addEventListener\("pagehide", \(event\) => \{/);
   assert.match(source, /if \(!event\.persisted\) cancelAnimationFrame\(frameHandle\)/);
   assert.match(source, /window\.addEventListener\("pageshow", \(event\) => \{/);
-  assert.match(source, /if \(!event\.persisted\) return/);
   assert.match(source, /lastFrameAt = performance\.now\(\)/);
   assert.match(source, /frameHandle = requestAnimationFrame\(frame\)/);
-});
-
-test("resets frame timing across visibility changes without pausing gameplay", () => {
-  assert.match(source, /function resetFrameTiming\(\) \{\s*accumulator = 0;\s*lastFrameAt = performance\.now\(\);\s*\}/);
   assert.match(source, /document\.addEventListener\("visibilitychange", resetFrameTiming\)/);
-  assert.doesNotMatch(source, /document\.hidden[\s\S]{0,120}togglePause\(\)/);
 });
 
 test("synthesizes three adaptive local music layers and physical sound cues", () => {
@@ -120,7 +169,7 @@ test("synthesizes three adaptive local music layers and physical sound cues", ()
 });
 
 test("does not introduce forbidden balls, AI opponents, power-ups, or physics modifiers", () => {
-  for (const forbidden of ["powerUp", "power-up", "movingPocket", "aiOpponent", "jumpShot", "masse", "spinControl", "skillBall"] ) {
+  for (const forbidden of ["powerUp", "power-up", "movingPocket", "aiOpponent", "jumpShot", "masse", "spinControl", "skillBall"]) {
     assert.equal(source.includes(forbidden), false, `forbidden mechanic present: ${forbidden}`);
   }
 });

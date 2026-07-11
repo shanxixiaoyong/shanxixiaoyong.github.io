@@ -43,14 +43,8 @@
     microLine: required("#hb-micro-line"),
     judgement: required("#hb-judgement"),
     coach: required("#hb-coach"),
-    opening: required("#hb-opening"),
-    start: required("#hb-start"),
     aimToggle: required("#hb-aim-toggle"),
     sound: required("#hb-sound"),
-    pause: required("#hb-pause"),
-    pauseSheet: required("#hb-pause-sheet"),
-    resume: required("#hb-resume"),
-    restartPause: required("#hb-restart-pause"),
     cinematic: required("#hb-cinematic"),
     cinematicImage: required("#hb-cinematic-image"),
     cinematicSkip: required("#hb-cinematic-skip"),
@@ -69,18 +63,26 @@
     retry: required("#hb-retry")
   };
 
-  const WORLD = Object.freeze({ width: 1280, height: 640 });
-  const TABLE = Object.freeze({ left: 160, right: 1120, top: 80, bottom: 560 });
-  const TABLE_OUTER = Object.freeze({ left: 105, right: 1175, top: 28, bottom: 612 });
-  const BALL_RADIUS = 13.2;
-  const POCKET_RADIUS = 28;
+  const WORLD = Object.freeze({ width: 720, height: 1440 });
+  const TABLE = Object.freeze({ left: 90, right: 630, top: 180, bottom: 1260 });
+  const TABLE_OUTER = Object.freeze({ left: 32, right: 688, top: 118, bottom: 1322 });
+  const BALL_RADIUS = 14.85;
+  const POCKET_RADIUS = 31.5;
   const FIXED_STEP = 1000 / 120;
   const MAX_STEPS_PER_FRAME = 8;
-  const MIN_PULL = 12;
-  const MAX_PULL = 180;
-  const MIN_SHOT_SPEED = 7.2;
-  const MAX_SHOT_SPEED = 27.5;
-  const STOP_SPEED = 0.075;
+  const MIN_PULL = 14;
+  const MAX_PULL = 202;
+  const MIN_SHOT_SPEED = 8.1;
+  const MAX_SHOT_SPEED = 30.9;
+  const STOP_SPEED = 0.055;
+  const NATURAL_STOP_SPEED = 0.16;
+  const POCKET_MIN_DURATION = 280;
+  const POCKET_MAX_DURATION = 450;
+  const MAX_RENDER_WIDTH = 1440;
+  const MAX_RENDER_HEIGHT = 2880;
+  const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
+  const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
+  const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
   const SETTINGS_KEY = "yl-heartbeat-billiards-settings-v2";
   const RECORD_KEY = "yl-heartbeat-billiards-record-v2";
@@ -93,10 +95,10 @@
   });
   const POCKETS = Object.freeze([
     { id: "top-left", x: TABLE.left, y: TABLE.top },
-    { id: "top-middle", x: WORLD.width / 2, y: TABLE.top - 1 },
     { id: "top-right", x: TABLE.right, y: TABLE.top },
+    { id: "middle-left", x: TABLE.left - 1, y: WORLD.height / 2 },
+    { id: "middle-right", x: TABLE.right + 1, y: WORLD.height / 2 },
     { id: "bottom-left", x: TABLE.left, y: TABLE.bottom },
-    { id: "bottom-middle", x: WORLD.width / 2, y: TABLE.bottom + 1 },
     { id: "bottom-right", x: TABLE.right, y: TABLE.bottom }
   ]);
   const RACK = Object.freeze([
@@ -169,6 +171,43 @@
     ctx.arcTo(x, y + height, x, y, r);
     ctx.arcTo(x, y, x + width, y, r);
     ctx.closePath();
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const cssWidth = Math.max(1, rect.width);
+    const cssHeight = Math.max(1, rect.height);
+    const deviceScale = Math.max(1, Number(window.devicePixelRatio) || 1);
+    renderScale = Math.min(
+      deviceScale,
+      MAX_RENDER_WIDTH / cssWidth,
+      MAX_RENDER_HEIGHT / cssHeight,
+      Math.sqrt(MAX_RENDER_PIXELS / (cssWidth * cssHeight))
+    );
+    canvas.width = Math.max(1, Math.round(cssWidth * renderScale));
+    canvas.height = Math.max(1, Math.round(cssHeight * renderScale));
+  }
+
+  function configurePortraitSurface() {
+    Object.assign(tableWrap.style, {
+      width: "min(calc(100% - 2px), calc((100dvh - 80px) / 2))",
+      height: "auto",
+      minWidth: "0",
+      maxWidth: "100%",
+      maxHeight: "100%",
+      aspectRatio: "1 / 2"
+    });
+    Object.assign(canvas.style, {
+      position: "static",
+      top: "auto",
+      left: "auto",
+      width: "100%",
+      height: "100%",
+      transform: "none",
+      transformOrigin: "center"
+    });
+    canvas.setAttribute("aria-label", "从底部白球向后拖动，松开后向上开球");
+    resizeCanvas();
   }
 
   class HeartbeatPoolAudio {
@@ -308,10 +347,8 @@
   let selectedBallNumber = null;
   let shotState = null;
   let pointerAim = null;
-  let aimDirection = { x: 1, y: 0 };
+  let aimDirection = { x: 0, y: -1 };
   let aimPower = 0;
-  let started = false;
-  let paused = false;
   let resolvingShot = false;
   let cinematicActive = false;
   let resultVisible = false;
@@ -323,6 +360,8 @@
   let simulationTime = 0;
   let particles = [];
   let pocketBursts = [];
+  let collisionFeedbacks = [];
+  let collisionCount = 0;
   let microQueue = [];
   let microTimer = 0;
   let judgementTimer = 0;
@@ -334,6 +373,7 @@
   let coachSeen = Boolean(readStorage(COACH_KEY, false));
   let cachedStageNumber = 1;
   let cachedAvailableTargets = new Set([1, 2, 3]);
+  let renderScale = 1;
 
   function bodyData(body) {
     return body?.plugin?.heartbeatPool || null;
@@ -362,25 +402,25 @@
 
   function buildRails() {
     if (rails.length) Composite.remove(engine.world, rails);
-    const mid = WORLD.width / 2;
-    const cornerGap = 58;
-    const sideGap = 48;
-    const thickness = 22;
-    const horizontalLeftStart = TABLE.left + cornerGap;
-    const horizontalLeftEnd = mid - sideGap;
-    const horizontalRightStart = mid + sideGap;
-    const horizontalRightEnd = TABLE.right - cornerGap;
-    const verticalStart = TABLE.top + cornerGap;
-    const verticalEnd = TABLE.bottom - cornerGap;
+    const mid = WORLD.height / 2;
+    const cornerGap = 65;
+    const sideGap = 54;
+    const thickness = 25;
+    const horizontalStart = TABLE.left + cornerGap;
+    const horizontalEnd = TABLE.right - cornerGap;
+    const verticalTopStart = TABLE.top + cornerGap;
+    const verticalTopEnd = mid - sideGap;
+    const verticalBottomStart = mid + sideGap;
+    const verticalBottomEnd = TABLE.bottom - cornerGap;
     rails = [
-      createRail((horizontalLeftStart + horizontalLeftEnd) / 2, TABLE.top - thickness / 2, horizontalLeftEnd - horizontalLeftStart, thickness, "top-left"),
-      createRail((horizontalRightStart + horizontalRightEnd) / 2, TABLE.top - thickness / 2, horizontalRightEnd - horizontalRightStart, thickness, "top-right"),
-      createRail((horizontalLeftStart + horizontalLeftEnd) / 2, TABLE.bottom + thickness / 2, horizontalLeftEnd - horizontalLeftStart, thickness, "bottom-left"),
-      createRail((horizontalRightStart + horizontalRightEnd) / 2, TABLE.bottom + thickness / 2, horizontalRightEnd - horizontalRightStart, thickness, "bottom-right"),
-      createRail(TABLE.left - thickness / 2, (verticalStart + verticalEnd) / 2, thickness, verticalEnd - verticalStart, "left"),
-      createRail(TABLE.right + thickness / 2, (verticalStart + verticalEnd) / 2, thickness, verticalEnd - verticalStart, "right"),
-      createRail(WORLD.width / 2, TABLE_OUTER.top - 22, TABLE_OUTER.right - TABLE_OUTER.left + 120, 18, "guard-top"),
-      createRail(WORLD.width / 2, TABLE_OUTER.bottom + 22, TABLE_OUTER.right - TABLE_OUTER.left + 120, 18, "guard-bottom"),
+      createRail(WORLD.width / 2, TABLE.top - thickness / 2, horizontalEnd - horizontalStart, thickness, "top"),
+      createRail(WORLD.width / 2, TABLE.bottom + thickness / 2, horizontalEnd - horizontalStart, thickness, "bottom"),
+      createRail(TABLE.left - thickness / 2, (verticalTopStart + verticalTopEnd) / 2, thickness, verticalTopEnd - verticalTopStart, "left-top"),
+      createRail(TABLE.left - thickness / 2, (verticalBottomStart + verticalBottomEnd) / 2, thickness, verticalBottomEnd - verticalBottomStart, "left-bottom"),
+      createRail(TABLE.right + thickness / 2, (verticalTopStart + verticalTopEnd) / 2, thickness, verticalTopEnd - verticalTopStart, "right-top"),
+      createRail(TABLE.right + thickness / 2, (verticalBottomStart + verticalBottomEnd) / 2, thickness, verticalBottomEnd - verticalBottomStart, "right-bottom"),
+      createRail(WORLD.width / 2, TABLE_OUTER.top - 24, TABLE_OUTER.right - TABLE_OUTER.left + 120, 18, "guard-top"),
+      createRail(WORLD.width / 2, TABLE_OUTER.bottom + 24, TABLE_OUTER.right - TABLE_OUTER.left + 120, 18, "guard-bottom"),
       createRail(TABLE_OUTER.left - 24, WORLD.height / 2, 18, TABLE_OUTER.bottom - TABLE_OUTER.top + 120, "guard-left"),
       createRail(TABLE_OUTER.right + 24, WORLD.height / 2, 18, TABLE_OUTER.bottom - TABLE_OUTER.top + 120, "guard-right")
     ];
@@ -402,7 +442,14 @@
       number,
       potted: false,
       shotRailHits: 0,
-      falling: false
+      pocketing: null,
+      rollAngle: 0,
+      rollVelocity: 0,
+      rollHeading: -Math.PI / 2,
+      lastPosition: { x, y },
+      compression: 0,
+      impactGlow: 0,
+      impactAngle: 0
     };
     Body.setInertia(body, Infinity);
     balls.push(body);
@@ -419,14 +466,13 @@
 
   function rackBalls() {
     clearBalls();
-    createBall(0, 342, WORLD.height / 2);
-    const spacing = BALL_RADIUS * 2 + 1.15;
-    const xStep = spacing * Math.cos(Math.PI / 6);
-    const apexX = 862;
+    createBall(0, CUE_SPOT.x, CUE_SPOT.y);
+    const spacing = BALL_RADIUS * 2 + 1.3;
+    const yStep = spacing * Math.cos(Math.PI / 6);
     RACK.forEach((row, rowIndex) => {
-      const x = apexX + rowIndex * xStep;
+      const y = RACK_APEX.y - rowIndex * yStep;
       row.forEach((number, index) => {
-        const y = WORLD.height / 2 + (index - rowIndex / 2) * spacing;
+        const x = RACK_APEX.x + (index - rowIndex / 2) * spacing;
         createBall(number, x, y);
       });
     });
@@ -452,14 +498,14 @@
         if (pointIsOpen(point)) return point;
       }
     }
-    return { x: TABLE.left + 120, y: WORLD.height / 2 };
+    return { ...CUE_SPOT };
   }
 
   function respotBall(number) {
     if (ballByNumber(number)) return;
     const preferred = number === 0
-      ? { x: 342, y: WORLD.height / 2 }
-      : { x: 862, y: WORLD.height / 2 };
+      ? CUE_SPOT
+      : RACK_APEX;
     const point = findOpenSpot(preferred);
     createBall(number, point.x, point.y);
   }
@@ -486,28 +532,29 @@
     selectedBallNumber = null;
     shotState = null;
     pointerAim = null;
-    aimDirection = { x: 1, y: 0 };
+    aimDirection = { x: 0, y: -1 };
     aimPower = 0;
-    paused = false;
     resolvingShot = false;
     cinematicActive = false;
     resultVisible = false;
     accumulator = 0;
     stableSteps = 0;
+    simulationTime = 0;
     particles = [];
     pocketBursts = [];
+    collisionFeedbacks = [];
+    collisionCount = 0;
     microQueue = [];
     cinematicQueue = [];
     cinematicCurrent = null;
     screenFlash = 0;
     screenShake = 0;
-    elements.pauseSheet.hidden = true;
     elements.result.hidden = true;
     elements.cinematic.hidden = true;
     elements.micro.hidden = true;
     rackBalls();
     syncUI();
-    root.dataset.state = started ? "break" : "ready";
+    root.dataset.state = "break";
   }
 
   function buildTimeline() {
@@ -613,16 +660,6 @@
     const height = Math.max(1, rect.height);
     const displayX = clamp((clientX - rect.left) / width, 0, 1);
     const displayY = clamp((clientY - rect.top) / height, 0, 1);
-
-    // Portrait CSS rotates the horizontal physics table clockwise. Undo that
-    // presentation transform here so touch, mouse and high-DPR screens all use
-    // the same 1280 x 640 world coordinates.
-    if (height > width) {
-      return {
-        x: displayY * WORLD.width,
-        y: (1 - displayX) * WORLD.height
-      };
-    }
     return {
       x: displayX * WORLD.width,
       y: displayY * WORLD.height
@@ -634,7 +671,7 @@
   }
 
   function canInteract() {
-    return started && !paused && !shotState && !pointerAim && !resolvingShot
+    return !shotState && !pointerAim && !resolvingShot
       && !cinematicActive && !resultVisible && cueBall;
   }
 
@@ -730,28 +767,105 @@
 
   function pocketBall(body, pocket) {
     const data = bodyData(body);
-    if (!shotState || !data || data.potted || data.falling) return;
-    data.falling = true;
+    if (!shotState || !data || data.potted || data.pocketing) return false;
     const speed = body.speed;
+    const durationRange = POCKET_MAX_DURATION - POCKET_MIN_DURATION + 1;
+    const duration = POCKET_MIN_DURATION + ((data.number * 47 + Math.round(speed * 17)) % durationRange);
+    data.pocketing = {
+      pocketId: pocket.id,
+      targetX: pocket.x,
+      targetY: pocket.y,
+      startX: body.position.x,
+      startY: body.position.y,
+      startAngle: data.rollAngle,
+      startSpeed: speed,
+      elapsed: 0,
+      duration,
+      scale: 1,
+      depth: 0,
+      rotation: data.rollAngle
+    };
+    body.isSensor = true;
+    body.collisionFilter.mask = 0;
+    Body.setVelocity(body, { x: 0, y: 0 });
+    Body.setAngularVelocity(body, 0);
+    data.lastPosition = { x: body.position.x, y: body.position.y };
+    audio.cue(data.number === 0 ? "scratch" : "pocket", clamp(0.72 + speed / 30, 0.7, 1.15));
+    screenFlash = Math.max(screenFlash, data.number === 8 || data.number === 15 ? 0.36 : 0.12);
+    return true;
+  }
+
+  function completePocketBall(body) {
+    const data = bodyData(body);
+    if (!data || data.potted || !data.pocketing) return;
+    const pocketing = data.pocketing;
     const number = data.number;
-    if (number === 0) {
-      shotState.cueScratch = true;
-    } else if (!shotState.pottedNumbers.includes(number)) {
-      shotState.pottedNumbers.push(number);
-      if (data.shotRailHits > 0) shotState.bankedNumbers.push(number);
+    if (shotState) {
+      if (number === 0) {
+        shotState.cueScratch = true;
+      } else if (!shotState.pottedNumbers.includes(number)) {
+        shotState.pottedNumbers.push(number);
+        if (data.shotRailHits > 0) shotState.bankedNumbers.push(number);
+      }
     }
-    pocketBursts.push({ x: pocket.x, y: pocket.y, color: number === 0 ? "#f5f0e7" : BALL_COLORS[number], life: 1, number });
-    spawnParticles(pocket.x, pocket.y, number === 0 ? "#e6eee9" : BALL_COLORS[number], number === 0 ? 7 : 12);
+    const color = number === 0 ? "#f5f0e7" : BALL_COLORS[number];
+    pocketBursts.push({ x: pocketing.targetX, y: pocketing.targetY, color, life: 1, number });
+    spawnParticles(pocketing.targetX, pocketing.targetY, number === 0 ? "#e6eee9" : color, number === 0 ? 7 : 12);
     removeBall(body);
-    audio.cue(number === 0 ? "scratch" : "pocket", clamp(0.72 + speed / 30, 0.7, 1.15));
-    screenFlash = Math.max(screenFlash, number === 8 || number === 15 ? 0.36 : 0.12);
+  }
+
+  function updatePocketing() {
+    balls.slice().forEach((ball) => {
+      const data = bodyData(ball);
+      const state = data?.pocketing;
+      if (!state || data.potted) return;
+      state.elapsed = Math.min(state.duration, state.elapsed + FIXED_STEP);
+      const progress = clamp(state.elapsed / state.duration, 0, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const dx = state.targetX - state.startX;
+      const dy = state.targetY - state.startY;
+      const pathLength = Math.max(1, Math.hypot(dx, dy));
+      const curl = Math.sin(progress * Math.PI) * 7 * (data.number % 2 ? 1 : -1);
+      Body.setPosition(ball, {
+        x: state.startX + dx * eased - dy / pathLength * curl,
+        y: state.startY + dy * eased + dx / pathLength * curl
+      });
+      state.scale = 1 - eased * 0.82;
+      state.depth = eased;
+      state.rotation = state.startAngle + eased * (Math.PI * 2.4 + state.startSpeed * 0.16);
+      data.rollAngle = state.rotation;
+      data.rollVelocity = (Math.PI * 2.4 + state.startSpeed * 0.16) / (state.duration / 1000);
+      data.lastPosition = { x: ball.position.x, y: ball.position.y };
+      if (progress >= 1) completePocketBall(ball);
+    });
+  }
+
+  function updateRollingState() {
+    balls.forEach((ball) => {
+      const data = bodyData(ball);
+      if (!data || data.potted || data.pocketing) return;
+      const dx = ball.position.x - data.lastPosition.x;
+      const dy = ball.position.y - data.lastPosition.y;
+      const travel = Math.hypot(dx, dy);
+      data.lastPosition = { x: ball.position.x, y: ball.position.y };
+      if (travel > 0.0001) {
+        const sign = Math.abs(dx) > Math.abs(dy) ? Math.sign(dx) : Math.sign(dy);
+        const angleDelta = travel / BALL_RADIUS * (sign || 1);
+        data.rollAngle += angleDelta;
+        data.rollVelocity = angleDelta / (FIXED_STEP / 1000);
+        data.rollHeading = Math.atan2(dy, dx);
+      } else {
+        data.rollVelocity *= 0.78;
+        if (Math.abs(data.rollVelocity) < 0.002) data.rollVelocity = 0;
+      }
+    });
   }
 
   function updatePockets() {
     if (!shotState) return;
     balls.slice().forEach((ball) => {
       const data = bodyData(ball);
-      if (!data || data.potted) return;
+      if (!data || data.potted || data.pocketing) return;
       let nearestPocket = null;
       let nearestDistance = Infinity;
       POCKETS.forEach((pocket) => {
@@ -776,11 +890,20 @@
   function settleBalls() {
     let moving = false;
     balls.forEach((ball) => {
+      const data = bodyData(ball);
+      if (data?.pocketing) {
+        moving = true;
+        return;
+      }
       if (ball.speed < STOP_SPEED) {
         Body.setVelocity(ball, { x: 0, y: 0 });
         Body.setAngularVelocity(ball, 0);
+        if (data) data.rollVelocity *= 0.7;
       } else {
         moving = true;
+        if (ball.speed < NATURAL_STOP_SPEED) {
+          Body.setVelocity(ball, { x: ball.velocity.x * 0.86, y: ball.velocity.y * 0.86 });
+        }
         if (ball.speed > MAX_SHOT_SPEED * 1.3) {
           const scale = MAX_SHOT_SPEED * 1.3 / ball.speed;
           Body.setVelocity(ball, { x: ball.velocity.x * scale, y: ball.velocity.y * scale });
@@ -1074,6 +1197,20 @@
     particles = particles.filter((particle) => particle.life > 0);
     pocketBursts.forEach((burst) => { burst.life -= 0.024; });
     pocketBursts = pocketBursts.filter((burst) => burst.life > 0);
+    collisionFeedbacks.forEach((feedback) => {
+      feedback.life -= 0.115;
+      feedback.radius += feedback.speed;
+      feedback.speed *= 0.82;
+    });
+    collisionFeedbacks = collisionFeedbacks.filter((feedback) => feedback.life > 0);
+    balls.forEach((ball) => {
+      const data = bodyData(ball);
+      if (!data) return;
+      data.compression *= 0.64;
+      data.impactGlow *= 0.74;
+      if (data.compression < 0.001) data.compression = 0;
+      if (data.impactGlow < 0.01) data.impactGlow = 0;
+    });
     screenFlash *= 0.9;
     screenShake *= 0.83;
   }
@@ -1136,7 +1273,7 @@
     context.restore();
 
     context.save();
-    const rail = context.createLinearGradient(0, TABLE.top - 28, 0, TABLE.bottom + 28);
+    const rail = context.createLinearGradient(TABLE.left - 28, 0, TABLE.right + 28, 0);
     rail.addColorStop(0, "#1f4f42");
     rail.addColorStop(0.18, "#163d34");
     rail.addColorStop(0.82, "#0f322b");
@@ -1153,7 +1290,7 @@
     context.fillStyle = "rgba(255, 255, 255, 0.025)";
     for (let y = TABLE.top + 10; y < TABLE.bottom; y += 18) context.fillRect(TABLE.left + 4, y, TABLE.right - TABLE.left - 8, 1);
     const stageWash = ["#5d9685", "#c19c62", "#c86e83", "#d9b866", "#8f82b4", "#67a2b4", "#d4ad63"][currentStageNumber() - 1];
-    const wash = context.createRadialGradient(WORLD.width * 0.56, WORLD.height * 0.46, 40, WORLD.width * 0.56, WORLD.height * 0.46, 520);
+    const wash = context.createRadialGradient(WORLD.width * 0.54, WORLD.height * 0.46, 40, WORLD.width * 0.54, WORLD.height * 0.46, 580);
     wash.addColorStop(0, `${stageWash}22`);
     wash.addColorStop(1, "transparent");
     context.fillStyle = wash;
@@ -1169,12 +1306,11 @@
       glow.addColorStop(1, "transparent");
       context.fillStyle = glow;
       context.beginPath();
-      context.arc(pocket.x, pocket.y, POCKET_RADIUS + (index === 1 || index === 4 ? 3 : 0), 0, Math.PI * 2);
+      context.arc(pocket.x, pocket.y, POCKET_RADIUS + (pocket.id.includes("middle") ? 3 : 0), 0, Math.PI * 2);
       context.fill();
     });
     context.fillStyle = "rgba(230, 199, 137, 0.78)";
-    const diamonds = [280, 400, 520, 760, 880, 1000];
-    diamonds.forEach((x) => {
+    [210, 300, 420, 510].forEach((x) => {
       context.save();
       context.translate(x, TABLE.top - 23);
       context.rotate(Math.PI / 4);
@@ -1186,7 +1322,7 @@
       context.fillRect(-3, -3, 6, 6);
       context.restore();
     });
-    [200, 260, 380, 440].forEach((y) => {
+    [315, 450, 585, 855, 990, 1125].forEach((y) => {
       context.save();
       context.translate(TABLE.left - 23, y);
       context.rotate(Math.PI / 4);
@@ -1204,17 +1340,28 @@
   function drawBall(ball, timestamp) {
     const data = bodyData(ball);
     if (!data || data.potted) return;
-    const { x, y } = ball.position;
     const number = data.number;
+    const pocketing = data.pocketing;
+    const scale = pocketing?.scale ?? 1;
+    const depth = pocketing?.depth ?? 0;
+    const x = ball.position.x;
+    const y = ball.position.y + depth * 13;
+    const compression = data.compression;
     context.save();
+    context.globalAlpha = 1 - depth * 0.52;
     context.translate(x, y);
+    context.rotate(data.impactAngle);
+    context.scale(1 - compression, 1 + compression * 0.52);
+    context.rotate(-data.impactAngle);
+    context.scale(scale, scale);
     context.shadowColor = "rgba(0, 0, 0, 0.52)";
-    context.shadowBlur = 6;
-    context.shadowOffsetX = 3;
-    context.shadowOffsetY = 5;
+    context.shadowBlur = 6 * (1 - depth * 0.6);
+    context.shadowOffsetX = 3 * (1 - depth);
+    context.shadowOffsetY = 5 + depth * 5;
     context.beginPath();
     context.arc(0, 0, BALL_RADIUS, 0, Math.PI * 2);
     context.clip();
+    context.rotate(data.rollAngle);
     if (number === 0) {
       const cueGradient = context.createRadialGradient(-5, -6, 1, 0, 0, BALL_RADIUS * 1.2);
       cueGradient.addColorStop(0, "#ffffff");
@@ -1222,40 +1369,57 @@
       cueGradient.addColorStop(1, "#89938d");
       context.fillStyle = cueGradient;
       context.fillRect(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
+      context.fillStyle = "rgba(136, 47, 48, 0.72)";
+      context.beginPath();
+      context.arc(0, -BALL_RADIUS * 0.62, 1.6, 0, Math.PI * 2);
+      context.fill();
     } else {
       const color = BALL_COLORS[number];
       const stripe = number > 8;
       context.fillStyle = stripe ? "#f3eee1" : color;
-      context.fillRect(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
+      context.fillRect(-BALL_RADIUS * 1.5, -BALL_RADIUS * 1.5, BALL_RADIUS * 3, BALL_RADIUS * 3);
       if (stripe) {
         context.fillStyle = color;
-        context.fillRect(-BALL_RADIUS, -BALL_RADIUS * 0.48, BALL_RADIUS * 2, BALL_RADIUS * 0.96);
+        context.fillRect(-BALL_RADIUS * 1.5, -BALL_RADIUS * 0.48, BALL_RADIUS * 3, BALL_RADIUS * 0.96);
       }
       const shade = context.createRadialGradient(-5, -6, 1, 2, 3, BALL_RADIUS * 1.22);
-      shade.addColorStop(0, "rgba(255,255,255,0.48)");
+      shade.addColorStop(0, "rgba(255,255,255,0.38)");
       shade.addColorStop(0.36, "rgba(255,255,255,0.02)");
       shade.addColorStop(1, "rgba(0,0,0,0.46)");
       context.fillStyle = shade;
       context.fillRect(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
-    }
-    context.restore();
-
-    if (number > 0) {
-      context.save();
-      context.translate(x, y);
       context.fillStyle = "#f7f2e7";
       context.beginPath();
-      context.arc(0, 0, 6.1, 0, Math.PI * 2);
+      context.arc(0, 0, 6.6, 0, Math.PI * 2);
       context.fill();
       context.fillStyle = "#191c1c";
-      context.font = "700 6.8px system-ui, sans-serif";
+      context.font = "700 7.2px system-ui, sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
       context.fillText(String(number), 0, 0.4);
+    }
+    const highlight = context.createRadialGradient(-5.5, -6.2, 0.4, -5.5, -6.2, 5.2);
+    highlight.addColorStop(0, "rgba(255,255,255,0.92)");
+    highlight.addColorStop(0.36, "rgba(255,255,255,0.46)");
+    highlight.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = highlight;
+    context.beginPath();
+    context.arc(-5.5, -6.2, 5.2, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+
+    if (data.impactGlow > 0 && !pocketing) {
+      context.save();
+      context.globalAlpha = data.impactGlow;
+      context.strokeStyle = number === 0 ? "#f7f2e7" : BALL_COLORS[number];
+      context.lineWidth = 1.5 + data.impactGlow * 1.2;
+      context.beginPath();
+      context.arc(x, y, BALL_RADIUS + 3 + (1 - data.impactGlow) * 8, 0, Math.PI * 2);
+      context.stroke();
       context.restore();
     }
 
-    const available = number > 0 && !shotState && cachedAvailableTargets.has(number);
+    const available = number > 0 && !shotState && !pocketing && cachedAvailableTargets.has(number);
     if (number === selectedBallNumber || available) {
       const pulse = 0.5 + Math.sin(timestamp / 320 + number) * 0.5;
       context.save();
@@ -1269,7 +1433,7 @@
   }
 
   function drawAim() {
-    if (!cueBall || shotState || resolvingShot || paused || cinematicActive || resultVisible) return;
+    if (!cueBall || shotState || resolvingShot || cinematicActive || resultVisible) return;
     const trace = traceAim();
     if (!trace) return;
     const contactNumber = bodyData(trace.hitBall)?.number;
@@ -1346,10 +1510,19 @@
       context.arc(burst.x, burst.y, 14 + (1 - burst.life) * 35, 0, Math.PI * 2);
       context.stroke();
     });
+    collisionFeedbacks.forEach((feedback) => {
+      context.globalAlpha = feedback.life * feedback.intensity;
+      context.strokeStyle = feedback.color;
+      context.lineWidth = 1.2 + feedback.life * 2.2;
+      context.beginPath();
+      context.arc(feedback.x, feedback.y, feedback.radius, 0, Math.PI * 2);
+      context.stroke();
+    });
     context.restore();
   }
 
   function draw(timestamp) {
+    context.setTransform(canvas.width / WORLD.width, 0, 0, canvas.height / WORLD.height, 0, 0);
     context.clearRect(0, 0, WORLD.width, WORLD.height);
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
@@ -1370,7 +1543,9 @@
   function physicsStep() {
     Engine.update(engine, FIXED_STEP);
     simulationTime += FIXED_STEP;
+    updateRollingState();
     updatePockets();
+    updatePocketing();
     settleBalls();
     updateEffects();
   }
@@ -1378,7 +1553,7 @@
   function frame(timestamp) {
     const delta = Math.min(50, Math.max(0, timestamp - lastFrameAt));
     lastFrameAt = timestamp;
-    if (started && !paused && !cinematicActive && !resultVisible) {
+    if (!cinematicActive && !resultVisible) {
       accumulator += delta;
       let steps = 0;
       while (accumulator >= FIXED_STEP && steps < MAX_STEPS_PER_FRAME) {
@@ -1395,6 +1570,14 @@
     frameHandle = requestAnimationFrame(frame);
   }
 
+  function impactBall(body, angle, relativeSpeed) {
+    const data = bodyData(body);
+    if (!data || data.potted || data.pocketing) return;
+    data.impactAngle = angle;
+    data.compression = Math.max(data.compression, clamp(relativeSpeed / 62, 0.025, 0.18));
+    data.impactGlow = Math.max(data.impactGlow, clamp(relativeSpeed / 24, 0.18, 1));
+  }
+
   Events.on(engine, "collisionStart", (event) => {
     if (!shotState) return;
     event.pairs.forEach(({ bodyA, bodyB, collision }) => {
@@ -1402,15 +1585,42 @@
       const dataB = bodyData(bodyB);
       if (dataA && dataB) {
         const relative = Math.hypot(bodyA.velocity.x - bodyB.velocity.x, bodyA.velocity.y - bodyB.velocity.y);
+        const normal = collision?.normal || normalize({ x: bodyB.position.x - bodyA.position.x, y: bodyB.position.y - bodyA.position.y });
+        impactBall(bodyA, Math.atan2(normal.y, normal.x), relative);
+        impactBall(bodyB, Math.atan2(normal.y, normal.x) + Math.PI, relative);
+        collisionCount += 1;
         audio.collision(relative);
         if (shotState.firstContact === null) {
           if (dataA.number === 0 && dataB.number > 0) shotState.firstContact = dataB.number;
           if (dataB.number === 0 && dataA.number > 0) shotState.firstContact = dataA.number;
         }
-        if (collision?.supports?.[0]) spawnParticles(collision.supports[0].x, collision.supports[0].y, "#d9ede4", Math.min(4, Math.ceil(relative / 4)));
+        const contact = collision?.supports?.[0] || {
+          x: (bodyA.position.x + bodyB.position.x) / 2,
+          y: (bodyA.position.y + bodyB.position.y) / 2
+        };
+        collisionFeedbacks.push({
+          x: contact.x,
+          y: contact.y,
+          radius: 4,
+          speed: 2.4 + Math.min(3.6, relative * 0.08),
+          life: 1,
+          intensity: clamp(relative / 16, 0.3, 1),
+          color: "#e8fff7"
+        });
+        if (collisionFeedbacks.length > 24) collisionFeedbacks.splice(0, collisionFeedbacks.length - 24);
+        spawnParticles(contact.x, contact.y, "#d9ede4", Math.min(4, Math.ceil(relative / 4)));
+        screenShake = Math.max(screenShake, Math.min(2.8, relative * 0.06));
       }
-      if (dataA && isRail(bodyB)) dataA.shotRailHits += 1;
-      if (dataB && isRail(bodyA)) dataB.shotRailHits += 1;
+      if (dataA && isRail(bodyB)) {
+        dataA.shotRailHits += 1;
+        impactBall(bodyA, Math.atan2(-bodyA.velocity.y, -bodyA.velocity.x), bodyA.speed);
+        audio.collision(bodyA.speed * 0.72);
+      }
+      if (dataB && isRail(bodyA)) {
+        dataB.shotRailHits += 1;
+        impactBall(bodyB, Math.atan2(-bodyB.velocity.y, -bodyB.velocity.x), bodyB.speed);
+        audio.collision(bodyB.speed * 0.72);
+      }
     });
   });
 
@@ -1442,9 +1652,10 @@
   window.addEventListener("keydown", (event) => {
     if (["INPUT", "TEXTAREA", "SELECT"].includes(event.target?.tagName)) return;
     if (event.key === "Escape") {
-      event.preventDefault();
-      if (cinematicActive) closeCinematic();
-      else togglePause();
+      if (cinematicActive) {
+        event.preventDefault();
+        closeCinematic();
+      }
       return;
     }
     if (!canInteract()) return;
@@ -1467,22 +1678,6 @@
     }
   });
 
-  function togglePause() {
-    if (!started || resultVisible || cinematicActive) return;
-    paused = !paused;
-    elements.pauseSheet.hidden = !paused;
-    root.dataset.state = paused ? "paused" : shotState ? "rolling" : "aiming";
-    if (!paused) lastFrameAt = performance.now();
-  }
-
-  elements.start.addEventListener("click", () => {
-    audio.unlock();
-    started = true;
-    elements.opening.hidden = true;
-    resetGame();
-    root.dataset.state = "break";
-    canvas.focus({ preventScroll: true });
-  });
   elements.sound.addEventListener("click", () => {
     audio.toggle();
     syncUI();
@@ -1492,12 +1687,6 @@
     const settings = readStorage(SETTINGS_KEY, {});
     writeStorage(SETTINGS_KEY, { ...settings, aimAssist });
     syncUI();
-  });
-  elements.pause.addEventListener("click", togglePause);
-  elements.resume.addEventListener("click", togglePause);
-  elements.restartPause.addEventListener("click", () => {
-    elements.pauseSheet.hidden = true;
-    resetGame();
   });
   elements.retry.addEventListener("click", () => {
     elements.result.hidden = true;
@@ -1514,6 +1703,7 @@
   }
 
   document.addEventListener("visibilitychange", resetFrameTiming);
+  window.addEventListener("resize", resizeCanvas);
   window.addEventListener("pagehide", (event) => {
     if (!event.persisted) cancelAnimationFrame(frameHandle);
   });
@@ -1522,15 +1712,17 @@
     cancelAnimationFrame(frameHandle);
     accumulator = 0;
     lastFrameAt = performance.now();
+    resizeCanvas();
     frameHandle = requestAnimationFrame(frame);
   });
 
+  configurePortraitSurface();
   buildRails();
   buildTimeline();
   rackBalls();
   if (coachSeen) elements.coach.classList.add("is-gone");
   syncUI();
-  root.dataset.state = "ready";
+  root.dataset.state = "break";
   frameHandle = requestAnimationFrame(frame);
 
   window.__heartbeatBilliardsDebug = Object.freeze({
@@ -1543,18 +1735,35 @@
     },
     snapshot() {
       return Object.freeze({
-        started,
-        paused,
+        started: true,
         selectedBallNumber,
         runState,
         moving: Boolean(shotState),
+        collisionCount,
+        collisionFeedbackCount: collisionFeedbacks.length,
+        shotPottedNumbers: Object.freeze([...(shotState?.pottedNumbers || [])]),
+        world: Object.freeze({ ...WORLD }),
+        pockets: Object.freeze(POCKETS.map((pocket) => Object.freeze({ ...pocket }))),
+        render: Object.freeze({ width: canvas.width, height: canvas.height, scale: renderScale }),
         ballNumbers: Object.freeze(balls.map((ball) => bodyData(ball).number).sort((a, b) => a - b)),
         balls: Object.freeze(balls.map((ball) => Object.freeze({
           number: bodyData(ball).number,
           x: ball.position.x,
           y: ball.position.y,
           vx: ball.velocity.x,
-          vy: ball.velocity.y
+          vy: ball.velocity.y,
+          rollAngle: bodyData(ball).rollAngle,
+          rollVelocity: bodyData(ball).rollVelocity,
+          compression: bodyData(ball).compression,
+          impactGlow: bodyData(ball).impactGlow,
+          pocketing: bodyData(ball).pocketing ? Object.freeze({
+            pocketId: bodyData(ball).pocketing.pocketId,
+            elapsedMs: bodyData(ball).pocketing.elapsed,
+            durationMs: bodyData(ball).pocketing.duration,
+            scale: bodyData(ball).pocketing.scale,
+            depth: bodyData(ball).pocketing.depth,
+            rotation: bodyData(ball).pocketing.rotation
+          }) : null
         }))),
         cue: cueBall ? Object.freeze({ x: cueBall.position.x, y: cueBall.position.y }) : null
       });
@@ -1570,9 +1779,16 @@
       for (let index = 0; index < steps; index += 1) physicsStep();
       return this.snapshot();
     },
+    placeBall(number, point, velocity = { x: 0, y: 0 }) {
+      const ball = ballByNumber(number);
+      if (!ball) return false;
+      const data = bodyData(ball);
+      Body.setPosition(ball, { x: point.x, y: point.y });
+      Body.setVelocity(ball, { x: velocity.x || 0, y: velocity.y || 0 });
+      data.lastPosition = { x: point.x, y: point.y };
+      return true;
+    },
     reset() {
-      started = true;
-      elements.opening.hidden = true;
       resetGame();
     }
   });

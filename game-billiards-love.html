@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>心动桌球 - 刘勇 / Yong Liu</title>
   <meta name="description" content="心动桌球：完成一场标准十五球清台，在合适的关系阶段做出恰到好处的选择。">
-  <meta name="theme-color" content="#09110f">
+  <meta name="theme-color" content="#07100d">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-scenes/lounge-night.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-release-20260711">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-portrait-shell-20260711">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -18,12 +18,14 @@
     <div class="hb-stage-light" aria-hidden="true"></div>
 
     <header class="hb-topbar">
-      <a class="hb-icon-button hb-back" href="index.html" aria-label="返回首页" title="返回首页">←</a>
+      <a class="hb-icon-button hb-back" href="index.html" aria-label="返回首页" title="返回首页"><span aria-hidden="true">&larr;</span></a>
+
       <div class="hb-stage-copy" aria-live="polite">
-        <span id="hb-stage-kicker">STAGE 01 · 初次接触</span>
+        <span id="hb-stage-kicker">阶段 01 · 初次接触</span>
         <strong id="hb-stage-title">刚刚注意到彼此</strong>
-        <small id="hb-stage-targets">当前适合：1 对视、2 主动搭话、3 交换联系方式</small>
+        <small class="hb-sr-only" id="hb-stage-targets">当前适合：1 对视、2 主动搭话、3 交换联系方式</small>
       </div>
+
       <div class="hb-interest" id="hb-interest-wrap" aria-label="兴趣值 100">
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle cx="22" cy="22" r="18"></circle>
@@ -32,16 +34,16 @@
         <span>兴趣</span>
         <strong id="hb-interest">100</strong>
       </div>
+
       <div class="hb-toolbar" aria-label="游戏设置">
-        <button class="hb-icon-button" id="hb-aim-toggle" type="button" aria-pressed="true" aria-label="关闭瞄准辅助" title="瞄准辅助">⌖</button>
-        <button class="hb-icon-button" id="hb-sound" type="button" aria-pressed="true" aria-label="关闭声音" title="声音">♪</button>
-        <button class="hb-icon-button" id="hb-pause" type="button" aria-label="暂停游戏" title="暂停">Ⅱ</button>
+        <button class="hb-icon-button" id="hb-sound" type="button" aria-pressed="true" aria-label="关闭声音" title="声音"><span aria-hidden="true">&#9834;</span></button>
+        <button class="hb-icon-button" id="hb-aim-toggle" type="button" aria-pressed="true" aria-label="关闭瞄准辅助" title="瞄准辅助"><span aria-hidden="true">&#8982;</span></button>
       </div>
     </header>
 
     <section class="hb-playfield" id="hb-playfield" aria-label="标准十五球桌球游戏区域">
       <div class="hb-table-wrap" id="hb-table-wrap">
-        <canvas id="hb-canvas" width="1280" height="640" tabindex="0" aria-label="从白球向后拖动瞄准蓄力，松开击球"></canvas>
+        <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="从白球向后拖动瞄准蓄力，松开击球"></canvas>
 
         <div class="hb-call" id="hb-call" aria-live="polite">
           <span id="hb-call-label">开球</span>
@@ -66,44 +68,35 @@
           <i class="hb-coach-ball">1</i>
           <span></span>
           <i class="hb-coach-cue"></i>
-          <p><strong>从白球向后拉动</strong><small>瞄准蓄力，松开击球</small></p>
+          <p><strong>从白球向后拉动</strong><small>松开击球</small></p>
         </div>
       </div>
     </section>
 
-    <nav class="hb-relationship-track" id="hb-relationship-track" aria-label="关系轨迹">
+    <nav class="hb-relationship-track" id="hb-relationship-track" aria-label="关系进度">
       <div class="hb-track-line" aria-hidden="true"><i id="hb-track-progress"></i></div>
       <ol id="hb-track-nodes"></ol>
     </nav>
 
     <footer class="hb-bottom-bar">
       <div class="hb-shot-stat">
-        <span>本局</span>
-        <strong><b id="hb-shots">0</b> 杆</strong>
+        <span>杆数</span>
+        <strong id="hb-shots">0</strong>
       </div>
       <div class="hb-selected" id="hb-selected">
         <i id="hb-selected-ball">—</i>
-        <span><small>第一碰球</small><strong id="hb-selected-name">开球无需声明</strong></span>
+        <strong id="hb-selected-name">开球</strong>
       </div>
       <div class="hb-shot-stat hb-streak">
-        <span>连续进球</span>
+        <span>连进</span>
         <strong id="hb-streak">0</strong>
       </div>
     </footer>
 
-    <section class="hb-opening" id="hb-opening" aria-labelledby="hb-opening-title">
-      <div class="hb-opening-copy">
-        <span>AFTER HOURS · SINGLE TABLE</span>
-        <h1 id="hb-opening-title">心动桌球</h1>
-        <p>今晚只有一张球桌，十五次恰到好处的靠近。</p>
-        <button id="hb-start" type="button">开始这一局</button>
-      </div>
-    </section>
-
     <section class="hb-cinematic" id="hb-cinematic" data-kind="stage" aria-live="polite" aria-atomic="true" hidden>
       <div class="hb-cinematic-image" id="hb-cinematic-image" aria-hidden="true"></div>
       <div class="hb-cinematic-shade" aria-hidden="true"></div>
-      <button class="hb-cinematic-skip" id="hb-cinematic-skip" type="button" aria-label="略过演出" title="略过">×</button>
+      <button class="hb-cinematic-skip" id="hb-cinematic-skip" type="button" aria-label="略过演出" title="略过">&times;</button>
       <div class="hb-cinematic-copy">
         <span id="hb-cinematic-kicker">8 · 告白</span>
         <strong id="hb-cinematic-title">这一次，心意没有落空</strong>
@@ -112,17 +105,7 @@
       </div>
     </section>
 
-    <section class="hb-sheet hb-pause-sheet" id="hb-pause-sheet" hidden>
-      <span>PAUSED</span>
-      <strong>这一杆可以慢一点</strong>
-      <p>桌上的位置都会留在原处。</p>
-      <div>
-        <button id="hb-resume" type="button">继续</button>
-        <button id="hb-restart-pause" type="button">重新开始</button>
-      </div>
-    </section>
-
-    <section class="hb-sheet hb-result" id="hb-result" hidden>
+    <section class="hb-result" id="hb-result" hidden>
       <span id="hb-result-grade">A · 终于走到一起</span>
       <strong id="hb-result-title">十五颗球，都有了答案</strong>
       <p id="hb-result-line">没有每一步都完美，但你们认真走到了最后。</p>
@@ -143,6 +126,6 @@
   <script src="assets/vendor/matter-0.20.0.min.js?v=0.20.0"></script>
   <script src="assets/billiards-love-rules.js?v=billiards-love-20260711c"></script>
   <script src="assets/billiards-love-content.js?v=billiards-love-20260711c"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-portrait-20260711"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-native-portrait-20260711"></script>
 </body>
 </html>
