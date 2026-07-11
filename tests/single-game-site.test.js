@@ -117,6 +117,22 @@ test("each game owns an isolated ordered runtime", () => {
   }
 });
 
+test("billiards pins the ball renderer between content and game while allowing the parallel file to land later", () => {
+  const billiards = gameContract.GAME_CONTRACTS.find(({ file }) => file === "game-billiards-love.html");
+
+  assert.deepEqual(billiards.scripts, [
+    "assets/vendor/matter-0.20.0.min.js",
+    "assets/billiards-love-rules.js",
+    "assets/billiards-love-content.js",
+    "assets/billiards-ball-renderer.js",
+    "assets/billiards-love-game.js"
+  ]);
+  assert.equal(billiards.cacheVersion, "billiards-love-three-layer-20260711b");
+  assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js"]);
+  assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-ball-renderer.js"));
+  assert.equal(gameContract.ACTIVE_PUBLIC_JS_FILES.includes("assets/billiards-ball-renderer.js"), false);
+});
+
 test("assets/games.js remains Heartbeat-2048-only and retired games remain absent", () => {
   assert.equal((gamesSource.match(/\bid:\s*"/g) || []).length, 1);
   assert.equal((gamesSource.match(/\bfunction run\w*\s*\(/g) || []).length, 1);
@@ -185,4 +201,18 @@ test("site contract rejects hidden portal doors and retired lobby copy", () => {
   }
   const copy = gameContract.LEGACY_LOBBY_COPY.join(" / ");
   assertSiteValidatorRejectsMutation("index.html", (source) => source.replace("</body>", `${copy}</body>`));
+});
+
+test("site contract rejects reordered billiards layers and stale renderer cache versions", () => {
+  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-love-three-layer-20260711b"></script>';
+  const game = '  <script src="assets/billiards-love-game.js?v=billiards-love-three-layer-20260711b"></script>';
+
+  assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
+    `${renderer}\n${game}`,
+    `${game}\n${renderer}`
+  ));
+  assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
+    renderer,
+    renderer.replace("20260711b", "20260711-stale")
+  ));
 });

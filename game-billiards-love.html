@@ -10,7 +10,9 @@
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-scenes/lounge-night.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-portrait-shell-20260711">
+  <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
+  <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-three-layer-20260711b">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -44,6 +46,7 @@
     <section class="hb-playfield" id="hb-playfield" aria-label="标准十五球桌球游戏区域">
       <div class="hb-table-wrap" id="hb-table-wrap">
         <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="从白球向后拖动瞄准蓄力，松开击球"></canvas>
+        <canvas id="hb-ball-canvas" width="720" height="1440" aria-hidden="true"></canvas>
 
         <div class="hb-call" id="hb-call" aria-live="polite">
           <span id="hb-call-label">开球</span>
@@ -124,8 +127,9 @@
   </main>
 
   <script src="assets/vendor/matter-0.20.0.min.js?v=0.20.0"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-20260711c"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-20260711c"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-native-portrait-20260711"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-three-layer-20260711b"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-three-layer-20260711b"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-three-layer-20260711b"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-three-layer-20260711b"></script>
 </body>
 </html>

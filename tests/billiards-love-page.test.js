@@ -8,12 +8,17 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
+const cacheVersion = "billiards-love-three-layer-20260711b";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-function linked(htmlSource, tag, attribute) {
+function references(htmlSource, tag, attribute) {
   const expression = new RegExp(`<${tag}\\b[^>]*\\b${attribute}="([^"]+)"[^>]*>`, "g");
-  return [...htmlSource.matchAll(expression)].map((match) => match[1].split(/[?#]/, 1)[0]);
+  return [...htmlSource.matchAll(expression)].map((match) => match[1]);
+}
+
+function linked(htmlSource, tag, attribute) {
+  return references(htmlSource, tag, attribute).map((reference) => reference.split(/[?#]/, 1)[0]);
 }
 
 function fragment(source, opening, closing) {
@@ -73,8 +78,47 @@ test("loads only the local billiards runtime dependencies in exact order", () =>
     "assets/vendor/matter-0.20.0.min.js",
     "assets/billiards-love-rules.js",
     "assets/billiards-love-content.js",
+    "assets/billiards-ball-renderer.js",
     "assets/billiards-love-game.js"
   ]);
+
+  assert.deepEqual(references(html, "link", "href").filter((file) => file.includes("billiards-love.css")), [
+    `assets/billiards-love.css?v=${cacheVersion}`
+  ]);
+  assert.deepEqual(references(html, "script", "src"), [
+    "assets/vendor/matter-0.20.0.min.js?v=0.20.0",
+    `assets/billiards-love-rules.js?v=${cacheVersion}`,
+    `assets/billiards-love-content.js?v=${cacheVersion}`,
+    `assets/billiards-ball-renderer.js?v=${cacheVersion}`,
+    `assets/billiards-love-game.js?v=${cacheVersion}`
+  ]);
+});
+
+test("stacks a transparent non-interactive ball canvas over the game canvas", () => {
+  const canvases = [...html.matchAll(/<canvas\b[^>]*><\/canvas>/g)].map((match) => match[0]);
+  const sharedCanvas = rule(".hb-table-wrap > canvas");
+  const gameCanvas = rule("#hb-canvas");
+  const ballCanvas = rule("#hb-ball-canvas");
+
+  assert.equal(canvases.length, 2);
+  assert.match(canvases[0], /^<canvas id="hb-canvas" width="720" height="1440"/);
+  assert.equal(canvases[1], '<canvas id="hb-ball-canvas" width="720" height="1440" aria-hidden="true"></canvas>');
+  assert.match(html, new RegExp(`${escapeRegExp(canvases[0])}\\s*${escapeRegExp(canvases[1])}`));
+  assert.match(sharedCanvas, /position:\s*absolute !important;/);
+  assert.match(sharedCanvas, /inset:\s*0 !important;/);
+  assert.match(sharedCanvas, /width:\s*100% !important;/);
+  assert.match(sharedCanvas, /height:\s*100% !important;/);
+  assert.match(sharedCanvas, /transform:\s*none !important;/);
+  assert.match(gameCanvas, /z-index:\s*1;/);
+  assert.match(ballCanvas, /z-index:\s*2;/);
+  assert.match(ballCanvas, /background:\s*transparent !important;/);
+  assert.match(ballCanvas, /pointer-events:\s*none !important;/);
+  assert.doesNotMatch(ballCanvas, /rotate/);
+
+  for (const selector of [".hb-call", ".hb-power", ".hb-micro", ".hb-judgement", ".hb-coach"]) {
+    const zIndex = Number(rule(selector).match(/z-index:\s*(\d+);/)?.[1]);
+    assert.ok(zIndex > 2, `${selector} must remain above the ball canvas`);
+  }
 });
 
 test("uses project-local lounge, confession, and proposal art", () => {
@@ -95,6 +139,16 @@ test("uses project-local lounge, confession, and proposal art", () => {
   assert.doesNotMatch(html + css, /https?:\/\//);
 });
 
+test("uses local premium cloth and walnut material textures", () => {
+  for (const asset of [
+    "assets/billiards-textures/worsted-cloth.jpg",
+    "assets/billiards-textures/dark-walnut.jpg"
+  ]) {
+    assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
+    assert.ok(html.includes(asset) || game.includes(asset), `${asset} should be referenced locally`);
+  }
+});
+
 test("uses the full 1440 by 3200 phone viewport and keeps the table dominant", () => {
   const app = rule(".hb-app");
   const playfield = rule(".hb-playfield");
@@ -105,31 +159,44 @@ test("uses the full 1440 by 3200 phone viewport and keeps the table dominant", (
   assert.match(app, /height:\s*100dvh;/);
   assert.match(app, /max-width:\s*1440px;/);
   assert.match(app, /max-height:\s*3200px;/);
+  assert.match(app, /--hb-header-space:\s*calc\(max\(6px, var\(--safe-top\)\) \+ 44px\);/);
+  assert.match(app, /--hb-footer-space:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 38px\);/);
   assert.match(playfield, /top:\s*var\(--hb-header-space\);/);
+  assert.match(playfield, /right:\s*0;/);
   assert.match(playfield, /bottom:\s*var\(--hb-footer-space\);/);
+  assert.match(playfield, /left:\s*0;/);
   assert.match(playfield, /min-height:\s*72%;/);
   assert.match(table, /height:\s*auto;/);
-  assert.match(table, /width:\s*min\(calc\(100% - 2px\), calc\(\(100dvh - 80px\) \/ 2\)\) !important;/);
-  assert.match(table, /max-width:\s*calc\(100% - 2px\) !important;/);
+  assert.match(table, /width:\s*min\(100%, calc\(\(min\(100dvh, 3200px\) - var\(--hb-header-space\) - var\(--hb-footer-space\)\) \/ 2\)\) !important;/);
+  assert.match(table, /max-width:\s*100% !important;/);
   assert.match(table, /aspect-ratio:\s*1 \/ 2 !important;/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(css, /env\(safe-area-inset-/);
 
   const targetWidth = 1440;
   const targetHeight = 3200;
-  const tableSurfaceWidth = targetWidth - 10;
+  const headerSpace = 6 + 44;
+  const footerSpace = 5 + 38;
+  const playfieldHeight = targetHeight - headerSpace - footerSpace;
+  const tableSurfaceWidth = Math.min(targetWidth, playfieldHeight / 2);
   const tableSurfaceHeight = tableSurfaceWidth * 2;
-  const visibleTableHeight = tableSurfaceHeight * (1322 - 118) / 1440;
-  assert.ok(visibleTableHeight / targetHeight >= 0.74, "visible table should dominate the target height");
-  assert.ok(tableSurfaceWidth / targetWidth >= 0.99, "table canvas should be essentially full width");
+  const tableTop = headerSpace + (playfieldHeight - tableSurfaceHeight) / 2;
+  const tableBottom = tableTop + tableSurfaceHeight;
+  const topHudBottom = 6 + 36;
+  const bottomHudTop = targetHeight - (5 + 29) - 3;
+  assert.ok(tableSurfaceHeight / targetHeight >= 0.9, "table canvas should dominate the target height");
+  assert.ok(tableSurfaceWidth / targetWidth >= 0.999, "table canvas should be full width at the target viewport");
+  assert.ok(tableTop > topHudBottom, "top HUD must not cover the table");
+  assert.ok(tableBottom < bottomHudTop, "bottom HUD must not cover the table");
 });
 
 test("uses a native portrait canvas without a CSS rotation layout", () => {
-  const canvas = rule("#hb-canvas");
+  const canvases = rule(".hb-table-wrap > canvas");
 
-  assert.match(canvas, /width:\s*100%;/);
-  assert.match(canvas, /height:\s*100%;/);
-  assert.doesNotMatch(canvas, /transform\s*:/);
+  assert.match(canvases, /width:\s*100% !important;/);
+  assert.match(canvases, /height:\s*100% !important;/);
+  assert.match(canvases, /transform:\s*none !important;/);
+  assert.doesNotMatch(canvases, /rotate/);
   assert.doesNotMatch(css, /aspect-ratio:\s*2 \/ 1/);
   assert.doesNotMatch(css, /@media\s*\([^)]*(?:orientation|aspect-ratio|width|height)[^)]*\)/);
   assert.match(game, /const WORLD = Object\.freeze\(\{ width: 720, height: 1440 \}\);/);

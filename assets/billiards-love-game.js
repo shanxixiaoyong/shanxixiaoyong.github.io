@@ -64,10 +64,21 @@
   };
 
   const WORLD = Object.freeze({ width: 720, height: 1440 });
-  const TABLE = Object.freeze({ left: 90, right: 630, top: 180, bottom: 1260 });
-  const TABLE_OUTER = Object.freeze({ left: 32, right: 688, top: 118, bottom: 1322 });
+  const TABLE = Object.freeze({ left: 74, right: 646, top: 148, bottom: 1292 });
+  const TABLE_OUTER = Object.freeze({ left: 12, right: 708, top: 82, bottom: 1358 });
   const BALL_RADIUS = 14.85;
-  const POCKET_RADIUS = 31.5;
+  const BALL_DIAMETER = BALL_RADIUS * 2;
+  const POCKET_RADIUS = 33;
+  const POCKET_MIN_INWARD_SPEED = 0.12;
+  const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.00;
+  const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.22;
+  const CORNER_POCKET_SHELF = BALL_DIAMETER * 0.65;
+  const SIDE_POCKET_SHELF = BALL_DIAMETER * 0.14;
+  const CORNER_CUT_ANGLE_DEGREES = 142;
+  const SIDE_CUT_ANGLE_DEGREES = 104;
+  const CORNER_JAW_OFFSET = (CORNER_CUT_ANGLE_DEGREES - 135) * Math.PI / 180;
+  const SIDE_JAW_OFFSET = (SIDE_CUT_ANGLE_DEGREES - 90) * Math.PI / 180;
+  const POCKET_JAW_LENGTH = BALL_DIAMETER * 1.75;
   const FIXED_STEP = 1000 / 120;
   const MAX_STEPS_PER_FRAME = 8;
   const MIN_PULL = 14;
@@ -93,13 +104,41 @@
     9: "#e9c348", 10: "#2676bf", 11: "#c33f40", 12: "#754493",
     13: "#df7b30", 14: "#358553", 15: "#8e3740"
   });
+  const DIAGONAL = Math.SQRT1_2;
+
+  function createPocket({ id, type, mouthX, mouthY, inwardX, inwardY }) {
+    const mouth = type === "corner" ? CORNER_POCKET_MOUTH : SIDE_POCKET_MOUTH;
+    const shelf = type === "corner" ? CORNER_POCKET_SHELF : SIDE_POCKET_SHELF;
+    const cutAngleDegrees = type === "corner" ? CORNER_CUT_ANGLE_DEGREES : SIDE_CUT_ANGLE_DEGREES;
+    const jawOffset = type === "corner" ? CORNER_JAW_OFFSET : SIDE_JAW_OFFSET;
+    const dropDepth = shelf + BALL_RADIUS;
+    return Object.freeze({
+      id,
+      type,
+      mouthX,
+      mouthY,
+      x: mouthX + inwardX * dropDepth,
+      y: mouthY + inwardY * dropDepth,
+      captureX: mouthX + inwardX * shelf,
+      captureY: mouthY + inwardY * shelf,
+      inwardX,
+      inwardY,
+      mouth,
+      shelf,
+      cutAngleDegrees,
+      jawOffset,
+      captureHalfWidth: mouth / 2 - shelf * Math.tan(jawOffset)
+    });
+  }
+
+  const CORNER_MOUTH_AXIS_OFFSET = CORNER_POCKET_MOUTH * DIAGONAL / 2;
   const POCKETS = Object.freeze([
-    { id: "top-left", x: TABLE.left, y: TABLE.top },
-    { id: "top-right", x: TABLE.right, y: TABLE.top },
-    { id: "middle-left", x: TABLE.left - 1, y: WORLD.height / 2 },
-    { id: "middle-right", x: TABLE.right + 1, y: WORLD.height / 2 },
-    { id: "bottom-left", x: TABLE.left, y: TABLE.bottom },
-    { id: "bottom-right", x: TABLE.right, y: TABLE.bottom }
+    createPocket({ id: "top-left", type: "corner", mouthX: TABLE.left + CORNER_MOUTH_AXIS_OFFSET, mouthY: TABLE.top + CORNER_MOUTH_AXIS_OFFSET, inwardX: -DIAGONAL, inwardY: -DIAGONAL }),
+    createPocket({ id: "top-right", type: "corner", mouthX: TABLE.right - CORNER_MOUTH_AXIS_OFFSET, mouthY: TABLE.top + CORNER_MOUTH_AXIS_OFFSET, inwardX: DIAGONAL, inwardY: -DIAGONAL }),
+    createPocket({ id: "middle-left", type: "side", mouthX: TABLE.left, mouthY: WORLD.height / 2, inwardX: -1, inwardY: 0 }),
+    createPocket({ id: "middle-right", type: "side", mouthX: TABLE.right, mouthY: WORLD.height / 2, inwardX: 1, inwardY: 0 }),
+    createPocket({ id: "bottom-left", type: "corner", mouthX: TABLE.left + CORNER_MOUTH_AXIS_OFFSET, mouthY: TABLE.bottom - CORNER_MOUTH_AXIS_OFFSET, inwardX: -DIAGONAL, inwardY: DIAGONAL }),
+    createPocket({ id: "bottom-right", type: "corner", mouthX: TABLE.right - CORNER_MOUTH_AXIS_OFFSET, mouthY: TABLE.bottom - CORNER_MOUTH_AXIS_OFFSET, inwardX: DIAGONAL, inwardY: DIAGONAL })
   ]);
   const RACK = Object.freeze([
     [1],
@@ -123,6 +162,19 @@
     "accidental-commitment": "承诺意外说出口",
     "break-pot": "开局巧合",
     "protected-respot": "关键时刻还没到"
+  });
+
+  function loadMaterialTexture(source) {
+    if (typeof window.Image !== "function") return null;
+    const image = new window.Image();
+    image.decoding = "async";
+    image.src = source;
+    return image;
+  }
+
+  const MATERIAL_TEXTURES = Object.freeze({
+    cloth: loadMaterialTexture("assets/billiards-textures/worsted-cloth.jpg"),
+    walnut: loadMaterialTexture("assets/billiards-textures/dark-walnut.jpg")
   });
 
   function readStorage(key, fallback) {
@@ -173,6 +225,15 @@
     ctx.closePath();
   }
 
+  function drawMaterialTexture(image, x, y, width, height, opacity) {
+    if (!image || !image.complete || !image.naturalWidth || typeof context.drawImage !== "function") return false;
+    context.save();
+    context.globalAlpha = opacity;
+    context.drawImage(image, x, y, width, height);
+    context.restore();
+    return true;
+  }
+
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, rect.width);
@@ -186,6 +247,7 @@
     );
     canvas.width = Math.max(1, Math.round(cssWidth * renderScale));
     canvas.height = Math.max(1, Math.round(cssHeight * renderScale));
+    resizeBallRenderer();
   }
 
   function configurePortraitSurface() {
@@ -374,6 +436,9 @@
   let cachedStageNumber = 1;
   let cachedAvailableTargets = new Set([1, 2, 3]);
   let renderScale = 1;
+  let ballRenderer = null;
+  let ballRendererCanvas = null;
+  let ballRendererFailed = false;
 
   function bodyData(body) {
     return body?.plugin?.heartbeatPool || null;
@@ -387,42 +452,107 @@
     return Boolean(body?.plugin?.heartbeatRail);
   }
 
-  function createRail(x, y, width, height, id) {
+  function createRail(x, y, width, height, id, angle = 0, kind = "cushion") {
     const body = Bodies.rectangle(x, y, width, height, {
       isStatic: true,
       label: `hb-rail-${id}`,
+      angle,
       restitution: 0.92,
       friction: 0.012,
       frictionStatic: 0,
       slop: 0.004
     });
-    body.plugin.heartbeatRail = { id };
+    body.plugin.heartbeatRail = { id, kind, width, height, angle };
     return body;
+  }
+
+  function createJaw(start, end, id) {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    return createRail(
+      (start.x + end.x) / 2,
+      (start.y + end.y) / 2,
+      length,
+      12,
+      id,
+      Math.atan2(dy, dx),
+      "jaw"
+    );
+  }
+
+  function pocketMouthEndpoint(pocket, side) {
+    const tangentX = -pocket.inwardY;
+    const tangentY = pocket.inwardX;
+    return {
+      x: pocket.mouthX + tangentX * pocket.mouth / 2 * side,
+      y: pocket.mouthY + tangentY * pocket.mouth / 2 * side
+    };
+  }
+
+  function createPocketJaw(pocket, side, id) {
+    const nose = pocketMouthEndpoint(pocket, side);
+    const entryAngle = Math.atan2(pocket.inwardY, pocket.inwardX);
+    const heading = entryAngle - side * pocket.jawOffset;
+    const end = {
+      x: nose.x + Math.cos(heading) * POCKET_JAW_LENGTH,
+      y: nose.y + Math.sin(heading) * POCKET_JAW_LENGTH
+    };
+    const jaw = createJaw(nose, end, id);
+    Object.assign(jaw.plugin.heartbeatRail, {
+      pocketId: pocket.id,
+      pocketType: pocket.type,
+      cutAngleDegrees: pocket.cutAngleDegrees,
+      headingDegrees: (heading * 180 / Math.PI + 360) % 360,
+      mouthSide: side,
+      noseX: nose.x,
+      noseY: nose.y
+    });
+    return jaw;
   }
 
   function buildRails() {
     if (rails.length) Composite.remove(engine.world, rails);
     const mid = WORLD.height / 2;
-    const cornerGap = 65;
-    const sideGap = 54;
+    const cornerRun = CORNER_POCKET_MOUTH * DIAGONAL;
+    const sideHalfMouth = SIDE_POCKET_MOUTH / 2;
     const thickness = 25;
-    const horizontalStart = TABLE.left + cornerGap;
-    const horizontalEnd = TABLE.right - cornerGap;
-    const verticalTopStart = TABLE.top + cornerGap;
-    const verticalTopEnd = mid - sideGap;
-    const verticalBottomStart = mid + sideGap;
-    const verticalBottomEnd = TABLE.bottom - cornerGap;
+    const horizontalStart = TABLE.left + cornerRun;
+    const horizontalEnd = TABLE.right - cornerRun;
+    const verticalTopStart = TABLE.top + cornerRun;
+    const verticalTopEnd = mid - sideHalfMouth;
+    const verticalBottomStart = mid + sideHalfMouth;
+    const verticalBottomEnd = TABLE.bottom - cornerRun;
+    const topRailY = TABLE.top - thickness / 2;
+    const bottomRailY = TABLE.bottom + thickness / 2;
+    const leftRailX = TABLE.left - thickness / 2;
+    const rightRailX = TABLE.right + thickness / 2;
+    const pocket = Object.fromEntries(POCKETS.map((item) => [item.id, item]));
     rails = [
-      createRail(WORLD.width / 2, TABLE.top - thickness / 2, horizontalEnd - horizontalStart, thickness, "top"),
-      createRail(WORLD.width / 2, TABLE.bottom + thickness / 2, horizontalEnd - horizontalStart, thickness, "bottom"),
-      createRail(TABLE.left - thickness / 2, (verticalTopStart + verticalTopEnd) / 2, thickness, verticalTopEnd - verticalTopStart, "left-top"),
-      createRail(TABLE.left - thickness / 2, (verticalBottomStart + verticalBottomEnd) / 2, thickness, verticalBottomEnd - verticalBottomStart, "left-bottom"),
-      createRail(TABLE.right + thickness / 2, (verticalTopStart + verticalTopEnd) / 2, thickness, verticalTopEnd - verticalTopStart, "right-top"),
-      createRail(TABLE.right + thickness / 2, (verticalBottomStart + verticalBottomEnd) / 2, thickness, verticalBottomEnd - verticalBottomStart, "right-bottom"),
-      createRail(WORLD.width / 2, TABLE_OUTER.top - 24, TABLE_OUTER.right - TABLE_OUTER.left + 120, 18, "guard-top"),
-      createRail(WORLD.width / 2, TABLE_OUTER.bottom + 24, TABLE_OUTER.right - TABLE_OUTER.left + 120, 18, "guard-bottom"),
-      createRail(TABLE_OUTER.left - 24, WORLD.height / 2, 18, TABLE_OUTER.bottom - TABLE_OUTER.top + 120, "guard-left"),
-      createRail(TABLE_OUTER.right + 24, WORLD.height / 2, 18, TABLE_OUTER.bottom - TABLE_OUTER.top + 120, "guard-right")
+      createRail(WORLD.width / 2, topRailY, horizontalEnd - horizontalStart, thickness, "top"),
+      createRail(WORLD.width / 2, bottomRailY, horizontalEnd - horizontalStart, thickness, "bottom"),
+      createRail(leftRailX, (verticalTopStart + verticalTopEnd) / 2, thickness, verticalTopEnd - verticalTopStart, "left-top"),
+      createRail(leftRailX, (verticalBottomStart + verticalBottomEnd) / 2, thickness, verticalBottomEnd - verticalBottomStart, "left-bottom"),
+      createRail(rightRailX, (verticalTopStart + verticalTopEnd) / 2, thickness, verticalTopEnd - verticalTopStart, "right-top"),
+      createRail(rightRailX, (verticalBottomStart + verticalBottomEnd) / 2, thickness, verticalBottomEnd - verticalBottomStart, "right-bottom"),
+
+      createPocketJaw(pocket["top-left"], 1, "jaw-top-left-horizontal"),
+      createPocketJaw(pocket["top-left"], -1, "jaw-top-left-vertical"),
+      createPocketJaw(pocket["top-right"], -1, "jaw-top-right-horizontal"),
+      createPocketJaw(pocket["top-right"], 1, "jaw-top-right-vertical"),
+      createPocketJaw(pocket["bottom-left"], -1, "jaw-bottom-left-horizontal"),
+      createPocketJaw(pocket["bottom-left"], 1, "jaw-bottom-left-vertical"),
+      createPocketJaw(pocket["bottom-right"], 1, "jaw-bottom-right-horizontal"),
+      createPocketJaw(pocket["bottom-right"], -1, "jaw-bottom-right-vertical"),
+      createPocketJaw(pocket["middle-left"], 1, "jaw-middle-left-top"),
+      createPocketJaw(pocket["middle-left"], -1, "jaw-middle-left-bottom"),
+      createPocketJaw(pocket["middle-right"], -1, "jaw-middle-right-top"),
+      createPocketJaw(pocket["middle-right"], 1, "jaw-middle-right-bottom"),
+
+      createRail(WORLD.width / 2, TABLE_OUTER.top - 20, TABLE_OUTER.right - TABLE_OUTER.left + 96, 24, "guard-top", 0, "guard"),
+      createRail(WORLD.width / 2, TABLE_OUTER.bottom + 20, TABLE_OUTER.right - TABLE_OUTER.left + 96, 24, "guard-bottom", 0, "guard"),
+      createRail(TABLE_OUTER.left - 20, WORLD.height / 2, 24, TABLE_OUTER.bottom - TABLE_OUTER.top + 96, "guard-left", 0, "guard"),
+      createRail(TABLE_OUTER.right + 20, WORLD.height / 2, 24, TABLE_OUTER.bottom - TABLE_OUTER.top + 96, "guard-right", 0, "guard")
     ];
     Composite.add(engine.world, rails);
   }
@@ -443,10 +573,14 @@
       potted: false,
       shotRailHits: 0,
       pocketing: null,
+      pocketApproach: null,
       rollAngle: 0,
       rollVelocity: 0,
       rollHeading: -Math.PI / 2,
       lastPosition: { x, y },
+      previousPosition: { x, y },
+      lastSafePosition: { x, y },
+      outsideSteps: 0,
       compression: 0,
       impactGlow: 0,
       impactAngle: 0
@@ -765,6 +899,79 @@
     return true;
   }
 
+  function pocketDepth(pocket, point) {
+    return (point.x - pocket.mouthX) * pocket.inwardX + (point.y - pocket.mouthY) * pocket.inwardY;
+  }
+
+  function pocketLateral(pocket, point) {
+    const tangentX = -pocket.inwardY;
+    const tangentY = pocket.inwardX;
+    return (point.x - pocket.mouthX) * tangentX + (point.y - pocket.mouthY) * tangentY;
+  }
+
+  function crossedPocketLine(body, pocket, lineDepth, halfWidth) {
+    const data = bodyData(body);
+    const previous = data?.previousPosition;
+    if (!previous) return null;
+    const previousDepth = pocketDepth(pocket, previous) - lineDepth;
+    const currentDepth = pocketDepth(pocket, body.position) - lineDepth;
+    if (previousDepth > 0 || currentDepth < 0 || currentDepth - previousDepth < 1e-7) return null;
+    const crossingProgress = clamp(-previousDepth / (currentDepth - previousDepth), 0, 1);
+    const crossingX = previous.x + (body.position.x - previous.x) * crossingProgress;
+    const crossingY = previous.y + (body.position.y - previous.y) * crossingProgress;
+    const lateral = pocketLateral(pocket, { x: crossingX, y: crossingY });
+    return Math.abs(lateral) <= halfWidth
+      ? { x: crossingX, y: crossingY, lateral }
+      : null;
+  }
+
+  function inwardPocketSpeed(body, pocket) {
+    return body.velocity.x * pocket.inwardX + body.velocity.y * pocket.inwardY;
+  }
+
+  function enterPocketMouth(body, pocket) {
+    const data = bodyData(body);
+    if (!data || inwardPocketSpeed(body, pocket) <= POCKET_MIN_INWARD_SPEED) return false;
+    const mouthCrossing = crossedPocketLine(body, pocket, 0, pocket.mouth / 2);
+    if (!mouthCrossing) return false;
+    const captureCrossing = crossedPocketLine(body, pocket, pocket.shelf, pocket.captureHalfWidth);
+    data.pocketApproach = {
+      pocketId: pocket.id,
+      enteredAt: simulationTime,
+      mouthCrossX: mouthCrossing.x,
+      mouthCrossY: mouthCrossing.y,
+      captureCrossed: Boolean(captureCrossing),
+      captureCrossX: captureCrossing?.x ?? null,
+      captureCrossY: captureCrossing?.y ?? null
+    };
+    return true;
+  }
+
+  function advancePocketApproach(body, pocket) {
+    const data = bodyData(body);
+    const approach = data?.pocketApproach;
+    if (!approach || approach.pocketId !== pocket.id) return false;
+    const currentDepth = pocketDepth(pocket, body.position);
+    const currentLateral = Math.abs(pocketLateral(pocket, body.position));
+    if (currentDepth < -BALL_RADIUS * 0.15 || currentLateral > pocket.mouth / 2 + BALL_RADIUS) {
+      data.pocketApproach = null;
+      return false;
+    }
+    if (inwardPocketSpeed(body, pocket) <= POCKET_MIN_INWARD_SPEED) return false;
+    if (!approach.captureCrossed) {
+      const captureCrossing = crossedPocketLine(body, pocket, pocket.shelf, pocket.captureHalfWidth);
+      if (captureCrossing) {
+        approach.captureCrossed = true;
+        approach.captureCrossX = captureCrossing.x;
+        approach.captureCrossY = captureCrossing.y;
+      }
+    }
+    return approach.captureCrossed
+      && approach.enteredAt < simulationTime
+      && currentDepth >= pocket.shelf
+      && currentLateral <= pocket.captureHalfWidth;
+  }
+
   function pocketBall(body, pocket) {
     const data = bodyData(body);
     if (!shotState || !data || data.potted || data.pocketing) return false;
@@ -785,6 +992,7 @@
       depth: 0,
       rotation: data.rollAngle
     };
+    data.pocketApproach = null;
     body.isSensor = true;
     body.collisionFilter.mask = 0;
     Body.setVelocity(body, { x: 0, y: 0 });
@@ -861,28 +1069,93 @@
     });
   }
 
+  function captureBallPositions() {
+    balls.forEach((ball) => {
+      const data = bodyData(ball);
+      if (!data || data.potted || data.pocketing) return;
+      data.previousPosition = { x: ball.position.x, y: ball.position.y };
+    });
+  }
+
   function updatePockets() {
     if (!shotState) return;
     balls.slice().forEach((ball) => {
       const data = bodyData(ball);
       if (!data || data.potted || data.pocketing) return;
-      let nearestPocket = null;
-      let nearestDistance = Infinity;
-      POCKETS.forEach((pocket) => {
-        const candidate = distance(ball.position, pocket);
-        if (candidate < nearestDistance) {
-          nearestPocket = pocket;
-          nearestDistance = candidate;
-        }
-      });
-      if (!nearestPocket) return;
-      if (nearestDistance <= POCKET_RADIUS - 2 || (nearestDistance <= POCKET_RADIUS + 4 && ball.speed < 11)) {
-        pocketBall(ball, nearestPocket);
+      const activePocket = data.pocketApproach
+        ? POCKETS.find((pocket) => pocket.id === data.pocketApproach.pocketId)
+        : null;
+      if (activePocket) {
+        if (advancePocketApproach(ball, activePocket)) pocketBall(ball, activePocket);
+        if (data.pocketApproach || data.pocketing) return;
+      }
+      for (const pocket of POCKETS) {
+        if (enterPocketMouth(ball, pocket)) break;
+      }
+    });
+  }
+
+  function containLooseBalls() {
+    balls.forEach((ball) => {
+      const data = bodyData(ball);
+      if (!data || data.potted || data.pocketing) return;
+      const position = ball.position;
+      const finite = Number.isFinite(position.x) && Number.isFinite(position.y)
+        && Number.isFinite(ball.velocity.x) && Number.isFinite(ball.velocity.y);
+      const escaped = !finite
+        || position.x < TABLE_OUTER.left - BALL_RADIUS
+        || position.x > TABLE_OUTER.right + BALL_RADIUS
+        || position.y < TABLE_OUTER.top - BALL_RADIUS
+        || position.y > TABLE_OUTER.bottom + BALL_RADIUS;
+      if (escaped) {
+        const safe = data.lastSafePosition || CUE_SPOT;
+        Body.setPosition(ball, safe);
+        Body.setVelocity(ball, finite
+          ? { x: -ball.velocity.x * 0.32, y: -ball.velocity.y * 0.32 }
+          : { x: 0, y: 0 });
+        data.previousPosition = { ...safe };
+        data.lastPosition = { ...safe };
+        data.pocketApproach = null;
+        data.outsideSteps = 0;
         return;
       }
-      if (nearestDistance < POCKET_RADIUS + 13) {
-        const pull = normalize({ x: nearestPocket.x - ball.position.x, y: nearestPocket.y - ball.position.y });
-        Body.applyForce(ball, ball.position, { x: pull.x * 0.00022, y: pull.y * 0.00022 });
+      if (data.pocketApproach) {
+        data.outsideSteps = ball.speed < NATURAL_STOP_SPEED ? data.outsideSteps + 1 : 0;
+        if (data.outsideSteps > 45) {
+          const safe = data.lastSafePosition || CUE_SPOT;
+          Body.setPosition(ball, safe);
+          Body.setVelocity(ball, { x: 0, y: 0 });
+          data.previousPosition = { ...safe };
+          data.lastPosition = { ...safe };
+          data.pocketApproach = null;
+          data.outsideSteps = 0;
+        }
+        return;
+      }
+      const safelyOnCloth = position.x >= TABLE.left + BALL_RADIUS
+        && position.x <= TABLE.right - BALL_RADIUS
+        && position.y >= TABLE.top + BALL_RADIUS
+        && position.y <= TABLE.bottom - BALL_RADIUS;
+      if (safelyOnCloth) {
+        data.lastSafePosition = { x: position.x, y: position.y };
+        data.outsideSteps = 0;
+        return;
+      }
+      const beyondCushionNose = position.x < TABLE.left - BALL_RADIUS * 0.25
+        || position.x > TABLE.right + BALL_RADIUS * 0.25
+        || position.y < TABLE.top - BALL_RADIUS * 0.25
+        || position.y > TABLE.bottom + BALL_RADIUS * 0.25;
+      data.outsideSteps = beyondCushionNose && ball.speed < NATURAL_STOP_SPEED
+        ? data.outsideSteps + 1
+        : 0;
+      if (data.outsideSteps > 45) {
+        const safe = data.lastSafePosition || CUE_SPOT;
+        Body.setPosition(ball, safe);
+        Body.setVelocity(ball, { x: 0, y: 0 });
+        data.previousPosition = { ...safe };
+        data.lastPosition = { ...safe };
+        data.pocketApproach = null;
+        data.outsideSteps = 0;
       }
     });
   }
@@ -1256,85 +1529,244 @@
     return { origin, direction, impact, hitBall, targetDirection };
   }
 
-  function drawTable() {
+  function drawSolidWoodFrame() {
     context.save();
     context.shadowColor = "rgba(0, 0, 0, 0.66)";
-    context.shadowBlur = 30;
-    context.shadowOffsetY = 18;
+    context.shadowBlur = 34;
+    context.shadowOffsetY = 20;
     const wood = context.createLinearGradient(TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right, TABLE_OUTER.bottom);
-    wood.addColorStop(0, "#35251d");
-    wood.addColorStop(0.3, "#6b4630");
-    wood.addColorStop(0.55, "#2b201b");
-    wood.addColorStop(0.8, "#71472f");
-    wood.addColorStop(1, "#221a17");
+    wood.addColorStop(0, "#160f0d");
+    wood.addColorStop(0.18, "#3b261d");
+    wood.addColorStop(0.42, "#211512");
+    wood.addColorStop(0.68, "#4b3023");
+    wood.addColorStop(1, "#120c0b");
     context.fillStyle = wood;
-    roundRectPath(context, TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right - TABLE_OUTER.left, TABLE_OUTER.bottom - TABLE_OUTER.top, 34);
+    roundRectPath(context, TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right - TABLE_OUTER.left, TABLE_OUTER.bottom - TABLE_OUTER.top, 32);
     context.fill();
     context.restore();
 
     context.save();
-    const rail = context.createLinearGradient(TABLE.left - 28, 0, TABLE.right + 28, 0);
-    rail.addColorStop(0, "#1f4f42");
-    rail.addColorStop(0.18, "#163d34");
-    rail.addColorStop(0.82, "#0f322b");
-    rail.addColorStop(1, "#286151");
-    context.fillStyle = rail;
-    roundRectPath(context, TABLE.left - 34, TABLE.top - 34, TABLE.right - TABLE.left + 68, TABLE.bottom - TABLE.top + 68, 27);
+    const burl = context.createLinearGradient(TABLE_OUTER.right, TABLE_OUTER.top, TABLE_OUTER.left, TABLE_OUTER.bottom);
+    burl.addColorStop(0, "#5c3b2a");
+    burl.addColorStop(0.16, "#261713");
+    burl.addColorStop(0.5, "#493024");
+    burl.addColorStop(0.84, "#1d1210");
+    burl.addColorStop(1, "#62402e");
+    context.fillStyle = burl;
+    roundRectPath(context, TABLE_OUTER.left + 8, TABLE_OUTER.top + 8, TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 25);
     context.fill();
+    roundRectPath(context, TABLE_OUTER.left + 10, TABLE_OUTER.top + 10, TABLE_OUTER.right - TABLE_OUTER.left - 20, TABLE_OUTER.bottom - TABLE_OUTER.top - 20, 23);
+    context.clip();
+    drawMaterialTexture(MATERIAL_TEXTURES.walnut, TABLE_OUTER.left + 8, TABLE_OUTER.top + 8,
+      TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 0.82);
+    context.lineWidth = 0.7;
+    for (let y = TABLE_OUTER.top + 14, index = 0; y < TABLE_OUTER.bottom - 10; y += 11, index += 1) {
+      context.strokeStyle = index % 3 === 0 ? "rgba(246, 184, 117, 0.2)" : "rgba(31, 12, 8, 0.24)";
+      context.beginPath();
+      context.moveTo(TABLE_OUTER.left + 8, y);
+      context.lineTo(TABLE_OUTER.right - 8, y + Math.sin(index * 1.73) * 4);
+      context.stroke();
+    }
+    context.restore();
+
+    context.save();
+    context.strokeStyle = "rgba(206, 180, 135, 0.34)";
+    context.lineWidth = 1.2;
+    roundRectPath(context, TABLE_OUTER.left + 15, TABLE_OUTER.top + 15, TABLE_OUTER.right - TABLE_OUTER.left - 30, TABLE_OUTER.bottom - TABLE_OUTER.top - 30, 20);
+    context.stroke();
+    context.strokeStyle = "rgba(24, 12, 10, 0.78)";
+    context.lineWidth = 5;
+    roundRectPath(context, TABLE.left - 43, TABLE.top - 43, TABLE.right - TABLE.left + 86, TABLE.bottom - TABLE.top + 86, 23);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawWoolCloth() {
+    context.save();
     const cloth = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    cloth.addColorStop(0, "#1d6651");
-    cloth.addColorStop(0.42, "#16533f");
-    cloth.addColorStop(1, "#0e4234");
+    cloth.addColorStop(0, "#236f58");
+    cloth.addColorStop(0.38, "#195a47");
+    cloth.addColorStop(0.72, "#124a3b");
+    cloth.addColorStop(1, "#0c392e");
     context.fillStyle = cloth;
     context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
-    context.fillStyle = "rgba(255, 255, 255, 0.025)";
-    for (let y = TABLE.top + 10; y < TABLE.bottom; y += 18) context.fillRect(TABLE.left + 4, y, TABLE.right - TABLE.left - 8, 1);
+    context.beginPath();
+    context.moveTo(TABLE.left, TABLE.top);
+    context.lineTo(TABLE.right, TABLE.top);
+    context.lineTo(TABLE.right, TABLE.bottom);
+    context.lineTo(TABLE.left, TABLE.bottom);
+    context.closePath();
+    context.clip();
+    const hasClothTexture = drawMaterialTexture(MATERIAL_TEXTURES.cloth, TABLE.left, TABLE.top,
+      TABLE.right - TABLE.left, TABLE.bottom - TABLE.top, 0.16);
+    context.lineWidth = 0.42;
+    for (let y = TABLE.top + 2, index = 0; y < TABLE.bottom; y += 5, index += 1) {
+      context.strokeStyle = hasClothTexture
+        ? (index % 2 ? "rgba(226, 246, 233, 0.012)" : "rgba(2, 25, 19, 0.024)")
+        : (index % 2 ? "rgba(226, 246, 233, 0.038)" : "rgba(2, 25, 19, 0.09)");
+      context.beginPath();
+      context.moveTo(TABLE.left, y);
+      context.lineTo(TABLE.right, y + (index % 4 - 1.5) * 0.35);
+      context.stroke();
+    }
+    context.lineWidth = 0.3;
+    for (let x = TABLE.left + 3, index = 0; x < TABLE.right; x += 8, index += 1) {
+      context.strokeStyle = hasClothTexture
+        ? (index % 3 === 0 ? "rgba(196, 231, 212, 0.01)" : "rgba(0, 28, 21, 0.018)")
+        : (index % 3 === 0 ? "rgba(196, 231, 212, 0.034)" : "rgba(0, 28, 21, 0.055)");
+      context.beginPath();
+      context.moveTo(x, TABLE.top);
+      context.lineTo(x + Math.sin(index * 2.1) * 1.2, TABLE.bottom);
+      context.stroke();
+    }
     const stageWash = ["#5d9685", "#c19c62", "#c86e83", "#d9b866", "#8f82b4", "#67a2b4", "#d4ad63"][currentStageNumber() - 1];
-    const wash = context.createRadialGradient(WORLD.width * 0.54, WORLD.height * 0.46, 40, WORLD.width * 0.54, WORLD.height * 0.46, 580);
+    const wash = context.createRadialGradient(WORLD.width * 0.54, WORLD.height * 0.46, 32, WORLD.width * 0.54, WORLD.height * 0.46, 620);
     wash.addColorStop(0, `${stageWash}22`);
     wash.addColorStop(1, "transparent");
     context.fillStyle = wash;
     context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     context.restore();
+  }
 
+  function drawCushionRubber() {
     context.save();
-    POCKETS.forEach((pocket, index) => {
-      const glow = context.createRadialGradient(pocket.x, pocket.y, 3, pocket.x, pocket.y, POCKET_RADIUS + 13);
-      glow.addColorStop(0, "#020403");
-      glow.addColorStop(0.56, "#020403");
-      glow.addColorStop(0.7, "#6f543820");
-      glow.addColorStop(1, "transparent");
-      context.fillStyle = glow;
-      context.beginPath();
-      context.arc(pocket.x, pocket.y, POCKET_RADIUS + (pocket.id.includes("middle") ? 3 : 0), 0, Math.PI * 2);
+    rails.forEach((railBody) => {
+      const material = railBody.plugin.heartbeatRail;
+      if (!material || material.kind === "guard") return;
+      context.save();
+      context.translate(railBody.position.x, railBody.position.y);
+      context.rotate(railBody.angle);
+      const rubber = context.createLinearGradient(0, -material.height / 2, 0, material.height / 2);
+      rubber.addColorStop(0, material.kind === "jaw" ? "#376d5b" : "#2b6755");
+      rubber.addColorStop(0.35, "#174c3f");
+      rubber.addColorStop(0.72, "#0b3028");
+      rubber.addColorStop(1, "#071f1b");
+      context.fillStyle = rubber;
+      roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-    });
-    context.fillStyle = "rgba(230, 199, 137, 0.78)";
-    [210, 300, 420, 510].forEach((x) => {
-      context.save();
-      context.translate(x, TABLE.top - 23);
-      context.rotate(Math.PI / 4);
-      context.fillRect(-3, -3, 6, 6);
-      context.restore();
-      context.save();
-      context.translate(x, TABLE.bottom + 23);
-      context.rotate(Math.PI / 4);
-      context.fillRect(-3, -3, 6, 6);
-      context.restore();
-    });
-    [315, 450, 585, 855, 990, 1125].forEach((y) => {
-      context.save();
-      context.translate(TABLE.left - 23, y);
-      context.rotate(Math.PI / 4);
-      context.fillRect(-3, -3, 6, 6);
-      context.restore();
-      context.save();
-      context.translate(TABLE.right + 23, y);
-      context.rotate(Math.PI / 4);
-      context.fillRect(-3, -3, 6, 6);
+      context.strokeStyle = "rgba(118, 181, 154, 0.46)";
+      context.lineWidth = material.kind === "jaw" ? 1.1 : 1.5;
+      roundRectPath(context, -material.width / 2 + 1, -material.height / 2 + 1, material.width - 2, material.height - 2, material.kind === "jaw" ? 4 : 7);
+      context.stroke();
       context.restore();
     });
     context.restore();
+  }
+
+  function drawMetalSight(x, y) {
+    context.save();
+    context.translate(x, y);
+    context.rotate(Math.PI / 4);
+    context.shadowColor = "rgba(0, 0, 0, 0.6)";
+    context.shadowBlur = 3;
+    context.shadowOffsetY = 2;
+    const metal = context.createLinearGradient(-4, -4, 4, 4);
+    metal.addColorStop(0, "#fff2c7");
+    metal.addColorStop(0.28, "#ad8b59");
+    metal.addColorStop(0.56, "#f2d99d");
+    metal.addColorStop(1, "#6f5536");
+    context.fillStyle = metal;
+    context.fillRect(-4, -4, 8, 8);
+    context.fillStyle = "rgba(255, 255, 255, 0.66)";
+    context.fillRect(-2.5, -2.5, 2, 2);
+    context.restore();
+  }
+
+  function drawMetalSights() {
+    [0.25, 0.5, 0.75].forEach((fraction) => {
+      const x = TABLE.left + (TABLE.right - TABLE.left) * fraction;
+      drawMetalSight(x, TABLE.top - 43);
+      drawMetalSight(x, TABLE.bottom + 43);
+    });
+    [0.125, 0.25, 0.375, 0.625, 0.75, 0.875].forEach((fraction) => {
+      const y = TABLE.top + (TABLE.bottom - TABLE.top) * fraction;
+      drawMetalSight(TABLE.left - 43, y);
+      drawMetalSight(TABLE.right + 43, y);
+    });
+  }
+
+  function drawPocketInnerWall(pocket) {
+    const tangentX = -pocket.inwardY;
+    const tangentY = pocket.inwardX;
+    const mouthHalf = pocket.mouth / 2;
+    const dropHalf = POCKET_RADIUS * 0.62;
+    const mouthA = { x: pocket.mouthX + tangentX * mouthHalf, y: pocket.mouthY + tangentY * mouthHalf };
+    const mouthB = { x: pocket.mouthX - tangentX * mouthHalf, y: pocket.mouthY - tangentY * mouthHalf };
+    const dropA = { x: pocket.x + tangentX * dropHalf, y: pocket.y + tangentY * dropHalf };
+    const dropB = { x: pocket.x - tangentX * dropHalf, y: pocket.y - tangentY * dropHalf };
+    const lining = context.createLinearGradient(pocket.mouthX, pocket.mouthY, pocket.x, pocket.y);
+    lining.addColorStop(0, "#4a3025");
+    lining.addColorStop(0.4, "#211714");
+    lining.addColorStop(1, "#080807");
+    context.fillStyle = lining;
+    context.beginPath();
+    context.moveTo(mouthA.x, mouthA.y);
+    context.lineTo(dropA.x, dropA.y);
+    context.lineTo(dropB.x, dropB.y);
+    context.lineTo(mouthB.x, mouthB.y);
+    context.closePath();
+    context.fill();
+    context.strokeStyle = "rgba(177, 126, 84, 0.4)";
+    context.lineWidth = 1.1;
+    context.beginPath();
+    context.moveTo(mouthA.x, mouthA.y);
+    context.lineTo(dropA.x, dropA.y);
+    context.moveTo(mouthB.x, mouthB.y);
+    context.lineTo(dropB.x, dropB.y);
+    context.stroke();
+  }
+
+  function drawLeatherPocket(pocket) {
+    context.save();
+    drawPocketInnerWall(pocket);
+    const collarRadius = POCKET_RADIUS + (pocket.type === "side" ? 8 : 6);
+    const leather = context.createRadialGradient(pocket.x - 8, pocket.y - 9, 2, pocket.x, pocket.y, collarRadius);
+    leather.addColorStop(0, "#8b5b3c");
+    leather.addColorStop(0.5, "#3a2119");
+    leather.addColorStop(0.78, "#1d1110");
+    leather.addColorStop(1, "#0b0808");
+    context.fillStyle = leather;
+    context.beginPath();
+    context.arc(pocket.x, pocket.y, collarRadius, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = "rgba(178, 148, 112, 0.34)";
+    context.lineWidth = 0.9;
+    context.beginPath();
+    context.arc(pocket.x, pocket.y, collarRadius - 4.5, 0, Math.PI * 2);
+    context.stroke();
+    const depth = context.createRadialGradient(pocket.x - 7, pocket.y - 9, 1, pocket.x, pocket.y, POCKET_RADIUS + 1);
+    depth.addColorStop(0, "#101412");
+    depth.addColorStop(0.38, "#050706");
+    depth.addColorStop(0.72, "#010202");
+    depth.addColorStop(1, "#000000");
+    context.fillStyle = depth;
+    context.shadowColor = "rgba(0, 0, 0, 0.9)";
+    context.shadowBlur = 12;
+    context.beginPath();
+    context.arc(pocket.x, pocket.y, POCKET_RADIUS, 0, Math.PI * 2);
+    context.fill();
+    context.save();
+    context.translate(pocket.mouthX, pocket.mouthY);
+    context.rotate(Math.atan2(pocket.inwardY, pocket.inwardX));
+    context.scale(0.18, 1);
+    const entrance = context.createRadialGradient(-pocket.mouth * 0.08, 0, 1, 0, 0, pocket.mouth / 2);
+    entrance.addColorStop(0, "#020303");
+    entrance.addColorStop(0.7, "#11100e");
+    entrance.addColorStop(1, "#513629");
+    context.fillStyle = entrance;
+    context.beginPath();
+    context.arc(0, 0, pocket.mouth / 2, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+    context.restore();
+  }
+
+  function drawTable() {
+    drawSolidWoodFrame();
+    drawWoolCloth();
+    drawCushionRubber();
+    drawMetalSights();
+    POCKETS.forEach(drawLeatherPocket);
   }
 
   function drawBall(ball, timestamp) {
@@ -1429,6 +1861,113 @@
       context.arc(x, y, BALL_RADIUS + 5 + pulse * 2, 0, Math.PI * 2);
       context.stroke();
       context.restore();
+    }
+  }
+
+  function disableBallRenderer() {
+    const failedRenderer = ballRenderer;
+    const failedCanvas = ballRendererCanvas;
+    ballRenderer = null;
+    ballRendererCanvas = null;
+    ballRendererFailed = true;
+    if (failedCanvas?.style) failedCanvas.style.visibility = "hidden";
+    try {
+      failedRenderer?.dispose?.();
+    } catch {
+      // The 2D renderer remains available even if WebGL teardown also fails.
+    }
+  }
+
+  function resizeBallRenderer() {
+    if (!ballRenderer || !ballRendererCanvas) return false;
+    try {
+      const rect = ballRendererCanvas.getBoundingClientRect();
+      const pixelRatio = Math.max(1, renderScale);
+      ballRenderer.resize(Math.max(1, rect.width), Math.max(1, rect.height), pixelRatio);
+      if (ballRenderer.supported === false) throw new Error("BilliardsBallRenderer resize failed");
+      return true;
+    } catch {
+      disableBallRenderer();
+      return false;
+    }
+  }
+
+  function initializeBallRenderer() {
+    const Renderer = window.BilliardsBallRenderer;
+    const rendererCanvas = document.querySelector("#hb-ball-canvas");
+    const factory = typeof Renderer?.create === "function" ? Renderer.create.bind(Renderer) : null;
+    if ((!factory && typeof Renderer !== "function") || !rendererCanvas) return false;
+    try {
+      ballRendererCanvas = rendererCanvas;
+      rendererCanvas.style.visibility = "visible";
+      const options = {
+        canvas: rendererCanvas,
+        worldWidth: WORLD.width,
+        worldHeight: WORLD.height,
+        world: { ...WORLD },
+        table: { ...TABLE },
+        ballRadius: BALL_RADIUS,
+        colors: BALL_COLORS,
+        pixelRatio: Math.max(1, renderScale)
+      };
+      ballRenderer = factory ? factory(options) : new Renderer(options);
+      if (typeof ballRenderer?.resize !== "function"
+          || typeof ballRenderer?.sync !== "function"
+          || typeof ballRenderer?.render !== "function"
+          || ballRenderer.supported === false) {
+        throw new Error("BilliardsBallRenderer adapter is incomplete");
+      }
+      return resizeBallRenderer();
+    } catch {
+      disableBallRenderer();
+      return false;
+    }
+  }
+
+  function syncBallRenderer(timestamp) {
+    if (!ballRenderer) return false;
+    try {
+      const renderBalls = balls
+        .filter((ball) => !bodyData(ball)?.potted)
+        .map((ball) => {
+          const data = bodyData(ball);
+          return {
+            number: data.number,
+            x: ball.position.x,
+            y: ball.position.y,
+            radius: BALL_RADIUS,
+            color: data.number === 0 ? "#f5f0e7" : BALL_COLORS[data.number],
+            striped: data.number > 8,
+            rollAngle: data.rollAngle,
+            rollHeading: data.rollHeading,
+            scale: data.pocketing?.scale ?? 1,
+            depth: data.pocketing?.depth ?? 0,
+            compression: data.compression,
+            impactAngle: data.impactAngle,
+            impactGlow: data.impactGlow,
+            selected: data.number === selectedBallNumber,
+            available: data.number > 0 && !shotState && cachedAvailableTargets.has(data.number)
+          };
+        });
+      ballRenderer.sync(renderBalls, {
+        timestamp,
+        world: WORLD,
+        table: TABLE,
+        ballRadius: BALL_RADIUS
+      });
+      if (ballRenderer.supported === false) {
+        disableBallRenderer();
+        return false;
+      }
+      const rendered = ballRenderer.render(timestamp);
+      if (rendered === false || ballRenderer.supported === false) {
+        disableBallRenderer();
+        return false;
+      }
+      return true;
+    } catch {
+      disableBallRenderer();
+      return false;
     }
   }
 
@@ -1527,7 +2066,10 @@
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
     drawTable();
-    balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
+    const renderedByBallRenderer = syncBallRenderer(timestamp);
+    if (!renderedByBallRenderer) {
+      balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
+    }
     drawAim();
     drawEffects();
     context.restore();
@@ -1541,11 +2083,13 @@
   }
 
   function physicsStep() {
+    captureBallPositions();
     Engine.update(engine, FIXED_STEP);
     simulationTime += FIXED_STEP;
-    updateRollingState();
     updatePockets();
+    updateRollingState();
     updatePocketing();
+    containLooseBalls();
     settleBalls();
     updateEffects();
   }
@@ -1717,6 +2261,7 @@
   });
 
   configurePortraitSurface();
+  initializeBallRenderer();
   buildRails();
   buildTimeline();
   rackBalls();
@@ -1743,7 +2288,40 @@
         collisionFeedbackCount: collisionFeedbacks.length,
         shotPottedNumbers: Object.freeze([...(shotState?.pottedNumbers || [])]),
         world: Object.freeze({ ...WORLD }),
+        table: Object.freeze({ ...TABLE }),
+        wpaPocketSpec: Object.freeze({
+          ballDiameter: BALL_DIAMETER,
+          cornerMouth: CORNER_POCKET_MOUTH,
+          sideMouth: SIDE_POCKET_MOUTH,
+          cornerMouthRatio: CORNER_POCKET_MOUTH / BALL_DIAMETER,
+          sideMouthRatio: SIDE_POCKET_MOUTH / BALL_DIAMETER,
+          cornerShelf: CORNER_POCKET_SHELF,
+          sideShelf: SIDE_POCKET_SHELF,
+          cornerCutAngleDegrees: CORNER_CUT_ANGLE_DEGREES,
+          sideCutAngleDegrees: SIDE_CUT_ANGLE_DEGREES
+        }),
         pockets: Object.freeze(POCKETS.map((pocket) => Object.freeze({ ...pocket }))),
+        rails: Object.freeze(rails.map((rail) => Object.freeze({
+          id: rail.plugin.heartbeatRail.id,
+          kind: rail.plugin.heartbeatRail.kind,
+          angle: rail.angle,
+          isStatic: rail.isStatic,
+          x: rail.position.x,
+          y: rail.position.y,
+          width: rail.plugin.heartbeatRail.width,
+          height: rail.plugin.heartbeatRail.height,
+          pocketId: rail.plugin.heartbeatRail.pocketId || null,
+          cutAngleDegrees: rail.plugin.heartbeatRail.cutAngleDegrees || null,
+          headingDegrees: rail.plugin.heartbeatRail.headingDegrees ?? null,
+          mouthSide: rail.plugin.heartbeatRail.mouthSide ?? null,
+          noseX: rail.plugin.heartbeatRail.noseX ?? null,
+          noseY: rail.plugin.heartbeatRail.noseY ?? null
+        }))),
+        ballRenderer: Object.freeze({
+          active: Boolean(ballRenderer),
+          failed: ballRendererFailed,
+          canvas: Boolean(ballRendererCanvas)
+        }),
         render: Object.freeze({ width: canvas.width, height: canvas.height, scale: renderScale }),
         ballNumbers: Object.freeze(balls.map((ball) => bodyData(ball).number).sort((a, b) => a - b)),
         balls: Object.freeze(balls.map((ball) => Object.freeze({
@@ -1754,6 +2332,17 @@
           vy: ball.velocity.y,
           rollAngle: bodyData(ball).rollAngle,
           rollVelocity: bodyData(ball).rollVelocity,
+          shotRailHits: bodyData(ball).shotRailHits,
+          outsideSteps: bodyData(ball).outsideSteps,
+          pocketApproach: bodyData(ball).pocketApproach ? Object.freeze({
+            pocketId: bodyData(ball).pocketApproach.pocketId,
+            enteredAt: bodyData(ball).pocketApproach.enteredAt,
+            captureCrossed: bodyData(ball).pocketApproach.captureCrossed,
+            mouthCrossX: bodyData(ball).pocketApproach.mouthCrossX,
+            mouthCrossY: bodyData(ball).pocketApproach.mouthCrossY,
+            captureCrossX: bodyData(ball).pocketApproach.captureCrossX,
+            captureCrossY: bodyData(ball).pocketApproach.captureCrossY
+          }) : null,
           compression: bodyData(ball).compression,
           impactGlow: bodyData(ball).impactGlow,
           pocketing: bodyData(ball).pocketing ? Object.freeze({
@@ -1779,6 +2368,10 @@
       for (let index = 0; index < steps; index += 1) physicsStep();
       return this.snapshot();
     },
+    renderFrame(timestamp = simulationTime) {
+      draw(timestamp);
+      return this.snapshot();
+    },
     placeBall(number, point, velocity = { x: 0, y: 0 }) {
       const ball = ballByNumber(number);
       if (!ball) return false;
@@ -1786,6 +2379,13 @@
       Body.setPosition(ball, { x: point.x, y: point.y });
       Body.setVelocity(ball, { x: velocity.x || 0, y: velocity.y || 0 });
       data.lastPosition = { x: point.x, y: point.y };
+      data.previousPosition = { x: point.x, y: point.y };
+      data.pocketApproach = null;
+      if (point.x >= TABLE.left + BALL_RADIUS && point.x <= TABLE.right - BALL_RADIUS
+          && point.y >= TABLE.top + BALL_RADIUS && point.y <= TABLE.bottom - BALL_RADIUS) {
+        data.lastSafePosition = { x: point.x, y: point.y };
+      }
+      data.outsideSteps = 0;
       return true;
     },
     reset() {

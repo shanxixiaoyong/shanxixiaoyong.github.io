@@ -20,11 +20,17 @@ export const GAME_CONTRACTS = [
     file: BILLIARDS_GAME_PAGE,
     name: "心动桌球",
     portalAsset: "assets/portal/billiards-night.png",
+    cacheVersion: "billiards-love-three-layer-20260711b",
+    assetVersions: {
+      "assets/vendor/matter-0.20.0.min.js": "0.20.0"
+    },
+    pendingFiles: ["assets/billiards-ball-renderer.js"],
     styles: ["assets/billiards-love.css"],
     scripts: [
       "assets/vendor/matter-0.20.0.min.js",
       "assets/billiards-love-rules.js",
       "assets/billiards-love-content.js",
+      "assets/billiards-ball-renderer.js",
       "assets/billiards-love-game.js"
     ]
   },
@@ -48,8 +54,10 @@ export const ACTIVE_GAMES = GAME_CONTRACTS.map(({ file, name }) => ({ file, name
 export const ACTIVE_GAME_PAGES = ACTIVE_GAMES.map(({ file }) => file);
 
 export const PENDING_GAME_FILES = [...new Set(GAME_CONTRACTS
-  .filter(({ pending }) => pending)
-  .flatMap(({ file, portalAsset, styles, scripts }) => [file, portalAsset, ...styles, ...scripts]))];
+  .flatMap(({ pending, pendingFiles = [], file, portalAsset, styles, scripts }) => [
+    ...pendingFiles,
+    ...(pending ? [file, portalAsset, ...styles, ...scripts] : [])
+  ]))];
 
 export const ACTIVE_PUBLIC_HTML_FILES = [
   "index.html",
@@ -64,7 +72,9 @@ export const ACTIVE_PUBLIC_JS_FILES = [...new Set([
   "assets/world.js",
   "assets/portal.js",
   "assets/academic.js",
-  ...GAME_CONTRACTS.filter(({ pending }) => !pending).flatMap(({ scripts }) => scripts)
+  ...GAME_CONTRACTS
+    .filter(({ pending }) => !pending)
+    .flatMap(({ scripts }) => scripts.filter((file) => !PENDING_GAME_FILES.includes(file)))
 ])];
 
 export const ACTIVE_PUBLIC_STYLE_FILES = [...new Set([
@@ -183,14 +193,27 @@ function resourcePath(value) {
   return String(value || "").split(/[?#]/, 1)[0];
 }
 
-function linkedStyles(html) {
+function linkedStyleReferences(html) {
   return [...html.matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"[^>]*>/g)]
-    .map((match) => resourcePath(match[1]));
+    .map((match) => match[1]);
+}
+
+function linkedScriptReferences(html) {
+  return [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*><\/script>/g)]
+    .map((match) => match[1]);
+}
+
+function linkedStyles(html) {
+  return linkedStyleReferences(html).map(resourcePath);
 }
 
 function linkedScripts(html) {
-  return [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*><\/script>/g)]
-    .map((match) => resourcePath(match[1]));
+  return linkedScriptReferences(html).map(resourcePath);
+}
+
+function versionedResource(file, game) {
+  const version = game.assetVersions?.[file] || game.cacheVersion;
+  return version ? `${file}?v=${version}` : file;
 }
 
 export function validateGameContract({ sources, exists = () => false }) {
@@ -249,6 +272,18 @@ export function validateGameContract({ sources, exists = () => false }) {
     const actualScripts = linkedScripts(gameHtml);
     if (JSON.stringify(actualScripts) !== JSON.stringify(game.scripts)) {
       failures.push(`${game.name} scripts must be exact and ordered: ${JSON.stringify(actualScripts)}`);
+    }
+    if (game.cacheVersion) {
+      const actualStyleReferences = linkedStyleReferences(gameHtml);
+      const expectedStyleReferences = game.styles.map((file) => versionedResource(file, game));
+      if (JSON.stringify(actualStyleReferences) !== JSON.stringify(expectedStyleReferences)) {
+        failures.push(`${game.name} stylesheet cache versions must be exact: ${JSON.stringify(actualStyleReferences)}`);
+      }
+      const actualScriptReferences = linkedScriptReferences(gameHtml);
+      const expectedScriptReferences = game.scripts.map((file) => versionedResource(file, game));
+      if (JSON.stringify(actualScriptReferences) !== JSON.stringify(expectedScriptReferences)) {
+        failures.push(`${game.name} script cache versions must be exact and ordered: ${JSON.stringify(actualScriptReferences)}`);
+      }
     }
   }
 

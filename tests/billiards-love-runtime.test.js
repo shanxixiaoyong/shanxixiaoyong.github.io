@@ -20,7 +20,13 @@ test("builds a zero-gravity fixed-120Hz Matter table with stable collision setti
 
 test("uses one portrait logical world with the cue below a complete upward-facing rack", () => {
   assert.match(source, /const WORLD = Object\.freeze\(\{ width: 720, height: 1440 \}\)/);
-  assert.match(source, /const TABLE = Object\.freeze\(\{ left: 90, right: 630, top: 180, bottom: 1260 \}\)/);
+  assert.match(source, /const TABLE = Object\.freeze\(\{ left: 74, right: 646, top: 148, bottom: 1292 \}\)/);
+  const [, left, right, top, bottom] = source.match(/const TABLE = Object\.freeze\(\{ left: (\d+), right: (\d+), top: (\d+), bottom: (\d+) \}\)/).map(Number);
+  const width = right - left;
+  const height = bottom - top;
+  assert.ok(width / 540 >= 1.055 && width / 540 <= 1.065, "playing width should grow about 6%");
+  assert.ok(height / 1080 >= 1.055 && height / 1080 <= 1.065, "playing length should grow about 6%");
+  assert.ok(Math.abs(height / width - 2) < 0.01, "playing surface should remain approximately 1:2");
   assert.match(source, /const CUE_SPOT = Object\.freeze\(\{ x: WORLD\.width \/ 2, y: 1080 \}\)/);
   assert.match(source, /const RACK_APEX = Object\.freeze\(\{ x: WORLD\.width \/ 2, y: 510 \}\)/);
   assert.match(source, /const RACK = Object\.freeze\(\[\s*\[1\],\s*\[4, 9\],\s*\[2, 8, 10\]/s);
@@ -35,8 +41,26 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
   for (const pocket of ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"]) {
     assert.ok(source.includes(`id: "${pocket}"`), `missing ${pocket} pocket`);
   }
+  assert.match(source, /const BALL_DIAMETER = BALL_RADIUS \* 2/);
+  assert.match(source, /const CORNER_POCKET_MOUTH = BALL_DIAMETER \* 2\.00/);
+  assert.match(source, /const SIDE_POCKET_MOUTH = BALL_DIAMETER \* 2\.22/);
+  assert.match(source, /const CORNER_POCKET_SHELF = BALL_DIAMETER \* 0\.65/);
+  assert.match(source, /const SIDE_POCKET_SHELF = BALL_DIAMETER \* 0\.14/);
+  assert.match(source, /const CORNER_CUT_ANGLE_DEGREES = 142/);
+  assert.match(source, /const SIDE_CUT_ANGLE_DEGREES = 104/);
+  assert.match(source, /mouthX,[\s\S]*?mouthY,[\s\S]*?captureX:[\s\S]*?captureY:/);
+  assert.match(source, /x: mouthX \+ inwardX \* dropDepth/);
+  assert.match(source, /y: mouthY \+ inwardY \* dropDepth/);
   assert.match(source, /const POCKET_MIN_DURATION = 280/);
   assert.match(source, /const POCKET_MAX_DURATION = 450/);
+  assert.match(source, /function crossedPocketLine\(body, pocket, lineDepth, halfWidth\)/);
+  assert.match(source, /function enterPocketMouth\(body, pocket\)/);
+  assert.match(source, /function advancePocketApproach\(body, pocket\)/);
+  assert.match(source, /enteredAt: simulationTime/);
+  assert.match(source, /approach\.enteredAt < simulationTime/);
+  assert.match(source, /currentDepth >= pocket\.shelf/);
+  assert.match(source, /inwardPocketSpeed\(body, pocket\) <= POCKET_MIN_INWARD_SPEED/);
+  assert.doesNotMatch(source, /Body\.applyForce/);
   assert.match(source, /if \(!shotState \|\| !data \|\| data\.potted \|\| data\.pocketing\) return false/);
   assert.match(source, /data\.pocketing = \{/);
   assert.match(source, /function updatePocketing\(\)/);
@@ -46,6 +70,58 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
   assert.match(source, /!shotState\.pottedNumbers\.includes\(number\)/);
   assert.match(source, /if \(data\?\.pocketing\) \{\s*moving = true/);
   assert.match(source, /if \(!cueBall && !runState\.endState\.ended\) respotBall\(0\)/);
+});
+
+test("builds physical rotated corner and side-pocket jaws plus containment guards", () => {
+  assert.match(source, /function createJaw\(start, end, id\)/);
+  assert.match(source, /function createPocketJaw\(pocket, side, id\)/);
+  assert.match(source, /const heading = entryAngle - side \* pocket\.jawOffset/);
+  assert.match(source, /CORNER_CUT_ANGLE_DEGREES - 135/);
+  assert.match(source, /SIDE_CUT_ANGLE_DEGREES - 90/);
+  assert.match(source, /kind = "cushion"/);
+  assert.match(source, /"jaw"/);
+  assert.equal((source.match(/createPocketJaw\(pocket\[/g) || []).length, 12);
+  for (const id of ["jaw-top-left-horizontal", "jaw-bottom-right-vertical", "jaw-middle-left-top", "jaw-middle-right-bottom"]) {
+    assert.ok(source.includes(`"${id}"`), `missing physical jaw ${id}`);
+  }
+  assert.equal((source.match(/"guard-(?:top|bottom|left|right)"/g) || []).length, 4);
+  assert.match(source, /function containLooseBalls\(\)/);
+});
+
+test("renders layered wood, wool, rubber, metal, leather, and deep pocket materials", () => {
+  for (const token of [
+    "drawSolidWoodFrame", "drawWoolCloth", "drawCushionRubber", "drawMetalSights", "drawPocketInnerWall", "drawLeatherPocket"
+  ]) {
+    assert.ok(source.includes(`function ${token}`), `missing table material renderer ${token}`);
+  }
+  assert.match(source, /for \(let y = TABLE_OUTER\.top \+ 14/);
+  assert.match(source, /for \(let y = TABLE\.top \+ 2/);
+  assert.match(source, /billiards-textures\/worsted-cloth\.jpg/);
+  assert.match(source, /billiards-textures\/dark-walnut\.jpg/);
+  assert.match(source, /drawMaterialTexture\(MATERIAL_TEXTURES\.cloth/);
+  assert.doesNotMatch(source, /context\.setLineDash\(\[2, 3\]\)/);
+  assert.match(source, /context\.shadowBlur = 12/);
+  assert.match(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
+  assert.match(source, /context\.scale\(0\.18, 1\)/);
+  assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
+});
+
+test("adapts to an optional Three ball renderer and retains a per-frame 2D fallback", () => {
+  assert.match(source, /const Renderer = window\.BilliardsBallRenderer/);
+  assert.match(source, /document\.querySelector\("#hb-ball-canvas"\)/);
+  assert.match(source, /typeof Renderer\?\.create === "function"/);
+  assert.match(source, /ballRenderer = factory \? factory\(options\) : new Renderer\(options\)/);
+  assert.match(source, /worldWidth: WORLD\.width/);
+  assert.match(source, /colors: BALL_COLORS/);
+  assert.match(source, /ballRenderer\.resize\(/);
+  assert.match(source, /ballRenderer\.sync\(renderBalls/);
+  assert.match(source, /ballRenderer\.render\(timestamp\)/);
+  assert.match(source, /const pixelRatio = Math\.max\(1, renderScale\)/);
+  assert.match(source, /rendered === false \|\| ballRenderer\.supported === false/);
+  assert.match(source, /failedCanvas\.style\.visibility = "hidden"/);
+  assert.match(source, /const renderedByBallRenderer = syncBallRenderer\(timestamp\)/);
+  assert.match(source, /if \(!renderedByBallRenderer\) \{[\s\S]*?drawBall\(ball, timestamp\)/);
+  assert.match(source, /catch \{\s*disableBallRenderer\(\)/);
 });
 
 test("maps touch coordinates directly into the portrait world without rotation inversion", () => {
