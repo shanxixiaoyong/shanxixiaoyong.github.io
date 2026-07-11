@@ -2280,11 +2280,11 @@
 
   function drawCuePowerGauge(direction, pullRatio) {
     if (!cueBall) return;
-    const colors = ["#76cbb6", "#e3bd72", "#df7889"];
+    const colors = ["#4ed5ad", "#f0bc5b", "#ed6687"];
     const zoneBoundaries = [0, LIGHT_PULL_END, STRONG_PULL_START, 1];
     const center = cueBall.position;
-    const radius = BALL_RADIUS + 19;
-    const gapHalfAngle = Math.PI * 0.36;
+    const radius = BALL_RADIUS + 22;
+    const gapHalfAngle = Math.PI * 0.41;
     const backAngle = Math.atan2(direction.y, direction.x) + Math.PI;
     const arcStart = backAngle + gapHalfAngle;
     const arcSpan = Math.PI * 2 - gapHalfAngle * 2;
@@ -2301,51 +2301,65 @@
     gradient.addColorStop(1, colors[2]);
     context.save();
     context.lineCap = "round";
-    context.strokeStyle = "rgba(2, 8, 7, 0.72)";
-    context.lineWidth = 11;
+    context.globalAlpha = 0.15;
+    context.shadowBlur = 0;
+    context.strokeStyle = gradient;
+    context.lineWidth = 1.35;
     context.beginPath();
     context.arc(center.x, center.y, radius, arcStart, arcEnd);
     context.stroke();
 
-    context.globalAlpha = 0.3;
-    context.strokeStyle = gradient;
-    context.lineWidth = 5;
-    context.beginPath();
-    context.arc(center.x, center.y, radius, arcStart, arcEnd);
-    context.stroke();
+    zoneBoundaries.slice(1, -1).forEach((boundary) => {
+      const angle = arcStart + arcSpan * boundary;
+      const nodeX = center.x + Math.cos(angle) * radius;
+      const nodeY = center.y + Math.sin(angle) * radius;
+      context.globalAlpha = boundary <= activeRatio ? 0.82 : 0.34;
+      context.fillStyle = boundary < STRONG_PULL_START ? colors[1] : colors[2];
+      context.shadowColor = context.fillStyle;
+      context.shadowBlur = boundary <= activeRatio ? 4 : 0;
+      context.beginPath();
+      context.arc(nodeX, nodeY, 1.35, 0, Math.PI * 2);
+      context.fill();
+    });
 
     if (activeRatio > 0) {
       const activeEndAngle = arcStart + arcSpan * activeRatio;
       const activeEndX = center.x + Math.cos(activeEndAngle) * radius;
       const activeEndY = center.y + Math.sin(activeEndAngle) * radius;
-      context.globalAlpha = 1;
+      const activeColor = activeRatio < LIGHT_PULL_END ? colors[0] : activeRatio < STRONG_PULL_START ? colors[1] : colors[2];
       context.strokeStyle = gradient;
-      context.shadowColor = activeRatio < LIGHT_PULL_END ? colors[0] : activeRatio < STRONG_PULL_START ? colors[1] : colors[2];
-      context.shadowBlur = 8;
-      context.lineWidth = 6;
+      context.shadowColor = activeColor;
+      context.lineCap = "round";
+      context.shadowBlur = 2;
+      const segmentCount = 52;
+      for (let index = 0; index < segmentCount; index += 1) {
+        const from = index / segmentCount;
+        if (from >= activeRatio) break;
+        const to = Math.min(activeRatio, (index + 1.15) / segmentCount);
+        const relativeMidpoint = (from + to) / (2 * activeRatio);
+        const profile = Math.sin(Math.PI * clamp(relativeMidpoint, 0, 1));
+        context.globalAlpha = 0.76 + profile * 0.24;
+        context.lineWidth = 2.4 + profile * 2.1;
+        context.beginPath();
+        context.arc(center.x, center.y, radius, arcStart + arcSpan * from, arcStart + arcSpan * to);
+        context.stroke();
+      }
+      context.shadowBlur = 4;
+      context.globalAlpha = 1;
+      context.translate(activeEndX, activeEndY);
+      context.rotate(activeEndAngle + Math.PI / 4);
+      context.fillStyle = activeColor;
+      context.strokeStyle = "rgba(255, 248, 231, 0.9)";
+      context.lineWidth = 0.8;
       context.beginPath();
-      context.arc(center.x, center.y, radius, arcStart, activeEndAngle);
-      context.stroke();
-      context.shadowBlur = 6;
-      context.fillStyle = "#fff4d9";
-      context.beginPath();
-      context.arc(activeEndX, activeEndY, 3.2, 0, Math.PI * 2);
+      context.moveTo(0, -3.6);
+      context.lineTo(2.1, 0);
+      context.lineTo(0, 3.6);
+      context.lineTo(-2.1, 0);
+      context.closePath();
       context.fill();
-    }
-
-    context.globalAlpha = 0.72;
-    context.shadowBlur = 0;
-    context.strokeStyle = "rgba(255, 247, 226, 0.72)";
-    context.lineWidth = 1.15;
-    zoneBoundaries.slice(1, -1).forEach((boundary) => {
-      const angle = arcStart + arcSpan * boundary;
-      const innerRadius = radius - 4.5;
-      const outerRadius = radius + 4.5;
-      context.beginPath();
-      context.moveTo(center.x + Math.cos(angle) * innerRadius, center.y + Math.sin(angle) * innerRadius);
-      context.lineTo(center.x + Math.cos(angle) * outerRadius, center.y + Math.sin(angle) * outerRadius);
       context.stroke();
-    });
+    }
     context.restore();
   }
 
