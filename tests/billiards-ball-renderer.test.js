@@ -35,7 +35,8 @@ test("builds equirectangular numbered textures, physically lit sphere materials,
     assert.ok(source.includes(`\"${type}\"`), `missing bundled Three type ${type}`);
   }
   assert.ok(source.includes("isCanvasTexture=!0"), "missing bundled CanvasTexture runtime");
-  assert.ok(/this\.sphereGeometry=new [\w$]+\(this\.ballRadius,64,32\),this\.shadowGeometry=new [\w$]+\(1,48\)/.test(source));
+  assert.ok(/this\.sphereGeometry=new [\w$]+\(this\.ballRadius,32,16\),this\.shadowGeometry=new [\w$]+\(1,48\)/.test(source));
+  assert.equal((source.match(/antialias:!1/g) || []).length, 2, "the high-DPR ball layer should not spend frames on multisampling");
   assert.ok(source.includes("equirectangular-map"));
   assert.ok(source.includes("roughness:.19,metalness:0"));
   assert.ok(source.includes("billiards-hemisphere-fill"));

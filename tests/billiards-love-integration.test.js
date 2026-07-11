@@ -6,7 +6,7 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "assets/billiards-love-game.js"), "utf8");
-const Matter = require("../assets/vendor/matter-0.20.0.min.js");
+const BilliardsPhysics = require("../assets/billiards-physics.js");
 const BilliardsLoveRules = require("../assets/billiards-love-rules.js");
 const BilliardsLoveContent = require("../assets/billiards-love-content.js");
 const FIXED_VM_STEP = 1000 / 120;
@@ -55,7 +55,7 @@ function createDrawingContext(calls = []) {
   const methods = new Set([
     "save", "restore", "clearRect", "fillRect", "beginPath", "moveTo", "lineTo", "arcTo",
     "closePath", "fill", "stroke", "arc", "clip", "translate", "rotate", "scale", "setTransform",
-    "setLineDash", "fillText"
+    "setLineDash", "fillText", "drawImage"
   ]);
   return new Proxy({}, {
     get(target, property) {
@@ -103,7 +103,7 @@ function bootRuntime(options = {}) {
     setItem: (key, value) => localValues.set(key, String(value))
   };
   const window = {
-    Matter,
+    BilliardsPhysics,
     BilliardsLoveRules,
     BilliardsLoveContent,
     localStorage,
@@ -201,9 +201,13 @@ test("boots immediately into a playable portrait rack with bounded high-DPR outp
   assert.deepEqual({ ...snapshot.table }, { left: 58, right: 662, top: 116, bottom: 1324 });
   assert.equal(snapshot.physics.fixedHz, 120);
   assert.equal(snapshot.physics.fixedStepMs, FIXED_VM_STEP);
+  assert.equal(snapshot.physics.model, "continuous-spin-impulse");
+  assert.equal(snapshot.physics.reference, "https://github.com/tailuge/billiards");
   assert.equal(snapshot.physics.pocketMagnetism, false);
-  assert.ok(snapshot.physics.clothLinearSpeedLoss > 0);
-  assert.ok(snapshot.physics.clothSpeedDrag > 0);
+  assert.equal(snapshot.physics.slidingFriction, 0.126);
+  assert.equal(snapshot.physics.rollingFriction, 0.032);
+  assert.equal(snapshot.physics.rollingSpeedDrag, 0.22);
+  assert.equal(snapshot.physics.ballRestitution, 0.925);
   assert.equal((snapshot.table.bottom - snapshot.table.top) / (snapshot.table.right - snapshot.table.left), 2);
   assert.equal(snapshot.wpaPocketSpec.ballDiameter, 14.85 * 2);
   assert.equal(snapshot.wpaPocketSpec.cornerMouthRatio, 2);
@@ -338,9 +342,9 @@ test("preserves tangential speed through an angled cushion collision", () => {
   const retained = outgoingTangent / incomingTangent;
 
   assert.ok(ball.vx < 0 && ball.vy < 0, `angled impact should reflect only the normal component: ${ball.vx}, ${ball.vy}`);
-  assert.ok(retained >= 0.975 && retained < 1,
-    `expected at least 97.5% tangential retention after cloth loss, received ${retained}`);
-  assert.equal(impact.tangentialRetention, 0.985);
+  assert.ok(retained >= 0.68 && retained <= 0.78,
+    `expected visible cushion grip instead of frictionless sliding, received ${retained}`);
+  assert.ok(Math.abs(impact.tangentialRetention - retained) < 0.03);
 });
 
 test("uses deterministic fixed-step stop distances and times at different launch speeds", () => {
@@ -349,10 +353,10 @@ test("uses deterministic fixed-step stop distances and times at different launch
   const repeat = measureStopProfile(4);
 
   assert.deepEqual(repeat, fast, "the same initial state must produce the same 120 Hz roll-down profile");
-  assert.ok(slow.steps >= 108 && slow.steps <= 118, `unexpected slow-roll stop step ${slow.steps}`);
-  assert.ok(slow.distance >= 53 && slow.distance <= 62, `unexpected slow-roll distance ${slow.distance}`);
-  assert.ok(fast.steps >= 214 && fast.steps <= 225, `unexpected fast-roll stop step ${fast.steps}`);
-  assert.ok(fast.distance >= 205 && fast.distance <= 225, `unexpected fast-roll distance ${fast.distance}`);
+  assert.ok(slow.steps >= 87 && slow.steps <= 95, `unexpected slow-roll stop step ${slow.steps}`);
+  assert.ok(slow.distance >= 42 && slow.distance <= 50, `unexpected slow-roll distance ${slow.distance}`);
+  assert.ok(fast.steps >= 160 && fast.steps <= 170, `unexpected fast-roll stop step ${fast.steps}`);
+  assert.ok(fast.distance >= 150 && fast.distance <= 165, `unexpected fast-roll distance ${fast.distance}`);
   assert.ok(fast.milliseconds > slow.milliseconds * 1.8);
   assert.ok(fast.distance > slow.distance * 3.5);
 });
@@ -397,8 +401,15 @@ test("routes ordinary shots to center beats and stage clears to full-screen perf
 
   debug.presentShot({ pottedNumbers: [2] });
   snapshot = debug.presentShot({ pottedNumbers: [3] });
-  assert.equal(snapshot.presentation.microVisible, false);
+  assert.equal(snapshot.presentation.microVisible, true, "the scoring beat must play before the stage performance");
+  assert.equal(snapshot.presentation.cinematicActive, false);
+  assert.equal(snapshot.presentation.cinematicQueued, 1);
+  assert.equal(snapshot.presentation.nextCinematicStageId, "first-contact");
+  while (snapshot.presentation.microVisible || snapshot.presentation.microQueued) {
+    snapshot = debug.advancePresentation();
+  }
   assert.equal(snapshot.presentation.cinematicActive, true);
+  assert.equal(snapshot.presentation.cinematicQueued, 0);
   assert.equal(snapshot.presentation.cinematicStageId, "first-contact");
   assert.match(snapshot.presentation.cinematicImage, /campus-library\.webp/);
 
@@ -417,8 +428,10 @@ test("routes ordinary shots to center beats and stage clears to full-screen perf
   const eightDebug = bootRuntime();
   snapshot = eightDebug.presentShot({ pottedNumbers: [8], breakShot: true });
   assert.equal(snapshot.runState.endState.ending, "reckless-rejection");
-  assert.equal(snapshot.presentation.cinematicActive, true);
-  assert.match(snapshot.presentation.cinematicTitle, /承诺来得太快/);
+  assert.equal(snapshot.presentation.microVisible, true);
+  assert.equal(snapshot.presentation.cinematicActive, false);
+  assert.equal(snapshot.presentation.cinematicQueued, 1);
+  assert.equal(snapshot.presentation.nextCinematicStageId, "learning-together");
 });
 
 test("requires mouth entry plus shelf crossing and lets a jaw collision reject a pocket graze", () => {

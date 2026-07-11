@@ -13,7 +13,6 @@ const pendingGameFiles = new Set(PENDING_GAME_FILES);
 
 const siteFiles = [...new Set([
   ...ACTIVE_PUBLIC_FILES,
-  "assets/vendor/matter-0.20.0.LICENSE.txt",
   "data/knowledge.json",
   "tools/sync-obsidian.mjs"
 ])];
@@ -70,7 +69,7 @@ const required = [
   "assets/academic.js",
   "assets/world.js",
   "assets/portal.js",
-  "assets/vendor/matter-0.20.0.min.js",
+  "assets/billiards-physics.js",
   "assets/billiards-love-rules.js",
   "assets/billiards-love-content.js",
   "assets/billiards-ball-renderer.js",

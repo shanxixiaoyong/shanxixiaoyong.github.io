@@ -1,22 +1,32 @@
 const assert = require("node:assert/strict");
-const { readFileSync } = require("node:fs");
+const { existsSync, readFileSync } = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
 const source = readFileSync(path.join(__dirname, "../assets/billiards-love-game.js"), "utf8");
+const physicsSource = readFileSync(path.join(__dirname, "../assets/billiards-physics.js"), "utf8");
+const rendererSource = readFileSync(path.join(__dirname, "../assets/billiards-ball-renderer.js"), "utf8");
 
-test("builds a zero-gravity fixed-120Hz Matter table with stable collision settings", () => {
+test("builds a fixed-120Hz custom spin and impulse table without Matter", () => {
   assert.match(source, /const FIXED_HZ = 120/);
   assert.match(source, /const FIXED_STEP = 1000 \/ FIXED_HZ/);
   assert.match(source, /const MAX_STEPS_PER_FRAME = 8/);
+  assert.match(source, /const Physics = window\.BilliardsPhysics/);
   assert.match(source, /const engine = Engine\.create\(\{ enableSleeping: false \}\)/);
   assert.match(source, /engine\.gravity\.x = 0/);
   assert.match(source, /engine\.gravity\.y = 0/);
-  assert.match(source, /engine\.positionIterations = 12/);
   assert.match(source, /Bodies\.circle\s*\(/);
   assert.match(source, /Bodies\.rectangle\s*\(/);
   assert.match(source, /while \(accumulator >= FIXED_STEP && steps < MAX_STEPS_PER_FRAME\)/);
   assert.match(source, /Events\.on\(engine, "collisionStart"/);
+  assert.doesNotMatch(source, /window\.Matter|const Matter/);
+  assert.match(physicsSource, /model: "continuous-spin-impulse"/);
+  assert.match(physicsSource, /ballRestitution: 0\.925/);
+  assert.match(physicsSource, /slidingFriction: 0\.126/);
+  assert.match(physicsSource, /function dynamicBallFriction\(/);
+  assert.match(physicsSource, /function resolveBallPair\(/);
+  assert.match(physicsSource, /function resolveRailCollision\(/);
+  assert.match(physicsSource, /maxSubsteps: 10/);
 });
 
 test("uses one portrait logical world with the cue below a complete upward-facing rack", () => {
@@ -59,7 +69,9 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
   assert.match(source, /function advancePocketApproach\(body, pocket\)/);
   assert.match(source, /enteredAt: simulationTime/);
   assert.match(source, /approach\.enteredAt < simulationTime/);
-  assert.match(source, /approach\.maximumDepth >= pocket\.shelf - POCKET_SHELF_DEPTH_TOLERANCE/);
+  assert.match(source, /const POCKET_LIP_SETTLE_RATIO = 0\.88/);
+  assert.match(source, /const settledOverLip = body\.speed <= NATURAL_STOP_SPEED/);
+  assert.match(source, /approach\.maximumDepth >= requiredDepth/);
   assert.match(source, /inwardPocketSpeed\(body, pocket\) <= POCKET_MIN_INWARD_SPEED/);
   assert.doesNotMatch(source, /Body\.applyForce/);
   assert.match(source, /if \(!shotState \|\| !data \|\| data\.potted \|\| data\.pocketing\) return false/);
@@ -107,6 +119,14 @@ test("renders layered wood, wool, rubber, metal, leather, and deep pocket materi
   assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
 });
 
+test("pre-renders the static material table instead of rebuilding it every frame", () => {
+  assert.match(source, /function rebuildTableCache\(\)/);
+  assert.match(source, /cache\.width = WORLD\.width \* 2/);
+  assert.match(source, /function drawTableLayer\(\)/);
+  assert.match(source, /context\.drawImage\(tableCacheCanvas, 0, 0, WORLD\.width, WORLD\.height\)/);
+  assert.match(source, /drawTableLayer\(\);/);
+});
+
 test("adapts to an optional Three ball renderer and retains a per-frame 2D fallback", () => {
   assert.match(source, /const Renderer = window\.BilliardsBallRenderer/);
   assert.match(source, /document\.querySelector\("#hb-ball-canvas"\)/);
@@ -117,12 +137,19 @@ test("adapts to an optional Three ball renderer and retains a per-frame 2D fallb
   assert.match(source, /ballRenderer\.resize\(/);
   assert.match(source, /ballRenderer\.sync\(renderBalls/);
   assert.match(source, /ballRenderer\.render\(timestamp\)/);
-  assert.match(source, /const pixelRatio = Math\.max\(1, renderScale\)/);
+  assert.match(source, /const pixelRatio = Math\.max\(1, Math\.min\(renderScale, MAX_BALL_RENDER_SCALE\)\)/);
   assert.match(source, /rendered === false \|\| ballRenderer\.supported === false/);
   assert.match(source, /failedCanvas\.style\.visibility = "hidden"/);
   assert.match(source, /const renderedByBallRenderer = syncBallRenderer\(timestamp\)/);
   assert.match(source, /if \(!renderedByBallRenderer\) \{[\s\S]*?drawBall\(ball, timestamp\)/);
   assert.match(source, /catch \{\s*disableBallRenderer\(\)/);
+});
+
+test("keeps the 3D ball layer light enough for high-DPR portrait phones", () => {
+  assert.match(source, /const MAX_BALL_RENDER_SCALE = 2/);
+  assert.match(source, /Math\.min\(renderScale, MAX_BALL_RENDER_SCALE\)/);
+  assert.match(rendererSource, /new as\(this\.ballRadius,32,16\)/);
+  assert.doesNotMatch(rendererSource, /antialias:!0/);
 });
 
 test("maps touch coordinates directly into the portrait world without rotation inversion", () => {
@@ -166,12 +193,15 @@ test("tracks cumulative roll and rotates numbered texture and highlights with it
   assert.match(source, /rollVelocity: 0/);
   assert.match(source, /lastPosition: \{ x, y \}/);
   assert.match(source, /function updateRollingState\(\)/);
-  assert.match(source, /data\.rollAngle \+= angleDelta/);
-  assert.match(source, /data\.rollVelocity = angleDelta \/ \(FIXED_STEP \/ 1000\)/);
+  assert.match(source, /data\.rollAngle = ball\.physics\.rollAngle/);
+  assert.match(source, /data\.rollVelocity = ball\.physics\.rollSpeed/);
+  assert.match(source, /data\.rollHeading = ball\.physics\.rollHeading/);
   assert.match(source, /context\.rotate\(data\.rollAngle\)/);
   assert.match(source, /const highlight = context\.createRadialGradient/);
-  assert.match(source, /function applyClothDamping\(\)/);
-  assert.match(source, /const speedLoss = CLOTH_LINEAR_SPEED_LOSS \+ ball\.speed \* CLOTH_SPEED_DRAG/);
+  assert.match(physicsSource, /physics\.state = "sliding"/);
+  assert.match(physicsSource, /physics\.state = "rolling"/);
+  assert.match(physicsSource, /const surfaceX = body\.velocity\.x - physics\.spinY \* radius/);
+  assert.doesNotMatch(source, /function applyClothDamping\(\)/);
   assert.doesNotMatch(source, /ball\.velocity\.x \* 0\.86/);
 });
 
@@ -216,6 +246,9 @@ test("connects per-pot center beats, streak feedback, seven stage performances, 
   assert.match(source, /queueBallMicro\(performance, event, outcome\)/);
   assert.match(source, /queueStageMicro\(/);
   assert.match(source, /queueCinematic\(copy\)/);
+  assert.match(source, /cinematicQueue\.length && !cinematicActive\) showNextCinematic\(\)/);
+  assert.match(source, /!cinematicActive && elements\.micro\.hidden && !microQueue\.length/);
+  assert.doesNotMatch(source, /copies\[copies\.length - 1\]\.onClose/);
   assert.match(source, /STAGE_SCENE_ASSETS/);
   assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
   assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 3200, 5000, 6500\)/);
@@ -226,6 +259,10 @@ test("connects per-pot center beats, streak feedback, seven stage performances, 
   assert.match(source, /audio\.cue\(item\.sound \|\| "event"/);
   assert.match(source, /content\.getEnding\(grade\)/);
   assert.doesNotMatch(source, /specialCopy\("confessionTooEarly"/);
+});
+
+test("freezes the covered high-DPR table while full-screen scenes are active", () => {
+  assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
 });
 
 test("starts immediately with no start gate or pause state", () => {
@@ -249,18 +286,23 @@ test("restores the sole animation loop and frame timing after browser lifecycle 
   assert.match(source, /document\.addEventListener\("visibilitychange", resetFrameTiming\)/);
 });
 
-test("synthesizes adaptive music plus distinct ball, rail, pocket, event, and streak cues", () => {
+test("loads real recorded billiards and event samples without oscillator synthesis", () => {
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);
-  assert.match(source, /this\.baseGain = this\.context\.createGain\(\)/);
-  assert.match(source, /this\.warmGain = this\.context\.createGain\(\)/);
-  assert.match(source, /this\.futureGain = this\.context\.createGain\(\)/);
-  assert.match(source, /setStage\(stageNumber\)/);
-  assert.match(source, /noise\(duration, gainValue, frequency/);
+  assert.match(source, /const RECORDED_AUDIO_ASSETS = Object\.freeze\(\{/);
+  assert.match(source, /window\.fetch\(url, \{ cache: "force-cache" \}\)/);
+  assert.match(source, /this\.context\.decodeAudioData\(bytes\.slice\(0\)\)/);
+  assert.match(source, /this\.context\.createBufferSource\(\)/);
+  assert.match(source, /mode: "recorded-samples"/);
   assert.match(source, /rail\(speed\)/);
-  assert.match(source, /audio\.rail\(bodyA\.speed\)/);
+  assert.match(source, /audio\.rail\(impactSpeed\)/);
   assert.match(source, /audio\.collision\(relative\)/);
-  for (const cue of ["strike", "pocket", "scratch", "event", "streak", "miss", "stage", "confession", "proposal"]) {
-    assert.ok(source.includes(`name === "${cue}"`) || source.includes(`cue("${cue}"`), `missing ${cue} audio`);
+  assert.doesNotMatch(source, /createOscillator|function tone\(|function noise\(/);
+  for (const file of [
+    "cue-strike.ogg", "ball-contact-soft.ogg", "ball-contact-hard.ogg",
+    "rail-contact.ogg", "pocket-drop.ogg", "event-soft.ogg", "stage-rise.ogg"
+  ]) {
+    assert.match(source, new RegExp(file.replace(".", "\\.")));
+    assert.equal(existsSync(path.join(__dirname, `../assets/audio/billiards/${file}`)), true, file);
   }
 });
 

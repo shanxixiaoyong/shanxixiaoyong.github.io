@@ -3,10 +3,10 @@
 
   const rules = window.BilliardsLoveRules;
   const content = window.BilliardsLoveContent;
-  const Matter = window.Matter;
-  if (!rules || !content || !Matter) throw new Error("心动桌球运行依赖未加载");
+  const Physics = window.BilliardsPhysics;
+  if (!rules || !content || !Physics) throw new Error("心动桌球运行依赖未加载");
 
-  const { Engine, Bodies, Body, Composite, Events } = Matter;
+  const { Engine, Bodies, Body, Composite, Events } = Physics;
   const required = (selector) => {
     const node = document.querySelector(selector);
     if (!node) throw new Error(`缺少心动桌球节点：${selector}`);
@@ -15,7 +15,9 @@
 
   const root = required("#heartbeat-billiards");
   const canvas = required("#hb-canvas");
-  const context = canvas.getContext("2d", { alpha: true });
+  let context = canvas.getContext("2d", { alpha: true });
+  let tableCacheCanvas = null;
+  let tableCacheDirty = true;
   const tableWrap = required("#hb-table-wrap");
   const elements = {
     stageKicker: required("#hb-stage-kicker"),
@@ -75,6 +77,7 @@
   const POCKET_SHELF_DEPTH_TOLERANCE = BALL_RADIUS * 0.10;
   const POCKET_SHELF_LATERAL_TOLERANCE = BALL_RADIUS * 0.08;
   const POCKET_APPROACH_EXIT_DEPTH = BALL_RADIUS * 0.30;
+  const POCKET_LIP_SETTLE_RATIO = 0.88;
   const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.00;
   const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.22;
   const CORNER_POCKET_SHELF = BALL_DIAMETER * 0.65;
@@ -86,27 +89,19 @@
   const POCKET_JAW_LENGTH = BALL_DIAMETER * 1.75;
   const FIXED_HZ = 120;
   const FIXED_STEP = 1000 / FIXED_HZ;
-  const CLOTH_LINEAR_SPEED_LOSS = 0.0165;
-  const CLOTH_SPEED_DRAG = 0.0008;
-  const CUSHION_RESTITUTION_MIN = 0.87;
-  const CUSHION_RESTITUTION_MAX = 0.92;
-  const CUSHION_RESTITUTION_REFERENCE_SPEED = 18;
-  const JAW_RESTITUTION_PENALTY = 0.075;
-  const CUSHION_TANGENTIAL_RETENTION = 0.985;
-  const JAW_TANGENTIAL_RETENTION = 0.95;
-  const RAIL_MIN_NORMAL_IMPACT_SPEED = 0.045;
   const MAX_STEPS_PER_FRAME = 8;
   const MIN_PULL = 14;
   const MAX_PULL = 300;
   const MIN_SHOT_SPEED = 8.1;
   const MAX_SHOT_SPEED = 30.9;
-  const STOP_SPEED = 0.045;
+  const STOP_SPEED = Physics.CONFIG.stopSpeed;
   const NATURAL_STOP_SPEED = 0.14;
   const POCKET_MIN_DURATION = 280;
   const POCKET_MAX_DURATION = 450;
   const MAX_RENDER_WIDTH = 1440;
   const MAX_RENDER_HEIGHT = 2880;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
+  const MAX_BALL_RENDER_SCALE = 2;
   const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
   const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
@@ -185,6 +180,9 @@
     if (typeof window.Image !== "function") return null;
     const image = new window.Image();
     image.decoding = "async";
+    image.addEventListener("load", () => {
+      tableCacheDirty = true;
+    }, { once: true });
     image.src = source;
     return image;
   }
@@ -289,6 +287,16 @@
     resizeCanvas();
   }
 
+  const RECORDED_AUDIO_ASSETS = Object.freeze({
+    strike: "assets/audio/billiards/cue-strike.ogg",
+    contactSoft: "assets/audio/billiards/ball-contact-soft.ogg",
+    contactHard: "assets/audio/billiards/ball-contact-hard.ogg",
+    rail: "assets/audio/billiards/rail-contact.ogg",
+    pocket: "assets/audio/billiards/pocket-drop.ogg",
+    event: "assets/audio/billiards/event-soft.ogg",
+    stage: "assets/audio/billiards/stage-rise.ogg"
+  });
+
   class HeartbeatPoolAudio {
     constructor() {
       const settings = readStorage(SETTINGS_KEY, {});
@@ -296,13 +304,26 @@
       this.volume = Number.isFinite(settings.volume) ? clamp(settings.volume, 0.08, 0.8) : 0.54;
       this.context = null;
       this.master = null;
-      this.baseGain = null;
-      this.warmGain = null;
-      this.futureGain = null;
-      this.nodes = [];
+      this.sampleBytes = new Map();
+      this.sampleBuffers = new Map();
+      this.decodePromises = new Map();
+      this.pendingStarts = new Set();
       this.lastCollisionAt = 0;
       this.lastRailAt = 0;
-      this.noiseBuffer = null;
+      this.prepareSamples();
+    }
+
+    prepareSamples() {
+      if (typeof window.fetch !== "function") return;
+      Object.entries(RECORDED_AUDIO_ASSETS).forEach(([name, url]) => {
+        const request = window.fetch(url, { cache: "force-cache" })
+          .then((response) => {
+            if (!response.ok) throw new Error(`音频加载失败：${url}`);
+            return response.arrayBuffer();
+          })
+          .catch(() => null);
+        this.sampleBytes.set(name, request);
+      });
     }
 
     unlock() {
@@ -317,146 +338,102 @@
       this.master = this.context.createGain();
       this.master.gain.value = this.volume;
       this.master.connect(this.context.destination);
-      this.baseGain = this.context.createGain();
-      this.warmGain = this.context.createGain();
-      this.futureGain = this.context.createGain();
-      this.baseGain.gain.value = 0.04;
-      this.warmGain.gain.value = 0;
-      this.futureGain.gain.value = 0;
-      this.baseGain.connect(this.master);
-      this.warmGain.connect(this.master);
-      this.futureGain.connect(this.master);
-      this.addPad([110, 164.81, 220], this.baseGain, "sine", 0.22);
-      this.addPad([146.83, 220, 293.66], this.warmGain, "triangle", 0.16);
-      this.addPad([196, 293.66, 392], this.futureGain, "sine", 0.11);
+      this.decodeAllSamples();
     }
 
-    addPad(frequencies, destination, type, detune) {
-      frequencies.forEach((frequency, index) => {
-        const oscillator = this.context.createOscillator();
-        const gain = this.context.createGain();
-        oscillator.type = type;
-        oscillator.frequency.value = frequency;
-        oscillator.detune.value = (index - 1) * detune * 10;
-        gain.gain.value = 0.085 / frequencies.length;
-        oscillator.connect(gain).connect(destination);
-        oscillator.start();
-        this.nodes.push(oscillator, gain);
+    decodeAllSamples() {
+      if (!this.context || typeof this.context.decodeAudioData !== "function") return;
+      this.sampleBytes.forEach((request, name) => {
+        if (this.sampleBuffers.has(name) || this.decodePromises.has(name)) return;
+        const decoding = request
+          .then((bytes) => bytes ? this.context.decodeAudioData(bytes.slice(0)) : null)
+          .then((buffer) => {
+            if (buffer) this.sampleBuffers.set(name, buffer);
+            return buffer;
+          })
+          .catch(() => null);
+        this.decodePromises.set(name, decoding);
       });
     }
 
-    setStage(stageNumber) {
-      if (!this.context) return;
-      const now = this.context.currentTime;
-      const warm = stageNumber >= 5 ? 0.05 : stageNumber >= 3 ? 0.025 : 0;
-      const future = stageNumber >= 7 ? 0.038 : stageNumber >= 6 ? 0.014 : 0;
-      this.warmGain.gain.cancelScheduledValues(now);
-      this.futureGain.gain.cancelScheduledValues(now);
-      this.warmGain.gain.linearRampToValueAtTime(warm, now + 0.8);
-      this.futureGain.gain.linearRampToValueAtTime(future, now + 0.8);
-    }
-
-    tone(frequency, duration, gainValue, type = "sine", delay = 0) {
-      if (!this.enabled) return;
-      this.unlock();
-      if (!this.context) return;
-      const now = this.context.currentTime + delay;
-      const oscillator = this.context.createOscillator();
-      const gain = this.context.createGain();
-      oscillator.type = type;
-      oscillator.frequency.setValueAtTime(frequency, now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(gainValue, now + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-      oscillator.connect(gain).connect(this.master);
-      oscillator.start(now);
-      oscillator.stop(now + duration + 0.03);
-    }
-
-    noise(duration, gainValue, frequency, filterType = "bandpass", delay = 0) {
-      if (!this.enabled) return;
-      this.unlock();
-      if (!this.context
-          || typeof this.context.createBuffer !== "function"
-          || typeof this.context.createBufferSource !== "function"
-          || typeof this.context.createBiquadFilter !== "function") return;
-      const sampleRate = this.context.sampleRate || 44100;
-      if (!this.noiseBuffer) {
-        this.noiseBuffer = this.context.createBuffer(1, Math.ceil(sampleRate * 0.55), sampleRate);
-        const data = this.noiseBuffer.getChannelData(0);
-        let state = 0x51f15e;
-        for (let index = 0; index < data.length; index += 1) {
-          state = Math.imul(state ^ (state >>> 13), 1597334677) >>> 0;
-          data[index] = (state / 0xffffffff) * 2 - 1;
-        }
-      }
-      const now = this.context.currentTime + delay;
+    startBuffer(buffer, gainValue, playbackRate) {
+      if (!buffer || !this.enabled || !this.context || !this.master) return false;
       const source = this.context.createBufferSource();
-      const filter = this.context.createBiquadFilter();
       const gain = this.context.createGain();
-      source.buffer = this.noiseBuffer;
-      filter.type = filterType;
-      filter.frequency.setValueAtTime(frequency, now);
-      filter.Q?.setValueAtTime?.(filterType === "bandpass" ? 1.8 : 0.7, now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(gainValue, now + 0.004);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-      source.connect(filter).connect(gain).connect(this.master);
-      source.start(now);
-      source.stop(now + Math.min(duration + 0.02, 0.54));
+      source.buffer = buffer;
+      source.playbackRate.value = playbackRate;
+      gain.gain.value = clamp(gainValue, 0.02, 1.25);
+      source.connect(gain).connect(this.master);
+      source.start();
+      return true;
     }
+
+    playSample(name, gainValue = 1, playbackRate = 1) {
+      if (!this.enabled) return false;
+      this.unlock();
+      const buffer = this.sampleBuffers.get(name);
+      if (buffer) return this.startBuffer(buffer, gainValue, playbackRate);
+      const decoding = this.decodePromises.get(name);
+      if (!decoding || this.pendingStarts.has(name)) return false;
+      const requestedAt = performance.now();
+      const maximumDelay = ["event", "stage"].includes(name) ? 900 : 240;
+      this.pendingStarts.add(name);
+      decoding.then((decoded) => {
+        this.pendingStarts.delete(name);
+        if (decoded && performance.now() - requestedAt <= maximumDelay) {
+          this.startBuffer(decoded, gainValue, playbackRate);
+        }
+      });
+      return false;
+    }
+
+    setStage() {}
 
     cue(name, intensity = 1) {
-      if (!this.enabled) return;
       if (name === "strike") {
-        this.noise(0.045, 0.095 * intensity, 1450, "bandpass");
-        this.tone(104, 0.1, 0.075 * intensity, "triangle");
-        this.tone(410, 0.045, 0.028 * intensity, "sine", 0.008);
+        this.playSample("strike", 0.82 * intensity, 0.98 + intensity * 0.025);
       } else if (name === "pocket") {
-        this.noise(0.18, 0.09 * intensity, 620, "lowpass");
-        this.tone(92, 0.26, 0.085 * intensity, "sine");
-        this.tone(184, 0.16, 0.036 * intensity, "triangle", 0.018);
-      } else if (name === "scratch" || name === "warning") {
-        this.noise(0.22, 0.055, 480, "lowpass");
-        this.tone(138, 0.34, 0.055, "sawtooth");
-        this.tone(94, 0.42, 0.04, "triangle", 0.09);
+        this.playSample("pocket", 0.74 * intensity, 0.98);
+      } else if (name === "scratch") {
+        this.playSample("pocket", 0.58, 0.9);
+      } else if (name === "warning" || name === "miss") {
+        this.playSample("event", 0.36 * intensity, name === "warning" ? 0.86 : 0.92);
       } else if (name === "event") {
-        [392, 493.88, 587.33].forEach((frequency, index) => this.tone(frequency, 0.38, 0.024 * intensity, "sine", index * 0.055));
-        this.noise(0.2, 0.018 * intensity, 2800, "highpass", 0.04);
+        this.playSample("event", 0.48 * intensity, 1);
       } else if (name === "streak") {
-        [392, 493.88, 587.33, 783.99].forEach((frequency, index) => this.tone(frequency, 0.48, 0.03 * intensity, "triangle", index * 0.065));
-        this.noise(0.28, 0.026 * intensity, 3400, "highpass", 0.05);
-      } else if (name === "miss") {
-        this.tone(196, 0.24, 0.026, "sine");
-        this.tone(146.83, 0.34, 0.024, "triangle", 0.08);
-      } else if (name === "stage") {
-        [220, 277.18, 329.63, 440, 554.37].forEach((frequency, index) => this.tone(frequency, 0.72, 0.032, "sine", index * 0.085));
-        this.noise(0.42, 0.028, 3000, "highpass", 0.12);
-      } else if (name === "confession") {
-        [196, 246.94, 293.66, 392, 493.88].forEach((frequency, index) => this.tone(frequency, 0.9, 0.038, "triangle", index * 0.12));
-        this.noise(0.45, 0.025, 2500, "highpass", 0.16);
-      } else if (name === "proposal") {
-        [196, 246.94, 293.66, 392, 493.88, 587.33, 783.99].forEach((frequency, index) => this.tone(frequency, 1.08, 0.036, "sine", index * 0.11));
-        this.noise(0.5, 0.032, 3600, "highpass", 0.18);
+        this.playSample("event", 0.58 * intensity, 1.06);
+      } else if (["stage", "confession", "proposal"].includes(name)) {
+        const rate = name === "confession" ? 0.98 : name === "proposal" ? 1.04 : 1;
+        this.playSample("stage", name === "proposal" ? 0.78 : 0.68, rate);
       }
     }
 
     collision(speed) {
       const now = performance.now();
-      if (now - this.lastCollisionAt < 24 || speed < 0.45) return;
+      if (now - this.lastCollisionAt < 18 || speed < 0.32) return;
       this.lastCollisionAt = now;
-      const intensity = clamp(speed / 16, 0.16, 1);
-      this.noise(0.028, 0.04 + intensity * 0.055, 1800 + speed * 55, "bandpass");
-      this.tone(420 + Math.min(360, speed * 18), 0.055, 0.025 + intensity * 0.045, "triangle");
+      const hard = speed >= 6.4;
+      this.playSample(hard ? "contactHard" : "contactSoft",
+        clamp(0.22 + speed / 17, 0.24, 0.96),
+        clamp(0.94 + speed * 0.008, 0.95, 1.07));
     }
 
     rail(speed) {
       const now = performance.now();
-      if (now - this.lastRailAt < 34 || speed < 0.5) return;
+      if (now - this.lastRailAt < 28 || speed < 0.42) return;
       this.lastRailAt = now;
-      const intensity = clamp(speed / 18, 0.14, 1);
-      this.noise(0.065, 0.035 + intensity * 0.05, 760, "bandpass");
-      this.tone(156 + Math.min(110, speed * 5), 0.095, 0.026 + intensity * 0.038, "triangle");
+      this.playSample("rail", clamp(0.2 + speed / 20, 0.22, 0.82),
+        clamp(0.94 + speed * 0.006, 0.95, 1.05));
+    }
+
+    snapshot() {
+      return Object.freeze({
+        mode: "recorded-samples",
+        enabled: this.enabled,
+        contextState: this.context?.state || "uninitialized",
+        loadedSamples: Object.freeze([...this.sampleBuffers.keys()].sort()),
+        expectedSamples: Object.keys(RECORDED_AUDIO_ASSETS).length
+      });
     }
 
     toggle() {
@@ -476,9 +453,6 @@
   engine.gravity.x = 0;
   engine.gravity.y = 0;
   engine.gravity.scale = 0;
-  engine.positionIterations = 12;
-  engine.velocityIterations = 10;
-  engine.constraintIterations = 4;
 
   let rails = [];
   let balls = [];
@@ -502,7 +476,6 @@
   let pocketBursts = [];
   let collisionFeedbacks = [];
   let collisionCount = 0;
-  const pendingRailImpacts = new Map();
   let microQueue = [];
   let microTimer = 0;
   let judgementTimer = 0;
@@ -532,74 +505,35 @@
     return Boolean(body?.plugin?.heartbeatRail);
   }
 
-  function railRestitution(normalSpeed, kind) {
-    const speedMix = clamp(normalSpeed / CUSHION_RESTITUTION_REFERENCE_SPEED, 0, 1);
-    const cushionValue = CUSHION_RESTITUTION_MAX
-      - (CUSHION_RESTITUTION_MAX - CUSHION_RESTITUTION_MIN) * speedMix;
-    return clamp(cushionValue - (kind === "jaw" ? JAW_RESTITUTION_PENALTY : 0), 0, 1);
-  }
-
-  function railTangentialRetention(kind) {
-    return kind === "jaw" ? JAW_TANGENTIAL_RETENTION : CUSHION_TANGENTIAL_RETENTION;
-  }
-
-  function queueRailImpact(ball, rail, collision) {
+  function recordRailImpact(ball, rail, collision) {
     const data = bodyData(ball);
     if (!data || data.potted || data.pocketing) return;
-    const incoming = data.preStepVelocity || ball.velocity;
-    let normal = normalize(collision?.normal || {
+    const details = collision?.details || {};
+    const incoming = details.incoming || data.preStepVelocity || ball.velocity;
+    const outgoing = details.outgoing || ball.velocity;
+    const normal = normalize(collision?.normal || {
       x: ball.position.x - rail.position.x,
       y: ball.position.y - rail.position.y
     });
-    if (incoming.x * normal.x + incoming.y * normal.y > 0) {
-      normal = { x: -normal.x, y: -normal.y };
-    }
-    const normalSpeed = -(incoming.x * normal.x + incoming.y * normal.y);
-    if (normalSpeed < RAIL_MIN_NORMAL_IMPACT_SPEED) return;
-    const previous = pendingRailImpacts.get(ball.id);
-    if (previous && previous.normalSpeed >= normalSpeed) return;
-    pendingRailImpacts.set(ball.id, {
-      ball,
-      rail,
-      normal,
-      normalSpeed,
-      incoming: { x: incoming.x, y: incoming.y }
-    });
-  }
-
-  function applyPendingRailImpacts() {
-    pendingRailImpacts.forEach((impact) => {
-      const { ball, rail, normal, normalSpeed, incoming } = impact;
-      const data = bodyData(ball);
-      if (!data || data.potted || data.pocketing) return;
-      const material = rail.plugin.heartbeatRail;
-      const restitution = railRestitution(normalSpeed, material.kind);
-      const tangentRetention = railTangentialRetention(material.kind);
-      const incomingNormal = incoming.x * normal.x + incoming.y * normal.y;
-      const tangentX = incoming.x - normal.x * incomingNormal;
-      const tangentY = incoming.y - normal.y * incomingNormal;
-      const outgoing = {
-        x: tangentX * tangentRetention + normal.x * normalSpeed * restitution,
-        y: tangentY * tangentRetention + normal.y * normalSpeed * restitution
-      };
-      Body.setVelocity(ball, outgoing);
-      data.lastRailImpact = {
-        railId: material.id,
-        kind: material.kind,
-        at: simulationTime + FIXED_STEP,
-        normalX: normal.x,
-        normalY: normal.y,
-        incomingX: incoming.x,
-        incomingY: incoming.y,
-        outgoingX: outgoing.x,
-        outgoingY: outgoing.y,
-        incomingNormalSpeed: normalSpeed,
-        outgoingNormalSpeed: normalSpeed * restitution,
-        restitution,
-        tangentialRetention: tangentRetention
-      };
-    });
-    pendingRailImpacts.clear();
+    const material = rail.plugin.heartbeatRail;
+    data.lastRailImpact = {
+      railId: material.id,
+      kind: material.kind,
+      model: details.model || "spin-cushion",
+      at: simulationTime + FIXED_STEP,
+      normalX: normal.x,
+      normalY: normal.y,
+      incomingX: incoming.x,
+      incomingY: incoming.y,
+      outgoingX: outgoing.x,
+      outgoingY: outgoing.y,
+      incomingNormalSpeed: details.incidentSpeed
+        ?? Math.abs(incoming.x * normal.x + incoming.y * normal.y),
+      outgoingNormalSpeed: details.outgoingNormalSpeed
+        ?? Math.abs(outgoing.x * normal.x + outgoing.y * normal.y),
+      restitution: details.restitution ?? Physics.CONFIG.cushionRestitutionMin,
+      tangentialRetention: details.tangentialRetention ?? 1
+    };
   }
 
   function createRail(x, y, width, height, id, angle = 0, kind = "cushion") {
@@ -710,7 +644,7 @@
   function createBall(number, x, y) {
     const body = Bodies.circle(x, y, BALL_RADIUS, {
       label: number === 0 ? "hb-cue-ball" : `hb-object-ball-${number}`,
-      restitution: 0.965,
+      restitution: Physics.CONFIG.ballRestitution,
       friction: 0,
       frictionStatic: 0,
       frictionAir: 0,
@@ -979,7 +913,8 @@
 
   function canInteract() {
     return !shotState && !pointerAim && !resolvingShot
-      && !cinematicActive && !resultVisible && !runState.endState.ended && cueBall;
+      && !cinematicActive && !cinematicQueue.length
+      && !resultVisible && !runState.endState.ended && cueBall;
   }
 
   function selectTarget(number) {
@@ -999,7 +934,7 @@
   function beginAim(event, point) {
     if (!cueBall) return;
     if (distance(point, cueBall.position) > 54) {
-      showJudgement("从白球向后拉动球杆");
+      if (coachSeen) showJudgement("从白球向后拉动球杆");
       return;
     }
     pointerAim = {
@@ -1058,7 +993,7 @@
       bankedNumbers: [],
       startedAt: simulationTime
     };
-    Body.setVelocity(cueBall, { x: direction.x * speed, y: direction.y * speed });
+    Body.strike(cueBall, { x: direction.x * speed, y: direction.y * speed });
     stableSteps = 0;
     root.dataset.state = "rolling";
     elements.call.classList.add("is-quiet");
@@ -1157,10 +1092,22 @@
         approach.captureCrossX = captureCrossing.x;
         approach.captureCrossY = captureCrossing.y;
       }
+      const settledOverLip = body.speed <= NATURAL_STOP_SPEED
+        && approach.maximumDepth >= pocket.shelf * POCKET_LIP_SETTLE_RATIO
+        && currentLateral <= pocket.captureHalfWidth + POCKET_SHELF_LATERAL_TOLERANCE;
+      if (settledOverLip) {
+        approach.captureCrossed = true;
+        approach.settledOverLip = true;
+        approach.captureCrossX = body.position.x;
+        approach.captureCrossY = body.position.y;
+      }
     }
+    const requiredDepth = approach.settledOverLip
+      ? pocket.shelf * POCKET_LIP_SETTLE_RATIO
+      : pocket.shelf - POCKET_SHELF_DEPTH_TOLERANCE;
     return approach.captureCrossed
       && approach.enteredAt < simulationTime
-      && approach.maximumDepth >= pocket.shelf - POCKET_SHELF_DEPTH_TOLERANCE;
+      && approach.maximumDepth >= requiredDepth;
   }
 
   function pocketBall(body, pocket) {
@@ -1247,6 +1194,12 @@
       const dy = ball.position.y - data.lastPosition.y;
       const travel = Math.hypot(dx, dy);
       data.lastPosition = { x: ball.position.x, y: ball.position.y };
+      if (ball.physics) {
+        data.rollAngle = ball.physics.rollAngle;
+        data.rollVelocity = ball.physics.rollSpeed;
+        data.rollHeading = ball.physics.rollHeading;
+        return;
+      }
       if (travel > 0.0001) {
         const sign = Math.abs(dx) > Math.abs(dy) ? Math.sign(dx) : Math.sign(dy);
         const angleDelta = travel / BALL_RADIUS * (sign || 1);
@@ -1257,24 +1210,6 @@
         data.rollVelocity *= 0.78;
         if (Math.abs(data.rollVelocity) < 0.002) data.rollVelocity = 0;
       }
-    });
-  }
-
-  function applyClothDamping() {
-    balls.forEach((ball) => {
-      const data = bodyData(ball);
-      if (!data || data.potted || data.pocketing || ball.speed <= 0) return;
-      const speedLoss = CLOTH_LINEAR_SPEED_LOSS + ball.speed * CLOTH_SPEED_DRAG;
-      const nextSpeed = Math.max(0, ball.speed - speedLoss);
-      if (nextSpeed <= STOP_SPEED) {
-        Body.setVelocity(ball, { x: 0, y: 0 });
-        return;
-      }
-      const scale = nextSpeed / ball.speed;
-      Body.setVelocity(ball, {
-        x: ball.velocity.x * scale,
-        y: ball.velocity.y * scale
-      });
     });
   }
 
@@ -1411,7 +1346,8 @@
   function showNextMicro() {
     if (!microQueue.length) {
       elements.micro.hidden = true;
-      if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
+      if (cinematicQueue.length && !cinematicActive) showNextCinematic();
+      else if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
       return;
     }
     const item = microQueue.shift();
@@ -1465,10 +1401,11 @@
 
   function queueCinematic(item) {
     cinematicQueue.push(item);
-    if (!cinematicActive) showNextCinematic();
+    if (!cinematicActive && elements.micro.hidden && !microQueue.length) showNextCinematic();
   }
 
   function showNextCinematic() {
+    if (!elements.micro.hidden || microQueue.length) return;
     if (!cinematicQueue.length) {
       cinematicActive = false;
       cinematicCurrent = null;
@@ -1547,14 +1484,6 @@
 
   function processOutcomePerformances(outcome) {
     const stageTransitions = outcome.newlyCompletedStageIds || outcome.completedStageIds || [];
-    if (outcome.earlyEight) {
-      clearTimeout(microTimer);
-      microQueue = [];
-      elements.micro.hidden = true;
-      queueCinematic(earlyEightCopy(outcome));
-      return;
-    }
-
     const queuePocketPerformances = () => {
       outcome.pocketEvents?.forEach((event, index) => {
         const performance = content.selectPerformance({
@@ -1578,9 +1507,9 @@
           outcome.interestTrend
         );
       } else if (outcome.miss && !outcome.shot.breakShot) {
-      const eventType = outcome.state.consecutiveMisses <= 1
-        ? content.STAGE_EVENT_TYPES.SETUP
-        : content.STAGE_EVENT_TYPES.MISS;
+        const eventType = outcome.state.consecutiveMisses <= 1
+          ? content.STAGE_EVENT_TYPES.SETUP
+          : content.STAGE_EVENT_TYPES.MISS;
         queueStageMicro(
           outcome.stageBefore?.number || currentStageNumber(),
           eventType,
@@ -1590,25 +1519,25 @@
       }
     };
 
+    if (outcome.earlyEight) {
+      queuePocketPerformances();
+      queueTechnicalPerformance();
+      queueCinematic(earlyEightCopy(outcome));
+      return;
+    }
+
     if (!stageTransitions.length) {
       queuePocketPerformances();
       queueTechnicalPerformance();
       return;
     }
 
-    clearTimeout(microTimer);
-    microQueue = [];
-    elements.micro.hidden = true;
+    queuePocketPerformances();
+    queueTechnicalPerformance();
     const copies = stageTransitions.map((stageId, index) => {
       const copy = stageCopy(stageId, outcome.state.shots * 47 + index);
       return copy;
     }).filter(Boolean);
-    if (copies.length) {
-      copies[copies.length - 1].onClose = () => {
-        queuePocketPerformances();
-        queueTechnicalPerformance();
-      };
-    }
     copies.forEach((copy) => {
       screenFlash = Math.max(screenFlash, 0.34);
       queueCinematic(copy);
@@ -2030,6 +1959,35 @@
     POCKETS.forEach(drawLeatherPocket);
   }
 
+  function rebuildTableCache() {
+    const cache = document.createElement("canvas");
+    if (typeof cache.getContext !== "function") return false;
+    cache.width = WORLD.width * 2;
+    cache.height = WORLD.height * 2;
+    const cacheContext = cache.getContext("2d", { alpha: true });
+    if (!cacheContext) return false;
+    const liveContext = context;
+    try {
+      context = cacheContext;
+      context.setTransform(cache.width / WORLD.width, 0, 0, cache.height / WORLD.height, 0, 0);
+      context.clearRect(0, 0, WORLD.width, WORLD.height);
+      drawTable();
+    } finally {
+      context = liveContext;
+    }
+    tableCacheCanvas = cache;
+    tableCacheDirty = false;
+    return true;
+  }
+
+  function drawTableLayer() {
+    if ((tableCacheDirty || !tableCacheCanvas) && !rebuildTableCache()) {
+      drawTable();
+      return;
+    }
+    context.drawImage(tableCacheCanvas, 0, 0, WORLD.width, WORLD.height);
+  }
+
   function drawBall(ball, timestamp) {
     const data = bodyData(ball);
     if (!data || data.potted) return;
@@ -2143,7 +2101,7 @@
     if (!ballRenderer || !ballRendererCanvas) return false;
     try {
       const rect = ballRendererCanvas.getBoundingClientRect();
-      const pixelRatio = Math.max(1, renderScale);
+      const pixelRatio = Math.max(1, Math.min(renderScale, MAX_BALL_RENDER_SCALE));
       ballRenderer.resize(Math.max(1, rect.width), Math.max(1, rect.height), pixelRatio);
       if (ballRenderer.supported === false) throw new Error("BilliardsBallRenderer resize failed");
       return true;
@@ -2169,7 +2127,7 @@
         table: { ...TABLE },
         ballRadius: BALL_RADIUS,
         colors: BALL_COLORS,
-        pixelRatio: Math.max(1, renderScale)
+        pixelRatio: Math.max(1, Math.min(renderScale, MAX_BALL_RENDER_SCALE))
       };
       ballRenderer = factory ? factory(options) : new Renderer(options);
       if (typeof ballRenderer?.resize !== "function"
@@ -2318,7 +2276,7 @@
     context.clearRect(0, 0, WORLD.width, WORLD.height);
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
-    drawTable();
+    drawTableLayer();
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
@@ -2337,12 +2295,9 @@
 
   function physicsStep() {
     captureBallPositions();
-    pendingRailImpacts.clear();
     Engine.update(engine, FIXED_STEP);
-    applyPendingRailImpacts();
     simulationTime += FIXED_STEP;
     updatePockets();
-    applyClothDamping();
     updateRollingState();
     updatePocketing();
     containLooseBalls();
@@ -2366,7 +2321,9 @@
       accumulator = 0;
       updateEffects();
     }
-    draw(timestamp);
+    // The full-screen scene completely covers both table canvases. Keeping the
+    // high-DPR table frozen here leaves the compositor free for the scene.
+    if (!cinematicActive && !resultVisible) draw(timestamp);
     frameHandle = requestAnimationFrame(frame);
   }
 
@@ -2379,16 +2336,13 @@
   }
 
   Events.on(engine, "collisionStart", (event) => {
-    event.pairs.forEach(({ bodyA, bodyB, collision }) => {
-      if (bodyData(bodyA) && isRail(bodyB)) queueRailImpact(bodyA, bodyB, collision);
-      if (bodyData(bodyB) && isRail(bodyA)) queueRailImpact(bodyB, bodyA, collision);
-    });
     if (!shotState) return;
     event.pairs.forEach(({ bodyA, bodyB, collision }) => {
       const dataA = bodyData(bodyA);
       const dataB = bodyData(bodyB);
       if (dataA && dataB) {
-        const relative = Math.hypot(bodyA.velocity.x - bodyB.velocity.x, bodyA.velocity.y - bodyB.velocity.y);
+        const relative = collision?.details?.incidentSpeed
+          ?? Math.hypot(bodyA.velocity.x - bodyB.velocity.x, bodyA.velocity.y - bodyB.velocity.y);
         const normal = collision?.normal || normalize({ x: bodyB.position.x - bodyA.position.x, y: bodyB.position.y - bodyA.position.y });
         impactBall(bodyA, Math.atan2(normal.y, normal.x), relative);
         impactBall(bodyB, Math.atan2(normal.y, normal.x) + Math.PI, relative);
@@ -2417,13 +2371,17 @@
       }
       if (dataA && isRail(bodyB)) {
         dataA.shotRailHits += 1;
-        impactBall(bodyA, Math.atan2(-bodyA.velocity.y, -bodyA.velocity.x), bodyA.speed);
-        audio.rail(bodyA.speed);
+        recordRailImpact(bodyA, bodyB, collision);
+        const impactSpeed = collision?.details?.incidentSpeed ?? bodyA.speed;
+        impactBall(bodyA, Math.atan2(-bodyA.velocity.y, -bodyA.velocity.x), impactSpeed);
+        audio.rail(impactSpeed);
       }
       if (dataB && isRail(bodyA)) {
         dataB.shotRailHits += 1;
-        impactBall(bodyB, Math.atan2(-bodyB.velocity.y, -bodyB.velocity.x), bodyB.speed);
-        audio.rail(bodyB.speed);
+        recordRailImpact(bodyB, bodyA, collision);
+        const impactSpeed = collision?.details?.incidentSpeed ?? bodyB.speed;
+        impactBall(bodyB, Math.atan2(-bodyB.velocity.y, -bodyB.velocity.x), impactSpeed);
+        audio.rail(impactSpeed);
       }
     });
   });
@@ -2542,9 +2500,12 @@
         shotPottedNumbers: Object.freeze([...(shotState?.pottedNumbers || [])]),
         presentation: Object.freeze({
           microVisible: !elements.micro.hidden,
+          microQueued: microQueue.length,
           microType: elements.micro.dataset.type || null,
           microTitle: elements.microTitle.textContent || null,
           cinematicActive,
+          cinematicQueued: cinematicQueue.length,
+          nextCinematicStageId: cinematicQueue[0]?.stageId || null,
           cinematicStageId: cinematicCurrent?.stageId || null,
           cinematicTitle: cinematicCurrent?.title || null,
           cinematicImage: elements.cinematicImage.style.backgroundImage || null
@@ -2552,19 +2513,25 @@
         world: Object.freeze({ ...WORLD }),
         table: Object.freeze({ ...TABLE }),
         physics: Object.freeze({
+          model: Physics.CONFIG.model,
+          reference: Physics.CONFIG.reference,
           fixedStepMs: FIXED_STEP,
           fixedHz: FIXED_HZ,
-          clothLinearSpeedLoss: CLOTH_LINEAR_SPEED_LOSS,
-          clothSpeedDrag: CLOTH_SPEED_DRAG,
-          cushionRestitutionMin: CUSHION_RESTITUTION_MIN,
-          cushionRestitutionMax: CUSHION_RESTITUTION_MAX,
-          cushionRestitutionReferenceSpeed: CUSHION_RESTITUTION_REFERENCE_SPEED,
-          cushionTangentialRetention: CUSHION_TANGENTIAL_RETENTION,
-          jawTangentialRetention: JAW_TANGENTIAL_RETENTION,
+          slidingFriction: Physics.CONFIG.slidingFriction,
+          rollingFriction: Physics.CONFIG.rollingFriction,
+          rollingSpeedDrag: Physics.CONFIG.rollingSpeedDrag,
+          ballRestitution: Physics.CONFIG.ballRestitution,
+          cushionRestitutionMin: Physics.CONFIG.cushionRestitutionMin,
+          cushionRestitutionMax: Physics.CONFIG.cushionRestitutionMax,
+          cushionFriction: Physics.CONFIG.cushionFriction,
+          jawRestitution: Physics.CONFIG.jawRestitution,
+          solverSubsteps: engine.metrics.substeps,
           pocketMouthDepthTolerance: POCKET_MOUTH_DEPTH_TOLERANCE,
           pocketShelfDepthTolerance: POCKET_SHELF_DEPTH_TOLERANCE,
+          pocketLipSettleRatio: POCKET_LIP_SETTLE_RATIO,
           pocketMagnetism: false
         }),
+        audio: audio.snapshot(),
         wpaPocketSpec: Object.freeze({
           ballDiameter: BALL_DIAMETER,
           cornerMouth: CORNER_POCKET_MOUTH,
@@ -2606,6 +2573,10 @@
           y: ball.position.y,
           vx: ball.velocity.x,
           vy: ball.velocity.y,
+          motionState: ball.physics?.state || null,
+          spinX: ball.physics?.spinX || 0,
+          spinY: ball.physics?.spinY || 0,
+          spinZ: ball.physics?.spinZ || 0,
           rollAngle: bodyData(ball).rollAngle,
           rollVelocity: bodyData(ball).rollVelocity,
           shotRailHits: bodyData(ball).shotRailHits,
@@ -2678,7 +2649,6 @@
       });
       balls = [ball];
       cueBall = number === 0 ? ball : null;
-      pendingRailImpacts.clear();
       return true;
     },
     presentShot(shot) {
@@ -2692,6 +2662,20 @@
       runState = outcome.state;
       syncUI();
       processOutcomePerformances(outcome);
+      return this.snapshot();
+    },
+    advancePresentation() {
+      if (!elements.micro.hidden) {
+        clearTimeout(microTimer);
+        elements.micro.hidden = true;
+        showNextMicro();
+      } else if (cinematicActive) {
+        closeCinematic();
+      } else if (microQueue.length) {
+        showNextMicro();
+      } else if (cinematicQueue.length) {
+        showNextCinematic();
+      }
       return this.snapshot();
     },
     reset() {

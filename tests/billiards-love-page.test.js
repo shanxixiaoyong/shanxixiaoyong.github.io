@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-physics-theatre-20260711f";
-const styleCacheVersion = "billiards-love-physics-theatre-20260711f";
+const runtimeCacheVersion = "billiards-love-spin-theatre-20260711g";
+const styleCacheVersion = "billiards-love-spin-theatre-20260711g";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -75,12 +75,12 @@ test("opens directly into play without visible opening or pause UI", () => {
   assert.match(game, /root\.dataset\.state = "break";/);
 });
 
-test("loads only the local billiards runtime dependencies in exact order", () => {
+test("loads the custom physics and local billiards runtime in exact order", () => {
   assert.deepEqual(linked(html, "link", "href").filter((file) => file.endsWith(".css")), [
     "assets/billiards-love.css"
   ]);
   assert.deepEqual(linked(html, "script", "src"), [
-    "assets/vendor/matter-0.20.0.min.js",
+    "assets/billiards-physics.js",
     "assets/billiards-love-rules.js",
     "assets/billiards-love-content.js",
     "assets/billiards-ball-renderer.js",
@@ -91,7 +91,7 @@ test("loads only the local billiards runtime dependencies in exact order", () =>
     `assets/billiards-love.css?v=${styleCacheVersion}`
   ]);
   assert.deepEqual(references(html, "script", "src"), [
-    "assets/vendor/matter-0.20.0.min.js?v=0.20.0",
+    `assets/billiards-physics.js?v=${runtimeCacheVersion}`,
     `assets/billiards-love-rules.js?v=${runtimeCacheVersion}`,
     `assets/billiards-love-content.js?v=${runtimeCacheVersion}`,
     `assets/billiards-ball-renderer.js?v=${runtimeCacheVersion}`,
@@ -154,7 +154,23 @@ test("uses local premium cloth and walnut material textures", () => {
   }
 });
 
-test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture", () => {
+test("uses project-local recorded billiards and event audio", () => {
+  for (const asset of [
+    "assets/audio/billiards/cue-strike.ogg",
+    "assets/audio/billiards/ball-contact-soft.ogg",
+    "assets/audio/billiards/ball-contact-hard.ogg",
+    "assets/audio/billiards/rail-contact.ogg",
+    "assets/audio/billiards/pocket-drop.ogg",
+    "assets/audio/billiards/event-soft.ogg",
+    "assets/audio/billiards/stage-rise.ogg"
+  ]) {
+    assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
+    assert.match(game, new RegExp(escapeRegExp(asset)));
+  }
+  assert.doesNotMatch(game, /createOscillator|createPeriodicWave|ScriptProcessorNode/);
+});
+
+test("fits the complete table in both 432 by 960 and short 432 by 820 portrait viewports", () => {
   const app = rule(".hb-app");
   const playfield = rule(".hb-playfield");
   const table = rule(".hb-table-wrap");
@@ -166,60 +182,64 @@ test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture
   assert.match(app, /max-height:\s*3200px;/);
   assert.match(app, /--hb-header-space:\s*calc\(max\(6px, var\(--safe-top\)\) \+ 44px\);/);
   assert.match(app, /--hb-footer-space:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 38px\);/);
-  assert.match(app, /--hb-table-width:\s*105%;/);
+  assert.match(app, /--hb-table-width:\s*min\(\s*96%,\s*calc\(\(100dvh - var\(--hb-header-space\) - var\(--hb-footer-space\) - 16px\) \/ 2\)\s*\);/s);
   assert.match(playfield, /top:\s*var\(--hb-header-space\);/);
   assert.match(playfield, /right:\s*0;/);
   assert.match(playfield, /bottom:\s*var\(--hb-footer-space\);/);
   assert.match(playfield, /left:\s*0;/);
-  assert.match(playfield, /min-height:\s*72%;/);
+  assert.match(playfield, /min-height:\s*0;/);
   assert.match(playfield, /padding:\s*0 12px;/);
-  assert.match(table, /height:\s*auto;/);
+  assert.match(table, /height:\s*auto !important;/);
   assert.match(table, /width:\s*var\(--hb-table-width\) !important;/);
   assert.match(table, /max-width:\s*var\(--hb-table-width\) !important;/);
-  assert.match(table, /max-height:\s*none;/);
+  assert.match(table, /max-height:\s*calc\(100% - 16px\) !important;/);
   assert.match(table, /aspect-ratio:\s*1 \/ 2 !important;/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(css, /env\(safe-area-inset-/);
 
   const targetWidth = 432;
-  const targetHeight = 960;
   const devicePixelRatio = 10 / 3;
   assert.equal(targetWidth * devicePixelRatio, 1440);
-  assert.equal(targetHeight * devicePixelRatio, 3200);
+  assert.equal(960 * devicePixelRatio, 3200);
 
-  const headerSpace = 6 + 44;
-  const footerSpace = 5 + 38;
-  const playfieldHeight = targetHeight - headerSpace - footerSpace;
-  const horizontalPlayfieldPadding = 24;
-  const tableSurfaceWidth = (targetWidth - horizontalPlayfieldPadding) * 1.05;
-  const tableSurfaceHeight = tableSurfaceWidth * 2;
-  const tableLeft = (targetWidth - tableSurfaceWidth) / 2;
-  const tableTop = headerSpace + (playfieldHeight - tableSurfaceHeight) / 2;
-  const worldScale = tableSurfaceWidth / 720;
-  const pockets = [
-    { x: 95, y: 169 }, { x: 625, y: 169 },
-    { x: 74, y: 720 }, { x: 646, y: 720 },
-    { x: 95, y: 1271 }, { x: 625, y: 1271 }
-  ];
-  for (const pocket of pockets) {
-    assert.ok(tableLeft + (pocket.x - 33) * worldScale >= 0, "pocket left edge must remain visible");
-    assert.ok(tableLeft + (pocket.x + 33) * worldScale <= targetWidth, "pocket right edge must remain visible");
-    assert.ok(tableTop + (pocket.y - 33) * worldScale >= 0, "pocket top edge must remain visible");
-    assert.ok(tableTop + (pocket.y + 33) * worldScale <= targetHeight, "pocket bottom edge must remain visible");
+  for (const targetHeight of [960, 820]) {
+    const headerSpace = 6 + 44;
+    const footerSpace = 5 + 38;
+    const playfieldHeight = targetHeight - headerSpace - footerSpace;
+    const horizontalPlayfieldPadding = 24;
+    const tableSurfaceWidth = Math.min(
+      (targetWidth - horizontalPlayfieldPadding) * 0.96,
+      (targetHeight - headerSpace - footerSpace - 16) / 2
+    );
+    const tableSurfaceHeight = tableSurfaceWidth * 2;
+    const tableLeft = (targetWidth - tableSurfaceWidth) / 2;
+    const tableTop = headerSpace + (playfieldHeight - tableSurfaceHeight) / 2;
+    const worldScale = tableSurfaceWidth / 720;
+    const pockets = [
+      { x: 95, y: 169 }, { x: 625, y: 169 },
+      { x: 74, y: 720 }, { x: 646, y: 720 },
+      { x: 95, y: 1271 }, { x: 625, y: 1271 }
+    ];
+    for (const pocket of pockets) {
+      assert.ok(tableLeft + (pocket.x - 33) * worldScale >= 0, "pocket left edge must remain visible");
+      assert.ok(tableLeft + (pocket.x + 33) * worldScale <= targetWidth, "pocket right edge must remain visible");
+      assert.ok(tableTop + (pocket.y - 33) * worldScale >= 0, "pocket top edge must remain visible");
+      assert.ok(tableTop + (pocket.y + 33) * worldScale <= targetHeight, "pocket bottom edge must remain visible");
+    }
+
+    const tableOuterTop = tableTop + 82 * worldScale;
+    const tableOuterBottom = tableTop + 1358 * worldScale;
+    const topHudBottom = 6 + 36;
+    const relationshipTrackTop = targetHeight - (5 + 29) - 3;
+    const bottomHudTop = targetHeight - 4 - 22;
+    assert.ok(tableOuterTop > topHudBottom, "top HUD must remain outside the rendered table");
+    assert.ok(tableOuterBottom < relationshipTrackTop, "all table pockets must end before relationship progress");
+    assert.ok(tableOuterBottom < bottomHudTop, "bottom status must remain outside the rendered table");
+    assert.ok(tableSurfaceHeight / targetHeight >= 0.81, "the complete table surface should use most of the portrait height");
+    assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.72, "the playable table should remain visually dominant");
+    assert.ok(tableLeft >= 12, "the frame must retain a deliberate side margin");
+    assert.ok(tableLeft + tableSurfaceWidth <= targetWidth - 12, "the complete right frame must remain visible");
   }
-
-  const tableOuterTop = tableTop + 82 * worldScale;
-  const tableOuterBottom = tableTop + 1358 * worldScale;
-  const topHudBottom = 6 + 36;
-  const relationshipTrackTop = targetHeight - (5 + 29) - 3;
-  const bottomHudTop = targetHeight - 4 - 22;
-  assert.ok(tableOuterTop > topHudBottom, "top HUD must remain outside the rendered table");
-  assert.ok(tableOuterBottom < relationshipTrackTop, "all table pockets must end before relationship progress");
-  assert.ok(tableOuterBottom < bottomHudTop, "bottom status must remain outside the rendered table");
-  assert.ok(tableSurfaceHeight / targetHeight >= 0.89, "the complete table surface should use most of the portrait height");
-  assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.79, "the playable table should remain visually dominant");
-  assert.ok(tableLeft >= 1, "the frame must not be clipped by the viewport");
-  assert.ok(tableLeft + tableSurfaceWidth <= targetWidth - 1, "the complete right frame must remain visible");
 });
 
 test("uses a native portrait canvas without a CSS rotation layout", () => {
@@ -319,6 +339,7 @@ test("keeps the full-screen performance layered, centered, and dismissible", () 
   assert.match(cinematicHtml, /id="hb-cinematic-line">她看了你很久，然后轻轻点了点头。</);
   assert.match(cinematicHtml, /id="hb-cinematic-action" type="button" hidden>继续清台</);
   assert.match(rule(".hb-cinematic"), /z-index:\s*50;/);
+  assert.match(rule(".hb-cinematic"), /contain:\s*paint;/);
   assert.match(css, /\.hb-cinematic-copy\s*\{[^}]*top:\s*50%;[^}]*text-align:\s*center;[^}]*\}/s);
   assert.match(rule(".hb-cinematic-copy strong"), /font-size:\s*32px;/);
   assert.match(rule(".hb-cinematic-copy p"), /font-size:\s*13px;/);
