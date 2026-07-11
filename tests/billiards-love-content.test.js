@@ -10,6 +10,8 @@ const API_KEYS = [
   "INTENTS",
   "TIMINGS",
   "STAGE_EVENT_TYPES",
+  "SHOT_ARCHETYPES",
+  "SHOT_ARCHETYPE_META",
   "BALLS",
   "STAGES",
   "STAGE_TRANSITIONS",
@@ -24,7 +26,9 @@ const API_KEYS = [
   "createSeededRng",
   "selectPerformance",
   "selectStageTransition",
-  "selectStageEvent"
+  "selectStageEvent",
+  "analyzeShot",
+  "selectShotStory"
 ];
 
 const EXPECTED_BALL_NAMES = [
@@ -164,6 +168,46 @@ test("covers all 15 balls exactly once across seven fully described stages", () 
     assert.ok(Object.isFrozen(stage.poses));
     assert.ok(Object.isFrozen(stage.musicLayers));
   }
+});
+
+test("classifies physical shot telemetry into distinct relationship gestures", () => {
+  const cases = [
+    ["gentle", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 2, travel: 120, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.24 }],
+    ["power", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 8, travel: 180, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.9 }],
+    ["bank", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 5, travel: 240, railHits: 1, jawHits: 0, mouthEntries: 1 }], launchPower: 0.55 }],
+    ["long", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 5, travel: 440, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.55 }],
+    ["combo", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 5, travel: 220, railHits: 0, jawHits: 0, mouthEntries: 1 }], objectContacts: 2, launchPower: 0.55 }],
+    ["rattle", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 3, travel: 180, railHits: 2, jawHits: 2, mouthEntries: 1 }], launchPower: 0.5 }],
+    ["multi", { pottedNumbers: [1, 2], launchPower: 0.5 }],
+    ["near", { nearMiss: true }],
+    ["scratch", { cueScratch: true }]
+  ];
+
+  for (const [expected, telemetry] of cases) {
+    const analysis = Content.analyzeShot(telemetry);
+    assert.equal(analysis.id, expected);
+    assertText(analysis.label, `${expected}.label`);
+    assertText(analysis.gesture, `${expected}.gesture`);
+    assert.equal(Object.isFrozen(analysis), true);
+    assert.equal(Object.isFrozen(analysis.modifiers), true);
+  }
+});
+
+test("turns the same shot into stage-specific visual stories and persistent table props", () => {
+  const performance = Content.selectPerformance({ ballNumber: 4, seed: 1 });
+  const early = Content.selectShotStory({ stage: 1, storyNumber: 4, archetype: "bank", performance });
+  const familiar = Content.selectShotStory({ stage: 2, storyNumber: 4, archetype: "bank", performance });
+  const future = Content.selectShotStory({ stage: 7, storyNumber: 14, archetype: "bank", performance });
+
+  assert.equal(early.archetype, "bank");
+  assert.equal(early.technique, "借库入袋 · 绕路抵达");
+  assert.equal(early.gesture, "reach");
+  assert.equal(familiar.prop, "cup");
+  assert.equal(future.prop, "keys");
+  assert.notEqual(early.emotionLine, familiar.emotionLine);
+  assert.notEqual(familiar.emotionLine, future.emotionLine);
+  assert.match(familiar.title, /书|话题|喜欢|奶茶/);
+  assert.equal(Object.isFrozen(familiar), true);
 });
 
 test("provides four richly specified full-screen transitions for every stage", () => {
@@ -438,6 +482,10 @@ test("validates lookups and selector inputs", () => {
   assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "foul" }), RangeError);
   assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "miss", rng: () => -0.1 }), RangeError);
   assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "miss", rng: () => Number.NaN }), RangeError);
+  assert.throws(() => Content.analyzeShot([]), TypeError);
+  assert.throws(() => Content.selectShotStory([]), TypeError);
+  assert.throws(() => Content.selectShotStory({ stage: 1, archetype: "trick", storyNumber: 1 }), RangeError);
+  assert.throws(() => Content.selectShotStory({ stage: 1, archetype: "bank", storyNumber: 16 }), RangeError);
 });
 
 test("publishes the same API as BilliardsLoveContent in a browser UMD context", () => {
@@ -456,6 +504,8 @@ test("publishes the same API as BilliardsLoveContent in a browser UMD context", 
   assert.equal(typeof browserContent.selectPerformance, "function");
   assert.equal(typeof browserContent.selectStageTransition, "function");
   assert.equal(typeof browserContent.selectStageEvent, "function");
+  assert.equal(typeof browserContent.analyzeShot, "function");
+  assert.equal(typeof browserContent.selectShotStory, "function");
   assert.equal(
     browserContent.selectPerformance({ ballNumber: 8, intent: "active", timing: "right", seed: 4 }).eventId,
     "confession-success"

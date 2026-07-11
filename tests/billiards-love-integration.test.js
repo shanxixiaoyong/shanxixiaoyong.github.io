@@ -85,7 +85,7 @@ function bootRuntime(options = {}) {
     if (selector === "#hb-ball-canvas") return options.includeBallCanvas ? ballCanvas : null;
     if (!nodes.has(selector)) {
       const node = selector === "#hb-canvas" ? canvas : new FakeNode();
-      if (["#hb-micro", "#hb-cinematic", "#hb-result"].includes(selector)) node.hidden = true;
+      if (["#hb-micro", "#hb-shot-story", "#hb-pocket-focus", "#hb-cinematic", "#hb-result"].includes(selector)) node.hidden = true;
       nodes.set(selector, node);
     }
     return nodes.get(selector);
@@ -409,25 +409,30 @@ test("settles a normal shot directly without selecting a relationship target", (
   assertFiniteTable(snapshot);
 });
 
-test("routes ordinary shots to center beats and stage clears to full-screen performances", () => {
+test("routes physical pots through table stories before stage cinematics", () => {
   const debug = bootRuntime();
   debug.presentShot({ breakShot: true });
 
-  let snapshot = debug.presentShot({ pottedNumbers: [1] });
-  assert.equal(snapshot.presentation.microVisible, true);
-  assert.equal(snapshot.presentation.microType, "pocket");
-  assert.match(snapshot.presentation.microTitle, /^1号球 · /);
+  let snapshot = debug.presentShot({ pottedNumbers: [1], launchPower: 0.55 });
+  assert.equal(snapshot.presentation.shotStoryActive, true);
+  assert.equal(snapshot.presentation.shotStoryArchetype, "direct");
+  assert.match(snapshot.presentation.shotStoryTechnique, /直线命中/);
+  assert.doesNotMatch(snapshot.presentation.shotStoryTitle, /^1号球/);
+  assert.match(snapshot.presentation.shotStoryImage, /campus-library\.webp/);
+  assert.equal(snapshot.presentation.companionGesture, "notice");
+  assert.equal(snapshot.presentation.microVisible, false);
   assert.equal(snapshot.presentation.cinematicActive, false);
+  debug.advancePresentation();
 
   debug.presentShot({ pottedNumbers: [2] });
+  debug.advancePresentation();
   snapshot = debug.presentShot({ pottedNumbers: [3] });
-  assert.equal(snapshot.presentation.microVisible, true, "the scoring beat must play before the stage performance");
+  assert.equal(snapshot.presentation.shotStoryActive, true, "the pocket story must bridge into the stage performance");
   assert.equal(snapshot.presentation.cinematicActive, false);
   assert.equal(snapshot.presentation.cinematicQueued, 1);
   assert.equal(snapshot.presentation.nextCinematicStageId, "first-contact");
-  while (snapshot.presentation.microVisible || snapshot.presentation.microQueued) {
-    snapshot = debug.advancePresentation();
-  }
+  assert.equal(snapshot.presentation.completedMemoryCount, 1);
+  snapshot = debug.advancePresentation();
   assert.equal(snapshot.presentation.cinematicActive, true);
   assert.equal(snapshot.presentation.cinematicQueued, 0);
   assert.equal(snapshot.presentation.cinematicStageId, "first-contact");
@@ -448,10 +453,10 @@ test("routes ordinary shots to center beats and stage clears to full-screen perf
   const eightDebug = bootRuntime();
   snapshot = eightDebug.presentShot({ pottedNumbers: [8], breakShot: true });
   assert.equal(snapshot.runState.endState.ending, "reckless-rejection");
-  assert.equal(snapshot.presentation.microVisible, true);
-  assert.equal(snapshot.presentation.cinematicActive, false);
-  assert.equal(snapshot.presentation.cinematicQueued, 1);
-  assert.equal(snapshot.presentation.nextCinematicStageId, "learning-together");
+  assert.equal(snapshot.presentation.shotStoryActive, false);
+  assert.equal(snapshot.presentation.cinematicActive, true);
+  assert.equal(snapshot.presentation.cinematicQueued, 0);
+  assert.equal(snapshot.presentation.cinematicStageId, "learning-together");
 });
 
 test("requires mouth entry plus visible drop-line crossing and lets a jaw collision reject a pocket graze", () => {

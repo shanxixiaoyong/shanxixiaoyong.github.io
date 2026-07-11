@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-touch-physics-20260712c";
-const styleCacheVersion = "billiards-love-touch-physics-20260712c";
+const runtimeCacheVersion = "billiards-love-story-table-20260712a";
+const styleCacheVersion = "billiards-love-story-table-20260712a";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -279,7 +279,7 @@ test("keeps bottom information minimal and outside the table", () => {
   assert.doesNotMatch(footer, /本局|连续进球|第一碰球/);
 });
 
-test("keeps the short performance centered, transient, and non-interactive", () => {
+test("keeps miss and scratch feedback transient and non-interactive", () => {
   const microHtml = fragment(html, '<div class="hb-micro"', "</div>");
   const micro = rule(".hb-micro");
   const microVisible = rule(".hb-micro:not([hidden])");
@@ -288,23 +288,53 @@ test("keeps the short performance centered, transient, and non-interactive", () 
   const queueMicro = fragment(game, "function queueMicro", "function showNextMicro");
 
   assert.match(microHtml, /aria-live="polite" aria-atomic="true" hidden/);
-  assert.match(microHtml, /id="hb-micro-kicker">1 · 对视</);
-  assert.match(microHtml, /id="hb-micro-title">目光停了一秒</);
-  assert.match(microHtml, /id="hb-micro-line">人群还在移动，你们却同时记住了彼此。</);
+  assert.match(microHtml, /id="hb-micro-kicker">这一杆</);
+  assert.match(microHtml, /id="hb-micro-title">话题暂时停在这里</);
+  assert.match(microHtml, /id="hb-micro-line">球没有落袋，对面的目光仍然留在桌边。</);
   assert.match(micro, /z-index:\s*12;/);
   assert.match(micro, /top:\s*50%;/);
   assert.match(micro, /left:\s*50%;/);
   assert.match(micro, /pointer-events:\s*none;/);
-  assert.match(microVisible, /hb-micro-arrive 1600ms/);
-  assert.match(microVisible, /animation-duration:\s*4200ms;/);
+  assert.match(microVisible, /hb-micro-arrive 2500ms/);
   assert.match(microTitle, /font-size:\s*24px;/);
   assert.match(css, /\.hb-micro p\s*\{[^}]*font-size:\s*11px;[^}]*\}/s);
   assert.match(css, /\.hb-micro::before\s*\{[^}]*radial-gradient[^}]*\}/s);
   assert.match(css, /\.hb-micro::after\s*\{[^}]*radial-gradient[^}]*\}/s);
   assert.match(css, /@keyframes hb-micro-halo/);
   assert.match(css, /@keyframes hb-micro-particles/);
-  assert.match(game, /clamp\(item\.durationMs \+ 3000, 4200, 5200\)/);
-  assert.doesNotMatch(queueMicro, /cinematicActive|root\.dataset\.state/);
+  assert.match(game, /clamp\(item\.durationMs \+ 900, 2200, 2900\)/);
+  assert.match(queueMicro, /!shotStoryActive/);
+});
+
+test("integrates shot telemetry, table memories, pocket slow motion, and scene reveals", () => {
+  const tableStory = fragment(html, '<div class="hb-table-story"', "</div>\n        </div>");
+  const shotStory = fragment(html, '<section class="hb-shot-story"', "</section>");
+
+  for (const token of ["hb-table-reflection", "hb-companion", "hb-memory-rail", "hb-pocket-focus"]) {
+    assert.match(tableStory, new RegExp(token));
+  }
+  for (const token of ["hb-shot-story-image", "hb-shot-story-light", "hb-shot-story-orbit", "hb-shot-story-technique", "hb-shot-story-title"]) {
+    assert.match(shotStory, new RegExp(token));
+  }
+  assert.match(rule(".hb-table-story"), /z-index:\s*3;/);
+  assert.match(rule(".hb-table-story"), /pointer-events:\s*none;/);
+  assert.match(rule(".hb-shot-story"), /z-index:\s*45;/);
+  assert.match(rule(".hb-shot-story"), /pointer-events:\s*none;/);
+  assert.match(rule(".hb-shot-story-image"), /clip-path:\s*circle\(0 at var\(--hb-story-origin-x\) var\(--hb-story-origin-y\)\);/);
+  assert.match(css, /@keyframes hb-pocket-focus-ring/);
+  assert.match(css, /@keyframes hb-shot-story-aperture/);
+  assert.match(css, /@keyframes hb-companion-reach/);
+  assert.match(css, /\.hb-memory-token\[data-prop="phone"\]/);
+  assert.match(css, /\.hb-memory-token\[data-prop="ring"\]/);
+  assert.match(game, /const POCKET_STORY_SLOW_MOTION_MS = 460;/);
+  assert.match(game, /const POCKET_STORY_TIME_SCALE = 0\.24;/);
+  assert.match(game, /shotState\.pottedDetails\.push\(detail\)/);
+  assert.match(game, /storySlowMotionUntil = performance\.now\(\) \+ POCKET_STORY_SLOW_MOTION_MS/);
+  assert.match(game, /const storyTimeScale = timestamp < storySlowMotionUntil \? POCKET_STORY_TIME_SCALE : 1/);
+  assert.match(game, /content\.analyzeShot\(/);
+  assert.match(game, /content\.selectShotStory\(/);
+  assert.match(game, /drawRelationshipTableStory\(timestamp\)/);
+  assert.doesNotMatch(shotStory, /号球/);
 });
 
 test("shows a conic-gradient proportional power arc around the cue ball", () => {
@@ -368,16 +398,20 @@ test("keeps the full-screen performance lightweight, centered, and dismissible",
   assert.doesNotMatch(rule(".hb-cinematic-light"), /filter:|animation:/);
   assert.match(rule(".hb-cinematic-particles"), /display:\s*none;/);
   assert.match(rule(".hb-cinematic-vignette"), /display:\s*none;/);
-  assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*hb-cinematic-simple-reveal 520ms[^}]*\}/s);
+  assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*hb-cinematic-pocket-veil 760ms[^}]*\}/s);
+  assert.match(css, /\.hb-cinematic:not\(\[hidden\]\) \.hb-cinematic-image\s*\{[^}]*hb-cinematic-pocket-image 860ms[^}]*\}/s);
   assert.match(game, /autoCloseMs: clamp\(performance\.durationMs \+ 1800, 3400, 4300\)/);
   assert.match(game, /autoCloseMs: 4200/);
-  assert.match(css, /@keyframes hb-cinematic-simple-reveal/);
+  assert.match(css, /@keyframes hb-cinematic-pocket-image/);
+  assert.match(css, /@keyframes hb-cinematic-pocket-veil/);
   assert.match(css, /@keyframes hb-cinematic-simple-copy/);
   for (const kind of ["confession", "proposal", "early-success", "rejection"]) {
     assert.match(css, new RegExp(`\\.hb-cinematic\\[data-kind="${kind}"\\]`));
   }
   assert.match(game, /elements\.cinematic\.hidden = false;/);
   assert.match(game, /elements\.cinematic\.hidden = true;/);
+  assert.match(game, /--hb-cinematic-origin-x/);
+  assert.match(game, /--hb-cinematic-origin-y/);
   assert.match(game, /elements\.cinematicSkip\.addEventListener\("click", closeCinematic\);/);
   assert.match(game, /elements\.cinematicAction\.addEventListener\("click", closeCinematic\);/);
 });

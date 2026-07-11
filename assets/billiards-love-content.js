@@ -28,6 +28,115 @@
     SETUP: "setup"
   });
 
+  const SHOT_ARCHETYPES = deepFreeze({
+    DIRECT: "direct",
+    GENTLE: "gentle",
+    POWER: "power",
+    BANK: "bank",
+    LONG: "long",
+    COMBO: "combo",
+    RATTLE: "rattle",
+    MULTI: "multi",
+    NEAR: "near",
+    MISS: "miss",
+    SCRATCH: "scratch"
+  });
+
+  const SHOT_ARCHETYPE_META = deepFreeze({
+    direct: { label: "直线命中 · 坦率靠近", gesture: "notice", visualMode: "straight" },
+    gentle: { label: "轻推入袋 · 温柔留白", gesture: "offer", visualMode: "soft" },
+    power: { label: "有力命中 · 勇敢开口", gesture: "surprise", visualMode: "pulse" },
+    bank: { label: "借库入袋 · 绕路抵达", gesture: "reach", visualMode: "rail" },
+    long: { label: "远台命中 · 跨过距离", gesture: "answer", visualMode: "distance" },
+    combo: { label: "组合入袋 · 回应相接", gesture: "answer", visualMode: "linked" },
+    rattle: { label: "袋口停顿 · 犹豫后靠近", gesture: "hesitate", visualMode: "hesitate" },
+    multi: { label: "一杆多球 · 默契同时发生", gesture: "delight", visualMode: "double" },
+    near: { label: "擦袋停留 · 差一点说出口", gesture: "hesitate", visualMode: "near" },
+    miss: { label: "这一杆落空 · 话题仍在", gesture: "waiting", visualMode: "quiet" },
+    scratch: { label: "白球落袋 · 分寸失衡", gesture: "withdraw", visualMode: "fracture" }
+  });
+
+  const SHOT_STAGE_LINES = deepFreeze({
+    direct: [
+      "你没有再等第二次对视。",
+      "想说的话终于不只停在输入框里。",
+      "邀约被清楚地说出口，也被认真接住。",
+      "这一句喜欢没有再借别的话题绕行。",
+      "确定关系以后，坦率成了日常的底色。",
+      "分歧被放到桌面上，而不是藏进沉默里。",
+      "关于以后，你们给出了同一个方向。"
+    ],
+    gentle: [
+      "分寸让第一次靠近显得自然。",
+      "一句晚安没有催促，却等来了同样温柔的回复。",
+      "你为她留出时间，也留出可以说不的余地。",
+      "回答很轻，却足够让两个人都听清。",
+      "爱进入日常后，照顾常常没有声音。",
+      "你们把语速放慢，终于听见情绪背后的意思。",
+      "承诺没有喧哗，只稳稳落进今后的生活。"
+    ],
+    power: [
+      "短暂迟疑之后，勇气先迈出了那一步。",
+      "热烈的分享没有吓退她，反而换来更明亮的回应。",
+      "临时起意的邀约，让这个周末突然有了期待。",
+      "心跳抢在准备好的台词之前抵达。",
+      "一场说走就走的远行，把快乐推向更近的距离。",
+      "情绪很满，但这一次你选择把真实说清。",
+      "面对很长的以后，你的答案依旧坚定。"
+    ],
+    bank: [
+      "话题绕过天气，最后还是落到了彼此身上。",
+      "从一首歌聊到很晚，原本的绕路反而延长了同行。",
+      "计划临时改变，却意外遇见更合适的约会。",
+      "那些没有直说的在意，终于沿着回应抵达。",
+      "生活走过几个转弯，你们仍会回到同一盏灯下。",
+      "各自坚持的路线绕了一圈，汇成可以同行的新路。",
+      "未来并不笔直，但每一次转弯都有人等你。"
+    ],
+    long: [
+      "隔着整张球桌，她仍然看懂了你的目光。",
+      "忙碌拉开时间，分享却没有因此中断。",
+      "从城市两端赴约，让这次见面显得格外认真。",
+      "跨过长久试探以后，心意终于不再模糊。",
+      "短暂分别让重逢更清楚地说明了想念。",
+      "你们允许彼此走远，也相信对方会回来。",
+      "很远的以后第一次变得可以共同想象。"
+    ],
+    combo: [
+      "一次开口接上一次回望，陌生感被连续推开。",
+      "你的分享刚刚落下，她已经递来了下一句话。",
+      "一个人提出见面，另一个人顺手订好了位置。",
+      "主动与回应在同一秒相遇，答案因此完整。",
+      "两个人的计划互相影响，日常开始真正交叠。",
+      "解释接住道歉，争执终于不再单向延伸。",
+      "各自的选择彼此推动，最后成为共同决定。"
+    ],
+    rattle: [
+      "那句开场白停顿了一下，她却没有移开目光。",
+      "输入状态亮了又暗，最后还是等来一段认真回复。",
+      "邀约险些被收回，她先一步问了时间。",
+      "答案在呼吸之间停了一秒，然后轻轻落下。",
+      "习惯带来迟疑，靠近最终还是胜过了退后。",
+      "谁都差点转身，最后却愿意把话重新说完。",
+      "面对承诺的重量，你们停顿过，也仍然选择彼此。"
+    ],
+    multi: [
+      "两次偶然同时发生，今晚突然有了下一次。",
+      "话题与笑意接连落下，时间在不知不觉中变晚。",
+      "一场约会尚未结束，下一次已经自然被提起。",
+      "不止一句喜欢，在同一刻得到了回应。",
+      "旅行、拥抱和普通日常一起成为共同记忆。",
+      "理解与和好同时抵达，冷下来的灯重新变暖。",
+      "城市、生活与长久承诺终于落在同一张地图上。"
+    ]
+  });
+
+  const SHOT_STORY_PROPS = deepFreeze([
+    "phone", "phone", "phone", "cup", "cup",
+    "cup", "ticket", "ticket", "photo", "photo",
+    "tag", "note", "cup", "keys", "ring"
+  ]);
+
   const STAGES = deepFreeze([
     {
       id: "first-contact",
@@ -2307,10 +2416,127 @@
     });
   }
 
+  function finiteNumber(value, fallback = 0) {
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  }
+
+  function analyzeShot(options = {}) {
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("shot analysis options must be an object");
+    }
+    const pottedDetails = Array.isArray(options.pottedDetails) ? options.pottedDetails : [];
+    const pottedNumbers = Array.isArray(options.pottedNumbers) ? options.pottedNumbers : [];
+    const pottedCount = Math.max(pottedDetails.length, pottedNumbers.length);
+    const primary = pottedDetails[0] || {};
+    const bankedCount = Math.max(
+      pottedDetails.filter((detail) => finiteNumber(detail.railHits) > 0).length,
+      Array.isArray(options.bankedNumbers) ? options.bankedNumbers.length : 0
+    );
+    const maximumJawHits = pottedDetails.reduce((maximum, detail) => Math.max(maximum, finiteNumber(detail.jawHits)), 0);
+    const maximumMouthEntries = pottedDetails.reduce((maximum, detail) => Math.max(maximum, finiteNumber(detail.mouthEntries, 1)), 0);
+    const maximumTravel = pottedDetails.reduce((maximum, detail) => Math.max(maximum, finiteNumber(detail.travel)), 0);
+    const entrySpeed = finiteNumber(primary.entrySpeed, Infinity);
+    const launchPower = finiteNumber(options.launchPower, 0.52);
+    const objectContacts = Math.max(0, Math.trunc(finiteNumber(options.objectContacts)));
+    const cueScratch = Boolean(options.cueScratch);
+    const nearMiss = Boolean(options.nearMiss);
+    let id;
+
+    if (pottedCount === 0) {
+      id = cueScratch
+        ? SHOT_ARCHETYPES.SCRATCH
+        : nearMiss ? SHOT_ARCHETYPES.NEAR : SHOT_ARCHETYPES.MISS;
+    } else if (pottedCount >= 2) {
+      id = SHOT_ARCHETYPES.MULTI;
+    } else if (maximumJawHits >= 2 || maximumMouthEntries >= 2) {
+      id = SHOT_ARCHETYPES.RATTLE;
+    } else if (objectContacts >= 2) {
+      id = SHOT_ARCHETYPES.COMBO;
+    } else if (bankedCount > 0) {
+      id = SHOT_ARCHETYPES.BANK;
+    } else if (maximumTravel >= 390) {
+      id = SHOT_ARCHETYPES.LONG;
+    } else if (launchPower <= 0.3 || entrySpeed <= 3.2) {
+      id = SHOT_ARCHETYPES.GENTLE;
+    } else if (launchPower >= 0.78) {
+      id = SHOT_ARCHETYPES.POWER;
+    } else {
+      id = SHOT_ARCHETYPES.DIRECT;
+    }
+
+    const meta = SHOT_ARCHETYPE_META[id];
+    return deepFreeze({
+      id,
+      ...meta,
+      pottedCount,
+      bankedCount,
+      objectContacts,
+      maximumJawHits,
+      maximumMouthEntries,
+      maximumTravel,
+      launchPower,
+      entrySpeed: Number.isFinite(entrySpeed) ? entrySpeed : null,
+      cueScratch,
+      nearMiss,
+      modifiers: {
+        soft: launchPower <= 0.3,
+        forceful: launchPower >= 0.78,
+        banked: bankedCount > 0,
+        linked: objectContacts >= 2,
+        hesitant: maximumJawHits >= 2 || maximumMouthEntries >= 2,
+        multiple: pottedCount >= 2
+      }
+    });
+  }
+
+  function selectShotStory(options = {}) {
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("shot story options must be an object");
+    }
+    const stage = getStage(options.stage);
+    const archetype = typeof options.archetype === "string"
+      ? options.archetype
+      : options.analysis?.id;
+    const meta = SHOT_ARCHETYPE_META[archetype];
+    if (!meta) throw new RangeError(`Unknown shot archetype: ${archetype}`);
+    const storyNumber = Number.isInteger(options.storyNumber)
+      ? options.storyNumber
+      : stage.ballNumbers[0];
+    assertBallNumber(storyNumber);
+    const performance = options.performance && typeof options.performance === "object"
+      ? options.performance
+      : null;
+    const stageLines = SHOT_STAGE_LINES[archetype] || SHOT_STAGE_LINES.direct;
+    const emotionLine = stageLines[stage.order - 1];
+    const title = performance?.visual || emotionLine;
+    const line = performance?.line
+      ? `${emotionLine} ${performance.line}`
+      : emotionLine;
+
+    return deepFreeze({
+      id: `shot-story-${stage.id}-${archetype}-${storyNumber}-${performance?.id || "default"}`,
+      stage: stage.order,
+      stageId: stage.id,
+      stageName: stage.name,
+      archetype,
+      technique: meta.label,
+      gesture: meta.gesture,
+      visualMode: meta.visualMode,
+      storyNumber,
+      prop: SHOT_STORY_PROPS[storyNumber - 1],
+      title,
+      line,
+      emotionLine,
+      durationMs: archetype === SHOT_ARCHETYPES.MULTI || archetype === SHOT_ARCHETYPES.RATTLE ? 2940 : 2700
+    });
+  }
+
   return Object.freeze({
     INTENTS,
     TIMINGS,
     STAGE_EVENT_TYPES,
+    SHOT_ARCHETYPES,
+    SHOT_ARCHETYPE_META,
     BALLS,
     STAGES,
     STAGE_TRANSITIONS,
@@ -2325,6 +2551,8 @@
     createSeededRng,
     selectPerformance,
     selectStageTransition,
-    selectStageEvent
+    selectStageEvent,
+    analyzeShot,
+    selectShotStory
   });
 });

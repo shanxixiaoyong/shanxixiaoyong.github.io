@@ -36,6 +36,10 @@
     callLabel: required("#hb-call-label"),
     callTitle: required("#hb-call-title"),
     callHint: required("#hb-call-hint"),
+    tableStory: required("#hb-table-story"),
+    companion: required("#hb-companion"),
+    memoryRail: required("#hb-memory-rail"),
+    pocketFocus: required("#hb-pocket-focus"),
     micro: required("#hb-micro"),
     microKicker: required("#hb-micro-kicker"),
     microTitle: required("#hb-micro-title"),
@@ -44,6 +48,11 @@
     coach: required("#hb-coach"),
     aimToggle: required("#hb-aim-toggle"),
     sound: required("#hb-sound"),
+    shotStory: required("#hb-shot-story"),
+    shotStoryImage: required("#hb-shot-story-image"),
+    shotStoryTechnique: required("#hb-shot-story-technique"),
+    shotStoryTitle: required("#hb-shot-story-title"),
+    shotStoryLine: required("#hb-shot-story-line"),
     cinematic: required("#hb-cinematic"),
     cinematicImage: required("#hb-cinematic-image"),
     cinematicSkip: required("#hb-cinematic-skip"),
@@ -100,6 +109,9 @@
   const NATURAL_STOP_SPEED = 0.14;
   const POCKET_MIN_DURATION = 280;
   const POCKET_MAX_DURATION = 450;
+  const POCKET_STORY_SLOW_MOTION_MS = 460;
+  const POCKET_STORY_TIME_SCALE = 0.24;
+  const SHOT_STORY_DEFAULT_DURATION = 2700;
   const MAX_RENDER_WIDTH = 1440;
   const MAX_RENDER_HEIGHT = 2880;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
@@ -125,6 +137,15 @@
     "learning-together": "assets/love-scenes/rain-night.webp",
     "shared-future": "assets/love-scenes/starlight-vow.webp"
   });
+  const MEMORY_MILESTONES = Object.freeze([
+    { prop: "phone", x: "5.2%", y: "26%", rotation: "-8deg", image: "assets/love-scenes/campus-library.webp" },
+    { prop: "cup", x: "94.7%", y: "31%", rotation: "9deg", image: "assets/love-scenes/cafe-evening.webp" },
+    { prop: "ticket", x: "5.2%", y: "45%", rotation: "-5deg", image: "assets/love-scenes/city-night.webp" },
+    { prop: "photo", x: "94.7%", y: "51%", rotation: "7deg", image: "assets/billiards-scenes/confession-night.jpg" },
+    { prop: "tag", x: "5.2%", y: "68%", rotation: "-7deg", image: "assets/love-scenes/warm-home.webp" },
+    { prop: "note", x: "94.7%", y: "72%", rotation: "6deg", image: "assets/love-scenes/rain-night.webp" },
+    { prop: "ring", x: "50%", y: "96.3%", rotation: "0deg", image: "assets/love-scenes/starlight-vow.webp" }
+  ]);
   const DIAGONAL = Math.SQRT1_2;
 
   function createPocket({ id, type, mouthX, mouthY, inwardX, inwardY }) {
@@ -170,16 +191,24 @@
     [6, 14, 5, 15],
     [3, 7, 11, 12, 13]
   ]);
-  const TIMING_LABELS = Object.freeze({
-    "on-time": "本章片段",
-    "early-completion": "意外先发生",
-    "eight-too-early": "心意还没到时候",
-    "break-respot": "黑 8 回置",
-    "break-pot": "开局相遇",
-    break: "开球",
-    miss: "这一杆没有进球"
-  });
-
+  const RELATIONSHIP_SIGHTS = Object.freeze([
+    ...[0.25, 0.5, 0.75].map((fraction) => ({
+      x: TABLE.left + (TABLE.right - TABLE.left) * fraction,
+      y: TABLE.top - 43
+    })),
+    ...[0.125, 0.25, 0.375, 0.625, 0.75, 0.875].map((fraction) => ({
+      x: TABLE.right + 43,
+      y: TABLE.top + (TABLE.bottom - TABLE.top) * fraction
+    })),
+    ...[0.75, 0.5, 0.25].map((fraction) => ({
+      x: TABLE.left + (TABLE.right - TABLE.left) * fraction,
+      y: TABLE.bottom + 43
+    })),
+    ...[0.875, 0.75, 0.625, 0.375, 0.25, 0.125].map((fraction) => ({
+      x: TABLE.left - 43,
+      y: TABLE.top + (TABLE.bottom - TABLE.top) * fraction
+    }))
+  ]);
   function loadMaterialTexture(source) {
     if (typeof window.Image !== "function") return null;
     const image = new window.Image();
@@ -491,6 +520,7 @@
   let simulationTime = 0;
   let particles = [];
   let pocketBursts = [];
+  let storyTrails = [];
   let collisionFeedbacks = [];
   let collisionCount = 0;
   let microQueue = [];
@@ -499,6 +529,15 @@
   let cinematicQueue = [];
   let cinematicCurrent = null;
   let cinematicTimer = 0;
+  let shotStoryActive = false;
+  let shotStoryCurrent = null;
+  let shotStoryTimer = 0;
+  let storySlowMotionUntil = 0;
+  let lastStoryOrigin = { x: 50, y: 50 };
+  let lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
+  let companionTimer = 0;
+  let memoryNodes = [];
+  let liveMemoryNode = null;
   let trackNodeMap = new Map();
   let screenFlash = 0;
   let screenShake = 0;
@@ -673,6 +712,10 @@
       number,
       potted: false,
       shotRailHits: 0,
+      shotJawHits: 0,
+      shotTravel: 0,
+      shotTrail: [],
+      pocketMouthEntries: 0,
       pocketing: null,
       pocketApproach: null,
       rollAngle: 0,
@@ -762,6 +805,10 @@
       const data = bodyData(ball);
       if (data) {
         data.shotRailHits = 0;
+        data.shotJawHits = 0;
+        data.shotTravel = 0;
+        data.shotTrail = [{ x: ball.position.x, y: ball.position.y }];
+        data.pocketMouthEntries = 0;
         data.lastRailImpact = null;
       }
     });
@@ -782,19 +829,31 @@
     simulationTime = 0;
     particles = [];
     pocketBursts = [];
+    storyTrails = [];
     collisionFeedbacks = [];
     collisionCount = 0;
     microQueue = [];
     cinematicQueue = [];
     cinematicCurrent = null;
+    shotStoryActive = false;
+    shotStoryCurrent = null;
+    storySlowMotionUntil = 0;
+    lastStoryOrigin = { x: 50, y: 50 };
+    lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
     clearTimeout(microTimer);
     clearTimeout(judgementTimer);
     clearTimeout(cinematicTimer);
+    clearTimeout(shotStoryTimer);
+    clearTimeout(companionTimer);
     screenFlash = 0;
     screenShake = 0;
     elements.result.hidden = true;
     elements.cinematic.hidden = true;
+    elements.shotStory.hidden = true;
+    elements.pocketFocus.hidden = true;
     elements.micro.hidden = true;
+    elements.companion.dataset.gesture = "waiting";
+    if (liveMemoryNode) liveMemoryNode.hidden = true;
     rackBalls();
     syncUI();
     root.dataset.state = "break";
@@ -816,6 +875,134 @@
       fragment.append(item);
     });
     elements.trackNodes.replaceChildren(fragment);
+  }
+
+  function configureMemoryNode(node, memory) {
+    node.dataset.prop = memory.prop;
+    node.style.setProperty("--memory-x", memory.x);
+    node.style.setProperty("--memory-y", memory.y);
+    node.style.setProperty("--memory-rotation", memory.rotation);
+    node.style.setProperty("--memory-image", `url("${memory.image}")`);
+  }
+
+  function buildTableStory() {
+    const fragment = document.createDocumentFragment();
+    memoryNodes = MEMORY_MILESTONES.map((memory, index) => {
+      const node = document.createElement("i");
+      node.className = "hb-memory-token";
+      node.dataset.stage = String(index + 1);
+      configureMemoryNode(node, memory);
+      node.hidden = true;
+      fragment.append(node);
+      return node;
+    });
+    liveMemoryNode = document.createElement("i");
+    liveMemoryNode.className = "hb-memory-token hb-memory-token-live";
+    configureMemoryNode(liveMemoryNode, {
+      prop: "phone",
+      x: "34%",
+      y: "4.6%",
+      rotation: "-4deg",
+      image: STAGE_SCENE_ASSETS["first-contact"]
+    });
+    liveMemoryNode.hidden = true;
+    fragment.append(liveMemoryNode);
+    elements.memoryRail.replaceChildren(fragment);
+  }
+
+  function syncTableStory() {
+    const stage = rules.currentStage(runState);
+    const completedStages = stage ? Math.max(0, stage.number - 1) : MEMORY_MILESTONES.length;
+    memoryNodes.forEach((node, index) => {
+      node.hidden = index >= completedStages;
+    });
+    elements.tableStory.dataset.completed = String(completedStages);
+  }
+
+  function setCompanionGesture(gesture, duration = 1500) {
+    clearTimeout(companionTimer);
+    elements.companion.dataset.gesture = "waiting";
+    void elements.companion.offsetWidth;
+    elements.companion.dataset.gesture = gesture || "waiting";
+    companionTimer = setTimeout(() => {
+      elements.companion.dataset.gesture = "waiting";
+    }, duration);
+  }
+
+  function showLiveMemory(prop, image) {
+    if (!liveMemoryNode) return;
+    configureMemoryNode(liveMemoryNode, {
+      prop: prop || "phone",
+      x: "34%",
+      y: "4.6%",
+      rotation: prop === "ticket" ? "-8deg" : prop === "keys" ? "7deg" : "-4deg",
+      image: image || STAGE_SCENE_ASSETS[content.getStage(currentStageNumber()).id]
+    });
+    liveMemoryNode.hidden = true;
+    void liveMemoryNode.offsetWidth;
+    liveMemoryNode.hidden = false;
+  }
+
+  function storyOriginForPocket(pocket) {
+    const rootRect = root.getBoundingClientRect();
+    const tableRect = tableWrap.getBoundingClientRect();
+    const rootWidth = Math.max(1, rootRect.width);
+    const rootHeight = Math.max(1, rootRect.height);
+    return {
+      x: clamp((tableRect.left - rootRect.left + pocket.x / WORLD.width * tableRect.width) / rootWidth * 100, 0, 100),
+      y: clamp((tableRect.top - rootRect.top + pocket.y / WORLD.height * tableRect.height) / rootHeight * 100, 0, 100)
+    };
+  }
+
+  function beginPocketStoryFocus(pocket) {
+    lastStoryOrigin = storyOriginForPocket(pocket);
+    lastStoryWorldOrigin = { x: pocket.x, y: pocket.y };
+    elements.pocketFocus.style.setProperty("--pocket-x", `${pocket.x / WORLD.width * 100}%`);
+    elements.pocketFocus.style.setProperty("--pocket-y", `${pocket.y / WORLD.height * 100}%`);
+    elements.pocketFocus.hidden = true;
+    void elements.pocketFocus.offsetWidth;
+    elements.pocketFocus.hidden = false;
+    storySlowMotionUntil = performance.now() + POCKET_STORY_SLOW_MOTION_MS;
+    setTimeout(() => {
+      elements.pocketFocus.hidden = true;
+    }, 1080);
+  }
+
+  function hideShotStory() {
+    if (!shotStoryActive) return;
+    clearTimeout(shotStoryTimer);
+    elements.shotStory.hidden = true;
+    shotStoryActive = false;
+    shotStoryCurrent = null;
+    if (liveMemoryNode) liveMemoryNode.hidden = true;
+    if (microQueue.length && elements.micro.hidden) showNextMicro();
+    else if (cinematicQueue.length && !cinematicActive && elements.micro.hidden) showNextCinematic();
+    else if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
+    else if (!shotState && !resolvingShot) root.dataset.state = "aiming";
+  }
+
+  function showShotStory(story, origin = lastStoryOrigin) {
+    if (!story) return;
+    clearTimeout(shotStoryTimer);
+    shotStoryCurrent = story;
+    shotStoryActive = true;
+    root.dataset.state = "story";
+    elements.shotStory.dataset.archetype = story.archetype;
+    elements.shotStory.dataset.stage = String(story.stage);
+    elements.shotStory.style.setProperty("--hb-story-origin-x", `${origin.x}%`);
+    elements.shotStory.style.setProperty("--hb-story-origin-y", `${origin.y}%`);
+    elements.shotStory.style.setProperty("--hb-story-duration", `${story.durationMs || SHOT_STORY_DEFAULT_DURATION}ms`);
+    elements.shotStoryImage.style.backgroundImage = `url("${STAGE_SCENE_ASSETS[story.stageId]}")`;
+    elements.shotStoryTechnique.textContent = story.technique;
+    elements.shotStoryTitle.textContent = story.title;
+    elements.shotStoryLine.textContent = story.line;
+    elements.shotStory.hidden = true;
+    void elements.shotStory.offsetWidth;
+    elements.shotStory.hidden = false;
+    setCompanionGesture(story.gesture, Math.min(story.durationMs, 1600));
+    showLiveMemory(story.prop, STAGE_SCENE_ASSETS[story.stageId]);
+    audio.cue(story.archetype === content.SHOT_ARCHETYPES.MULTI ? "streak" : "event", 0.9);
+    shotStoryTimer = setTimeout(hideShotStory, story.durationMs || SHOT_STORY_DEFAULT_DURATION);
   }
 
   function currentStageNumber() {
@@ -892,10 +1079,7 @@
     elements.sound.setAttribute("aria-pressed", String(audio.enabled));
     elements.sound.setAttribute("aria-label", audio.enabled ? "关闭声音" : "开启声音");
     audio.setStage(stageNumber);
-  }
-
-  function classificationLabel(timing) {
-    return TIMING_LABELS[timing] || "这一杆由你决定";
+    syncTableStory();
   }
 
   function nearestObjectBall(point, radius = 36) {
@@ -931,6 +1115,7 @@
   function canInteract() {
     return !shotState && !pointerAim && !resolvingShot
       && !cinematicActive && !cinematicQueue.length
+      && !shotStoryActive
       && !resultVisible && !runState.endState.ended && cueBall;
   }
 
@@ -1011,6 +1196,15 @@
       cueScratch: false,
       breakShot: !runState.breakCompleted,
       bankedNumbers: [],
+      pottedDetails: [],
+      objectContactPairs: new Set(),
+      objectContacts: 0,
+      closestPocketDistance: Infinity,
+      launchPower: clamp(power, 0, 1),
+      launchSpeed: speed,
+      launchDirection: { ...direction },
+      storyFocusNumber: null,
+      storyShown: false,
       startedAt: simulationTime
     };
     Body.strike(cueBall, { x: direction.x * speed, y: direction.y * speed });
@@ -1066,6 +1260,7 @@
       POCKET_MOUTH_LATERAL_TOLERANCE
     );
     if (!mouthCrossing) return false;
+    data.pocketMouthEntries += 1;
     const captureCrossing = crossedPocketLine(
       body,
       pocket,
@@ -1156,6 +1351,35 @@
     Body.setVelocity(body, { x: 0, y: 0 });
     Body.setAngularVelocity(body, 0);
     data.lastPosition = { x: body.position.x, y: body.position.y };
+    if (data.number > 0) {
+      const path = data.shotTrail.slice(-48).map((point) => ({ ...point }));
+      path.push({ x: pocket.captureX, y: pocket.captureY });
+      const detail = {
+        number: data.number,
+        pocketId: pocket.id,
+        pocketX: pocket.x,
+        pocketY: pocket.y,
+        entrySpeed: speed,
+        railHits: data.shotRailHits,
+        jawHits: data.shotJawHits,
+        mouthEntries: data.pocketMouthEntries,
+        travel: data.shotTravel,
+        path
+      };
+      shotState.pottedDetails.push(detail);
+      storyTrails.push({
+        number: data.number,
+        path,
+        color: BALL_COLORS[data.number] || "#e6c88c",
+        life: 1,
+        railHits: data.shotRailHits
+      });
+      if (storyTrails.length > 4) storyTrails.shift();
+      if (shotState.storyFocusNumber === null) {
+        shotState.storyFocusNumber = data.number;
+        beginPocketStoryFocus(pocket);
+      }
+    }
     audio.cue(data.number === 0 ? "scratch" : "pocket", clamp(0.72 + speed / 30, 0.7, 1.15));
     screenFlash = Math.max(screenFlash, data.number === 8 || data.number === 15 ? 0.36 : 0.12);
     return true;
@@ -1172,6 +1396,7 @@
       } else if (!shotState.pottedNumbers.includes(number)) {
         shotState.pottedNumbers.push(number);
         if (data.shotRailHits > 0) shotState.bankedNumbers.push(number);
+        beginCompletedPocketStory(number);
       }
     }
     const color = number === 0 ? "#f5f0e7" : BALL_COLORS[number];
@@ -1214,6 +1439,19 @@
       const dy = ball.position.y - data.lastPosition.y;
       const travel = Math.hypot(dx, dy);
       data.lastPosition = { x: ball.position.x, y: ball.position.y };
+      if (shotState && data.number > 0) {
+        data.shotTravel += travel;
+        const lastTrailPoint = data.shotTrail[data.shotTrail.length - 1];
+        if (!lastTrailPoint || Math.hypot(ball.position.x - lastTrailPoint.x, ball.position.y - lastTrailPoint.y) >= 8) {
+          data.shotTrail.push({ x: ball.position.x, y: ball.position.y });
+          if (data.shotTrail.length > 64) data.shotTrail.shift();
+        }
+        const pocketDistance = POCKETS.reduce((minimum, pocket) => Math.min(
+          minimum,
+          Math.hypot(ball.position.x - pocket.mouthX, ball.position.y - pocket.mouthY)
+        ), Infinity);
+        shotState.closestPocketDistance = Math.min(shotState.closestPocketDistance, pocketDistance);
+      }
       if (ball.physics) {
         data.rollAngle = ball.physics.rollAngle;
         data.rollVelocity = ball.physics.rollSpeed;
@@ -1358,15 +1596,87 @@
     judgementTimer = setTimeout(() => elements.judgement.classList.remove("is-visible"), 1250);
   }
 
+  function storyNumberForUpcomingPot(number) {
+    if (number === 8) return 8;
+    const ordinaryPots = runState.pottedNumbers.filter((potted) => potted !== 8).length;
+    return clamp(ordinaryPots + 1, 1, 15);
+  }
+
+  function analyzeCompletedShot(completedShot, outcome = null) {
+    const pottedNumbers = outcome?.pottedNumbers || completedShot?.pottedNumbers || [];
+    const cueScratch = outcome?.cueScratch ?? completedShot?.cueScratch ?? false;
+    return content.analyzeShot({
+      pottedNumbers,
+      pottedDetails: completedShot?.pottedDetails || [],
+      bankedNumbers: outcome?.shot?.bankedNumbers || completedShot?.bankedNumbers || [],
+      cueScratch,
+      launchPower: completedShot?.launchPower,
+      objectContacts: completedShot?.objectContacts,
+      nearMiss: pottedNumbers.length === 0
+        && Number.isFinite(completedShot?.closestPocketDistance)
+        && completedShot.closestPocketDistance <= POCKET_RADIUS + BALL_RADIUS * 1.15
+    });
+  }
+
+  function createShotStory(completedShot, outcome = null, preferredNumber = null) {
+    const pottedEvents = outcome?.pocketEvents || [];
+    const physicalNumbers = outcome?.pottedNumbers || completedShot?.pottedNumbers || [];
+    const physicalNumber = preferredNumber
+      ?? pottedEvents.find((event) => event.number !== 8)?.number
+      ?? physicalNumbers.find((number) => number !== 8)
+      ?? null;
+    if (physicalNumber === null || physicalNumber === 8) return null;
+    const matchingEvent = pottedEvents.find((event) => event.number === physicalNumber);
+    const storyNumber = matchingEvent?.storyNumber || storyNumberForUpcomingPot(physicalNumber);
+    const stageNumber = matchingEvent?.stageIndex !== undefined
+      ? matchingEvent.stageIndex + 1
+      : currentStageNumber();
+    const performance = content.selectPerformance({
+      ballNumber: storyNumber,
+      intent: content.INTENTS.ACTIVE,
+      timing: content.TIMINGS.RIGHT,
+      seed: (runState.shots + 1) * 31 + physicalNumber * 7 + Math.round((completedShot?.launchPower || 0.5) * 100)
+    });
+    const analysis = analyzeCompletedShot(completedShot, outcome);
+    return content.selectShotStory({
+      stage: stageNumber,
+      storyNumber,
+      archetype: analysis.id,
+      analysis,
+      performance
+    });
+  }
+
+  function updateVisibleShotStory(story) {
+    if (!shotStoryActive || !story) return;
+    shotStoryCurrent = story;
+    elements.shotStory.dataset.archetype = story.archetype;
+    elements.shotStoryTechnique.textContent = story.technique;
+    elements.shotStoryTitle.textContent = story.title;
+    elements.shotStoryLine.textContent = story.line;
+    setCompanionGesture(story.gesture, Math.min(story.durationMs, 1600));
+    showLiveMemory(story.prop, STAGE_SCENE_ASSETS[story.stageId]);
+  }
+
+  function beginCompletedPocketStory(number) {
+    if (!shotState || shotState.storyShown || number === 8 || shotState.storyFocusNumber !== number) return;
+    const story = createShotStory(shotState, null, number);
+    if (!story) return;
+    shotState.storyShown = true;
+    shotState.story = story;
+    showShotStory(story, lastStoryOrigin);
+  }
+
   function queueMicro(item) {
     microQueue.push(item);
-    if (elements.micro.hidden) showNextMicro();
+    if (elements.micro.hidden && !shotStoryActive) showNextMicro();
   }
 
   function showNextMicro() {
+    if (shotStoryActive) return;
     if (!microQueue.length) {
       elements.micro.hidden = true;
-      if (cinematicQueue.length && !cinematicActive) showNextCinematic();
+      if (cinematicQueue.length && !cinematicActive && !shotStoryActive) showNextCinematic();
       else if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
       return;
     }
@@ -1383,24 +1693,7 @@
     microTimer = setTimeout(() => {
       elements.micro.hidden = true;
       setTimeout(showNextMicro, 70);
-    }, clamp(item.durationMs + 3000, 4200, 5200));
-  }
-
-  function queueBallMicro(performance, event, outcome) {
-    const ball = content.getBall(event.storyNumber || performance.ballNumber);
-    const streaking = outcome.streakBonus > 0;
-    queueMicro({
-      id: performance.id,
-      type: streaking ? "streak" : event.completedEarly ? "early" : "pocket",
-      kicker: streaking
-        ? `${outcome.state.potStreak} 连进 · ${outcome.interestSignal.label}`
-        : classificationLabel(event.timing),
-      title: `${event.number}号球 · ${ball.name}`,
-      line: `${performance.visual} ${performance.line} ${outcome.interestTrend.line}`,
-      durationMs: performance.durationMs,
-      sound: streaking ? "streak" : "event",
-      intensity: streaking ? clamp(0.82 + outcome.state.potStreak * 0.05, 0.9, 1.25) : 0.86
-    });
+    }, clamp(item.durationMs + 900, 2200, 2900));
   }
 
   function queueStageMicro(stageNumber, eventType, seed, trend) {
@@ -1421,11 +1714,11 @@
 
   function queueCinematic(item) {
     cinematicQueue.push(item);
-    if (!cinematicActive && elements.micro.hidden && !microQueue.length) showNextCinematic();
+    if (!cinematicActive && !shotStoryActive && elements.micro.hidden && !microQueue.length) showNextCinematic();
   }
 
   function showNextCinematic() {
-    if (!elements.micro.hidden || microQueue.length) return;
+    if (shotStoryActive || !elements.micro.hidden || microQueue.length) return;
     if (!cinematicQueue.length) {
       cinematicActive = false;
       cinematicCurrent = null;
@@ -1439,6 +1732,8 @@
     markViewed(cinematicCurrent.id);
     elements.cinematic.dataset.kind = cinematicCurrent.kind || "stage";
     elements.cinematic.dataset.scene = cinematicCurrent.stageId || "ending";
+    elements.cinematic.style.setProperty("--hb-cinematic-origin-x", `${lastStoryOrigin.x}%`);
+    elements.cinematic.style.setProperty("--hb-cinematic-origin-y", `${lastStoryOrigin.y}%`);
     elements.cinematicImage.style.backgroundImage = cinematicCurrent.image
       ? `url("${cinematicCurrent.image}")`
       : "";
@@ -1502,21 +1797,22 @@
     };
   }
 
-  function processOutcomePerformances(outcome) {
+  function processOutcomePerformances(outcome, completedShot = {}) {
     const stageTransitions = outcome.newlyCompletedStageIds || outcome.completedStageIds || [];
     const queuePocketPerformances = () => {
-      outcome.pocketEvents?.forEach((event, index) => {
-        const performance = content.selectPerformance({
-          ballNumber: event.storyNumber || event.number,
-          intent: content.INTENTS.ACTIVE,
-          timing: content.TIMINGS.RIGHT,
-          seed: outcome.state.shots * 31 + event.number * 7 + index
-        });
-        queueBallMicro(performance, event, outcome);
+      outcome.pocketEvents?.forEach((event) => {
         const color = BALL_COLORS[event.number] || "#e4c178";
         const burst = [...pocketBursts].reverse().find((item) => item.number === event.number);
         spawnParticles(burst?.x || WORLD.width / 2, burst?.y || WORLD.height / 2, color, 18);
       });
+      const story = createShotStory(completedShot, outcome);
+      if (!story) return;
+      if (completedShot.storyShown) updateVisibleShotStory(story);
+      else {
+        completedShot.storyShown = true;
+        completedShot.story = story;
+        showShotStory(story, lastStoryOrigin);
+      }
     };
     const queueTechnicalPerformance = () => {
       if (outcome.cueScratch) {
@@ -1593,9 +1889,9 @@
     elements.call.classList.remove("is-quiet");
     resolvingShot = false;
     syncUI();
-    processOutcomePerformances(outcome);
-    root.dataset.state = runState.endState.ended ? "ending" : "aiming";
-    if (runState.endState.ended && !cinematicQueue.length && !cinematicActive) showResult();
+    processOutcomePerformances(outcome, completedShot);
+    root.dataset.state = runState.endState.ended ? "ending" : shotStoryActive ? "story" : "aiming";
+    if (runState.endState.ended && !cinematicQueue.length && !cinematicActive && !shotStoryActive && elements.micro.hidden) showResult();
   }
 
   function showResult() {
@@ -1680,6 +1976,8 @@
     particles = particles.filter((particle) => particle.life > 0);
     pocketBursts.forEach((burst) => { burst.life -= 0.024; });
     pocketBursts = pocketBursts.filter((burst) => burst.life > 0);
+    storyTrails.forEach((trail) => { trail.life -= 0.012; });
+    storyTrails = storyTrails.filter((trail) => trail.life > 0);
     collisionFeedbacks.forEach((feedback) => {
       feedback.life -= 0.115;
       feedback.radius += feedback.speed;
@@ -2020,6 +2318,51 @@
       return;
     }
     context.drawImage(tableCacheCanvas, 0, 0, WORLD.width, WORLD.height);
+  }
+
+  function drawRelationshipTableStory(timestamp) {
+    const pendingPots = shotState?.pottedNumbers?.filter((number) => number > 0).length || 0;
+    const litCount = Math.min(15, runState.pottedNumbers.length + pendingPots);
+    const accentByStage = ["#7fcbbb", "#d9b975", "#dc8c9d", "#e6bd70", "#b8a7d0", "#84b8c7", "#edc575"];
+    const accent = accentByStage[currentStageNumber() - 1] || accentByStage[0];
+    const pulse = 0.82 + Math.sin(timestamp * 0.004) * 0.12;
+
+    context.save();
+    RELATIONSHIP_SIGHTS.slice(0, litCount).forEach((sight, index) => {
+      const fresh = index === litCount - 1 && pendingPots > 0;
+      context.globalAlpha = fresh ? pulse : 0.54;
+      context.fillStyle = fresh ? "#fff0c6" : accent;
+      context.shadowColor = accent;
+      context.shadowBlur = fresh ? 13 : 7;
+      context.beginPath();
+      context.arc(sight.x, sight.y, fresh ? 5.2 : 3.6, 0, Math.PI * 2);
+      context.fill();
+    });
+    context.restore();
+
+    storyTrails.forEach((trail) => {
+      if (!trail.path || trail.path.length < 2) return;
+      context.save();
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.globalAlpha = Math.min(0.72, trail.life * 0.78);
+      context.strokeStyle = trail.color;
+      context.shadowColor = trail.color;
+      context.shadowBlur = trail.railHits > 0 ? 12 : 8;
+      context.lineWidth = trail.railHits > 0 ? 3.2 : 2.4;
+      context.beginPath();
+      trail.path.forEach((point, index) => {
+        if (index === 0) context.moveTo(point.x, point.y);
+        else context.lineTo(point.x, point.y);
+      });
+      context.stroke();
+      context.globalAlpha *= 0.72;
+      context.strokeStyle = "#fff5d8";
+      context.shadowBlur = 0;
+      context.lineWidth = 0.8;
+      context.stroke();
+      context.restore();
+    });
   }
 
   function drawBall(ball, timestamp) {
@@ -2397,6 +2740,7 @@
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
     drawTableLayer();
+    drawRelationshipTableStory(timestamp);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
@@ -2407,7 +2751,19 @@
     if (screenFlash > 0.01) {
       context.save();
       context.globalAlpha = screenFlash;
-      context.fillStyle = "#ffe7b0";
+      const flash = context.createRadialGradient(
+        lastStoryWorldOrigin.x,
+        lastStoryWorldOrigin.y,
+        0,
+        lastStoryWorldOrigin.x,
+        lastStoryWorldOrigin.y,
+        WORLD.height * 0.42
+      );
+      flash.addColorStop(0, "rgba(255, 239, 196, 0.98)");
+      flash.addColorStop(0.12, "rgba(255, 224, 164, 0.42)");
+      flash.addColorStop(0.42, "rgba(222, 169, 113, 0.1)");
+      flash.addColorStop(1, "rgba(255, 231, 176, 0)");
+      context.fillStyle = flash;
       context.fillRect(0, 0, WORLD.width, WORLD.height);
       context.restore();
     }
@@ -2429,7 +2785,8 @@
     const delta = Math.min(50, Math.max(0, timestamp - lastFrameAt));
     lastFrameAt = timestamp;
     if (!cinematicActive && !resultVisible) {
-      accumulator += delta;
+      const storyTimeScale = timestamp < storySlowMotionUntil ? POCKET_STORY_TIME_SCALE : 1;
+      accumulator += delta * storyTimeScale;
       let steps = 0;
       while (accumulator >= FIXED_STEP && steps < MAX_STEPS_PER_FRAME) {
         physicsStep();
@@ -2472,6 +2829,11 @@
           if (dataA.number === 0 && dataB.number > 0) shotState.firstContact = dataB.number;
           if (dataB.number === 0 && dataA.number > 0) shotState.firstContact = dataA.number;
         }
+        if (dataA.number > 0 && dataB.number > 0) {
+          const pair = [dataA.number, dataB.number].sort((left, right) => left - right).join(":");
+          shotState.objectContactPairs.add(pair);
+          shotState.objectContacts = shotState.objectContactPairs.size;
+        }
         const contact = collision?.supports?.[0] || {
           x: (bodyA.position.x + bodyB.position.x) / 2,
           y: (bodyA.position.y + bodyB.position.y) / 2
@@ -2491,6 +2853,7 @@
       }
       if (dataA && isRail(bodyB)) {
         dataA.shotRailHits += 1;
+        if (bodyB.plugin.heartbeatRail.kind === "jaw") dataA.shotJawHits += 1;
         recordRailImpact(bodyA, bodyB, collision);
         const impactSpeed = collision?.details?.incidentSpeed ?? bodyA.speed;
         impactBall(bodyA, Math.atan2(-bodyA.velocity.y, -bodyA.velocity.x), impactSpeed);
@@ -2498,6 +2861,7 @@
       }
       if (dataB && isRail(bodyA)) {
         dataB.shotRailHits += 1;
+        if (bodyA.plugin.heartbeatRail.kind === "jaw") dataB.shotJawHits += 1;
         recordRailImpact(bodyB, bodyA, collision);
         const impactSpeed = collision?.details?.incidentSpeed ?? bodyB.speed;
         impactBall(bodyB, Math.atan2(-bodyB.velocity.y, -bodyB.velocity.x), impactSpeed);
@@ -2595,6 +2959,7 @@
   initializeBallRenderer();
   buildRails();
   buildTimeline();
+  buildTableStory();
   rackBalls();
   if (coachSeen) elements.coach.classList.add("is-gone");
   syncUI();
@@ -2607,6 +2972,9 @@
     },
     powerForPullRatio(ratio) {
       return powerFromPullRatio(ratio);
+    },
+    classifyShot(shot) {
+      return content.analyzeShot(shot || {});
     },
     visibilityChange() {
       resetFrameTiming();
@@ -2621,6 +2989,16 @@
         collisionCount,
         collisionFeedbackCount: collisionFeedbacks.length,
         shotPottedNumbers: Object.freeze([...(shotState?.pottedNumbers || [])]),
+        shotTelemetry: shotState ? Object.freeze({
+          launchPower: shotState.launchPower,
+          launchSpeed: shotState.launchSpeed,
+          objectContacts: shotState.objectContacts,
+          closestPocketDistance: shotState.closestPocketDistance,
+          pottedDetails: Object.freeze(shotState.pottedDetails.map((detail) => Object.freeze({
+            ...detail,
+            path: Object.freeze(detail.path.map((point) => Object.freeze({ ...point })))
+          })))
+        }) : null,
         aim: pointerAim ? Object.freeze({
           start: Object.freeze({ ...pointerAim.start }),
           current: Object.freeze({ ...pointerAim.current }),
@@ -2639,6 +3017,14 @@
           maxShotSpeed: MAX_SHOT_SPEED
         }),
         presentation: Object.freeze({
+          shotStoryActive,
+          shotStoryArchetype: shotStoryCurrent?.archetype || null,
+          shotStoryTechnique: elements.shotStoryTechnique.textContent || null,
+          shotStoryTitle: elements.shotStoryTitle.textContent || null,
+          shotStoryImage: elements.shotStoryImage.style.backgroundImage || null,
+          storyTrailCount: storyTrails.length,
+          companionGesture: elements.companion.dataset.gesture || null,
+          completedMemoryCount: memoryNodes.filter((node) => !node.hidden).length,
           microVisible: !elements.micro.hidden,
           microQueued: microQueue.length,
           microType: elements.micro.dataset.type || null,
@@ -2721,6 +3107,9 @@
           rollAngle: bodyData(ball).rollAngle,
           rollVelocity: bodyData(ball).rollVelocity,
           shotRailHits: bodyData(ball).shotRailHits,
+          shotJawHits: bodyData(ball).shotJawHits,
+          shotTravel: bodyData(ball).shotTravel,
+          pocketMouthEntries: bodyData(ball).pocketMouthEntries,
           outsideSteps: bodyData(ball).outsideSteps,
           pocketApproach: bodyData(ball).pocketApproach ? Object.freeze({
             pocketId: bodyData(ball).pocketApproach.pocketId,
@@ -2794,19 +3183,32 @@
     },
     presentShot(shot) {
       if (shotState || runState.endState.ended) return false;
-      const outcome = rules.evaluateShot(runState, {
+      const completedShot = {
         pottedNumbers: [...(shot?.pottedNumbers || [])],
         cueScratch: Boolean(shot?.cueScratch),
         breakShot: Boolean(shot?.breakShot),
-        bankedNumbers: [...(shot?.bankedNumbers || [])]
+        bankedNumbers: [...(shot?.bankedNumbers || [])],
+        pottedDetails: [...(shot?.pottedDetails || [])],
+        objectContacts: Number(shot?.objectContacts) || 0,
+        closestPocketDistance: Number.isFinite(shot?.closestPocketDistance) ? shot.closestPocketDistance : Infinity,
+        launchPower: Number.isFinite(shot?.launchPower) ? shot.launchPower : 0.52,
+        storyShown: false
+      };
+      const outcome = rules.evaluateShot(runState, {
+        pottedNumbers: completedShot.pottedNumbers,
+        cueScratch: completedShot.cueScratch,
+        breakShot: completedShot.breakShot,
+        bankedNumbers: completedShot.bankedNumbers
       });
       runState = outcome.state;
       syncUI();
-      processOutcomePerformances(outcome);
+      processOutcomePerformances(outcome, completedShot);
       return this.snapshot();
     },
     advancePresentation() {
-      if (!elements.micro.hidden) {
+      if (shotStoryActive) {
+        hideShotStory();
+      } else if (!elements.micro.hidden) {
         clearTimeout(microTimer);
         elements.micro.hidden = true;
         showNextMicro();

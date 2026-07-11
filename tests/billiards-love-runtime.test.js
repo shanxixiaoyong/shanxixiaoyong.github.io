@@ -251,26 +251,34 @@ test("evaluates every settled shot exactly through the pure relationship rules e
   assert.doesNotMatch(source, /declaredBall: completedShot/);
   assert.doesNotMatch(source, /firstContact: completedShot/);
   assert.match(source, /runState = outcome\.state/);
-  assert.match(source, /processOutcomePerformances\(outcome\)/);
+  assert.match(source, /processOutcomePerformances\(outcome, completedShot\)/);
+  for (const field of ["pottedDetails", "objectContacts", "closestPocketDistance", "launchPower"]) {
+    assert.ok(source.includes(field), `missing ${field} physical telemetry`);
+  }
 });
 
-test("connects per-pot center beats, streak feedback, seven stage performances, and black-eight endings", () => {
+test("connects shot-driven table stories, technical feedback, stage performances, and black-eight endings", () => {
   assert.match(source, /content\.selectPerformance\(\{/);
+  assert.match(source, /content\.analyzeShot\(\{/);
+  assert.match(source, /content\.selectShotStory\(\{/);
   assert.match(source, /content\.selectStageEvent\(\{/);
   assert.match(source, /content\.selectStageTransition\(\{/);
-  assert.match(source, /queueBallMicro\(performance, event, outcome\)/);
+  assert.match(source, /beginCompletedPocketStory\(number\)/);
+  assert.match(source, /showShotStory\(story, lastStoryOrigin\)/);
+  assert.match(source, /updateVisibleShotStory\(story\)/);
   assert.match(source, /queueStageMicro\(/);
   assert.match(source, /queueCinematic\(copy\)/);
-  assert.match(source, /cinematicQueue\.length && !cinematicActive\) showNextCinematic\(\)/);
-  assert.match(source, /!cinematicActive && elements\.micro\.hidden && !microQueue\.length/);
+  assert.match(source, /!cinematicActive && !shotStoryActive && elements\.micro\.hidden && !microQueue\.length/);
+  assert.match(source, /if \(shotStoryActive \|\| !elements\.micro\.hidden \|\| microQueue\.length\) return/);
   assert.doesNotMatch(source, /copies\[copies\.length - 1\]\.onClose/);
   assert.match(source, /STAGE_SCENE_ASSETS/);
+  assert.match(source, /MEMORY_MILESTONES/);
   assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
   assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 1800, 3400, 4300\)/);
   assert.match(source, /function earlyEightCopy\(outcome\)/);
-  assert.match(source, /outcome\.streakBonus > 0/);
-  assert.match(source, /outcome\.interestTrend\.line/);
-  assert.match(source, /clamp\(item\.durationMs \+ 3000, 4200, 5200\)/);
+  assert.doesNotMatch(source, /queueBallMicro/);
+  assert.doesNotMatch(source, /title: `\$\{event\.number\}号球/);
+  assert.match(source, /clamp\(item\.durationMs \+ 900, 2200, 2900\)/);
   assert.match(source, /audio\.cue\(item\.sound \|\| "event"/);
   assert.match(source, /content\.getEnding\(grade\)/);
   assert.doesNotMatch(source, /specialCopy\("confessionTooEarly"/);

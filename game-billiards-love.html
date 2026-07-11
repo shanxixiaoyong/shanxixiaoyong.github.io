@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/love-scenes/starlight-vow.webp" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-touch-physics-20260712c">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-story-table-20260712a">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -55,6 +55,18 @@
         <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="在桌面任意位置反向滑动瞄准蓄力，松开击球"></canvas>
         <canvas id="hb-ball-canvas" width="720" height="1440" aria-hidden="true"></canvas>
 
+        <div class="hb-table-story" id="hb-table-story" aria-hidden="true">
+          <div class="hb-table-reflection"></div>
+          <div class="hb-companion" id="hb-companion" data-gesture="waiting">
+            <i class="hb-companion-sleeve"></i>
+            <i class="hb-companion-hand"></i>
+          </div>
+          <div class="hb-memory-rail" id="hb-memory-rail"></div>
+          <div class="hb-pocket-focus" id="hb-pocket-focus" hidden>
+            <i></i><b></b><span></span>
+          </div>
+        </div>
+
         <div class="hb-call" id="hb-call" aria-live="polite">
           <span id="hb-call-label">开球</span>
           <strong id="hb-call-title">打散今晚的第一束光</strong>
@@ -62,9 +74,9 @@
         </div>
 
         <div class="hb-micro" id="hb-micro" aria-live="polite" aria-atomic="true" hidden>
-          <span id="hb-micro-kicker">1 · 对视</span>
-          <strong id="hb-micro-title">目光停了一秒</strong>
-          <p id="hb-micro-line">人群还在移动，你们却同时记住了彼此。</p>
+          <span id="hb-micro-kicker">这一杆</span>
+          <strong id="hb-micro-title">话题暂时停在这里</strong>
+          <p id="hb-micro-line">球没有落袋，对面的目光仍然留在桌边。</p>
         </div>
 
         <div class="hb-judgement" id="hb-judgement" role="status" aria-live="polite"></div>
@@ -96,6 +108,17 @@
         <strong id="hb-streak">0</strong>
       </div>
     </footer>
+
+    <section class="hb-shot-story" id="hb-shot-story" data-phase="focus" data-archetype="direct" aria-live="polite" aria-atomic="true" hidden>
+      <div class="hb-shot-story-image" id="hb-shot-story-image" aria-hidden="true"></div>
+      <div class="hb-shot-story-light" aria-hidden="true"></div>
+      <div class="hb-shot-story-orbit" aria-hidden="true"><i></i><b></b></div>
+      <div class="hb-shot-story-copy">
+        <span id="hb-shot-story-technique">直线命中 · 坦率靠近</span>
+        <strong id="hb-shot-story-title">这一句没有再绕开</strong>
+        <p id="hb-shot-story-line">球落袋的声音很轻，她却认真听见了你的意思。</p>
+      </div>
+    </section>
 
     <section class="hb-cinematic" id="hb-cinematic" data-kind="stage" aria-live="polite" aria-atomic="true" hidden>
       <div class="hb-cinematic-image" id="hb-cinematic-image" aria-hidden="true"></div>
@@ -129,10 +152,10 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-love-touch-physics-20260712c"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-touch-physics-20260712c"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-touch-physics-20260712c"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-touch-physics-20260712c"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-touch-physics-20260712c"></script>
+  <script src="assets/billiards-physics.js?v=billiards-love-story-table-20260712a"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-story-table-20260712a"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-story-table-20260712a"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-story-table-20260712a"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-story-table-20260712a"></script>
 </body>
 </html>
