@@ -234,8 +234,8 @@ test("applies escalating miss losses and fails at the active stage's hidden floo
     losses.push(result.interestDelta);
     state = result.state;
   }
-  assert.deepEqual(losses, [-2, -6, -10, -10, -10]);
-  assert.equal(state.interest, 34);
+  assert.deepEqual(losses, [-1, -3, -6, -6, -6, -6, -6]);
+  assert.equal(state.interest, 38);
   assert.equal(STAGES[0].interestFloor, 38);
   assert.equal(result.interestSignal.band, "lost");
   assert.equal(result.interestTrend.direction, "down");
@@ -244,15 +244,15 @@ test("applies escalating miss losses and fails at the active stage's hidden floo
 
 test("combines scratch and miss feedback while preserving exact technical statistics", () => {
   const opening = open([], { cueScratch: true });
-  assert.equal(opening.state.interest, 63);
+  assert.equal(opening.state.interest, 66);
   assert.equal(opening.missEvent.counted, false);
-  assert.equal(opening.scratchEvent.interestDelta, -9);
+  assert.equal(opening.scratchEvent.interestDelta, -6);
   assert.deepEqual(opening.events.map((event) => event.type), ["scratch", "miss"]);
 
   const miss = play(opening.state, [], { cueScratch: true });
-  assert.equal(miss.interestDelta, -11);
-  assert.equal(miss.missEvent.interestDelta, -2);
-  assert.equal(miss.scratchEvent.interestDelta, -9);
+  assert.equal(miss.interestDelta, -7);
+  assert.equal(miss.missEvent.interestDelta, -1);
+  assert.equal(miss.scratchEvent.interestDelta, -6);
   assert.equal(miss.state.cueScratches, 2);
   assert.equal(miss.state.consecutiveMisses, 1);
 });

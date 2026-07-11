@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-spin-theatre-20260711g";
-const styleCacheVersion = "billiards-love-spin-theatre-20260711g";
+const runtimeCacheVersion = "billiards-love-touch-physics-20260711h";
+const styleCacheVersion = "billiards-love-touch-physics-20260711h";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -316,15 +316,18 @@ test("shows power as a qualitative bar without a visible percentage", () => {
   assert.doesNotMatch(powerHtml, /\d+%/);
   assert.match(power, /grid-template-columns:\s*28px minmax\(0, 1fr\);/);
   assert.match(game, /const MAX_PULL = 300;/);
-  assert.match(game, /elements\.powerFill\.style\.width/);
-  assert.match(game, /力度：\$\{aimPower < 0\.34 \? "轻"/);
+  assert.match(game, /function powerFromPullRatio\(value\)/);
+  assert.match(game, /elements\.powerFill\.style\.width = `\$\{Math\.round\(pointerAim\.pullRatio \* 100\)\}%`/);
+  assert.match(game, /pointerAim\.pullRatio < LIGHT_PULL_END \? "轻推"/);
+  assert.match(rule(".hb-power i"), /33\.1%/);
+  assert.match(rule(".hb-power b"), /33\.333%/);
 });
 
-test("keeps the full-screen performance layered, centered, and dismissible", () => {
+test("keeps the full-screen performance lightweight, centered, and dismissible", () => {
   const cinematicHtml = fragment(html, '<section class="hb-cinematic"', "</section>");
   const layerNames = [
-    "hb-cinematic-image", "hb-cinematic-light", "hb-cinematic-particles",
-    "hb-cinematic-shade", "hb-cinematic-vignette", "hb-cinematic-transition"
+    "hb-cinematic-image", "hb-cinematic-light",
+    "hb-cinematic-shade", "hb-cinematic-transition"
   ];
   let previousPosition = -1;
   for (const name of layerNames) {
@@ -347,10 +350,14 @@ test("keeps the full-screen performance layered, centered, and dismissible", () 
   assert.match(rule(".hb-cinematic-skip"), /z-index:\s*10;/);
   assert.match(css, /\.hb-result\s*\{[^}]*z-index:\s*60;[^}]*\}/s);
   assert.match(css, /\.hb-cinematic-image,[\s\S]*?\.hb-cinematic-transition\s*\{[\s\S]*?pointer-events:\s*none;/);
-  assert.match(css, /@keyframes hb-cinematic-light-sweep/);
-  assert.match(css, /@keyframes hb-cinematic-curtain/);
-  assert.match(css, /@keyframes hb-cinematic-drift/);
-  assert.match(css, /@keyframes hb-cinematic-particles/);
+  assert.doesNotMatch(cinematicHtml, /hb-cinematic-particles|hb-cinematic-vignette/);
+  assert.doesNotMatch(rule(".hb-cinematic-image"), /filter:|animation:/);
+  assert.doesNotMatch(rule(".hb-cinematic-light"), /filter:|animation:/);
+  assert.match(rule(".hb-cinematic-particles"), /display:\s*none;/);
+  assert.match(rule(".hb-cinematic-vignette"), /display:\s*none;/);
+  assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*hb-cinematic-simple-reveal 520ms[^}]*\}/s);
+  assert.match(css, /@keyframes hb-cinematic-simple-reveal/);
+  assert.match(css, /@keyframes hb-cinematic-simple-copy/);
   for (const kind of ["confession", "proposal", "early-success", "rejection"]) {
     assert.match(css, new RegExp(`\\.hb-cinematic\\[data-kind="${kind}"\\]`));
   }
@@ -361,7 +368,8 @@ test("keeps the full-screen performance layered, centered, and dismissible", () 
 });
 
 test("presents direct shooting guidance without mandatory selection copy", () => {
-  assert.match(html, /从白球向后拖动瞄准蓄力，松开击球/);
+  assert.match(html, /在桌面任意位置反向滑动瞄准蓄力，松开击球/);
+  assert.match(html, /桌面任意位置向后滑动/);
   assert.doesNotMatch(html, /先点击目标球|先选中目标球/);
 });
 

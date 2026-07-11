@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/love-scenes/starlight-vow.webp" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-spin-theatre-20260711g">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-touch-physics-20260711h">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -52,13 +52,13 @@
 
     <section class="hb-playfield" id="hb-playfield" aria-label="标准十五球桌球游戏区域">
       <div class="hb-table-wrap" id="hb-table-wrap">
-        <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="从白球向后拖动瞄准蓄力，松开击球"></canvas>
+        <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="在桌面任意位置反向滑动瞄准蓄力，松开击球"></canvas>
         <canvas id="hb-ball-canvas" width="720" height="1440" aria-hidden="true"></canvas>
 
         <div class="hb-call" id="hb-call" aria-live="polite">
           <span id="hb-call-label">开球</span>
           <strong id="hb-call-title">打散今晚的第一束光</strong>
-          <small id="hb-call-hint">从白球向后拖动，松开完成开球</small>
+          <small id="hb-call-hint">桌面任意位置向后滑动，松开完成开球</small>
         </div>
 
         <div class="hb-power" id="hb-power" hidden aria-hidden="true">
@@ -78,7 +78,7 @@
           <i class="hb-coach-ball">1</i>
           <span></span>
           <i class="hb-coach-cue"></i>
-          <p><strong>从白球向后拉动</strong><small>松开击球</small></p>
+          <p><strong>桌面任意位置向后滑动</strong><small>松开击球</small></p>
         </div>
       </div>
     </section>
@@ -106,9 +106,7 @@
     <section class="hb-cinematic" id="hb-cinematic" data-kind="stage" aria-live="polite" aria-atomic="true" hidden>
       <div class="hb-cinematic-image" id="hb-cinematic-image" aria-hidden="true"></div>
       <div class="hb-cinematic-light" aria-hidden="true"></div>
-      <div class="hb-cinematic-particles" aria-hidden="true"></div>
       <div class="hb-cinematic-shade" aria-hidden="true"></div>
-      <div class="hb-cinematic-vignette" aria-hidden="true"></div>
       <div class="hb-cinematic-transition" aria-hidden="true"></div>
       <button class="hb-cinematic-skip" id="hb-cinematic-skip" type="button" aria-label="略过演出" title="略过">&times;</button>
       <div class="hb-cinematic-copy">
@@ -137,10 +135,10 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-love-spin-theatre-20260711g"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-spin-theatre-20260711g"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-spin-theatre-20260711g"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-spin-theatre-20260711g"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-spin-theatre-20260711g"></script>
+  <script src="assets/billiards-physics.js?v=billiards-love-touch-physics-20260711h"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-touch-physics-20260711h"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-touch-physics-20260711h"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-touch-physics-20260711h"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-touch-physics-20260711h"></script>
 </body>
 </html>

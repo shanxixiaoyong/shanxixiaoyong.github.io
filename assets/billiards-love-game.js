@@ -70,7 +70,7 @@
   const TABLE_OUTER = Object.freeze({ left: 2, right: 718, top: 48, bottom: 1392 });
   const BALL_RADIUS = 14.85;
   const BALL_DIAMETER = BALL_RADIUS * 2;
-  const POCKET_RADIUS = 33;
+  const POCKET_RADIUS = 37.6;
   const POCKET_MIN_INWARD_SPEED = 0.012;
   const POCKET_MOUTH_DEPTH_TOLERANCE = BALL_RADIUS * 0.08;
   const POCKET_MOUTH_LATERAL_TOLERANCE = BALL_RADIUS * 0.06;
@@ -78,8 +78,8 @@
   const POCKET_SHELF_LATERAL_TOLERANCE = BALL_RADIUS * 0.08;
   const POCKET_APPROACH_EXIT_DEPTH = BALL_RADIUS * 0.30;
   const POCKET_LIP_SETTLE_RATIO = 0.88;
-  const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.00;
-  const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.22;
+  const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.28;
+  const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.53;
   const CORNER_POCKET_SHELF = BALL_DIAMETER * 0.65;
   const SIDE_POCKET_SHELF = BALL_DIAMETER * 0.14;
   const CORNER_CUT_ANGLE_DEGREES = 142;
@@ -92,8 +92,12 @@
   const MAX_STEPS_PER_FRAME = 8;
   const MIN_PULL = 14;
   const MAX_PULL = 300;
-  const MIN_SHOT_SPEED = 8.1;
-  const MAX_SHOT_SPEED = 30.9;
+  const LIGHT_PULL_END = 1 / 3;
+  const STRONG_PULL_START = 2 / 3;
+  const LIGHT_POWER_MAX = 0.20;
+  const STRONG_POWER_MIN = 0.68;
+  const MIN_SHOT_SPEED = 2.6;
+  const MAX_SHOT_SPEED = 42;
   const STOP_SPEED = Physics.CONFIG.stopSpeed;
   const NATURAL_STOP_SPEED = 0.14;
   const POCKET_MIN_DURATION = 280;
@@ -101,7 +105,7 @@
   const MAX_RENDER_WIDTH = 1440;
   const MAX_RENDER_HEIGHT = 2880;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
-  const MAX_BALL_RENDER_SCALE = 2;
+  const MAX_BALL_RENDER_SCALE = 3.5;
   const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
   const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
@@ -220,6 +224,19 @@
     return Math.max(minimum, Math.min(maximum, value));
   }
 
+  function powerFromPullRatio(value) {
+    const ratio = clamp(value, 0, 1);
+    if (ratio <= LIGHT_PULL_END) {
+      return ratio / LIGHT_PULL_END * LIGHT_POWER_MAX;
+    }
+    if (ratio <= STRONG_PULL_START) {
+      const progress = (ratio - LIGHT_PULL_END) / (STRONG_PULL_START - LIGHT_PULL_END);
+      return LIGHT_POWER_MAX + progress * (STRONG_POWER_MIN - LIGHT_POWER_MAX);
+    }
+    const progress = (ratio - STRONG_PULL_START) / (1 - STRONG_PULL_START);
+    return STRONG_POWER_MIN + progress * (1 - STRONG_POWER_MIN);
+  }
+
   function distance(left, right) {
     return Math.hypot(left.x - right.x, left.y - right.y);
   }
@@ -283,7 +300,7 @@
       transform: "none",
       transformOrigin: "center"
     });
-    canvas.setAttribute("aria-label", "从底部白球向后拖动，松开后向上开球");
+    canvas.setAttribute("aria-label", "在桌面任意位置反向滑动瞄准蓄力，松开击球");
     resizeCanvas();
   }
 
@@ -855,7 +872,7 @@
       elements.selectedName.textContent = "开球无需声明";
       elements.callLabel.textContent = "开球";
       elements.callTitle.textContent = "打散今晚的第一束光";
-      elements.callHint.textContent = "从白球向后拖动，松开完成开球";
+      elements.callHint.textContent = "桌面任意位置向后滑动，松开完成开球";
     } else if (selectedBallNumber !== null) {
       selectedBallNumber = null;
       elements.selectedBall.textContent = String(progress?.remaining || 0);
@@ -933,17 +950,16 @@
 
   function beginAim(event, point) {
     if (!cueBall) return;
-    if (distance(point, cueBall.position) > 54) {
-      if (coachSeen) showJudgement("从白球向后拉动球杆");
-      return;
-    }
     pointerAim = {
       id: event.pointerId,
+      start: { ...point },
       current: point,
       direction: { ...aimDirection },
+      pullRatio: 0,
       power: 0
     };
     canvas.setPointerCapture?.(event.pointerId);
+    elements.powerFill.style.width = "0%";
     elements.power.hidden = false;
     elements.call.classList.add("is-quiet");
     hideCoach();
@@ -952,15 +968,19 @@
   function updateAim(point) {
     if (!pointerAim || !cueBall) return;
     pointerAim.current = point;
-    const pull = { x: cueBall.position.x - point.x, y: cueBall.position.y - point.y };
+    const pull = {
+      x: pointerAim.start.x - point.x,
+      y: pointerAim.start.y - point.y
+    };
     const pullDistance = Math.hypot(pull.x, pull.y);
     if (pullDistance > 5) pointerAim.direction = normalize(pull, pointerAim.direction);
-    pointerAim.power = clamp((pullDistance - MIN_PULL) / (MAX_PULL - MIN_PULL), 0, 1);
+    pointerAim.pullRatio = clamp((pullDistance - MIN_PULL) / (MAX_PULL - MIN_PULL), 0, 1);
+    pointerAim.power = powerFromPullRatio(pointerAim.pullRatio);
     aimDirection = { ...pointerAim.direction };
     aimPower = pointerAim.power;
-    elements.powerFill.style.width = `${Math.round(aimPower * 100)}%`;
+    elements.powerFill.style.width = `${Math.round(pointerAim.pullRatio * 100)}%`;
     elements.powerValue.textContent = "";
-    elements.power.setAttribute("aria-label", `力度：${aimPower < 0.34 ? "轻" : aimPower < 0.72 ? "适中" : aimPower < 0.96 ? "强" : "满"}`);
+    elements.power.setAttribute("aria-label", `力度：${pointerAim.pullRatio < LIGHT_PULL_END ? "轻推" : pointerAim.pullRatio < STRONG_PULL_START ? "适中" : pointerAim.pullRatio < 0.96 ? "强力" : "满力"}`);
   }
 
   function cancelAim() {
@@ -982,7 +1002,7 @@
   function shoot(direction, power) {
     if (!canInteract()) return false;
     aimDirection = { ...direction };
-    const speed = MIN_SHOT_SPEED + Math.pow(clamp(power, 0, 1), 0.78) * (MAX_SHOT_SPEED - MIN_SHOT_SPEED);
+    const speed = MIN_SHOT_SPEED + clamp(power, 0, 1) * (MAX_SHOT_SPEED - MIN_SHOT_SPEED);
     resetShotRailHits();
     shotState = {
       declaredBall: null,
@@ -1826,16 +1846,11 @@
       context.save();
       context.translate(railBody.position.x, railBody.position.y);
       context.rotate(railBody.angle);
-      const rubber = context.createLinearGradient(0, -material.height / 2, 0, material.height / 2);
-      rubber.addColorStop(0, material.kind === "jaw" ? "#376d5b" : "#2b6755");
-      rubber.addColorStop(0.35, "#174c3f");
-      rubber.addColorStop(0.72, "#0b3028");
-      rubber.addColorStop(1, "#071f1b");
-      context.fillStyle = rubber;
+      context.fillStyle = material.kind === "jaw" ? "#183a31" : "#123a31";
       roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-      context.strokeStyle = "rgba(118, 181, 154, 0.46)";
-      context.lineWidth = material.kind === "jaw" ? 1.1 : 1.5;
+      context.strokeStyle = "rgba(102, 151, 132, 0.28)";
+      context.lineWidth = material.kind === "jaw" ? 0.9 : 1.1;
       roundRectPath(context, -material.width / 2 + 1, -material.height / 2 + 1, material.width - 2, material.height - 2, material.kind === "jaw" ? 4 : 7);
       context.stroke();
       context.restore();
@@ -1935,19 +1950,6 @@
     context.beginPath();
     context.arc(pocket.x, pocket.y, POCKET_RADIUS, 0, Math.PI * 2);
     context.fill();
-    context.save();
-    context.translate(pocket.mouthX, pocket.mouthY);
-    context.rotate(Math.atan2(pocket.inwardY, pocket.inwardX));
-    context.scale(0.18, 1);
-    const entrance = context.createRadialGradient(-pocket.mouth * 0.08, 0, 1, 0, 0, pocket.mouth / 2);
-    entrance.addColorStop(0, "#020303");
-    entrance.addColorStop(0.7, "#11100e");
-    entrance.addColorStop(1, "#513629");
-    context.fillStyle = entrance;
-    context.beginPath();
-    context.arc(0, 0, pocket.mouth / 2, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
     context.restore();
   }
 
@@ -2485,6 +2487,9 @@
     mapClientPoint(clientX, clientY, rect) {
       return Object.freeze(clientPointToWorld(clientX, clientY, rect));
     },
+    powerForPullRatio(ratio) {
+      return powerFromPullRatio(ratio);
+    },
     visibilityChange() {
       resetFrameTiming();
       return this.snapshot();
@@ -2498,6 +2503,23 @@
         collisionCount,
         collisionFeedbackCount: collisionFeedbacks.length,
         shotPottedNumbers: Object.freeze([...(shotState?.pottedNumbers || [])]),
+        aim: pointerAim ? Object.freeze({
+          start: Object.freeze({ ...pointerAim.start }),
+          current: Object.freeze({ ...pointerAim.current }),
+          direction: Object.freeze({ ...pointerAim.direction }),
+          pullRatio: pointerAim.pullRatio,
+          power: pointerAim.power
+        }) : null,
+        input: Object.freeze({
+          minPull: MIN_PULL,
+          maxPull: MAX_PULL,
+          lightPullEnd: LIGHT_PULL_END,
+          strongPullStart: STRONG_PULL_START,
+          lightPowerMax: LIGHT_POWER_MAX,
+          strongPowerMin: STRONG_POWER_MIN,
+          minShotSpeed: MIN_SHOT_SPEED,
+          maxShotSpeed: MAX_SHOT_SPEED
+        }),
         presentation: Object.freeze({
           microVisible: !elements.micro.hidden,
           microQueued: microQueue.length,

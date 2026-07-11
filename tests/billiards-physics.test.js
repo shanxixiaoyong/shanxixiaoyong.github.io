@@ -107,7 +107,7 @@ test("substeps a maximum-speed shot so balls cannot tunnel through each other", 
   const cue = physics.Bodies.circle(0, 0, 14.85);
   const object = physics.Bodies.circle(48, 0, 14.85);
   physics.Composite.add(engine.world, [cue, object]);
-  physics.Body.setVelocity(cue, { x: 30, y: 0 });
+  physics.Body.setVelocity(cue, { x: 42, y: 0 });
   let collisionCount = 0;
   physics.Events.on(engine, "collisionStart", (event) => {
     collisionCount += event.pairs.length;

@@ -20,7 +20,7 @@ export const GAME_CONTRACTS = [
     file: BILLIARDS_GAME_PAGE,
     name: "心动桌球",
     portalAsset: "assets/portal/billiards-night.png",
-    cacheVersion: "billiards-love-spin-theatre-20260711g",
+    cacheVersion: "billiards-love-touch-physics-20260711h",
     pendingFiles: ["assets/billiards-ball-renderer.js"],
     styles: ["assets/billiards-love.css"],
     scripts: [

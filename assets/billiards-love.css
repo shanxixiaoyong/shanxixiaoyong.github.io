@@ -424,18 +424,28 @@ button {
 }
 
 .hb-power i {
+  position: relative;
   height: 4px;
   overflow: hidden;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(90deg,
+      rgba(104, 190, 170, 0.3) 0 33.1%,
+      rgba(255, 255, 255, 0.46) 33.1% 33.55%,
+      rgba(221, 183, 112, 0.28) 33.55% 66.45%,
+      rgba(255, 255, 255, 0.46) 66.45% 66.9%,
+      rgba(210, 112, 128, 0.32) 66.9% 100%);
 }
 
 .hb-power b {
   display: block;
   width: 0;
   height: 100%;
-  background: linear-gradient(90deg, var(--hb-teal), var(--hb-gold), var(--hb-rose));
-  transition: width 40ms linear;
+  background: linear-gradient(90deg,
+    var(--hb-teal) 0 33.333%,
+    var(--hb-gold) 33.333% 66.666%,
+    var(--hb-rose) 66.666% 100%);
+  transition: width 24ms ease-out;
 }
 
 .hb-power strong {
@@ -775,13 +785,10 @@ button {
 }
 
 .hb-cinematic-image {
-  z-index: -5;
-  inset: -3%;
+  z-index: -4;
+  inset: 0;
   background: url("billiards-scenes/lounge-night.jpg") center / cover no-repeat;
-  filter: brightness(0.8) saturate(1.08) contrast(1.04);
-  transform-origin: var(--hb-cinematic-focus-x) var(--hb-cinematic-focus-y);
-  animation: hb-cinematic-drift 5.6s cubic-bezier(0.18, 0.72, 0.22, 1) both;
-  will-change: transform;
+  opacity: 0.92;
 }
 
 .hb-cinematic-image::after,
@@ -810,53 +817,21 @@ button {
 }
 
 .hb-cinematic-light {
-  z-index: -4;
+  z-index: -3;
   overflow: hidden;
   background:
-    linear-gradient(112deg, transparent 12% 33%, var(--hb-cinematic-light) 46%, rgba(255, 248, 225, 0.12) 50%, transparent 67%),
-    radial-gradient(ellipse at var(--hb-cinematic-focus-x) var(--hb-cinematic-focus-y), color-mix(in srgb, var(--hb-cinematic-accent) 31%, transparent) 0, transparent 56%);
-  transform: translateX(-26%) skewX(-6deg);
-  animation: hb-cinematic-light-sweep 5.2s ease-in-out both;
-  will-change: opacity, transform;
+    linear-gradient(180deg, rgba(1, 4, 3, 0.18), transparent 30% 62%, rgba(1, 4, 3, 0.42)),
+    radial-gradient(ellipse at var(--hb-cinematic-focus-x) var(--hb-cinematic-focus-y), color-mix(in srgb, var(--hb-cinematic-accent) 24%, transparent) 0, transparent 58%);
+  opacity: 0.72;
 }
 
-.hb-cinematic-light::before {
-  top: -12%;
-  left: -16%;
-  width: 132%;
-  height: 104%;
-  background: conic-gradient(from 204deg at 50% 0%, transparent 0 39%, color-mix(in srgb, var(--hb-cinematic-accent) 24%, transparent) 43%, rgba(255, 250, 232, 0.18) 46%, color-mix(in srgb, var(--hb-cinematic-accent) 16%, transparent) 50%, transparent 55% 100%);
-  transform-origin: 50% 0;
-  animation: hb-cinematic-spotlight 4.8s ease-in-out both;
-}
-
+.hb-cinematic-light::before,
 .hb-cinematic-light::after {
-  top: calc(var(--hb-cinematic-focus-y) - 1px);
-  right: -24%;
-  left: -24%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 11%, color-mix(in srgb, var(--hb-cinematic-accent) 34%, transparent), rgba(255, 255, 255, 0.94) 50%, color-mix(in srgb, var(--hb-cinematic-accent) 34%, transparent), transparent 89%);
-  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--hb-cinematic-accent) 28%, transparent);
-  transform: scaleX(0.18);
-  animation: hb-cinematic-flare 4.2s 260ms ease-out both;
+  display: none;
 }
 
 .hb-cinematic-particles {
-  z-index: -3;
-  inset: -6%;
-  background:
-    radial-gradient(circle at 8% 74%, rgba(255, 242, 207, 0.86) 0 1px, transparent 2.4px),
-    radial-gradient(circle at 17% 38%, color-mix(in srgb, var(--hb-cinematic-accent) 82%, white) 0 2px, transparent 3.6px),
-    radial-gradient(circle at 27% 82%, rgba(255, 227, 181, 0.76) 0 1.2px, transparent 2.6px),
-    radial-gradient(circle at 36% 24%, rgba(255, 247, 226, 0.72) 0 1.2px, transparent 2.6px),
-    radial-gradient(circle at 48% 66%, color-mix(in srgb, var(--hb-cinematic-accent) 88%, white) 0 2.2px, transparent 3.8px),
-    radial-gradient(circle at 59% 18%, rgba(255, 235, 197, 0.8) 0 1.2px, transparent 2.6px),
-    radial-gradient(circle at 67% 79%, rgba(255, 247, 223, 0.78) 0 1.3px, transparent 2.8px),
-    radial-gradient(circle at 76% 43%, color-mix(in srgb, var(--hb-cinematic-accent) 86%, white) 0 2.2px, transparent 3.8px),
-    radial-gradient(circle at 88% 70%, rgba(255, 229, 182, 0.82) 0 2px, transparent 3.6px),
-    radial-gradient(circle at 95% 31%, rgba(255, 248, 229, 0.76) 0 1.2px, transparent 2.6px);
-  animation: hb-cinematic-particles 5.6s ease-out both;
-  will-change: opacity, transform;
+  display: none;
 }
 
 .hb-cinematic-particles::before {
@@ -880,7 +855,6 @@ button {
 .hb-cinematic[data-kind="confession"] .hb-cinematic-image {
   background-image: url("billiards-scenes/confession-night.jpg");
   background-position: 62% center;
-  animation-name: hb-cinematic-confession-camera;
 }
 
 .hb-cinematic[data-kind="confession"] {
@@ -889,10 +863,6 @@ button {
   --hb-cinematic-deep: rgba(88, 25, 45, 0.88);
   --hb-cinematic-focus-x: 62%;
   --hb-cinematic-focus-y: 44%;
-}
-
-.hb-cinematic[data-kind="confession"] .hb-cinematic-light::before {
-  animation-name: hb-cinematic-heartbeat-light;
 }
 
 .hb-cinematic[data-kind="proposal"] .hb-cinematic-image,
@@ -910,11 +880,6 @@ button {
   --hb-cinematic-focus-y: 40%;
 }
 
-.hb-cinematic[data-kind="proposal"] .hb-cinematic-particles,
-.hb-cinematic[data-kind="ending"] .hb-cinematic-particles {
-  animation-name: hb-cinematic-stars;
-}
-
 .hb-cinematic[data-kind="early-success"] {
   --hb-cinematic-accent: #f0b0bd;
   --hb-cinematic-light: rgba(246, 153, 176, 0.58);
@@ -924,11 +889,7 @@ button {
 }
 
 .hb-cinematic[data-kind="early-success"] .hb-cinematic-image {
-  animation: hb-cinematic-rush 4.2s cubic-bezier(0.12, 0.76, 0.18, 1) both;
-}
-
-.hb-cinematic[data-kind="early-success"] .hb-cinematic-light::after {
-  animation-name: hb-cinematic-success-flare;
+  background-position: 62% center;
 }
 
 .hb-cinematic[data-kind="rejection"] {
@@ -940,19 +901,7 @@ button {
 }
 
 .hb-cinematic[data-kind="rejection"] .hb-cinematic-image {
-  filter: brightness(0.6) saturate(0.58) contrast(1.12);
-  animation: hb-cinematic-rejection-camera 4.4s ease-out both;
-}
-
-.hb-cinematic[data-kind="rejection"] .hb-cinematic-particles::before {
-  inset: -8%;
-  background: repeating-linear-gradient(103deg, transparent 0 22px, rgba(196, 225, 236, 0.22) 23px, transparent 24px 43px);
-  animation: hb-cinematic-rain 1.7s linear infinite;
-}
-
-.hb-cinematic[data-kind="rejection"] .hb-cinematic-light::after {
-  opacity: 0.2;
-  animation-name: hb-cinematic-rejection-flare;
+  opacity: 0.74;
 }
 
 .hb-cinematic-shade {
@@ -969,9 +918,7 @@ button {
 }
 
 .hb-cinematic-vignette {
-  z-index: -1;
-  background: radial-gradient(ellipse at center, transparent 31%, rgba(2, 5, 5, 0.2) 65%, rgba(1, 3, 3, 0.88) 100%);
-  box-shadow: inset 0 0 64px rgba(0, 0, 0, 0.5);
+  display: none;
 }
 
 .hb-cinematic-vignette::before {
@@ -984,29 +931,14 @@ button {
 
 .hb-cinematic-transition {
   z-index: 8;
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 48%, rgba(255, 250, 236, 0.72), color-mix(in srgb, var(--hb-cinematic-accent) 28%, transparent) 18%, transparent 46%);
-  animation: hb-cinematic-curtain 1150ms cubic-bezier(0.76, 0, 0.24, 1) both;
+  background: #050807;
+  animation: hb-cinematic-simple-reveal 520ms ease-out both;
+  will-change: opacity;
 }
 
 .hb-cinematic-transition::before,
 .hb-cinematic-transition::after {
-  right: 0;
-  left: 0;
-  height: 51%;
-  background: linear-gradient(180deg, #020504, #07100d);
-}
-
-.hb-cinematic-transition::before {
-  top: 0;
-  transform-origin: center top;
-  animation: hb-cinematic-curtain-top 1080ms cubic-bezier(0.76, 0, 0.24, 1) both;
-}
-
-.hb-cinematic-transition::after {
-  bottom: 0;
-  transform-origin: center bottom;
-  animation: hb-cinematic-curtain-bottom 1080ms cubic-bezier(0.76, 0, 0.24, 1) both;
+  display: none;
 }
 
 .hb-cinematic:not([hidden]) {
@@ -1014,7 +946,7 @@ button {
 }
 
 .hb-cinematic:not([hidden]) .hb-cinematic-copy {
-  animation: hb-cinematic-copy-enter 1280ms 260ms cubic-bezier(0.18, 0.72, 0.22, 1) both;
+  animation: hb-cinematic-simple-copy 620ms 100ms ease-out both;
 }
 
 .hb-cinematic-skip {
@@ -1321,6 +1253,16 @@ button {
   0%, 16% { opacity: 0; transform: scale(0.96); }
   42%, 78% { opacity: 0.72; transform: scale(1); }
   100% { opacity: 0.24; transform: scale(1.018); }
+}
+
+@keyframes hb-cinematic-simple-reveal {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes hb-cinematic-simple-copy {
+  0%, 18% { opacity: 0; transform: translateY(calc(-50% + 18px)); }
+  100% { opacity: 1; transform: translateY(-50%); }
 }
 
 @keyframes hb-cinematic-curtain {

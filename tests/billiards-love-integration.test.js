@@ -210,14 +210,14 @@ test("boots immediately into a playable portrait rack with bounded high-DPR outp
   assert.equal(snapshot.physics.ballRestitution, 0.925);
   assert.equal((snapshot.table.bottom - snapshot.table.top) / (snapshot.table.right - snapshot.table.left), 2);
   assert.equal(snapshot.wpaPocketSpec.ballDiameter, 14.85 * 2);
-  assert.equal(snapshot.wpaPocketSpec.cornerMouthRatio, 2);
-  assert.ok(Math.abs(snapshot.wpaPocketSpec.sideMouthRatio - 2.22) < 1e-12);
+  assert.equal(snapshot.wpaPocketSpec.cornerMouthRatio, 2.28);
+  assert.ok(Math.abs(snapshot.wpaPocketSpec.sideMouthRatio - 2.53) < 1e-12);
   assert.ok(Math.abs(snapshot.wpaPocketSpec.cornerShelf / snapshot.wpaPocketSpec.ballDiameter - 0.65) < 1e-12);
   assert.ok(Math.abs(snapshot.wpaPocketSpec.sideShelf / snapshot.wpaPocketSpec.ballDiameter - 0.14) < 1e-12);
   assert.equal(snapshot.wpaPocketSpec.cornerCutAngleDegrees, 142);
   assert.equal(snapshot.wpaPocketSpec.sideCutAngleDegrees, 104);
   for (const pocket of snapshot.pockets) {
-    const expectedMouthRatio = pocket.type === "corner" ? 2 : 2.22;
+    const expectedMouthRatio = pocket.type === "corner" ? 2.28 : 2.53;
     const expectedShelfRatio = pocket.type === "corner" ? 0.65 : 0.14;
     const dropDepth = (pocket.x - pocket.mouthX) * pocket.inwardX + (pocket.y - pocket.mouthY) * pocket.inwardY;
     const captureDepth = (pocket.captureX - pocket.mouthX) * pocket.inwardX
@@ -280,6 +280,19 @@ test("maps touch points directly into the portrait world", () => {
   assert.deepEqual({ ...debug.mapClientPoint(25, 140, portrait) }, { x: 0, y: 0 });
   assert.deepEqual({ ...debug.mapClientPoint(385, 860, portrait) }, { x: 720, y: 1440 });
   assert.deepEqual({ ...debug.mapClientPoint(385, 140, portrait) }, { x: 720, y: 0 });
+});
+
+test("maps three equal pull zones onto fine light, compressed middle, and stronger break power", () => {
+  const debug = bootRuntime();
+  const snapshot = debug.snapshot();
+  assert.equal(snapshot.input.minShotSpeed, 2.6);
+  assert.equal(snapshot.input.maxShotSpeed, 42);
+  assert.equal(debug.powerForPullRatio(0), 0);
+  assert.ok(Math.abs(debug.powerForPullRatio(1 / 3) - 0.20) < 1e-12);
+  assert.ok(Math.abs(debug.powerForPullRatio(2 / 3) - 0.68) < 1e-12);
+  assert.equal(debug.powerForPullRatio(1), 1);
+  assert.ok(debug.powerForPullRatio(1 / 6) < debug.powerForPullRatio(1 / 3));
+  assert.ok(debug.powerForPullRatio(5 / 6) > debug.powerForPullRatio(2 / 3));
 });
 
 test("launches the default opening shot upward and accumulates physical roll", () => {

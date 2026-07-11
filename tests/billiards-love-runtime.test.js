@@ -53,8 +53,9 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
     assert.ok(source.includes(`id: "${pocket}"`), `missing ${pocket} pocket`);
   }
   assert.match(source, /const BALL_DIAMETER = BALL_RADIUS \* 2/);
-  assert.match(source, /const CORNER_POCKET_MOUTH = BALL_DIAMETER \* 2\.00/);
-  assert.match(source, /const SIDE_POCKET_MOUTH = BALL_DIAMETER \* 2\.22/);
+  assert.match(source, /const POCKET_RADIUS = 37\.6/);
+  assert.match(source, /const CORNER_POCKET_MOUTH = BALL_DIAMETER \* 2\.28/);
+  assert.match(source, /const SIDE_POCKET_MOUTH = BALL_DIAMETER \* 2\.53/);
   assert.match(source, /const CORNER_POCKET_SHELF = BALL_DIAMETER \* 0\.65/);
   assert.match(source, /const SIDE_POCKET_SHELF = BALL_DIAMETER \* 0\.14/);
   assert.match(source, /const CORNER_CUT_ANGLE_DEGREES = 142/);
@@ -114,8 +115,9 @@ test("renders layered wood, wool, rubber, metal, leather, and deep pocket materi
   assert.match(source, /drawMaterialTexture\(MATERIAL_TEXTURES\.cloth/);
   assert.doesNotMatch(source, /context\.setLineDash\(\[2, 3\]\)/);
   assert.match(source, /context\.shadowBlur = 12/);
-  assert.match(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
-  assert.match(source, /context\.scale\(0\.18, 1\)/);
+  assert.match(source, /context\.fillStyle = material\.kind === "jaw" \? "#183a31" : "#123a31"/);
+  assert.doesNotMatch(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
+  assert.doesNotMatch(source, /context\.scale\(0\.18, 1\)/);
   assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
 });
 
@@ -146,7 +148,7 @@ test("adapts to an optional Three ball renderer and retains a per-frame 2D fallb
 });
 
 test("keeps the 3D ball layer light enough for high-DPR portrait phones", () => {
-  assert.match(source, /const MAX_BALL_RENDER_SCALE = 2/);
+  assert.match(source, /const MAX_BALL_RENDER_SCALE = 3\.5/);
   assert.match(source, /Math\.min\(renderScale, MAX_BALL_RENDER_SCALE\)/);
   assert.match(rendererSource, /new as\(this\.ballRadius,32,16\)/);
   assert.doesNotMatch(rendererSource, /antialias:!0/);
@@ -180,7 +182,14 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.doesNotMatch(source, /const inferredTarget/);
   assert.match(source, /canvas\.setPointerCapture\?\.\(event\.pointerId\)/);
   assert.match(source, /const MAX_PULL = 300/);
-  assert.match(source, /pointerAim\.power = clamp\(\(pullDistance - MIN_PULL\)/);
+  assert.match(source, /start: \{ \.\.\.point \}/);
+  assert.match(source, /x: pointerAim\.start\.x - point\.x/);
+  assert.match(source, /pointerAim\.pullRatio = clamp\(\(pullDistance - MIN_PULL\)/);
+  assert.match(source, /pointerAim\.power = powerFromPullRatio\(pointerAim\.pullRatio\)/);
+  assert.match(source, /const LIGHT_POWER_MAX = 0\.20/);
+  assert.match(source, /const STRONG_POWER_MIN = 0\.68/);
+  assert.match(source, /const MAX_SHOT_SPEED = 42/);
+  assert.doesNotMatch(source, /distance\(point, cueBall\.position\) > 54/);
   assert.match(source, /elements\.powerValue\.textContent = ""/);
   assert.doesNotMatch(source, /elements\.powerValue\.textContent = `\$\{Math\.round\(aimPower \* 100\)\}%`/);
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
