@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-touch-physics-20260711i";
-const styleCacheVersion = "billiards-love-touch-physics-20260711i";
+const runtimeCacheVersion = "billiards-love-touch-physics-20260712a";
+const styleCacheVersion = "billiards-love-touch-physics-20260712a";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -307,16 +307,28 @@ test("keeps the short performance centered, transient, and non-interactive", () 
   assert.doesNotMatch(queueMicro, /cinematicActive|root\.dataset\.state/);
 });
 
-test("shows the qualitative three-zone power gauge beside the cue instead of at the bottom", () => {
+test("shows a continuous proportional power gauge beside the cue instead of at the bottom", () => {
   assert.doesNotMatch(html, /id="hb-power"|id="hb-power-fill"|id="hb-power-value"/);
   assert.doesNotMatch(css, /\.hb-power(?:\s|\{|\.)/);
   assert.match(game, /const MAX_PULL = 300;/);
   assert.match(game, /function powerFromPullRatio\(value\)/);
   assert.match(game, /function drawCuePowerGauge\(cueStart, back, normal, pullRatio\)/);
-  assert.match(game, /const colors = \["#72c8b2", "#e0bc75", "#dc798b"\]/);
-  assert.match(game, /const activeRatio = clamp\(pullRatio \* 3 - index, 0, 1\)/);
+  assert.match(game, /const colors = \["#76cbb6", "#e3bd72", "#df7889"\]/);
+  assert.match(game, /const zoneBoundaries = \[0, LIGHT_PULL_END, STRONG_PULL_START, 1\]/);
+  assert.match(game, /const gaugeLength = 118/);
+  assert.match(game, /const activeGradient = context\.createLinearGradient/);
+  assert.match(game, /context\.arc\(activeEndX, activeEndY, 3\.2/);
   assert.match(game, /if \(pointerAim\) drawCuePowerGauge\(start, back, normal, pointerAim\.pullRatio\)/);
   assert.doesNotMatch(game, /Math\.round\(aimPower \* 100\)|Math\.round\(pointerAim\.pullRatio \* 100\)/);
+});
+
+test("separates long mahogany rails from short amber rails with directional grain", () => {
+  assert.match(game, /function drawDirectionalRailBands\(\)/);
+  assert.match(game, /const shortRailColors = \["#21120e", "#a0643a", "#4a281b"\]/);
+  assert.match(game, /const longRailColors = \["#170b0b", "#71342b", "#301411"\]/);
+  assert.match(game, /axis: "horizontal"/);
+  assert.match(game, /axis: "vertical"/);
+  assert.match(game, /drawDirectionalRailBands\(\);/);
 });
 
 test("keeps the full-screen performance lightweight, centered, and dismissible", () => {

@@ -286,17 +286,20 @@ test("maps touch points directly into the portrait world", () => {
   assert.deepEqual({ ...debug.mapClientPoint(385, 140, portrait) }, { x: 720, y: 0 });
 });
 
-test("maps three equal pull zones onto fine light, compressed middle, and stronger break power", () => {
+test("allocates most pull travel to fine control in the useful middle-power range", () => {
   const debug = bootRuntime();
   const snapshot = debug.snapshot();
   assert.equal(snapshot.input.minShotSpeed, 2.6);
   assert.equal(snapshot.input.maxShotSpeed, 42);
+  assert.equal(snapshot.input.lightPullEnd, 0.24);
+  assert.equal(snapshot.input.strongPullStart, 0.82);
   assert.equal(debug.powerForPullRatio(0), 0);
-  assert.ok(Math.abs(debug.powerForPullRatio(1 / 3) - 0.20) < 1e-12);
-  assert.ok(Math.abs(debug.powerForPullRatio(2 / 3) - 0.68) < 1e-12);
+  assert.ok(Math.abs(debug.powerForPullRatio(0.24) - 0.30) < 1e-12);
+  assert.ok(Math.abs(debug.powerForPullRatio(0.82) - 0.76) < 1e-12);
   assert.equal(debug.powerForPullRatio(1), 1);
-  assert.ok(debug.powerForPullRatio(1 / 6) < debug.powerForPullRatio(1 / 3));
-  assert.ok(debug.powerForPullRatio(5 / 6) > debug.powerForPullRatio(2 / 3));
+  assert.ok(debug.powerForPullRatio(1 / 3) > 0.36, "the old first-third dead zone should now reach a useful positional speed");
+  assert.ok(debug.powerForPullRatio(0.5) > 0.49 && debug.powerForPullRatio(0.5) < 0.52);
+  assert.ok(snapshot.input.strongPullStart - snapshot.input.lightPullEnd > 0.55, "middle control should own most of the pull distance");
 });
 
 test("launches the default opening shot upward and accumulates physical roll", () => {

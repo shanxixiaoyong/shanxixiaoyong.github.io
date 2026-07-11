@@ -106,11 +106,12 @@ test("builds physical rotated corner and side-pocket jaws plus containment guard
 
 test("renders layered wood, wool, rubber, metal, leather, and deep pocket materials", () => {
   for (const token of [
-    "drawSolidWoodFrame", "drawWoolCloth", "drawCushionRubber", "drawMetalSights", "drawPocketInnerWall", "drawLeatherPocket"
+    "drawSolidWoodFrame", "drawDirectionalRailBands", "drawWoolCloth", "drawCushionRubber", "drawMetalSights", "drawPocketInnerWall", "drawLeatherPocket"
   ]) {
     assert.ok(source.includes(`function ${token}`), `missing table material renderer ${token}`);
   }
-  assert.match(source, /for \(let y = TABLE_OUTER\.top \+ 14/);
+  assert.match(source, /const shortRailColors = \["#21120e", "#a0643a", "#4a281b"\]/);
+  assert.match(source, /const longRailColors = \["#170b0b", "#71342b", "#301411"\]/);
   assert.match(source, /for \(let y = TABLE\.top \+ 2/);
   assert.match(source, /billiards-textures\/worsted-cloth\.jpg/);
   assert.match(source, /billiards-textures\/dark-walnut\.jpg/);
@@ -188,8 +189,10 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.match(source, /x: pointerAim\.start\.x - point\.x/);
   assert.match(source, /pointerAim\.pullRatio = clamp\(\(pullDistance - MIN_PULL\)/);
   assert.match(source, /pointerAim\.power = powerFromPullRatio\(pointerAim\.pullRatio\)/);
-  assert.match(source, /const LIGHT_POWER_MAX = 0\.20/);
-  assert.match(source, /const STRONG_POWER_MIN = 0\.68/);
+  assert.match(source, /const LIGHT_PULL_END = 0\.24/);
+  assert.match(source, /const STRONG_PULL_START = 0\.82/);
+  assert.match(source, /const LIGHT_POWER_MAX = 0\.30/);
+  assert.match(source, /const STRONG_POWER_MIN = 0\.76/);
   assert.match(source, /const MAX_SHOT_SPEED = 42/);
   assert.doesNotMatch(source, /distance\(point, cueBall\.position\) > 54/);
   assert.match(source, /function drawCuePowerGauge\(cueStart, back, normal, pullRatio\)/);
