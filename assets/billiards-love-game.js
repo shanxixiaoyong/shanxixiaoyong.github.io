@@ -64,12 +64,17 @@
   };
 
   const WORLD = Object.freeze({ width: 720, height: 1440 });
-  const TABLE = Object.freeze({ left: 74, right: 646, top: 148, bottom: 1292 });
-  const TABLE_OUTER = Object.freeze({ left: 12, right: 708, top: 82, bottom: 1358 });
+  const TABLE = Object.freeze({ left: 58, right: 662, top: 116, bottom: 1324 });
+  const TABLE_OUTER = Object.freeze({ left: 2, right: 718, top: 48, bottom: 1392 });
   const BALL_RADIUS = 14.85;
   const BALL_DIAMETER = BALL_RADIUS * 2;
   const POCKET_RADIUS = 33;
-  const POCKET_MIN_INWARD_SPEED = 0.12;
+  const POCKET_MIN_INWARD_SPEED = 0.012;
+  const POCKET_MOUTH_DEPTH_TOLERANCE = BALL_RADIUS * 0.08;
+  const POCKET_MOUTH_LATERAL_TOLERANCE = BALL_RADIUS * 0.06;
+  const POCKET_SHELF_DEPTH_TOLERANCE = BALL_RADIUS * 0.10;
+  const POCKET_SHELF_LATERAL_TOLERANCE = BALL_RADIUS * 0.08;
+  const POCKET_APPROACH_EXIT_DEPTH = BALL_RADIUS * 0.30;
   const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.00;
   const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.22;
   const CORNER_POCKET_SHELF = BALL_DIAMETER * 0.65;
@@ -79,14 +84,24 @@
   const CORNER_JAW_OFFSET = (CORNER_CUT_ANGLE_DEGREES - 135) * Math.PI / 180;
   const SIDE_JAW_OFFSET = (SIDE_CUT_ANGLE_DEGREES - 90) * Math.PI / 180;
   const POCKET_JAW_LENGTH = BALL_DIAMETER * 1.75;
-  const FIXED_STEP = 1000 / 120;
+  const FIXED_HZ = 120;
+  const FIXED_STEP = 1000 / FIXED_HZ;
+  const CLOTH_LINEAR_SPEED_LOSS = 0.008;
+  const CLOTH_SPEED_DRAG = 0.00035;
+  const CUSHION_RESTITUTION_MIN = 0.87;
+  const CUSHION_RESTITUTION_MAX = 0.92;
+  const CUSHION_RESTITUTION_REFERENCE_SPEED = 18;
+  const JAW_RESTITUTION_PENALTY = 0.075;
+  const CUSHION_TANGENTIAL_RETENTION = 0.985;
+  const JAW_TANGENTIAL_RETENTION = 0.95;
+  const RAIL_MIN_NORMAL_IMPACT_SPEED = 0.045;
   const MAX_STEPS_PER_FRAME = 8;
   const MIN_PULL = 14;
   const MAX_PULL = 202;
   const MIN_SHOT_SPEED = 8.1;
   const MAX_SHOT_SPEED = 30.9;
-  const STOP_SPEED = 0.055;
-  const NATURAL_STOP_SPEED = 0.16;
+  const STOP_SPEED = 0.045;
+  const NATURAL_STOP_SPEED = 0.14;
   const POCKET_MIN_DURATION = 280;
   const POCKET_MAX_DURATION = 450;
   const MAX_RENDER_WIDTH = 1440;
@@ -103,6 +118,15 @@
     5: "#df7b30", 6: "#358553", 7: "#8e3740", 8: "#181b1d",
     9: "#e9c348", 10: "#2676bf", 11: "#c33f40", 12: "#754493",
     13: "#df7b30", 14: "#358553", 15: "#8e3740"
+  });
+  const STAGE_SCENE_ASSETS = Object.freeze({
+    "first-contact": "assets/love-scenes/campus-library.webp",
+    "growing-familiar": "assets/love-scenes/cafe-evening.webp",
+    "intentional-dates": "assets/love-scenes/city-night.webp",
+    "spoken-heart": "assets/billiards-scenes/confession-night.jpg",
+    "confirmed-love": "assets/love-scenes/warm-home.webp",
+    "learning-together": "assets/love-scenes/rain-night.webp",
+    "shared-future": "assets/love-scenes/starlight-vow.webp"
   });
   const DIAGONAL = Math.SQRT1_2;
 
@@ -148,20 +172,11 @@
     [3, 7, 11, 12, 13]
   ]);
   const TIMING_LABELS = Object.freeze({
-    "on-time": "时机正好",
-    "final-commitment": "刚好走到这里",
-    "next-stage": "节奏稍快",
-    "multi-stage": "事情发展得太快",
-    "early-confession": "告白过早",
-    "premature-commitment": "承诺来得太快",
-    "commitment-too-heavy": "承诺过重",
-    "accidental-surprise": "意外惊喜",
-    "accidental-next-stage": "关系突然升温",
-    "accidental-multi-stage": "事情忽然快了一点",
-    "accidental-confession": "心意意外暴露",
-    "accidental-commitment": "承诺意外说出口",
-    "break-pot": "开局巧合",
-    "protected-respot": "关键时刻还没到"
+    "on-time": "本章片段",
+    "early-completion": "意外先发生",
+    "break-pot": "开局相遇",
+    break: "开球",
+    miss: "这一杆没有进球"
   });
 
   function loadMaterialTexture(source) {
@@ -424,11 +439,13 @@
   let pocketBursts = [];
   let collisionFeedbacks = [];
   let collisionCount = 0;
+  const pendingRailImpacts = new Map();
   let microQueue = [];
   let microTimer = 0;
   let judgementTimer = 0;
   let cinematicQueue = [];
   let cinematicCurrent = null;
+  let cinematicTimer = 0;
   let trackNodeMap = new Map();
   let screenFlash = 0;
   let screenShake = 0;
@@ -452,15 +469,85 @@
     return Boolean(body?.plugin?.heartbeatRail);
   }
 
+  function railRestitution(normalSpeed, kind) {
+    const speedMix = clamp(normalSpeed / CUSHION_RESTITUTION_REFERENCE_SPEED, 0, 1);
+    const cushionValue = CUSHION_RESTITUTION_MAX
+      - (CUSHION_RESTITUTION_MAX - CUSHION_RESTITUTION_MIN) * speedMix;
+    return clamp(cushionValue - (kind === "jaw" ? JAW_RESTITUTION_PENALTY : 0), 0, 1);
+  }
+
+  function railTangentialRetention(kind) {
+    return kind === "jaw" ? JAW_TANGENTIAL_RETENTION : CUSHION_TANGENTIAL_RETENTION;
+  }
+
+  function queueRailImpact(ball, rail, collision) {
+    const data = bodyData(ball);
+    if (!data || data.potted || data.pocketing) return;
+    const incoming = data.preStepVelocity || ball.velocity;
+    let normal = normalize(collision?.normal || {
+      x: ball.position.x - rail.position.x,
+      y: ball.position.y - rail.position.y
+    });
+    if (incoming.x * normal.x + incoming.y * normal.y > 0) {
+      normal = { x: -normal.x, y: -normal.y };
+    }
+    const normalSpeed = -(incoming.x * normal.x + incoming.y * normal.y);
+    if (normalSpeed < RAIL_MIN_NORMAL_IMPACT_SPEED) return;
+    const previous = pendingRailImpacts.get(ball.id);
+    if (previous && previous.normalSpeed >= normalSpeed) return;
+    pendingRailImpacts.set(ball.id, {
+      ball,
+      rail,
+      normal,
+      normalSpeed,
+      incoming: { x: incoming.x, y: incoming.y }
+    });
+  }
+
+  function applyPendingRailImpacts() {
+    pendingRailImpacts.forEach((impact) => {
+      const { ball, rail, normal, normalSpeed, incoming } = impact;
+      const data = bodyData(ball);
+      if (!data || data.potted || data.pocketing) return;
+      const material = rail.plugin.heartbeatRail;
+      const restitution = railRestitution(normalSpeed, material.kind);
+      const tangentRetention = railTangentialRetention(material.kind);
+      const incomingNormal = incoming.x * normal.x + incoming.y * normal.y;
+      const tangentX = incoming.x - normal.x * incomingNormal;
+      const tangentY = incoming.y - normal.y * incomingNormal;
+      const outgoing = {
+        x: tangentX * tangentRetention + normal.x * normalSpeed * restitution,
+        y: tangentY * tangentRetention + normal.y * normalSpeed * restitution
+      };
+      Body.setVelocity(ball, outgoing);
+      data.lastRailImpact = {
+        railId: material.id,
+        kind: material.kind,
+        at: simulationTime + FIXED_STEP,
+        normalX: normal.x,
+        normalY: normal.y,
+        incomingX: incoming.x,
+        incomingY: incoming.y,
+        outgoingX: outgoing.x,
+        outgoingY: outgoing.y,
+        incomingNormalSpeed: normalSpeed,
+        outgoingNormalSpeed: normalSpeed * restitution,
+        restitution,
+        tangentialRetention: tangentRetention
+      };
+    });
+    pendingRailImpacts.clear();
+  }
+
   function createRail(x, y, width, height, id, angle = 0, kind = "cushion") {
     const body = Bodies.rectangle(x, y, width, height, {
       isStatic: true,
       label: `hb-rail-${id}`,
       angle,
-      restitution: 0.92,
-      friction: 0.012,
+      restitution: 1,
+      friction: 0,
       frictionStatic: 0,
-      slop: 0.004
+      slop: 0.03
     });
     body.plugin.heartbeatRail = { id, kind, width, height, angle };
     return body;
@@ -561,9 +648,9 @@
     const body = Bodies.circle(x, y, BALL_RADIUS, {
       label: number === 0 ? "hb-cue-ball" : `hb-object-ball-${number}`,
       restitution: 0.965,
-      friction: 0.004,
+      friction: 0,
       frictionStatic: 0,
-      frictionAir: 0.0095,
+      frictionAir: 0,
       density: 0.0025,
       slop: 0.003,
       sleepThreshold: Infinity
@@ -579,8 +666,10 @@
       rollHeading: -Math.PI / 2,
       lastPosition: { x, y },
       previousPosition: { x, y },
+      preStepVelocity: { x: 0, y: 0 },
       lastSafePosition: { x, y },
       outsideSteps: 0,
+      lastRailImpact: null,
       compression: 0,
       impactGlow: 0,
       impactAngle: 0
@@ -657,7 +746,10 @@
   function resetShotRailHits() {
     balls.forEach((ball) => {
       const data = bodyData(ball);
-      if (data) data.shotRailHits = 0;
+      if (data) {
+        data.shotRailHits = 0;
+        data.lastRailImpact = null;
+      }
     });
   }
 
@@ -681,6 +773,9 @@
     microQueue = [];
     cinematicQueue = [];
     cinematicCurrent = null;
+    clearTimeout(microTimer);
+    clearTimeout(judgementTimer);
+    clearTimeout(cinematicTimer);
     screenFlash = 0;
     screenShake = 0;
     elements.result.hidden = true;
@@ -726,7 +821,7 @@
       : "COMPLETE · 共同未来";
     elements.stageTitle.textContent = narrativeStage.enterLine;
     elements.stageTargets.textContent = targets.length
-      ? `当前适合：${targets.map((number) => `${number} ${content.getBall(number).name}`).join("、")}`
+      ? `本阶段任选：${targets.map((number) => `${number} ${content.getBall(number).name}`).join("、")}`
       : "今晚已经走到最后";
     elements.interest.textContent = String(runState.interest);
     elements.interestWrap.setAttribute("aria-label", `兴趣值 ${runState.interest}`);
@@ -740,7 +835,7 @@
     trackNodeMap.forEach((node, number) => {
       node.classList.toggle("is-complete", potted.has(number));
       node.classList.toggle("is-current", recommended.has(number));
-      node.classList.toggle("is-danger", (number === 8 || number === 15) && !recommended.has(number) && !potted.has(number));
+      node.classList.remove("is-danger");
     });
     if (!runState.breakCompleted) {
       elements.selectedBall.textContent = "—";
@@ -749,19 +844,18 @@
       elements.callTitle.textContent = "打散今晚的第一束光";
       elements.callHint.textContent = "从白球向后拖动，松开完成开球";
     } else if (selectedBallNumber !== null) {
-      const ball = content.getBall(selectedBallNumber);
-      const classification = rules.classifyTarget(runState, selectedBallNumber);
-      elements.selectedBall.textContent = String(selectedBallNumber);
-      elements.selectedName.textContent = `${ball.name} · ${classificationLabel(classification.timing)}`;
-      elements.callLabel.textContent = `${selectedBallNumber} · ${ball.name}`;
-      elements.callTitle.textContent = classificationLabel(classification.timing);
-      elements.callHint.textContent = "从白球向后拖动，松开击球";
-    } else {
-      elements.selectedBall.textContent = "—";
-      elements.selectedName.textContent = "按实际第一碰球判断";
+      selectedBallNumber = null;
+      elements.selectedBall.textContent = String(targets.length);
+      elements.selectedName.textContent = `${narrativeStage.name} · 本组剩余`;
       elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
-      elements.callTitle.textContent = "直接瞄准，第一碰球决定这一杆";
-      elements.callHint.textContent = "当前推荐阶段球带有柔和光圈";
+      elements.callTitle.textContent = "本阶段目标自由选择";
+      elements.callHint.textContent = "清完高亮球组，进入下一章";
+    } else {
+      elements.selectedBall.textContent = String(targets.length);
+      elements.selectedName.textContent = `${narrativeStage.name} · 本组剩余`;
+      elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
+      elements.callTitle.textContent = "本阶段目标自由选择";
+      elements.callHint.textContent = "清完高亮球组，进入下一章";
     }
     elements.aimToggle.setAttribute("aria-pressed", String(aimAssist));
     elements.aimToggle.setAttribute("aria-label", aimAssist ? "关闭瞄准辅助" : "开启瞄准辅助");
@@ -811,12 +905,9 @@
 
   function selectTarget(number) {
     if (!runState.breakCompleted || runState.pottedNumbers.includes(number)) return;
-    selectedBallNumber = number;
     const target = ballByNumber(number);
     if (target && cueBall) aimDirection = normalize({ x: target.position.x - cueBall.position.x, y: target.position.y - cueBall.position.y });
     hideCoach();
-    audio.tone(330 + number * 5, 0.08, 0.018, "sine");
-    syncUI();
   }
 
   function hideCoach() {
@@ -876,13 +967,10 @@
   function shoot(direction, power) {
     if (!canInteract()) return false;
     aimDirection = { ...direction };
-    const aimedContact = traceAim()?.hitBall;
     const speed = MIN_SHOT_SPEED + Math.pow(clamp(power, 0, 1), 0.78) * (MAX_SHOT_SPEED - MIN_SHOT_SPEED);
     resetShotRailHits();
     shotState = {
-      declaredBall: runState.breakCompleted
-        ? selectedBallNumber || bodyData(aimedContact)?.number || null
-        : null,
+      declaredBall: null,
       firstContact: null,
       pottedNumbers: [],
       cueScratch: false,
@@ -909,18 +997,20 @@
     return (point.x - pocket.mouthX) * tangentX + (point.y - pocket.mouthY) * tangentY;
   }
 
-  function crossedPocketLine(body, pocket, lineDepth, halfWidth) {
+  function crossedPocketLine(body, pocket, lineDepth, halfWidth, depthTolerance = 0, lateralTolerance = 0) {
     const data = bodyData(body);
     const previous = data?.previousPosition;
     if (!previous) return null;
     const previousDepth = pocketDepth(pocket, previous) - lineDepth;
     const currentDepth = pocketDepth(pocket, body.position) - lineDepth;
-    if (previousDepth > 0 || currentDepth < 0 || currentDepth - previousDepth < 1e-7) return null;
+    if (previousDepth > depthTolerance
+        || currentDepth < -depthTolerance
+        || currentDepth - previousDepth < 1e-7) return null;
     const crossingProgress = clamp(-previousDepth / (currentDepth - previousDepth), 0, 1);
     const crossingX = previous.x + (body.position.x - previous.x) * crossingProgress;
     const crossingY = previous.y + (body.position.y - previous.y) * crossingProgress;
     const lateral = pocketLateral(pocket, { x: crossingX, y: crossingY });
-    return Math.abs(lateral) <= halfWidth
+    return Math.abs(lateral) <= halfWidth + lateralTolerance
       ? { x: crossingX, y: crossingY, lateral }
       : null;
   }
@@ -932,9 +1022,23 @@
   function enterPocketMouth(body, pocket) {
     const data = bodyData(body);
     if (!data || inwardPocketSpeed(body, pocket) <= POCKET_MIN_INWARD_SPEED) return false;
-    const mouthCrossing = crossedPocketLine(body, pocket, 0, pocket.mouth / 2);
+    const mouthCrossing = crossedPocketLine(
+      body,
+      pocket,
+      0,
+      pocket.mouth / 2,
+      POCKET_MOUTH_DEPTH_TOLERANCE,
+      POCKET_MOUTH_LATERAL_TOLERANCE
+    );
     if (!mouthCrossing) return false;
-    const captureCrossing = crossedPocketLine(body, pocket, pocket.shelf, pocket.captureHalfWidth);
+    const captureCrossing = crossedPocketLine(
+      body,
+      pocket,
+      pocket.shelf,
+      pocket.captureHalfWidth,
+      POCKET_SHELF_DEPTH_TOLERANCE,
+      POCKET_SHELF_LATERAL_TOLERANCE
+    );
     data.pocketApproach = {
       pocketId: pocket.id,
       enteredAt: simulationTime,
@@ -942,7 +1046,8 @@
       mouthCrossY: mouthCrossing.y,
       captureCrossed: Boolean(captureCrossing),
       captureCrossX: captureCrossing?.x ?? null,
-      captureCrossY: captureCrossing?.y ?? null
+      captureCrossY: captureCrossing?.y ?? null,
+      maximumDepth: pocketDepth(pocket, body.position)
     };
     return true;
   }
@@ -953,13 +1058,20 @@
     if (!approach || approach.pocketId !== pocket.id) return false;
     const currentDepth = pocketDepth(pocket, body.position);
     const currentLateral = Math.abs(pocketLateral(pocket, body.position));
-    if (currentDepth < -BALL_RADIUS * 0.15 || currentLateral > pocket.mouth / 2 + BALL_RADIUS) {
+    approach.maximumDepth = Math.max(approach.maximumDepth ?? currentDepth, currentDepth);
+    if (currentDepth < -POCKET_APPROACH_EXIT_DEPTH || currentLateral > pocket.mouth / 2 + BALL_RADIUS) {
       data.pocketApproach = null;
       return false;
     }
-    if (inwardPocketSpeed(body, pocket) <= POCKET_MIN_INWARD_SPEED) return false;
     if (!approach.captureCrossed) {
-      const captureCrossing = crossedPocketLine(body, pocket, pocket.shelf, pocket.captureHalfWidth);
+      const captureCrossing = crossedPocketLine(
+        body,
+        pocket,
+        pocket.shelf,
+        pocket.captureHalfWidth,
+        POCKET_SHELF_DEPTH_TOLERANCE,
+        POCKET_SHELF_LATERAL_TOLERANCE
+      );
       if (captureCrossing) {
         approach.captureCrossed = true;
         approach.captureCrossX = captureCrossing.x;
@@ -968,8 +1080,7 @@
     }
     return approach.captureCrossed
       && approach.enteredAt < simulationTime
-      && currentDepth >= pocket.shelf
-      && currentLateral <= pocket.captureHalfWidth;
+      && approach.maximumDepth >= pocket.shelf - POCKET_SHELF_DEPTH_TOLERANCE;
   }
 
   function pocketBall(body, pocket) {
@@ -1069,11 +1180,30 @@
     });
   }
 
+  function applyClothDamping() {
+    balls.forEach((ball) => {
+      const data = bodyData(ball);
+      if (!data || data.potted || data.pocketing || ball.speed <= 0) return;
+      const speedLoss = CLOTH_LINEAR_SPEED_LOSS + ball.speed * CLOTH_SPEED_DRAG;
+      const nextSpeed = Math.max(0, ball.speed - speedLoss);
+      if (nextSpeed <= STOP_SPEED) {
+        Body.setVelocity(ball, { x: 0, y: 0 });
+        return;
+      }
+      const scale = nextSpeed / ball.speed;
+      Body.setVelocity(ball, {
+        x: ball.velocity.x * scale,
+        y: ball.velocity.y * scale
+      });
+    });
+  }
+
   function captureBallPositions() {
     balls.forEach((ball) => {
       const data = bodyData(ball);
       if (!data || data.potted || data.pocketing) return;
       data.previousPosition = { x: ball.position.x, y: ball.position.y };
+      data.preStepVelocity = { x: ball.velocity.x, y: ball.velocity.y };
     });
   }
 
@@ -1174,9 +1304,6 @@
         if (data) data.rollVelocity *= 0.7;
       } else {
         moving = true;
-        if (ball.speed < NATURAL_STOP_SPEED) {
-          Body.setVelocity(ball, { x: ball.velocity.x * 0.86, y: ball.velocity.y * 0.86 });
-        }
         if (ball.speed > MAX_SHOT_SPEED * 1.3) {
           const scale = MAX_SHOT_SPEED * 1.3 / ball.speed;
           Body.setVelocity(ball, { x: ball.velocity.x * scale, y: ball.velocity.y * scale });
@@ -1185,14 +1312,6 @@
     });
     if (shotState) stableSteps = moving ? 0 : stableSteps + 1;
     if (shotState && stableSteps >= 22 && !resolvingShot) finalizeShot();
-  }
-
-  function mapContentTiming(event) {
-    if (!event) return content.TIMINGS.RIGHT;
-    if (["on-time", "final-commitment", "accidental-surprise", "break-pot"].includes(event.timing)) return content.TIMINGS.RIGHT;
-    if (event.timing.includes("early") || event.timing.includes("next") || event.timing.includes("multi")
-        || event.timing.includes("premature") || event.timing.includes("commitment")) return content.TIMINGS.EARLY;
-    return content.TIMINGS.LATE;
   }
 
   function showJudgement(copy) {
@@ -1204,8 +1323,8 @@
     judgementTimer = setTimeout(() => elements.judgement.classList.remove("is-visible"), 1250);
   }
 
-  function queueMicro(performance, event) {
-    microQueue.push({ performance, event });
+  function queueMicro(item) {
+    microQueue.push(item);
     if (elements.micro.hidden) showNextMicro();
   }
 
@@ -1214,26 +1333,43 @@
       elements.micro.hidden = true;
       return;
     }
-    const { performance, event } = microQueue.shift();
+    const item = microQueue.shift();
     clearTimeout(microTimer);
-    const ball = content.getBall(performance.ballNumber);
-    markViewed(performance.id);
-    elements.microKicker.textContent = classificationLabel(event.timing);
-    elements.microTitle.textContent = `${performance.ballNumber} · ${ball.name}`;
-    elements.microLine.textContent = `${performance.visual} ${performance.line}`;
+    markViewed(item.id);
+    elements.micro.dataset.type = item.type || "pocket";
+    elements.microKicker.textContent = item.kicker;
+    elements.microTitle.textContent = item.title;
+    elements.microLine.textContent = item.line;
     elements.micro.hidden = false;
     void elements.micro.offsetWidth;
     microTimer = setTimeout(() => {
       elements.micro.hidden = true;
       setTimeout(showNextMicro, 70);
-    }, clamp(performance.durationMs + 250, 900, 2000));
+    }, clamp(item.durationMs + 220, 1200, 2000));
   }
 
-  function specialCopy(key, seed) {
-    const special = content.SPECIAL_EVENTS[key];
-    if (!special) return null;
-    const variant = special.variants[Math.abs(Number(seed) || 0) % special.variants.length];
-    return { id: variant.id, kicker: special.title, title: variant.visual, line: variant.line };
+  function queueBallMicro(performance, event) {
+    const ball = content.getBall(performance.ballNumber);
+    queueMicro({
+      id: performance.id,
+      type: event.completedEarly ? "early" : "pocket",
+      kicker: event.completedEarly ? "意外先发生" : classificationLabel(event.timing),
+      title: `${performance.ballNumber} · ${ball.name}`,
+      line: `${performance.visual} ${performance.line}`,
+      durationMs: performance.durationMs
+    });
+  }
+
+  function queueStageMicro(stageNumber, eventType, seed) {
+    const performance = content.selectStageEvent({ stage: stageNumber, eventType, seed });
+    queueMicro({
+      id: performance.id,
+      type: eventType,
+      kicker: performance.kicker,
+      title: performance.title,
+      line: `${performance.visual} ${performance.line}`,
+      durationMs: performance.durationMs
+    });
   }
 
   function queueCinematic(item) {
@@ -1251,8 +1387,13 @@
     }
     cinematicCurrent = cinematicQueue.shift();
     cinematicActive = true;
+    root.dataset.state = "cinematic";
     markViewed(cinematicCurrent.id);
     elements.cinematic.dataset.kind = cinematicCurrent.kind || "stage";
+    elements.cinematic.dataset.scene = cinematicCurrent.stageId || "ending";
+    elements.cinematicImage.style.backgroundImage = cinematicCurrent.image
+      ? `url("${cinematicCurrent.image}")`
+      : "";
     elements.cinematicKicker.textContent = cinematicCurrent.kicker;
     elements.cinematicTitle.textContent = cinematicCurrent.title;
     elements.cinematicLine.textContent = cinematicCurrent.line;
@@ -1260,10 +1401,15 @@
     elements.cinematicAction.textContent = cinematicCurrent.actionLabel || "继续";
     elements.cinematic.hidden = false;
     audio.cue(cinematicCurrent.sound || "stage");
+    clearTimeout(cinematicTimer);
+    if (cinematicCurrent.autoCloseMs) {
+      cinematicTimer = setTimeout(closeCinematic, cinematicCurrent.autoCloseMs);
+    }
   }
 
   function closeCinematic() {
     if (!cinematicActive) return;
+    clearTimeout(cinematicTimer);
     const completed = cinematicCurrent;
     elements.cinematic.hidden = true;
     cinematicActive = false;
@@ -1274,85 +1420,54 @@
     else root.dataset.state = "aiming";
   }
 
-  function stageCopy(stageId) {
+  function stageCopy(stageId, seed) {
     const stage = rules.STAGES.find((entry) => entry.id === stageId);
     if (!stage) return null;
-    const narrative = content.getStage(stage.number);
+    const performance = content.selectStageTransition({ stage: stage.number, seed });
     return {
-      kicker: `STAGE ${String(stage.number).padStart(2, "0")} · COMPLETE`,
-      title: narrative.completeLine,
-      line: stage.number < 7 ? content.getStage(stage.number + 1).enterLine : narrative.completeLine
+      ...performance,
+      kind: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
+      image: STAGE_SCENE_ASSETS[stage.id],
+      sound: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
+      autoCloseMs: clamp(performance.durationMs + 1500, 3200, 4200),
+      actionLabel: null
     };
   }
 
   function processOutcomePerformances(outcome) {
-    outcome.events.filter((event) => event.credited && event.mode !== "break").forEach((event, index) => {
-      const performance = content.selectPerformance({
-        ballNumber: event.number,
-        intent: event.mode === "active" ? content.INTENTS.ACTIVE : content.INTENTS.ACCIDENTAL,
-        timing: mapContentTiming(event),
-        seed: outcome.state.shots * 31 + event.number * 7 + index
+    const stageTransitions = outcome.newlyCompletedStageIds || outcome.completedStageIds || [];
+    if (stageTransitions.length) {
+      microQueue = [];
+      elements.micro.hidden = true;
+    } else if (outcome.cueScratch) {
+      queueStageMicro(outcome.stageBefore?.number || currentStageNumber(), content.STAGE_EVENT_TYPES.SCRATCH, outcome.state.shots * 41);
+    } else if (outcome.pocketEvents?.length) {
+      outcome.pocketEvents.slice(0, 3).forEach((event, index) => {
+        const performance = content.selectPerformance({
+          ballNumber: event.number,
+          intent: content.INTENTS.ACTIVE,
+          timing: content.TIMINGS.RIGHT,
+          seed: outcome.state.shots * 31 + event.number * 7 + index
+        });
+        queueBallMicro(performance, event);
+        const color = BALL_COLORS[event.number] || "#e4c178";
+        const burst = [...pocketBursts].reverse().find((item) => item.number === event.number);
+        spawnParticles(burst?.x || WORLD.width / 2, burst?.y || WORLD.height / 2, color, 18);
       });
-      queueMicro(performance, event);
-      showJudgement(`${classificationLabel(event.timing)}${event.banked ? " · 借库入袋" : ""}`);
-      const color = BALL_COLORS[event.number] || "#e4c178";
-      const burst = [...pocketBursts].reverse().find((item) => item.number === event.number);
-      spawnParticles(burst?.x || WORLD.width / 2, burst?.y || WORLD.height / 2, color, 18);
-    });
+    } else if (outcome.miss && !outcome.shot.breakShot) {
+      const eventType = outcome.state.consecutiveMisses <= 1
+        ? content.STAGE_EVENT_TYPES.SETUP
+        : content.STAGE_EVENT_TYPES.MISS;
+      queueStageMicro(outcome.stageBefore?.number || currentStageNumber(), eventType, outcome.state.shots * 43);
+    }
 
-    outcome.completedStageIds.forEach((stageId) => {
-      const copy = stageCopy(stageId);
+    stageTransitions.forEach((stageId, index) => {
+      const copy = stageCopy(stageId, outcome.state.shots * 47 + index);
       if (!copy) return;
       audio.cue("stage");
-      screenFlash = Math.max(screenFlash, 0.28);
-      showJudgement(copy.title);
+      screenFlash = Math.max(screenFlash, 0.34);
+      queueCinematic(copy);
     });
-
-    const confession = outcome.events.find((event) => event.number === 8 && event.credited);
-    if (confession) {
-      if (confession.mode === "active" && confession.timing === "on-time") {
-        const copy = specialCopy("confessionSuccess", outcome.state.shots) || {
-          kicker: "8 · 告白", title: "心意抵达", line: "她认真听完，也认真给出了答案。"
-        };
-        queueCinematic({ ...copy, kind: "confession", sound: "confession", actionLabel: "继续清台" });
-      } else if (confession.mode === "accidental") {
-        const copy = specialCopy("feelingsExposed", outcome.state.shots) || {
-          kicker: "8 · 心意意外暴露", title: "那句话先一步滚了出去", line: "她没有离开，但这一晚忽然需要更谨慎。"
-        };
-        queueCinematic({ ...copy, kind: "confession", sound: "warning", actionLabel: "继续" });
-      }
-    }
-
-    const proposal = outcome.events.find((event) => event.number === 15 && event.credited);
-    if (proposal && proposal.mode === "active" && proposal.timing === "final-commitment") {
-      const copy = specialCopy("proposalSuccess", outcome.state.shots) || {
-        kicker: "15 · 求婚", title: "这一次，答案关于很长的以后", line: "清晨抵达以前，她把手交给了你。"
-      };
-      queueCinematic({ ...copy, kind: "proposal", sound: "proposal", actionLabel: "看本局结局" });
-    }
-
-    if (outcome.endState.status === "failed") {
-      const failureMap = {
-        "confession-too-early": "confessionTooEarly",
-        "commitment-too-heavy": "commitmentTooHeavy",
-        "lost-contact": "losingContact"
-      };
-      const key = failureMap[outcome.endState.ending];
-      const copy = specialCopy(key, outcome.state.shots) || {
-        kicker: "今晚停在这里", title: "这一幕没有继续发生", line: "重新开球，答案仍可以不同。"
-      };
-      queueCinematic({ ...copy, kind: outcome.endState.ending === "confession-too-early" ? "confession" : "stage", sound: "warning", actionLabel: "查看结局" });
-    } else if (outcome.endState.status === "completed" && !proposal) {
-      const ending = content.getEnding(outcome.endState.grade || "B");
-      queueCinematic({
-        kicker: `${ending.grade} · ${ending.title}`,
-        title: ending.line,
-        line: ending.epilogue,
-        kind: "ending",
-        sound: "proposal",
-        actionLabel: "看本局结局"
-      });
-    }
   }
 
   function finalizeShot() {
@@ -1363,11 +1478,7 @@
     stableSteps = 0;
     let outcome;
     try {
-      const inferredTarget = completedShot.firstContact || completedShot.declaredBall
-        || rules.remainingNumbers(runState)[0];
       outcome = rules.evaluateShot(runState, {
-        declaredBall: completedShot.breakShot ? null : inferredTarget,
-        firstContact: completedShot.firstContact,
         pottedNumbers: [...completedShot.pottedNumbers],
         cueScratch: completedShot.cueScratch,
         breakShot: completedShot.breakShot,
@@ -1389,8 +1500,6 @@
     resolvingShot = false;
     syncUI();
     processOutcomePerformances(outcome);
-    if (outcome.cueScratch) showJudgement(`白球落袋 · 兴趣 ${outcome.interestDelta}`);
-    else if (outcome.miss && !outcome.shot.breakShot) showJudgement(outcome.interestDelta < 0 ? `话题停了一拍 · 兴趣 ${outcome.interestDelta}` : "这一杆先留作铺垫");
     root.dataset.state = runState.endState.ended ? "ending" : "aiming";
     if (runState.endState.ended && !cinematicQueue.length && !cinematicActive) showResult();
   }
@@ -2084,9 +2193,12 @@
 
   function physicsStep() {
     captureBallPositions();
+    pendingRailImpacts.clear();
     Engine.update(engine, FIXED_STEP);
+    applyPendingRailImpacts();
     simulationTime += FIXED_STEP;
     updatePockets();
+    applyClothDamping();
     updateRollingState();
     updatePocketing();
     containLooseBalls();
@@ -2123,6 +2235,10 @@
   }
 
   Events.on(engine, "collisionStart", (event) => {
+    event.pairs.forEach(({ bodyA, bodyB, collision }) => {
+      if (bodyData(bodyA) && isRail(bodyB)) queueRailImpact(bodyA, bodyB, collision);
+      if (bodyData(bodyB) && isRail(bodyA)) queueRailImpact(bodyB, bodyA, collision);
+    });
     if (!shotState) return;
     event.pairs.forEach(({ bodyA, bodyB, collision }) => {
       const dataA = bodyData(bodyA);
@@ -2203,13 +2319,6 @@
       return;
     }
     if (!canInteract()) return;
-    const remaining = rules.remainingNumbers(runState);
-    if (event.key === "Tab" && runState.breakCompleted) {
-      event.preventDefault();
-      const index = selectedBallNumber === null ? -1 : remaining.indexOf(selectedBallNumber);
-      selectTarget(remaining[(index + 1) % remaining.length]);
-      return;
-    }
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       const angle = Math.atan2(aimDirection.y, aimDirection.x) + (event.key === "ArrowLeft" ? -0.035 : 0.035);
@@ -2287,8 +2396,31 @@
         collisionCount,
         collisionFeedbackCount: collisionFeedbacks.length,
         shotPottedNumbers: Object.freeze([...(shotState?.pottedNumbers || [])]),
+        presentation: Object.freeze({
+          microVisible: !elements.micro.hidden,
+          microType: elements.micro.dataset.type || null,
+          microTitle: elements.microTitle.textContent || null,
+          cinematicActive,
+          cinematicStageId: cinematicCurrent?.stageId || null,
+          cinematicTitle: cinematicCurrent?.title || null,
+          cinematicImage: elements.cinematicImage.style.backgroundImage || null
+        }),
         world: Object.freeze({ ...WORLD }),
         table: Object.freeze({ ...TABLE }),
+        physics: Object.freeze({
+          fixedStepMs: FIXED_STEP,
+          fixedHz: FIXED_HZ,
+          clothLinearSpeedLoss: CLOTH_LINEAR_SPEED_LOSS,
+          clothSpeedDrag: CLOTH_SPEED_DRAG,
+          cushionRestitutionMin: CUSHION_RESTITUTION_MIN,
+          cushionRestitutionMax: CUSHION_RESTITUTION_MAX,
+          cushionRestitutionReferenceSpeed: CUSHION_RESTITUTION_REFERENCE_SPEED,
+          cushionTangentialRetention: CUSHION_TANGENTIAL_RETENTION,
+          jawTangentialRetention: JAW_TANGENTIAL_RETENTION,
+          pocketMouthDepthTolerance: POCKET_MOUTH_DEPTH_TOLERANCE,
+          pocketShelfDepthTolerance: POCKET_SHELF_DEPTH_TOLERANCE,
+          pocketMagnetism: false
+        }),
         wpaPocketSpec: Object.freeze({
           ballDiameter: BALL_DIAMETER,
           cornerMouth: CORNER_POCKET_MOUTH,
@@ -2341,8 +2473,12 @@
             mouthCrossX: bodyData(ball).pocketApproach.mouthCrossX,
             mouthCrossY: bodyData(ball).pocketApproach.mouthCrossY,
             captureCrossX: bodyData(ball).pocketApproach.captureCrossX,
-            captureCrossY: bodyData(ball).pocketApproach.captureCrossY
+            captureCrossY: bodyData(ball).pocketApproach.captureCrossY,
+            maximumDepth: bodyData(ball).pocketApproach.maximumDepth
           }) : null,
+          lastRailImpact: bodyData(ball).lastRailImpact
+            ? Object.freeze({ ...bodyData(ball).lastRailImpact })
+            : null,
           compression: bodyData(ball).compression,
           impactGlow: bodyData(ball).impactGlow,
           pocketing: bodyData(ball).pocketing ? Object.freeze({
@@ -2380,13 +2516,39 @@
       Body.setVelocity(ball, { x: velocity.x || 0, y: velocity.y || 0 });
       data.lastPosition = { x: point.x, y: point.y };
       data.previousPosition = { x: point.x, y: point.y };
+      data.preStepVelocity = { x: velocity.x || 0, y: velocity.y || 0 };
       data.pocketApproach = null;
+      data.lastRailImpact = null;
       if (point.x >= TABLE.left + BALL_RADIUS && point.x <= TABLE.right - BALL_RADIUS
           && point.y >= TABLE.top + BALL_RADIUS && point.y <= TABLE.bottom - BALL_RADIUS) {
         data.lastSafePosition = { x: point.x, y: point.y };
       }
       data.outsideSteps = 0;
       return true;
+    },
+    isolateBall(number = 0) {
+      const ball = ballByNumber(number);
+      if (!ball) return false;
+      balls.forEach((candidate) => {
+        if (candidate !== ball) Composite.remove(engine.world, candidate);
+      });
+      balls = [ball];
+      cueBall = number === 0 ? ball : null;
+      pendingRailImpacts.clear();
+      return true;
+    },
+    presentShot(shot) {
+      if (shotState || runState.endState.ended) return false;
+      const outcome = rules.evaluateShot(runState, {
+        pottedNumbers: [...(shot?.pottedNumbers || [])],
+        cueScratch: Boolean(shot?.cueScratch),
+        breakShot: Boolean(shot?.breakShot),
+        bankedNumbers: [...(shot?.bankedNumbers || [])]
+      });
+      runState = outcome.state;
+      syncUI();
+      processOutcomePerformances(outcome);
+      return this.snapshot();
     },
     reset() {
       resetGame();

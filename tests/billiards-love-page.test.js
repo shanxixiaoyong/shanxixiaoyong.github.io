@@ -8,7 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const cacheVersion = "billiards-love-three-layer-20260711b";
+const runtimeCacheVersion = "billiards-love-physics-theatre-20260711d";
+const styleCacheVersion = "billiards-love-physics-theatre-20260711d";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -83,14 +84,14 @@ test("loads only the local billiards runtime dependencies in exact order", () =>
   ]);
 
   assert.deepEqual(references(html, "link", "href").filter((file) => file.includes("billiards-love.css")), [
-    `assets/billiards-love.css?v=${cacheVersion}`
+    `assets/billiards-love.css?v=${styleCacheVersion}`
   ]);
   assert.deepEqual(references(html, "script", "src"), [
     "assets/vendor/matter-0.20.0.min.js?v=0.20.0",
-    `assets/billiards-love-rules.js?v=${cacheVersion}`,
-    `assets/billiards-love-content.js?v=${cacheVersion}`,
-    `assets/billiards-ball-renderer.js?v=${cacheVersion}`,
-    `assets/billiards-love-game.js?v=${cacheVersion}`
+    `assets/billiards-love-rules.js?v=${runtimeCacheVersion}`,
+    `assets/billiards-love-content.js?v=${runtimeCacheVersion}`,
+    `assets/billiards-ball-renderer.js?v=${runtimeCacheVersion}`,
+    `assets/billiards-love-game.js?v=${runtimeCacheVersion}`
   ]);
 });
 
@@ -149,7 +150,7 @@ test("uses local premium cloth and walnut material textures", () => {
   }
 });
 
-test("uses the full 1440 by 3200 phone viewport and keeps the table dominant", () => {
+test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture", () => {
   const app = rule(".hb-app");
   const playfield = rule(".hb-playfield");
   const table = rule(".hb-table-wrap");
@@ -161,33 +162,55 @@ test("uses the full 1440 by 3200 phone viewport and keeps the table dominant", (
   assert.match(app, /max-height:\s*3200px;/);
   assert.match(app, /--hb-header-space:\s*calc\(max\(6px, var\(--safe-top\)\) \+ 44px\);/);
   assert.match(app, /--hb-footer-space:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 38px\);/);
+  assert.match(app, /--hb-table-width:\s*105%;/);
   assert.match(playfield, /top:\s*var\(--hb-header-space\);/);
   assert.match(playfield, /right:\s*0;/);
   assert.match(playfield, /bottom:\s*var\(--hb-footer-space\);/);
   assert.match(playfield, /left:\s*0;/);
   assert.match(playfield, /min-height:\s*72%;/);
   assert.match(table, /height:\s*auto;/);
-  assert.match(table, /width:\s*min\(100%, calc\(\(min\(100dvh, 3200px\) - var\(--hb-header-space\) - var\(--hb-footer-space\)\) \/ 2\)\) !important;/);
-  assert.match(table, /max-width:\s*100% !important;/);
+  assert.match(table, /width:\s*var\(--hb-table-width\) !important;/);
+  assert.match(table, /max-width:\s*var\(--hb-table-width\) !important;/);
+  assert.match(table, /max-height:\s*none;/);
   assert.match(table, /aspect-ratio:\s*1 \/ 2 !important;/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(css, /env\(safe-area-inset-/);
 
-  const targetWidth = 1440;
-  const targetHeight = 3200;
+  const targetWidth = 432;
+  const targetHeight = 960;
+  const devicePixelRatio = 10 / 3;
+  assert.equal(targetWidth * devicePixelRatio, 1440);
+  assert.equal(targetHeight * devicePixelRatio, 3200);
+
   const headerSpace = 6 + 44;
   const footerSpace = 5 + 38;
   const playfieldHeight = targetHeight - headerSpace - footerSpace;
-  const tableSurfaceWidth = Math.min(targetWidth, playfieldHeight / 2);
+  const tableSurfaceWidth = targetWidth * 1.08;
   const tableSurfaceHeight = tableSurfaceWidth * 2;
+  const tableLeft = (targetWidth - tableSurfaceWidth) / 2;
   const tableTop = headerSpace + (playfieldHeight - tableSurfaceHeight) / 2;
-  const tableBottom = tableTop + tableSurfaceHeight;
+  const worldScale = tableSurfaceWidth / 720;
+  const pockets = [
+    { x: 95, y: 169 }, { x: 625, y: 169 },
+    { x: 74, y: 720 }, { x: 646, y: 720 },
+    { x: 95, y: 1271 }, { x: 625, y: 1271 }
+  ];
+  for (const pocket of pockets) {
+    assert.ok(tableLeft + (pocket.x - 33) * worldScale >= 0, "pocket left edge must remain visible");
+    assert.ok(tableLeft + (pocket.x + 33) * worldScale <= targetWidth, "pocket right edge must remain visible");
+    assert.ok(tableTop + (pocket.y - 33) * worldScale >= 0, "pocket top edge must remain visible");
+    assert.ok(tableTop + (pocket.y + 33) * worldScale <= targetHeight, "pocket bottom edge must remain visible");
+  }
+
+  const tableOuterTop = tableTop + 82 * worldScale;
+  const tableOuterBottom = tableTop + 1358 * worldScale;
   const topHudBottom = 6 + 36;
-  const bottomHudTop = targetHeight - (5 + 29) - 3;
-  assert.ok(tableSurfaceHeight / targetHeight >= 0.9, "table canvas should dominate the target height");
-  assert.ok(tableSurfaceWidth / targetWidth >= 0.999, "table canvas should be full width at the target viewport");
-  assert.ok(tableTop > topHudBottom, "top HUD must not cover the table");
-  assert.ok(tableBottom < bottomHudTop, "bottom HUD must not cover the table");
+  const relationshipTrackTop = targetHeight - (5 + 29) - 3;
+  const bottomHudTop = targetHeight - 4 - 22;
+  assert.ok(tableOuterTop > topHudBottom, "top HUD must remain outside the rendered table");
+  assert.ok(tableOuterBottom < relationshipTrackTop, "all table pockets must end before relationship progress");
+  assert.ok(tableOuterBottom < bottomHudTop, "bottom status must remain outside the rendered table");
+  assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.86, "visible table should use the portrait height");
 });
 
 test("uses a native portrait canvas without a CSS rotation layout", () => {
@@ -227,6 +250,66 @@ test("keeps bottom information minimal and outside the table", () => {
   assert.doesNotMatch(footer, /本局|连续进球|第一碰球/);
 });
 
+test("keeps the short performance centered, transient, and non-interactive", () => {
+  const microHtml = fragment(html, '<div class="hb-micro"', "</div>");
+  const micro = rule(".hb-micro");
+  const microVisible = rule(".hb-micro:not([hidden])");
+  const microTitle = rule(".hb-micro strong");
+  const microLine = rule(".hb-micro p");
+  const queueMicro = fragment(game, "function queueMicro", "function showNextMicro");
+
+  assert.match(microHtml, /aria-live="polite" aria-atomic="true" hidden/);
+  assert.match(microHtml, /id="hb-micro-kicker">1 · 对视</);
+  assert.match(microHtml, /id="hb-micro-title">目光停了一秒</);
+  assert.match(microHtml, /id="hb-micro-line">人群还在移动，你们却同时记住了彼此。</);
+  assert.match(micro, /z-index:\s*12;/);
+  assert.match(micro, /top:\s*50%;/);
+  assert.match(micro, /left:\s*50%;/);
+  assert.match(micro, /pointer-events:\s*none;/);
+  assert.match(microVisible, /hb-micro-arrive 1600ms/);
+  assert.match(microTitle, /font-size:\s*24px;/);
+  assert.match(css, /\.hb-micro p\s*\{[^}]*font-size:\s*11px;[^}]*\}/s);
+  assert.match(css, /\.hb-micro::before\s*\{[^}]*radial-gradient[^}]*\}/s);
+  assert.match(css, /\.hb-micro::after\s*\{[^}]*radial-gradient[^}]*\}/s);
+  assert.match(css, /@keyframes hb-micro-halo/);
+  assert.match(css, /@keyframes hb-micro-particles/);
+  assert.doesNotMatch(queueMicro, /cinematicActive|root\.dataset\.state/);
+});
+
+test("keeps the full-screen performance layered, centered, and dismissible", () => {
+  const cinematicHtml = fragment(html, '<section class="hb-cinematic"', "</section>");
+  const layerNames = [
+    "hb-cinematic-image", "hb-cinematic-light", "hb-cinematic-particles",
+    "hb-cinematic-shade", "hb-cinematic-vignette", "hb-cinematic-transition"
+  ];
+  let previousPosition = -1;
+  for (const name of layerNames) {
+    const position = cinematicHtml.indexOf(name);
+    assert.ok(position > previousPosition, `${name} should preserve scene layer order`);
+    previousPosition = position;
+  }
+
+  assert.match(cinematicHtml, /data-kind="stage" aria-live="polite" aria-atomic="true" hidden/);
+  assert.match(cinematicHtml, /id="hb-cinematic-skip"[^>]*aria-label="略过演出"/);
+  assert.match(cinematicHtml, /id="hb-cinematic-title">这一次，心意没有落空</);
+  assert.match(cinematicHtml, /id="hb-cinematic-line">她看了你很久，然后轻轻点了点头。</);
+  assert.match(cinematicHtml, /id="hb-cinematic-action" type="button" hidden>继续清台</);
+  assert.match(rule(".hb-cinematic"), /z-index:\s*50;/);
+  assert.match(css, /\.hb-cinematic-copy\s*\{[^}]*top:\s*50%;[^}]*text-align:\s*center;[^}]*\}/s);
+  assert.match(rule(".hb-cinematic-copy strong"), /font-size:\s*32px;/);
+  assert.match(rule(".hb-cinematic-copy p"), /font-size:\s*13px;/);
+  assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*z-index:\s*8;[^}]*\}/s);
+  assert.match(rule(".hb-cinematic-skip"), /z-index:\s*10;/);
+  assert.match(css, /\.hb-result\s*\{[^}]*z-index:\s*60;[^}]*\}/s);
+  assert.match(css, /\.hb-cinematic-image,[\s\S]*?\.hb-cinematic-transition\s*\{[\s\S]*?pointer-events:\s*none;/);
+  assert.match(css, /@keyframes hb-cinematic-light-sweep/);
+  assert.match(css, /@keyframes hb-cinematic-curtain/);
+  assert.match(game, /elements\.cinematic\.hidden = false;/);
+  assert.match(game, /elements\.cinematic\.hidden = true;/);
+  assert.match(game, /elements\.cinematicSkip\.addEventListener\("click", closeCinematic\);/);
+  assert.match(game, /elements\.cinematicAction\.addEventListener\("click", closeCinematic\);/);
+});
+
 test("presents direct shooting guidance without mandatory selection copy", () => {
   assert.match(html, /从白球向后拖动瞄准蓄力，松开击球/);
   assert.doesNotMatch(html, /先点击目标球|先选中目标球/);
@@ -245,5 +328,8 @@ test("does not expose retired game concepts or implementation notes", () => {
     "产品定位"
   ]) {
     assert.equal(publicSurface.includes(retired), false, `${retired} should not be public copy`);
+  }
+  for (const implementationNote of ["432×960", "DPR", "1.2-2 秒", "光晕/粒子", "自动关闭兼容"]) {
+    assert.equal(html.includes(implementationNote), false, `${implementationNote} should not be visible page copy`);
   }
 });

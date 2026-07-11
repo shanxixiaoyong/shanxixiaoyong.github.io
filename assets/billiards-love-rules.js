@@ -20,13 +20,13 @@
   }
 
   const STAGES = deepFreeze([
-    { index: 0, number: 1, id: "first-contact", name: "初次接触", ballNumbers: [1, 2, 3], idealOrder: null, strictOrder: false },
-    { index: 1, number: 2, id: "growing-familiar", name: "逐渐熟悉", ballNumbers: [4, 5], idealOrder: null, strictOrder: false },
-    { index: 2, number: 3, id: "intentional-dates", name: "暧昧升温", ballNumbers: [6, 7], idealOrder: [6, 7], strictOrder: false },
-    { index: 3, number: 4, id: "spoken-heart", name: "关系转折", ballNumbers: [8], idealOrder: [8], strictOrder: true },
-    { index: 4, number: 5, id: "confirmed-love", name: "正式相恋", ballNumbers: [9, 10, 11], idealOrder: [9, 10, 11], strictOrder: false },
-    { index: 5, number: 6, id: "learning-together", name: "磨合", ballNumbers: [12, 13], idealOrder: [12, 13], strictOrder: true },
-    { index: 6, number: 7, id: "shared-future", name: "共同未来", ballNumbers: [14, 15], idealOrder: [14, 15], strictOrder: true }
+    { index: 0, number: 1, id: "first-contact", name: "初次接触", ballNumbers: [1, 2, 3] },
+    { index: 1, number: 2, id: "growing-familiar", name: "逐渐熟悉", ballNumbers: [4, 5] },
+    { index: 2, number: 3, id: "intentional-dates", name: "暧昧升温", ballNumbers: [6, 7] },
+    { index: 3, number: 4, id: "spoken-heart", name: "关系转折", ballNumbers: [8] },
+    { index: 4, number: 5, id: "confirmed-love", name: "正式相恋", ballNumbers: [9, 10, 11] },
+    { index: 5, number: 6, id: "learning-together", name: "磨合", ballNumbers: [12, 13] },
+    { index: 6, number: 7, id: "shared-future", name: "共同未来", ballNumbers: [14, 15] }
   ]);
 
   const BALL_NAMES = deepFreeze([
@@ -91,7 +91,7 @@
     ballCount: 15,
     stageCount: 7,
     criticalNumbers: [8, 15],
-    breakRespotNumbers: [8, 15],
+    breakRespotNumbers: [],
     interest: {
       initial: 100,
       minimum: 0,
@@ -99,38 +99,14 @@
       secondConsecutiveMiss: -5,
       continuedConsecutiveMiss: -8,
       cueScratch: -10,
-      activeNextStage: -8,
-      activeMultiStage: -20,
-      accidentalMultiStage: -8,
-      accidentalConfession: -20,
-      accidentalCommitment: -15,
-      prematureCommitment: -30,
-      currentTargetRecovery: 3,
-      currentStageMultiRecovery: 8,
-      stageCompleteRecovery: 10,
-      bankedPotRecovery: 5
-    },
-    rhythm: {
-      activeNextStage: -10,
-      activeMultiStage: -20,
-      accidentalNextStage: -3,
-      accidentalMultiStage: -8,
-      accidentalConfession: -20,
-      accidentalCommitment: -15,
-      earlyConfession: -30,
-      commitmentTooHeavy: -30,
-      prematureCommitment: -25,
-      dateBeforeMeal: -5,
-      embraceBeforeHandholding: -3,
-      travelBeforeCloseness: -4,
-      reconcileBeforeConflict: -10
+      currentStagePotRecovery: 3,
+      stageCompleteRecovery: 10
     },
     rating: {
       technicalS: 85,
       technicalA: 60,
-      rhythmS: 90,
-      rhythmA: 70,
-      highInterest: 80
+      relationshipS: 80,
+      relationshipA: 50
     }
   });
 
@@ -162,16 +138,16 @@
     "interestDelta",
     "rhythmDelta"
   ]);
-  const SHOT_KEYS = Object.freeze([
-    "declaredBall",
-    "firstContact",
+  const REQUIRED_SHOT_KEYS = Object.freeze([
     "pottedNumbers",
     "cueScratch",
     "breakShot",
     "bankedNumbers"
   ]);
-  const VIOLATION_CODES = Object.freeze([
-    "cue-scratch",
+  const LEGACY_SHOT_KEYS = Object.freeze(["declaredBall", "firstContact"]);
+  const ALLOWED_SHOT_KEYS = new Set([...REQUIRED_SHOT_KEYS, ...LEGACY_SHOT_KEYS]);
+  const VIOLATION_CODES = Object.freeze(["cue-scratch"]);
+  const LEGACY_VIOLATION_CODES = Object.freeze([
     "active-next-stage",
     "active-multi-stage",
     "early-confession",
@@ -186,17 +162,14 @@
     "travel-before-closeness",
     "reconcile-before-conflict"
   ]);
-  const VIOLATION_CODE_SET = new Set(VIOLATION_CODES);
+  const KNOWN_VIOLATION_CODES = new Set([...VIOLATION_CODES, ...LEGACY_VIOLATION_CODES]);
   const SUCCESS_ENDINGS = Object.freeze({
     S: "mutual-devotion",
     A: "together-at-last",
     B: "bumpy-love"
   });
-  const FAILURE_ENDINGS = Object.freeze([
-    "confession-too-early",
-    "commitment-too-heavy",
-    "losing-contact"
-  ]);
+  const FAILURE_ENDINGS = Object.freeze(["losing-contact"]);
+  const LEGACY_FAILURE_ENDINGS = Object.freeze(["confession-too-early", "commitment-too-heavy"]);
   const EMPTY_ARRAY = Object.freeze([]);
 
   function isRecord(value) {
@@ -207,25 +180,25 @@
   }
 
   function assertRecord(value, label) {
-    if (!isRecord(value)) throw new TypeError(`${label} must be a plain object`);
+    if (!isRecord(value)) throw new TypeError(label + " must be a plain object");
   }
 
   function assertExactKeys(value, expected, label) {
     const keys = Object.keys(value);
     if (keys.length !== expected.length || expected.some((key) => !hasOwn(value, key))) {
-      throw new TypeError(`${label} has an invalid shape`);
+      throw new TypeError(label + " has an invalid shape");
     }
   }
 
   function assertInteger(value, label, minimum, maximum) {
-    if (!Number.isSafeInteger(value)) throw new TypeError(`${label} must be an integer`);
+    if (!Number.isSafeInteger(value)) throw new TypeError(label + " must be an integer");
     if (value < minimum || value > maximum) {
-      throw new RangeError(`${label} must be between ${minimum} and ${maximum}`);
+      throw new RangeError(label + " must be between " + minimum + " and " + maximum);
     }
   }
 
   function assertBoolean(value, label) {
-    if (typeof value !== "boolean") throw new TypeError(`${label} must be a boolean`);
+    if (typeof value !== "boolean") throw new TypeError(label + " must be a boolean");
   }
 
   function assertBallNumber(value, label) {
@@ -237,15 +210,17 @@
   }
 
   function assertDenseUniqueBallArray(value, label) {
-    if (!Array.isArray(value)) throw new TypeError(`${label} must be an array`);
+    if (!Array.isArray(value)) throw new TypeError(label + " must be an array");
     if (Object.keys(value).length !== value.length) {
-      throw new TypeError(`${label} must contain only dense indexed values`);
+      throw new TypeError(label + " must contain only dense indexed values");
     }
     const seen = new Set();
     for (let index = 0; index < value.length; index += 1) {
-      if (!hasOwn(value, index)) throw new TypeError(`${label} must be dense`);
-      assertBallNumber(value[index], `${label}[${index}]`);
-      if (seen.has(value[index])) throw new RangeError(`${label} cannot contain duplicate ball numbers`);
+      if (!hasOwn(value, index)) throw new TypeError(label + " must be dense");
+      assertBallNumber(value[index], label + "[" + index + "]");
+      if (seen.has(value[index])) {
+        throw new RangeError(label + " cannot contain duplicate ball numbers");
+      }
       seen.add(value[index]);
     }
     return seen;
@@ -260,15 +235,19 @@
     return STAGES[ballByNumber(number).stageIndex];
   }
 
-  function currentStageIndexFromSet(potted) {
-    for (const stage of STAGES) {
-      if (stage.ballNumbers.some((number) => !potted.has(number))) return stage.index;
-    }
-    return null;
-  }
-
   function isStageComplete(stage, potted) {
     return stage.ballNumbers.every((number) => potted.has(number));
+  }
+
+  function completedStageCountFromSet(potted) {
+    let count = 0;
+    while (count < STAGES.length && isStageComplete(STAGES[count], potted)) count += 1;
+    return count;
+  }
+
+  function currentStageIndexFromSet(potted) {
+    const completedCount = completedStageCountFromSet(potted);
+    return completedCount === STAGES.length ? null : completedCount;
   }
 
   function freezeRunState(state) {
@@ -335,42 +314,15 @@
     const technicalGrade = technicalScore >= RULES.rating.technicalS
       ? "S"
       : technicalScore >= RULES.rating.technicalA ? "A" : "B";
-    const rhythmGrade = state.rhythmScore >= RULES.rating.rhythmS
+    const relationshipGrade = state.interest >= RULES.rating.relationshipS
       ? "S"
-      : state.rhythmScore >= RULES.rating.rhythmA ? "A" : "B";
-    const commitmentLast = state.pottedNumbers.includes(15)
-      ? state.pottedNumbers.length === RULES.ballCount
-        && state.pocketOrder[state.pocketOrder.length - 1] === 15
-      : null;
-    const confessionOnTime = state.pottedNumbers.includes(8)
-      ? !violationExists(state, "early-confession") && !violationExists(state, "accidental-confession")
-      : null;
-    const conflictOrderKept = state.pottedNumbers.includes(13)
-      ? !violationExists(state, "reconcile-before-conflict")
-      : null;
-    const dateOrderKept = state.pottedNumbers.includes(7)
-      ? !violationExists(state, "date-before-meal")
-      : null;
-    const closenessOrderKept = state.pottedNumbers.some((number) => number === 10 || number === 11)
-      ? !violationExists(state, "embrace-before-handholding")
-        && !violationExists(state, "travel-before-closeness")
-      : null;
-    const severeActiveViolations = state.violations.filter((violation) => (
-      violation.mode === "active" && violation.severity === "severe"
-    )).length;
+      : state.interest >= RULES.rating.relationshipA ? "A" : "B";
     const completed = assumeCompleted || state.endState.status === "completed";
     let grade = null;
     if (completed) {
-      const earnsS = technicalGrade === "S"
-        && rhythmGrade === "S"
-        && state.interest >= RULES.rating.highInterest
-        && confessionOnTime === true
-        && conflictOrderKept === true
-        && commitmentLast === true
-        && dateOrderKept !== false
-        && closenessOrderKept !== false
-        && severeActiveViolations === 0;
-      grade = earnsS ? "S" : rhythmGrade === "B" || severeActiveViolations > 0 ? "B" : "A";
+      grade = technicalGrade === "S" && relationshipGrade === "S"
+        ? "S"
+        : technicalGrade === "B" || relationshipGrade === "B" ? "B" : "A";
     }
     return {
       grade,
@@ -391,15 +343,9 @@
         multiBallShots: state.multiBallShots
       },
       rhythm: {
-        score: state.rhythmScore,
-        grade: rhythmGrade,
-        interest: state.interest,
-        confessionOnTime,
-        dateOrderKept,
-        closenessOrderKept,
-        conflictOrderKept,
-        commitmentLast,
-        severeActiveViolations
+        score: state.interest,
+        grade: relationshipGrade,
+        interest: state.interest
       }
     };
   }
@@ -468,25 +414,26 @@
     let previousViolationShot = 0;
     let scratchViolations = 0;
     state.violations.forEach((violation, index) => {
-      assertRecord(violation, `state.violations[${index}]`);
-      assertExactKeys(violation, VIOLATION_KEYS, `state.violations[${index}]`);
-      assertInteger(violation.shot, `state.violations[${index}].shot`, 1, state.shots);
+      const label = "state.violations[" + index + "]";
+      assertRecord(violation, label);
+      assertExactKeys(violation, VIOLATION_KEYS, label);
+      assertInteger(violation.shot, label + ".shot", 1, state.shots);
       if (violation.shot < previousViolationShot) {
         throw new RangeError("state violations must be ordered by shot");
       }
       previousViolationShot = violation.shot;
-      if (!VIOLATION_CODE_SET.has(violation.code)) {
-        throw new RangeError(`state.violations[${index}].code is unknown`);
+      if (!KNOWN_VIOLATION_CODES.has(violation.code)) {
+        throw new RangeError(label + ".code is unknown");
       }
-      assertNullableBallNumber(violation.ball, `state.violations[${index}].ball`);
-      if (!['active', 'accidental', 'technical'].includes(violation.mode)) {
-        throw new RangeError(`state.violations[${index}].mode is unknown`);
+      assertNullableBallNumber(violation.ball, label + ".ball");
+      if (!["active", "accidental", "technical"].includes(violation.mode)) {
+        throw new RangeError(label + ".mode is unknown");
       }
-      if (!['minor', 'major', 'severe'].includes(violation.severity)) {
-        throw new RangeError(`state.violations[${index}].severity is unknown`);
+      if (!["minor", "major", "severe"].includes(violation.severity)) {
+        throw new RangeError(label + ".severity is unknown");
       }
-      assertInteger(violation.interestDelta, `state.violations[${index}].interestDelta`, -100, 0);
-      assertInteger(violation.rhythmDelta, `state.violations[${index}].rhythmDelta`, -100, 0);
+      assertInteger(violation.interestDelta, label + ".interestDelta", -100, 0);
+      assertInteger(violation.rhythmDelta, label + ".rhythmDelta", -100, 0);
       if (violation.code === "cue-scratch") scratchViolations += 1;
       expectedRhythm += violation.rhythmDelta;
     });
@@ -500,13 +447,13 @@
     assertRecord(state.endState, "state.endState");
     assertExactKeys(state.endState, END_STATE_KEYS, "state.endState");
     assertBoolean(state.endState.ended, "state.endState.ended");
-    if (!['playing', 'completed', 'failed'].includes(state.endState.status)) {
+    if (!["playing", "completed", "failed"].includes(state.endState.status)) {
       throw new RangeError("state.endState.status is unknown");
     }
     if (state.endState.ending !== null && typeof state.endState.ending !== "string") {
       throw new TypeError("state.endState.ending must be null or a string");
     }
-    if (state.endState.grade !== null && !['S', 'A', 'B'].includes(state.endState.grade)) {
+    if (state.endState.grade !== null && !["S", "A", "B"].includes(state.endState.grade)) {
       throw new RangeError("state.endState.grade is unknown");
     }
 
@@ -526,17 +473,19 @@
         throw new RangeError("state completion rating is inconsistent");
       }
     } else {
-      if (!state.endState.ended || state.endState.grade !== null || !FAILURE_ENDINGS.includes(state.endState.ending)) {
+      const knownFailure = FAILURE_ENDINGS.includes(state.endState.ending)
+        || LEGACY_FAILURE_ENDINGS.includes(state.endState.ending);
+      if (!state.endState.ended || state.endState.grade !== null || !knownFailure) {
         throw new RangeError("a failed end state is inconsistent");
       }
       if (state.endState.ending === "losing-contact" && state.interest !== 0) {
         throw new RangeError("losing-contact requires zero interest");
       }
       if (state.endState.ending === "confession-too-early" && !violationExists(state, "early-confession")) {
-        throw new RangeError("confession-too-early requires an early confession violation");
+        throw new RangeError("confession-too-early requires its historical violation");
       }
       if (state.endState.ending === "commitment-too-heavy" && !violationExists(state, "commitment-too-heavy")) {
-        throw new RangeError("commitment-too-heavy requires its matching violation");
+        throw new RangeError("commitment-too-heavy requires its historical violation");
       }
     }
   }
@@ -568,211 +517,81 @@
     return Object.freeze(BALLS.map((ball) => ball.number).filter((number) => !potted.has(number)));
   }
 
-  function activeTargetTiming(state, number) {
-    const potted = new Set(state.pottedNumbers);
-    const currentIndex = currentStageIndexFromSet(potted);
-    const stageIndex = BALL_BY_NUMBER[number].stageIndex;
-    const stageGap = currentIndex === null ? 0 : stageIndex - currentIndex;
-    if (!state.breakCompleted) {
-      return { timing: "break-only", stageIndex, currentIndex, stageGap: null, interestDelta: 0, rhythmDelta: 0, failure: null };
-    }
-    if (number === 8 && [1, 2, 3, 4, 5, 6, 7].some((required) => !potted.has(required))) {
-      return {
-        timing: "early-confession",
-        stageIndex,
-        currentIndex,
-        stageGap,
-        interestDelta: 0,
-        rhythmDelta: RULES.rhythm.earlyConfession,
-        failure: "confession-too-early"
-      };
-    }
-    if (number === 15) {
-      const ready = BALLS.slice(0, 14).every((ball) => potted.has(ball.number));
-      if (ready) {
-        return { timing: "final-commitment", stageIndex, currentIndex, stageGap, interestDelta: 0, rhythmDelta: 0, failure: null };
-      }
-      if (stageGap >= 2) {
-        return {
-          timing: "commitment-too-heavy",
-          stageIndex,
-          currentIndex,
-          stageGap,
-          interestDelta: 0,
-          rhythmDelta: RULES.rhythm.commitmentTooHeavy,
-          failure: "commitment-too-heavy"
-        };
-      }
-      return {
-        timing: "premature-commitment",
-        stageIndex,
-        currentIndex,
-        stageGap,
-        interestDelta: RULES.interest.prematureCommitment,
-        rhythmDelta: RULES.rhythm.prematureCommitment,
-        failure: null
-      };
-    }
-    if (stageGap === 0) {
-      return { timing: "on-time", stageIndex, currentIndex, stageGap, interestDelta: 0, rhythmDelta: 0, failure: null };
-    }
-    if (stageGap === 1) {
-      return {
-        timing: "next-stage",
-        stageIndex,
-        currentIndex,
-        stageGap,
-        interestDelta: RULES.interest.activeNextStage,
-        rhythmDelta: RULES.rhythm.activeNextStage,
-        failure: null
-      };
-    }
-    return {
-      timing: "multi-stage",
-      stageIndex,
-      currentIndex,
-      stageGap,
-      interestDelta: RULES.interest.activeMultiStage,
-      rhythmDelta: RULES.rhythm.activeMultiStage,
-      failure: null
-    };
-  }
-
   function classifyTarget(state, number) {
     assertRunState(state);
     if (state.endState.ended) throw new RangeError("cannot classify a target after the run has ended");
     assertBallNumber(number, "ball number");
-    if (state.pottedNumbers.includes(number)) throw new RangeError(`ball ${number} is already potted`);
-    const timing = activeTargetTiming(state, number);
+    if (state.pottedNumbers.includes(number)) {
+      throw new RangeError("ball " + number + " is already potted");
+    }
+    const potted = new Set(state.pottedNumbers);
+    const currentIndex = currentStageIndexFromSet(potted);
+    const stageIndex = BALL_BY_NUMBER[number].stageIndex;
+    const stageGap = currentIndex === null ? null : stageIndex - currentIndex;
+    const current = stageGap === 0;
     return deepFreeze({
       number,
-      stage: STAGES[timing.stageIndex],
-      currentStage: timing.currentIndex === null ? null : STAGES[timing.currentIndex],
-      stageGap: timing.stageGap,
-      timing: timing.timing,
-      interestDelta: timing.interestDelta,
-      rhythmDelta: timing.rhythmDelta,
-      failure: timing.failure
+      stage: STAGES[stageIndex],
+      currentStage: currentIndex === null ? null : STAGES[currentIndex],
+      stageGap: state.breakCompleted ? stageGap : null,
+      stageStatus: current ? "current" : "future",
+      completedEarly: !current,
+      timing: !state.breakCompleted ? "break-only" : current ? "on-time" : "early-completion",
+      interestDelta: state.breakCompleted && current ? RULES.interest.currentStagePotRecovery : 0,
+      rhythmDelta: 0,
+      failure: null
     });
   }
 
   function normalizeShot(state, shot) {
     assertRecord(shot, "shot");
-    SHOT_KEYS.forEach((key) => {
-      if (!hasOwn(shot, key)) throw new TypeError(`shot.${key} is required`);
+    REQUIRED_SHOT_KEYS.forEach((key) => {
+      if (!hasOwn(shot, key)) throw new TypeError("shot." + key + " is required");
     });
-    assertNullableBallNumber(shot.declaredBall, "shot.declaredBall");
-    assertNullableBallNumber(shot.firstContact, "shot.firstContact");
+    Object.keys(shot).forEach((key) => {
+      if (!ALLOWED_SHOT_KEYS.has(key)) throw new TypeError("shot." + key + " is not supported");
+    });
+    if (hasOwn(shot, "declaredBall")) {
+      assertNullableBallNumber(shot.declaredBall, "shot.declaredBall");
+    }
+    if (hasOwn(shot, "firstContact")) {
+      assertNullableBallNumber(shot.firstContact, "shot.firstContact");
+    }
     assertBoolean(shot.cueScratch, "shot.cueScratch");
     assertBoolean(shot.breakShot, "shot.breakShot");
-    const pottedNumbers = [...shot.pottedNumbers];
-    const bankedNumbers = [...shot.bankedNumbers];
     assertDenseUniqueBallArray(shot.pottedNumbers, "shot.pottedNumbers");
     assertDenseUniqueBallArray(shot.bankedNumbers, "shot.bankedNumbers");
+    const pottedNumbers = [...shot.pottedNumbers];
+    const bankedNumbers = [...shot.bankedNumbers];
 
-    if (!state.breakCompleted && !shot.breakShot) throw new RangeError("the first shot must be the break shot");
-    if (state.breakCompleted && shot.breakShot) throw new RangeError("the break shot has already been completed");
-    if (shot.breakShot && shot.declaredBall !== null) throw new RangeError("the break shot cannot declare a target ball");
-    if (!shot.breakShot && shot.declaredBall === null) throw new RangeError("a normal shot must declare a target ball");
+    if (!state.breakCompleted && !shot.breakShot) {
+      throw new RangeError("the first shot must be the break shot");
+    }
+    if (state.breakCompleted && shot.breakShot) {
+      throw new RangeError("the break shot has already been completed");
+    }
 
     const alreadyPotted = new Set(state.pottedNumbers);
-    if (shot.declaredBall !== null && alreadyPotted.has(shot.declaredBall)) {
-      throw new RangeError(`declared ball ${shot.declaredBall} is already potted`);
-    }
-    if (shot.firstContact !== null && alreadyPotted.has(shot.firstContact)) {
-      throw new RangeError(`first-contact ball ${shot.firstContact} is already potted`);
-    }
     pottedNumbers.forEach((number) => {
-      if (alreadyPotted.has(number)) throw new RangeError(`potted ball ${number} is already in the run state`);
+      if (alreadyPotted.has(number)) {
+        throw new RangeError("potted ball " + number + " is already in the run state");
+      }
     });
     const pottedSet = new Set(pottedNumbers);
     bankedNumbers.forEach((number) => {
-      if (!pottedSet.has(number)) throw new RangeError(`banked ball ${number} must also be potted`);
+      if (!pottedSet.has(number)) {
+        throw new RangeError("banked ball " + number + " must also be potted");
+      }
     });
-    if (pottedNumbers.length > 0 && shot.firstContact === null) {
-      throw new RangeError("a shot cannot pot an object ball without a first contact");
-    }
+
     return {
-      declaredBall: shot.declaredBall,
-      firstContact: shot.firstContact,
+      declaredBall: null,
+      firstContact: null,
       pottedNumbers,
       cueScratch: shot.cueScratch,
       breakShot: shot.breakShot,
       bankedNumbers
     };
-  }
-
-  function accidentalTiming(state, number) {
-    const potted = new Set(state.pottedNumbers);
-    const currentIndex = currentStageIndexFromSet(potted);
-    const stageIndex = BALL_BY_NUMBER[number].stageIndex;
-    const stageGap = stageIndex - currentIndex;
-    if (number === 8 && [1, 2, 3, 4, 5, 6, 7].some((required) => !potted.has(required))) {
-      return {
-        timing: "accidental-confession",
-        interestDelta: RULES.interest.accidentalConfession,
-        rhythmDelta: RULES.rhythm.accidentalConfession,
-        severity: "major"
-      };
-    }
-    if (number === 15 && BALLS.slice(0, 14).some((ball) => !potted.has(ball.number))) {
-      return {
-        timing: "accidental-commitment",
-        interestDelta: RULES.interest.accidentalCommitment,
-        rhythmDelta: RULES.rhythm.accidentalCommitment,
-        severity: "major"
-      };
-    }
-    if (stageGap === 0) {
-      return { timing: "accidental-surprise", interestDelta: 0, rhythmDelta: 0, severity: null };
-    }
-    if (stageGap === 1) {
-      return {
-        timing: "accidental-next-stage",
-        interestDelta: 0,
-        rhythmDelta: RULES.rhythm.accidentalNextStage,
-        severity: "minor"
-      };
-    }
-    return {
-      timing: "accidental-multi-stage",
-      interestDelta: RULES.interest.accidentalMultiStage,
-      rhythmDelta: RULES.rhythm.accidentalMultiStage,
-      severity: "major"
-    };
-  }
-
-  function activeSeverity(timing) {
-    if (timing === "next-stage") return "major";
-    if (timing === "on-time" || timing === "final-commitment") return null;
-    return "severe";
-  }
-
-  function activeViolationCode(timing) {
-    return {
-      "next-stage": "active-next-stage",
-      "multi-stage": "active-multi-stage",
-      "early-confession": "early-confession",
-      "premature-commitment": "premature-commitment",
-      "commitment-too-heavy": "commitment-too-heavy"
-    }[timing] || null;
-  }
-
-  function orderViolation(number, seen, mode) {
-    const multiplier = mode === "active" ? 1 : 0.5;
-    if (number === 7 && !seen.has(6)) {
-      return { code: "date-before-meal", severity: "minor", rhythmDelta: Math.ceil(RULES.rhythm.dateBeforeMeal * multiplier) };
-    }
-    if (number === 10 && !seen.has(9)) {
-      return { code: "embrace-before-handholding", severity: "minor", rhythmDelta: Math.ceil(RULES.rhythm.embraceBeforeHandholding * multiplier) };
-    }
-    if (number === 11 && (!seen.has(9) || !seen.has(10))) {
-      return { code: "travel-before-closeness", severity: "minor", rhythmDelta: Math.ceil(RULES.rhythm.travelBeforeCloseness * multiplier) };
-    }
-    if (number === 13 && !seen.has(12)) {
-      return { code: "reconcile-before-conflict", severity: "major", rhythmDelta: Math.ceil(RULES.rhythm.reconcileBeforeConflict * multiplier) };
-    }
-    return null;
   }
 
   function evaluateShot(state, shot) {
@@ -781,142 +600,97 @@
     const normalized = normalizeShot(state, shot);
     const shotNumber = state.shots + 1;
     const pottedBefore = new Set(state.pottedNumbers);
+    const completedCountBefore = completedStageCountFromSet(pottedBefore);
     const stageBeforeIndex = currentStageIndexFromSet(pottedBefore);
     const stageBefore = stageBeforeIndex === null ? null : STAGES[stageBeforeIndex];
-    const protectedOnBreak = new Set(normalized.breakShot ? RULES.breakRespotNumbers : []);
-    const respotNumbers = normalized.pottedNumbers.filter((number) => protectedOnBreak.has(number));
-    const creditedNumbers = normalized.pottedNumbers.filter((number) => !protectedOnBreak.has(number));
+    const creditedNumbers = [...normalized.pottedNumbers];
     const creditedSet = new Set(creditedNumbers);
     const effectiveBankedNumbers = normalized.bankedNumbers.filter((number) => creditedSet.has(number));
-    const activePottedNumber = normalized.declaredBall !== null
-      && normalized.firstContact === normalized.declaredBall
-      && creditedSet.has(normalized.declaredBall)
-      ? normalized.declaredBall
-      : null;
-    const accidentalPottedNumbers = creditedNumbers.filter((number) => number !== activePottedNumber);
-    const interestChanges = [];
-    const addedViolations = [];
-    const events = [];
-    let directFailure = null;
-
-    function addInterestChange(code, amount, ball) {
-      if (amount !== 0) interestChanges.push({ code, amount, ball });
-    }
-
-    function addViolation(code, ball, mode, severity, interestDelta, rhythmDelta) {
-      addedViolations.push({
-        shot: shotNumber,
-        code,
-        ball,
-        mode,
-        severity,
-        interestDelta,
-        rhythmDelta
-      });
-      addInterestChange(code, interestDelta, ball);
-    }
-
-    if (normalized.cueScratch) {
-      addViolation("cue-scratch", null, "technical", "minor", RULES.interest.cueScratch, 0);
-    }
-
-    if (normalized.breakShot) {
-      normalized.pottedNumbers.forEach((number) => {
-        const respotted = protectedOnBreak.has(number);
-        events.push({
-          number,
-          mode: "break",
-          timing: respotted ? "protected-respot" : "break-pot",
-          stageIndex: BALL_BY_NUMBER[number].stageIndex,
-          stageGap: null,
-          banked: normalized.bankedNumbers.includes(number),
-          credited: !respotted,
-          interestDelta: 0,
-          rhythmDelta: 0
-        });
-      });
-    } else {
-      const seen = new Set(state.pottedNumbers);
-      creditedNumbers.forEach((number) => {
-        const mode = number === activePottedNumber ? "active" : "accidental";
-        const timing = mode === "active" ? activeTargetTiming(state, number) : accidentalTiming(state, number);
-        let eventInterestDelta = timing.interestDelta;
-        let eventRhythmDelta = timing.rhythmDelta;
-        if (mode === "active") {
-          const code = activeViolationCode(timing.timing);
-          if (code) {
-            addViolation(code, number, mode, activeSeverity(timing.timing), timing.interestDelta, timing.rhythmDelta);
-          }
-          if (timing.failure) directFailure = timing.failure;
-        } else if (timing.severity) {
-          addViolation(timing.timing, number, mode, timing.severity, timing.interestDelta, timing.rhythmDelta);
-        }
-
-        const order = orderViolation(number, seen, mode);
-        if (order) {
-          addViolation(order.code, number, mode, order.severity, 0, order.rhythmDelta);
-          eventRhythmDelta += order.rhythmDelta;
-        }
-        events.push({
-          number,
-          mode,
-          timing: timing.timing,
-          stageIndex: BALL_BY_NUMBER[number].stageIndex,
-          stageGap: BALL_BY_NUMBER[number].stageIndex - stageBeforeIndex,
-          banked: effectiveBankedNumbers.includes(number),
-          credited: true,
-          interestDelta: eventInterestDelta,
-          rhythmDelta: eventRhythmDelta
-        });
-        seen.add(number);
-      });
-    }
-
-    const pottedAfter = new Set(state.pottedNumbers);
+    const currentStagePottedNumbers = creditedNumbers.filter((number) => (
+      BALL_BY_NUMBER[number].stageIndex === stageBeforeIndex
+    ));
+    const earlyPottedNumbers = creditedNumbers.filter((number) => (
+      BALL_BY_NUMBER[number].stageIndex > stageBeforeIndex
+    ));
+    const pottedAfter = new Set(pottedBefore);
     creditedNumbers.forEach((number) => pottedAfter.add(number));
+    const completedCountAfter = completedStageCountFromSet(pottedAfter);
+    const newlyCompletedStages = STAGES.slice(completedCountBefore, completedCountAfter);
+    const newlyCompletedStageIds = newlyCompletedStages.map((stage) => stage.id);
+    const newlyEarlyCompletedStageIds = STAGES
+      .filter((stage) => (
+        stage.index > stageBeforeIndex
+        && !isStageComplete(stage, pottedBefore)
+        && isStageComplete(stage, pottedAfter)
+      ))
+      .map((stage) => stage.id);
+    const earlyCompletedStageIds = STAGES
+      .filter((stage) => stage.index >= completedCountAfter && isStageComplete(stage, pottedAfter))
+      .map((stage) => stage.id);
+
     const successfulShot = creditedNumbers.length > 0;
     const consecutiveMisses = normalized.breakShot
       ? 0
       : successfulShot ? 0 : state.consecutiveMisses + 1;
     const potStreak = successfulShot ? state.potStreak + creditedNumbers.length : 0;
+    const interestChanges = [];
+    const addedViolations = [];
+
+    function addInterestChange(code, amount, ball, stageId) {
+      if (amount === 0) return;
+      interestChanges.push({ code, amount, ball, stageId });
+    }
+
+    let scratchDelta = 0;
+    if (normalized.cueScratch) {
+      scratchDelta = RULES.interest.cueScratch;
+      addedViolations.push({
+        shot: shotNumber,
+        code: "cue-scratch",
+        ball: null,
+        mode: "technical",
+        severity: "minor",
+        interestDelta: scratchDelta,
+        rhythmDelta: 0
+      });
+      addInterestChange("cue-scratch", scratchDelta, null, null);
+    }
+
+    let missCode = null;
+    let missDelta = 0;
     if (!normalized.breakShot && !successfulShot) {
       if (consecutiveMisses === 2) {
-        addInterestChange("second-consecutive-miss", RULES.interest.secondConsecutiveMiss, null);
+        missCode = "second-consecutive-miss";
+        missDelta = RULES.interest.secondConsecutiveMiss;
       } else if (consecutiveMisses >= 3) {
-        addInterestChange("continued-consecutive-miss", RULES.interest.continuedConsecutiveMiss, null);
+        missCode = "continued-consecutive-miss";
+        missDelta = RULES.interest.continuedConsecutiveMiss;
       }
+      if (missCode) addInterestChange(missCode, missDelta, null, null);
     }
 
-    let completedCurrentStage = false;
-    if (!normalized.breakShot) {
-      const activeEvent = events.find((event) => event.mode === "active");
-      if (activeEvent && (activeEvent.timing === "on-time" || activeEvent.timing === "final-commitment")) {
-        addInterestChange("current-target-recovery", RULES.interest.currentTargetRecovery, activeEvent.number);
-      }
-      const currentStagePots = creditedNumbers.filter((number) => BALL_BY_NUMBER[number].stageIndex === stageBeforeIndex);
-      if (currentStagePots.length >= 2) {
-        addInterestChange("current-stage-multi-recovery", RULES.interest.currentStageMultiRecovery, null);
-      }
-      completedCurrentStage = stageBefore !== null
-        && !isStageComplete(stageBefore, pottedBefore)
-        && isStageComplete(stageBefore, pottedAfter);
-      if (completedCurrentStage) {
-        addInterestChange("stage-complete-recovery", RULES.interest.stageCompleteRecovery, null);
-      }
-      effectiveBankedNumbers.forEach((number) => {
-        addInterestChange("banked-pot-recovery", RULES.interest.bankedPotRecovery, number);
-      });
-    }
+    currentStagePottedNumbers.forEach((number) => {
+      addInterestChange(
+        "current-stage-pot-recovery",
+        RULES.interest.currentStagePotRecovery,
+        number,
+        BALL_BY_NUMBER[number].stageId
+      );
+    });
+    newlyCompletedStages.forEach((stage) => {
+      addInterestChange(
+        "stage-complete-recovery",
+        RULES.interest.stageCompleteRecovery,
+        null,
+        stage.id
+      );
+    });
 
     const rawInterestDelta = interestChanges.reduce((sum, change) => sum + change.amount, 0);
-    const rawRhythmDelta = addedViolations.reduce((sum, violation) => sum + violation.rhythmDelta, 0);
     const nextInterest = clamp(state.interest + rawInterestDelta, 0, 100);
-    const nextRhythm = clamp(state.rhythmScore + rawRhythmDelta, 0, 100);
+    const nextRhythm = state.rhythmScore;
     const sortedPottedNumbers = [...pottedAfter].sort((left, right) => left - right);
     const pocketOrder = [...state.pocketOrder, ...creditedNumbers];
-    const completedStageIds = STAGES
-      .filter((stage) => !isStageComplete(stage, pottedBefore) && isStageComplete(stage, pottedAfter))
-      .map((stage) => stage.id);
     const baseState = {
       version: RULES.version,
       pottedNumbers: sortedPottedNumbers,
@@ -936,9 +710,7 @@
       endState: { ended: false, status: "playing", ending: null, grade: null }
     };
 
-    if (directFailure) {
-      baseState.endState = { ended: true, status: "failed", ending: directFailure, grade: null };
-    } else if (nextInterest === 0) {
+    if (nextInterest === 0) {
       baseState.endState = { ended: true, status: "failed", ending: "losing-contact", grade: null };
     } else if (sortedPottedNumbers.length === RULES.ballCount) {
       const grade = ratingData(baseState, true).grade;
@@ -949,36 +721,107 @@
     assertRunState(nextState);
     const stageAfterIndex = currentStageIndexFromSet(pottedAfter);
     const stageAfter = stageAfterIndex === null ? null : STAGES[stageAfterIndex];
-    const activeEvent = events.find((event) => event.mode === "active");
+    const pocketEvents = creditedNumbers.map((number) => {
+      const ball = BALL_BY_NUMBER[number];
+      const current = ball.stageIndex === stageBeforeIndex;
+      const early = ball.stageIndex > stageBeforeIndex;
+      return {
+        type: "pocket",
+        shot: shotNumber,
+        number,
+        stageId: ball.stageId,
+        stageIndex: ball.stageIndex,
+        stageStatus: current ? "current" : "future",
+        completedEarly: early,
+        mode: normalized.breakShot ? "break" : current ? "active" : "accidental",
+        timing: normalized.breakShot ? "break-pot" : current ? "on-time" : "early-completion",
+        stageGap: stageBeforeIndex === null ? null : ball.stageIndex - stageBeforeIndex,
+        banked: effectiveBankedNumbers.includes(number),
+        credited: true,
+        interestDelta: current ? RULES.interest.currentStagePotRecovery : 0,
+        rhythmDelta: 0
+      };
+    });
+    const stageEvents = newlyCompletedStages.map((stage) => ({
+      type: "stage-complete",
+      shot: shotNumber,
+      stageId: stage.id,
+      stageIndex: stage.index,
+      cascaded: stage.index > stageBeforeIndex,
+      completedEarly: stage.index > stageBeforeIndex,
+      precompleted: isStageComplete(stage, pottedBefore),
+      interestDelta: RULES.interest.stageCompleteRecovery,
+      rhythmDelta: 0,
+      credited: false
+    }));
+    const scratchEvent = normalized.cueScratch
+      ? {
+          type: "scratch",
+          shot: shotNumber,
+          code: "cue-scratch",
+          interestDelta: scratchDelta,
+          rhythmDelta: 0,
+          credited: false
+        }
+      : null;
+    const missEvent = !successfulShot
+      ? {
+          type: "miss",
+          shot: shotNumber,
+          code: missCode || "miss",
+          breakShot: normalized.breakShot,
+          counted: !normalized.breakShot,
+          consecutiveMisses,
+          interestDelta: missDelta,
+          rhythmDelta: 0,
+          credited: false
+        }
+      : null;
+    const events = [
+      ...pocketEvents,
+      ...stageEvents,
+      ...(scratchEvent ? [scratchEvent] : []),
+      ...(missEvent ? [missEvent] : [])
+    ];
     const activeTiming = normalized.breakShot
       ? "break"
-      : activeEvent ? activeEvent.timing : successfulShot ? "accidental-only" : "miss";
+      : currentStagePottedNumbers.length > 0
+        ? "on-time"
+        : successfulShot ? "early-completion" : "miss";
     const frozenShot = deepFreeze({
       ...normalized,
       pottedNumbers: [...normalized.pottedNumbers],
       bankedNumbers: [...normalized.bankedNumbers]
     });
+
     return deepFreeze({
       state: nextState,
       shot: frozenShot,
       stageBefore,
       stageAfter,
       pottedNumbers: creditedNumbers,
-      respotNumbers,
-      declaredPotted: activePottedNumber !== null,
-      activePottedNumber,
-      accidentalPottedNumbers,
+      respotNumbers: [],
+      declaredPotted: false,
+      activePottedNumber: null,
+      accidentalPottedNumbers: earlyPottedNumbers,
       activeTiming,
       events,
-      completedStageIds,
-      completedCurrentStage,
+      pocketEvents,
+      stageEvents,
+      missEvent,
+      scratchEvent,
+      completedStageIds: newlyCompletedStageIds,
+      newlyCompletedStageIds,
+      newlyEarlyCompletedStageIds,
+      earlyCompletedStageIds,
+      completedCurrentStage: newlyCompletedStageIds.includes(stageBefore && stageBefore.id),
       interestChanges,
       rawInterestDelta,
       interestDelta: nextInterest - state.interest,
       rhythmDelta: nextRhythm - state.rhythmScore,
       miss: !successfulShot,
       cueScratch: normalized.cueScratch,
-      contactMatched: normalized.declaredBall === null ? null : normalized.firstContact === normalized.declaredBall,
+      contactMatched: null,
       endState: nextState.endState,
       rating: ratingData(nextState, false)
     });

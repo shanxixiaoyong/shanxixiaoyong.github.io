@@ -9,14 +9,22 @@ const Content = require("../assets/billiards-love-content.js");
 const API_KEYS = [
   "INTENTS",
   "TIMINGS",
+  "STAGE_EVENT_TYPES",
   "BALLS",
   "STAGES",
+  "STAGE_TRANSITIONS",
+  "STAGE_EVENTS",
   "SPECIAL_EVENTS",
   "ENDINGS",
   "getBall",
   "getStage",
+  "getStageTransition",
+  "getStageEvents",
   "getEnding",
-  "selectPerformance"
+  "createSeededRng",
+  "selectPerformance",
+  "selectStageTransition",
+  "selectStageEvent"
 ];
 
 const EXPECTED_BALL_NAMES = [
@@ -63,6 +71,26 @@ function assertMicroPerformance(variant, label) {
   );
 }
 
+function assertDeepFrozen(value, label, seen = new Set()) {
+  if (!value || typeof value !== "object" || seen.has(value)) return;
+  seen.add(value);
+  assert.ok(Object.isFrozen(value), `${label} must be frozen`);
+  for (const [key, child] of Object.entries(value)) {
+    assertDeepFrozen(child, `${label}.${key}`, seen);
+  }
+}
+
+function assertStagePerformance(variant, label) {
+  for (const field of ["id", "camera", "title", "visual", "line", "impact", "sound", "tone"]) {
+    assertText(variant[field], `${label}.${field}`);
+  }
+  assert.equal(Number.isInteger(variant.durationMs), true, `${label}.durationMs must be an integer`);
+  assert.ok(
+    variant.durationMs >= 1200 && variant.durationMs <= 2000,
+    `${label}.durationMs must be between 1.2 and 2 seconds`
+  );
+}
+
 test("exports an immutable 15-ball narrative catalog with three distinct micro performances each", () => {
   assert.deepEqual(Object.keys(Content), API_KEYS);
   assert.equal(Content.BALLS.length, 15);
@@ -105,6 +133,7 @@ test("exports an immutable 15-ball narrative catalog with three distinct micro p
   assert.equal(new Set(variantIds).size, variantIds.length);
   assert.ok(Object.isFrozen(Content));
   assert.ok(Object.isFrozen(Content.BALLS));
+  assertDeepFrozen(Content, "Content");
 });
 
 test("covers all 15 balls exactly once across seven fully described stages", () => {
@@ -135,6 +164,86 @@ test("covers all 15 balls exactly once across seven fully described stages", () 
     assert.ok(Object.isFrozen(stage.poses));
     assert.ok(Object.isFrozen(stage.musicLayers));
   }
+});
+
+test("provides four richly specified full-screen transitions for every stage", () => {
+  const expectedNextStageIds = Content.STAGES.map((stage, index) => Content.STAGES[index + 1]?.id || null);
+  const transitionIds = [];
+
+  assert.equal(Content.STAGE_TRANSITIONS.length, 7);
+  assert.deepEqual(Content.STAGE_TRANSITIONS.map((item) => item.stage), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(Content.STAGE_TRANSITIONS.map((item) => item.stageId), Content.STAGES.map((stage) => stage.id));
+  assert.deepEqual(Content.STAGE_TRANSITIONS.map((item) => item.nextStageId), expectedNextStageIds);
+
+  for (const transition of Content.STAGE_TRANSITIONS) {
+    const label = `stage ${transition.stage} transition`;
+    assert.strictEqual(Content.getStageTransition(transition.stage), transition);
+    assert.strictEqual(Content.getStageTransition(transition.stageId), transition);
+    assert.ok(transition.variants.length >= 4, `${label} needs at least four variants`);
+    assert.equal(new Set(transition.variants.map((variant) => variant.title)).size, transition.variants.length);
+    assert.equal(new Set(transition.variants.map((variant) => variant.line)).size, transition.variants.length);
+
+    transition.variants.forEach((variant, index) => {
+      const variantLabel = `${label}.variants[${index}]`;
+      for (const field of ["id", "scene", "kicker", "title", "line", "visual", "sound", "tone"]) {
+        assertText(variant[field], `${variantLabel}.${field}`);
+      }
+      assert.equal(Number.isInteger(variant.durationMs), true, `${variantLabel}.durationMs`);
+      assert.ok(variant.durationMs >= 1200 && variant.durationMs <= 2000, `${variantLabel} duration`);
+      assert.ok(variant.backgroundKeywords.length >= 3, `${variantLabel} needs background keywords`);
+      variant.backgroundKeywords.forEach((keyword, keywordIndex) => {
+        assertText(keyword, `${variantLabel}.backgroundKeywords[${keywordIndex}]`);
+      });
+      transitionIds.push(variant.id);
+    });
+    assertDeepFrozen(transition, label);
+  }
+
+  assert.equal(transitionIds.length, 28);
+  assert.equal(new Set(transitionIds).size, transitionIds.length);
+  assertDeepFrozen(Content.STAGE_TRANSITIONS, "STAGE_TRANSITIONS");
+});
+
+test("covers misses, cue-ball scratches, and setup beats in every relationship stage", () => {
+  const expectedTypes = Object.values(Content.STAGE_EVENT_TYPES);
+  const eventIds = [];
+  let eventCount = 0;
+
+  assert.deepEqual(Content.STAGE_EVENT_TYPES, { MISS: "miss", SCRATCH: "scratch", SETUP: "setup" });
+  assert.equal(Content.STAGE_EVENTS.length, 7);
+  assert.deepEqual(Content.STAGE_EVENTS.map((item) => item.stage), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(Content.STAGE_EVENTS.map((item) => item.stageId), Content.STAGES.map((stage) => stage.id));
+
+  for (const catalog of Content.STAGE_EVENTS) {
+    const label = `stage ${catalog.stage} events`;
+    assert.strictEqual(Content.getStageEvents(catalog.stage), catalog);
+    assert.strictEqual(Content.getStageEvents(catalog.stageId), catalog);
+    assert.deepEqual(Object.keys(catalog.events), expectedTypes);
+    assert.ok(catalog.events.miss.length >= 4, `${label} needs four miss beats`);
+    assert.ok(catalog.events.scratch.length >= 3, `${label} needs three scratch beats`);
+    assert.ok(catalog.events.setup.length >= 3, `${label} needs three setup beats`);
+
+    for (const eventType of expectedTypes) {
+      const variants = catalog.events[eventType];
+      assert.equal(new Set(variants.map((variant) => variant.line)).size, variants.length);
+      assert.equal(new Set(variants.map((variant) => variant.impact)).size, variants.length);
+      variants.forEach((variant, index) => {
+        assertStagePerformance(variant, `${label}.${eventType}[${index}]`);
+        assert.doesNotMatch(
+          `${variant.title}${variant.visual}${variant.line}${variant.impact}`,
+          /你应该|你必须|务必|切记|正确做法/,
+          `${variant.id} must stay observational rather than preachy`
+        );
+        eventIds.push(variant.id);
+        eventCount += 1;
+      });
+    }
+    assertDeepFrozen(catalog, label);
+  }
+
+  assert.equal(eventCount, 70);
+  assert.equal(new Set(eventIds).size, eventIds.length);
+  assertDeepFrozen(Content.STAGE_EVENTS, "STAGE_EVENTS");
 });
 
 test("contains every required relationship branch and restrained S, A, and B endings", () => {
@@ -238,17 +347,97 @@ test("selects deterministically without Math.random and lets seed rotate variant
   assert.notEqual(activeEarly.id, activeRight.id);
 });
 
+test("selects stage transitions and stage events reproducibly from a seed or injected RNG", () => {
+  for (const stage of Content.STAGES) {
+    const transitionCatalog = Content.getStageTransition(stage.order);
+    const transitions = transitionCatalog.variants.map((_, seed) => Content.selectStageTransition({
+      stage: stage.id,
+      seed
+    }));
+    assert.equal(new Set(transitions.map((variant) => variant.id)).size, transitionCatalog.variants.length);
+    assert.deepEqual(
+      Content.selectStageTransition({ stage: stage.id, seed: "chapter-night" }),
+      Content.selectStageTransition({ stage: stage.order, seed: "chapter-night" })
+    );
+    transitions.forEach((variant) => {
+      assert.equal(variant.kind, "stage-transition");
+      assert.equal(variant.stage, stage.order);
+      assert.equal(variant.stageId, stage.id);
+      assertText(variant.kicker, `${variant.id}.kicker`);
+      assertDeepFrozen(variant, `selected ${variant.id}`);
+    });
+
+    for (const eventType of Object.values(Content.STAGE_EVENT_TYPES)) {
+      const variants = Content.getStageEvents(stage.order).events[eventType];
+      const selected = variants.map((_, seed) => Content.selectStageEvent({
+        stage: stage.order,
+        eventType,
+        seed
+      }));
+      assert.equal(new Set(selected.map((variant) => variant.id)).size, variants.length);
+      assert.deepEqual(
+        Content.selectStageEvent({ stage: stage.order, eventType, seed: "same-shot" }),
+        Content.selectStageEvent({ stage: stage.id, type: eventType, seed: "same-shot" })
+      );
+      selected.forEach((variant) => {
+        assert.equal(variant.kind, "stage-event");
+        assert.equal(variant.eventType, eventType);
+        assert.equal(variant.stageId, stage.id);
+        assertText(variant.kicker, `${variant.id}.kicker`);
+        assertStagePerformance(variant, `selected ${variant.id}`);
+        assertDeepFrozen(variant, `selected ${variant.id}`);
+      });
+    }
+  }
+
+  const rngA = Content.createSeededRng("one-complete-run");
+  const rngB = Content.createSeededRng("one-complete-run");
+  const run = (rng) => Array.from({ length: 14 }, (_, index) => Content.selectStageEvent({
+    stage: index % 7 + 1,
+    eventType: index % 2 ? Content.STAGE_EVENT_TYPES.SETUP : Content.STAGE_EVENT_TYPES.MISS,
+    rng
+  }).id);
+  assert.deepEqual(run(rngA), run(rngB));
+  assert.ok(Object.isFrozen(rngA));
+  assert.ok(Object.isFrozen(rngB));
+
+  assert.equal(Content.selectPerformance({ ballNumber: 5, rng: () => 0 }).id, Content.BALLS[4].variants[0].id);
+  assert.equal(
+    Content.selectStageTransition({ stage: 1, rng: () => 0.999999 }).id,
+    Content.STAGE_TRANSITIONS[0].variants.at(-1).id
+  );
+  assert.equal(
+    Content.selectStageEvent({ stage: 1, eventType: "scratch", rng: () => 0 }).id,
+    Content.STAGE_EVENTS[0].events.scratch[0].id
+  );
+});
+
 test("validates lookups and selector inputs", () => {
   assert.throws(() => Content.getBall(0), RangeError);
   assert.throws(() => Content.getBall(1.5), TypeError);
   assert.throws(() => Content.getStage("missing"), RangeError);
+  assert.throws(() => Content.getStageTransition("missing"), RangeError);
+  assert.throws(() => Content.getStageEvents(8), RangeError);
   assert.throws(() => Content.getEnding("C"), RangeError);
+  assert.throws(() => Content.createSeededRng(Number.NaN), TypeError);
+  assert.throws(() => Content.createSeededRng({}), TypeError);
   assert.throws(() => Content.selectPerformance(), TypeError);
   assert.throws(() => Content.selectPerformance({ ballNumber: 16 }), RangeError);
   assert.throws(() => Content.selectPerformance({ ballNumber: 1, intent: "passive" }), RangeError);
   assert.throws(() => Content.selectPerformance({ ballNumber: 1, timing: "soon" }), RangeError);
   assert.throws(() => Content.selectPerformance({ ballNumber: 1, seed: Number.NaN }), TypeError);
   assert.throws(() => Content.selectPerformance({ ballNumber: 1, seed: {} }), TypeError);
+  assert.throws(() => Content.selectPerformance({ ballNumber: 1, seed: 0, rng: () => 0 }), TypeError);
+  assert.throws(() => Content.selectPerformance({ ballNumber: 1, rng: null }), TypeError);
+  assert.throws(() => Content.selectPerformance({ ballNumber: 1, rng: () => 1 }), RangeError);
+  assert.throws(() => Content.selectStageTransition(), TypeError);
+  assert.throws(() => Content.selectStageTransition({ stage: "missing" }), RangeError);
+  assert.throws(() => Content.selectStageTransition({ stage: 1, seed: 0, rng: () => 0 }), TypeError);
+  assert.throws(() => Content.selectStageEvent(), TypeError);
+  assert.throws(() => Content.selectStageEvent({ stage: 1 }), RangeError);
+  assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "foul" }), RangeError);
+  assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "miss", rng: () => -0.1 }), RangeError);
+  assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "miss", rng: () => Number.NaN }), RangeError);
 });
 
 test("publishes the same API as BilliardsLoveContent in a browser UMD context", () => {
@@ -262,9 +451,15 @@ test("publishes the same API as BilliardsLoveContent in a browser UMD context", 
   assert.deepEqual(Object.keys(browserContent), API_KEYS);
   assert.equal(browserContent.BALLS.length, 15);
   assert.equal(browserContent.STAGES.length, 7);
+  assert.equal(browserContent.STAGE_TRANSITIONS.length, 7);
+  assert.equal(browserContent.STAGE_EVENTS.length, 7);
   assert.equal(typeof browserContent.selectPerformance, "function");
+  assert.equal(typeof browserContent.selectStageTransition, "function");
+  assert.equal(typeof browserContent.selectStageEvent, "function");
   assert.equal(
     browserContent.selectPerformance({ ballNumber: 8, intent: "active", timing: "right", seed: 4 }).eventId,
     "confession-success"
   );
+  assert.equal(browserContent.selectStageTransition({ stage: 7, seed: 0 }).stageId, "shared-future");
+  assert.equal(browserContent.selectStageEvent({ stage: 2, eventType: "miss", seed: 0 }).eventType, "miss");
 });

@@ -83,7 +83,11 @@ function bootRuntime(options = {}) {
   const ballCanvas = new FakeNode("canvas");
   const querySelector = (selector) => {
     if (selector === "#hb-ball-canvas") return options.includeBallCanvas ? ballCanvas : null;
-    if (!nodes.has(selector)) nodes.set(selector, selector === "#hb-canvas" ? canvas : new FakeNode());
+    if (!nodes.has(selector)) {
+      const node = selector === "#hb-canvas" ? canvas : new FakeNode();
+      if (["#hb-power", "#hb-micro", "#hb-cinematic", "#hb-result"].includes(selector)) node.hidden = true;
+      nodes.set(selector, node);
+    }
     return nodes.get(selector);
   };
   const document = {
@@ -146,13 +150,60 @@ function assertFiniteTable(snapshot) {
   }
 }
 
+function speedOf(ball) {
+  return Math.hypot(ball.vx, ball.vy);
+}
+
+function startIsolatedBall(point, velocity) {
+  const debug = bootRuntime();
+  debug.reset();
+  assert.equal(debug.isolateBall(0), true);
+  const magnitude = Math.hypot(velocity.x, velocity.y) || 1;
+  assert.equal(debug.shoot(0.12, { x: velocity.x / magnitude, y: velocity.y / magnitude }), true);
+  assert.equal(debug.placeBall(0, point, velocity), true);
+  return debug;
+}
+
+function runToRailImpact(velocity) {
+  const debug = startIsolatedBall({ x: 600, y: 900 }, velocity);
+  for (let step = 1; step <= 80; step += 1) {
+    const snapshot = debug.step(1);
+    const ball = findBall(snapshot, 0);
+    if (ball.lastRailImpact) return { debug, snapshot, ball, step };
+  }
+  assert.fail(`expected a right-cushion impact for ${JSON.stringify(velocity)}`);
+}
+
+function measureStopProfile(initialSpeed) {
+  const debug = startIsolatedBall({ x: 250, y: 1100 }, { x: 0, y: -initialSpeed });
+  let snapshot = debug.snapshot();
+  let previous = findBall(snapshot, 0);
+  let distance = 0;
+  for (let steps = 1; steps <= 1200; steps += 1) {
+    snapshot = debug.step(1);
+    const ball = findBall(snapshot, 0);
+    distance += Math.hypot(ball.x - previous.x, ball.y - previous.y);
+    assert.equal(ball.lastRailImpact, null, "free-roll profile must stop before reaching a cushion");
+    if (speedOf(ball) === 0) {
+      return { steps, milliseconds: steps * FIXED_VM_STEP, distance, x: ball.x, y: ball.y };
+    }
+    previous = ball;
+  }
+  assert.fail(`ball with initial speed ${initialSpeed} did not stop deterministically`);
+}
+
 test("boots immediately into a playable portrait rack with bounded high-DPR output", () => {
   const debug = bootRuntime();
   const snapshot = debug.snapshot();
   assert.equal(snapshot.started, true);
   assert.equal(Object.hasOwn(snapshot, "paused"), false);
   assert.deepEqual({ ...snapshot.world }, { width: 720, height: 1440 });
-  assert.deepEqual({ ...snapshot.table }, { left: 74, right: 646, top: 148, bottom: 1292 });
+  assert.deepEqual({ ...snapshot.table }, { left: 58, right: 662, top: 116, bottom: 1324 });
+  assert.equal(snapshot.physics.fixedHz, 120);
+  assert.equal(snapshot.physics.fixedStepMs, FIXED_VM_STEP);
+  assert.equal(snapshot.physics.pocketMagnetism, false);
+  assert.ok(snapshot.physics.clothLinearSpeedLoss > 0);
+  assert.ok(snapshot.physics.clothSpeedDrag > 0);
   assert.equal((snapshot.table.bottom - snapshot.table.top) / (snapshot.table.right - snapshot.table.left), 2);
   assert.equal(snapshot.wpaPocketSpec.ballDiameter, 14.85 * 2);
   assert.equal(snapshot.wpaPocketSpec.cornerMouthRatio, 2);
@@ -258,6 +309,54 @@ test("emits compression and an impact ring on a real opening collision", () => {
   assert.ok(impact.balls.some((ball) => ball.compression > 0 && ball.impactGlow > 0));
 });
 
+test("returns a strong measured normal rebound from a head-on cushion hit", () => {
+  const slow = runToRailImpact({ x: 4, y: 0 });
+  const fast = runToRailImpact({ x: 14, y: 0 });
+  const impact = fast.ball.lastRailImpact;
+  const actualSpeedRatio = speedOf(fast.ball) / impact.incomingNormalSpeed;
+
+  assert.equal(impact.kind, "cushion");
+  assert.equal(impact.railId, "right-bottom");
+  assert.ok(fast.ball.vx < 0, `head-on impact must leave the rail, received vx ${fast.ball.vx}`);
+  assert.ok(Math.abs(fast.ball.vy) < 1e-9);
+  assert.ok(actualSpeedRatio >= 0.86 && actualSpeedRatio <= 0.90,
+    `expected a 0.86-0.90 rebound speed ratio, received ${actualSpeedRatio}`);
+  assert.ok(impact.restitution < slow.ball.lastRailImpact.restitution,
+    "higher-speed cushion deformation should slightly reduce the normal-speed ratio");
+
+  const impactX = fast.ball.x;
+  const released = findBall(fast.debug.step(12), 0);
+  assert.ok(released.x < impactX - 40, "the rebounding ball must separate cleanly instead of sticking to the cushion");
+});
+
+test("preserves tangential speed through an angled cushion collision", () => {
+  const { ball } = runToRailImpact({ x: 10, y: -4 });
+  const impact = ball.lastRailImpact;
+  const tangent = { x: -impact.normalY, y: impact.normalX };
+  const incomingTangent = Math.abs(impact.incomingX * tangent.x + impact.incomingY * tangent.y);
+  const outgoingTangent = Math.abs(ball.vx * tangent.x + ball.vy * tangent.y);
+  const retained = outgoingTangent / incomingTangent;
+
+  assert.ok(ball.vx < 0 && ball.vy < 0, `angled impact should reflect only the normal component: ${ball.vx}, ${ball.vy}`);
+  assert.ok(retained >= 0.975 && retained < 1,
+    `expected at least 97.5% tangential retention after cloth loss, received ${retained}`);
+  assert.equal(impact.tangentialRetention, 0.985);
+});
+
+test("uses deterministic fixed-step stop distances and times at different launch speeds", () => {
+  const slow = measureStopProfile(2);
+  const fast = measureStopProfile(4);
+  const repeat = measureStopProfile(4);
+
+  assert.deepEqual(repeat, fast, "the same initial state must produce the same 120 Hz roll-down profile");
+  assert.ok(slow.steps >= 225 && slow.steps <= 250, `unexpected slow-roll stop step ${slow.steps}`);
+  assert.ok(slow.distance >= 105 && slow.distance <= 130, `unexpected slow-roll distance ${slow.distance}`);
+  assert.ok(fast.steps >= 430 && fast.steps <= 470, `unexpected fast-roll stop step ${fast.steps}`);
+  assert.ok(fast.distance >= 420 && fast.distance <= 475, `unexpected fast-roll distance ${fast.distance}`);
+  assert.ok(fast.milliseconds > slow.milliseconds * 1.8);
+  assert.ok(fast.distance > slow.distance * 3.5);
+});
+
 test("settles a full upward opening break without NaN, tunnelling, or duplicate settlement", () => {
   const debug = bootRuntime();
   debug.reset();
@@ -286,6 +385,36 @@ test("settles a normal shot directly without selecting a relationship target", (
   assertFiniteTable(snapshot);
 });
 
+test("routes ordinary shots to center beats and stage clears to full-screen performances", () => {
+  const debug = bootRuntime();
+  debug.presentShot({ breakShot: true });
+
+  let snapshot = debug.presentShot({ pottedNumbers: [1] });
+  assert.equal(snapshot.presentation.microVisible, true);
+  assert.equal(snapshot.presentation.microType, "pocket");
+  assert.match(snapshot.presentation.microTitle, /^1 · /);
+  assert.equal(snapshot.presentation.cinematicActive, false);
+
+  debug.presentShot({ pottedNumbers: [2] });
+  snapshot = debug.presentShot({ pottedNumbers: [3] });
+  assert.equal(snapshot.presentation.microVisible, false);
+  assert.equal(snapshot.presentation.cinematicActive, true);
+  assert.equal(snapshot.presentation.cinematicStageId, "first-contact");
+  assert.match(snapshot.presentation.cinematicImage, /campus-library\.webp/);
+
+  const missDebug = bootRuntime();
+  missDebug.presentShot({ breakShot: true });
+  snapshot = missDebug.presentShot({});
+  assert.equal(snapshot.presentation.microVisible, true);
+  assert.equal(snapshot.presentation.microType, "setup");
+
+  const scratchDebug = bootRuntime();
+  scratchDebug.presentShot({ breakShot: true });
+  snapshot = scratchDebug.presentShot({ cueScratch: true });
+  assert.equal(snapshot.presentation.microVisible, true);
+  assert.equal(snapshot.presentation.microType, "scratch");
+});
+
 test("requires mouth entry plus shelf crossing and lets a jaw collision reject a pocket graze", () => {
   const debug = bootRuntime();
   debug.reset();
@@ -312,14 +441,28 @@ test("requires mouth entry plus shelf crossing and lets a jaw collision reject a
 
   const tangent = { x: -pocket.inwardY, y: pocket.inwardX };
   const graze = pocketApproach(pocket);
-  graze.point.x += tangent.x * 40;
-  graze.point.y += tangent.y * 40;
+  graze.point.x += tangent.x * 24;
+  graze.point.y += tangent.y * 24;
   assert.equal(debug.placeBall(3, graze.point, graze.velocity), true);
-  snapshot = debug.step(24);
+  let jawImpact = null;
+  for (let step = 0; step < 24; step += 1) {
+    snapshot = debug.step(1);
+    const impact = findBall(snapshot, 3).lastRailImpact;
+    if (!jawImpact && impact?.kind === "jaw") jawImpact = impact;
+  }
   const grazingBall = findBall(snapshot, 3);
   assert.equal(grazingBall.pocketing, null, "crossing outside the WPA mouth width must not pot");
   assert.ok(grazingBall.shotRailHits > 0, "the angled jaw should provide the graze response");
   assert.ok(grazingBall.vx > 0, `the jaw should reflect the leftward graze, received vx ${grazingBall.vx}`);
+  assert.ok(jawImpact, "the grazing path should physically contact an angled jaw");
+  const incomingAngle = Math.atan2(jawImpact.incomingY, jawImpact.incomingX);
+  const outgoingAngle = Math.atan2(jawImpact.outgoingY, jawImpact.outgoingX);
+  const deflection = Math.abs(Math.atan2(
+    Math.sin(outgoingAngle - incomingAngle),
+    Math.cos(outgoingAngle - incomingAngle)
+  ));
+  assert.ok(jawImpact.outgoingX > 0, "a mouth graze must be sent back toward the cloth");
+  assert.ok(deflection > Math.PI / 2, `expected a visible jaw-angle rejection, received ${deflection} radians`);
 });
 
 test("keeps a clear delayed capture path through every corner and side mouth", () => {
@@ -344,6 +487,29 @@ test("keeps a clear delayed capture path through every corner and side mouth", (
     assert.ok(mouthStep > 0, `${pocketId} should record mouth entry`);
     assert.ok(pocketStep > mouthStep, `${pocketId} must cross shelf after mouth entry before capture`);
     assert.equal(findBall(snapshot, 1).pocketing?.pocketId, pocketId, `${pocketId} should accept a centered inward crossing`);
+  }
+});
+
+test("reliably captures legal off-center and low-speed paths after the shelf", () => {
+  const pocketIds = ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"];
+  for (const [index, pocketId] of pocketIds.entries()) {
+    const debug = bootRuntime();
+    debug.shoot(0.12);
+    const pocket = debug.snapshot().pockets.find((item) => item.id === pocketId);
+    const isCorner = pocket.type === "corner";
+    const approach = pocketApproach(pocket, 3, isCorner ? 1.35 : 0.8);
+    const tangent = { x: -pocket.inwardY, y: pocket.inwardX };
+    const legalCenterHalfWidth = pocket.mouth / 2 - 14.85;
+    const lateralOffset = legalCenterHalfWidth * 0.32 * (index % 2 === 0 ? -1 : 1);
+    approach.point.x += tangent.x * lateralOffset;
+    approach.point.y += tangent.y * lateralOffset;
+    assert.equal(debug.placeBall(1, approach.point, approach.velocity), true);
+
+    let snapshot = debug.snapshot();
+    for (let step = 0; step < 120 && !findBall(snapshot, 1).pocketing; step += 1) snapshot = debug.step(1);
+    const ball = findBall(snapshot, 1);
+    assert.equal(ball.pocketing?.pocketId, pocketId, `${pocketId} should capture a legal shelf-reaching path`);
+    assert.ok(ball.pocketing.depth > 0, `${pocketId} should begin descent without magnetic pre-entry motion`);
   }
 });
 

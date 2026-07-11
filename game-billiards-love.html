@@ -4,15 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>心动桌球 - 刘勇 / Yong Liu</title>
-  <meta name="description" content="心动桌球：完成一场标准十五球清台，在合适的关系阶段做出恰到好处的选择。">
+  <meta name="description" content="心动桌球：完成一场标准十五球自由清台，让每次进球推进一段关系。">
   <meta name="theme-color" content="#07100d">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-scenes/lounge-night.jpg" as="image">
+  <link rel="preload" href="assets/love-scenes/campus-library.webp" as="image">
+  <link rel="preload" href="assets/love-scenes/cafe-evening.webp" as="image">
+  <link rel="preload" href="assets/love-scenes/city-night.webp" as="image">
+  <link rel="preload" href="assets/billiards-scenes/confession-night.jpg" as="image">
+  <link rel="preload" href="assets/love-scenes/warm-home.webp" as="image">
+  <link rel="preload" href="assets/love-scenes/rain-night.webp" as="image">
+  <link rel="preload" href="assets/love-scenes/starlight-vow.webp" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-three-layer-20260711b">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-physics-theatre-20260711d">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -25,7 +32,7 @@
       <div class="hb-stage-copy" aria-live="polite">
         <span id="hb-stage-kicker">阶段 01 · 初次接触</span>
         <strong id="hb-stage-title">刚刚注意到彼此</strong>
-        <small class="hb-sr-only" id="hb-stage-targets">当前适合：1 对视、2 主动搭话、3 交换联系方式</small>
+        <small class="hb-sr-only" id="hb-stage-targets">本阶段任选：1 对视、2 主动搭话、3 交换联系方式</small>
       </div>
 
       <div class="hb-interest" id="hb-interest-wrap" aria-label="兴趣值 100">
@@ -98,7 +105,11 @@
 
     <section class="hb-cinematic" id="hb-cinematic" data-kind="stage" aria-live="polite" aria-atomic="true" hidden>
       <div class="hb-cinematic-image" id="hb-cinematic-image" aria-hidden="true"></div>
+      <div class="hb-cinematic-light" aria-hidden="true"></div>
+      <div class="hb-cinematic-particles" aria-hidden="true"></div>
       <div class="hb-cinematic-shade" aria-hidden="true"></div>
+      <div class="hb-cinematic-vignette" aria-hidden="true"></div>
+      <div class="hb-cinematic-transition" aria-hidden="true"></div>
       <button class="hb-cinematic-skip" id="hb-cinematic-skip" type="button" aria-label="略过演出" title="略过">&times;</button>
       <div class="hb-cinematic-copy">
         <span id="hb-cinematic-kicker">8 · 告白</span>
@@ -127,9 +138,9 @@
   </main>
 
   <script src="assets/vendor/matter-0.20.0.min.js?v=0.20.0"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-three-layer-20260711b"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-three-layer-20260711b"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-three-layer-20260711b"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-three-layer-20260711b"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-physics-theatre-20260711d"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-physics-theatre-20260711d"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-physics-theatre-20260711d"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-physics-theatre-20260711d"></script>
 </body>
 </html>

@@ -79,6 +79,7 @@ button {
   --stage-accent: #8ab5a6;
   --hb-header-space: calc(max(6px, var(--safe-top)) + 44px);
   --hb-footer-space: calc(max(5px, var(--safe-bottom)) + 38px);
+  --hb-table-width: 105%;
 }
 
 .hb-app[data-stage="2"] {
@@ -308,11 +309,11 @@ button {
 .hb-table-wrap {
   position: relative;
   isolation: isolate;
-  width: min(100%, calc((min(100dvh, 3200px) - var(--hb-header-space) - var(--hb-footer-space)) / 2)) !important;
+  width: var(--hb-table-width) !important;
   min-width: 0;
-  max-width: 100% !important;
+  max-width: var(--hb-table-width) !important;
   height: auto;
-  max-height: 100%;
+  max-height: none;
   aspect-ratio: 1 / 2 !important;
   filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.58));
 }
@@ -344,7 +345,7 @@ button {
 .hb-call {
   position: absolute;
   z-index: 4;
-  top: 2.5%;
+  top: 6.3%;
   left: 50%;
   width: calc(100% - 28px);
   transform: translateX(-50%);
@@ -431,18 +432,67 @@ button {
 
 .hb-micro {
   position: absolute;
-  z-index: 8;
+  z-index: 12;
   top: 50%;
   left: 50%;
-  width: calc(100% - 30px);
+  width: min(calc(100% - 30px), 380px);
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  isolation: isolate;
+  padding: 24px 28px;
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.96);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.98);
+  will-change: opacity, transform, filter;
+}
+
+.hb-micro::before,
+.hb-micro::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hb-micro::before {
+  top: 50%;
+  left: 50%;
+  width: 118%;
+  height: 108%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--stage-accent) 42%, transparent) 0, rgba(236, 205, 151, 0.16) 28%, transparent 70%);
+  filter: blur(14px);
+  mix-blend-mode: screen;
+}
+
+.hb-micro::after {
+  inset: -32% -12%;
+  background:
+    radial-gradient(circle at 9% 58%, rgba(255, 237, 191, 0.9) 0 2px, transparent 3px),
+    radial-gradient(circle at 18% 34%, color-mix(in srgb, var(--stage-accent) 82%, white) 0 3px, transparent 4px),
+    radial-gradient(circle at 29% 72%, rgba(255, 245, 220, 0.76) 0 2px, transparent 3px),
+    radial-gradient(circle at 39% 19%, rgba(255, 225, 173, 0.72) 0 2px, transparent 3px),
+    radial-gradient(circle at 52% 82%, color-mix(in srgb, var(--stage-accent) 76%, white) 0 3px, transparent 4px),
+    radial-gradient(circle at 63% 25%, rgba(255, 245, 216, 0.82) 0 2px, transparent 3px),
+    radial-gradient(circle at 73% 68%, rgba(255, 220, 165, 0.8) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 39%, color-mix(in srgb, var(--stage-accent) 84%, white) 0 2px, transparent 3px),
+    radial-gradient(circle at 94% 56%, rgba(255, 242, 211, 0.74) 0 2px, transparent 3px);
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--stage-accent) 74%, transparent));
+  mix-blend-mode: screen;
 }
 
 .hb-micro:not([hidden]) {
-  animation: hb-micro-arrive 1500ms ease both;
+  animation: hb-micro-arrive 1600ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.hb-micro:not([hidden])::before {
+  animation: hb-micro-halo 1600ms ease-out both;
+}
+
+.hb-micro:not([hidden])::after {
+  animation: hb-micro-particles 1600ms ease-out both;
 }
 
 .hb-micro span,
@@ -460,14 +510,16 @@ button {
 .hb-micro strong {
   margin-top: 5px;
   font-family: "Songti SC", "STSong", serif;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 650;
+  line-height: 1.18;
 }
 
 .hb-micro p {
-  margin: 7px auto 0;
+  max-width: 340px;
+  margin: 8px auto 0;
   color: #f5eee1;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -638,29 +690,74 @@ button {
 .hb-cinematic,
 .hb-result {
   position: absolute;
-  z-index: 50;
   inset: 0;
 }
 
 .hb-cinematic {
+  z-index: 50;
+  isolation: isolate;
   overflow: hidden;
-  background: #080d0c;
+  background: #050807;
+  --hb-cinematic-accent: #e3c98e;
+  --hb-cinematic-light: rgba(222, 194, 132, 0.36);
 }
 
 .hb-cinematic-image,
-.hb-cinematic-shade {
+.hb-cinematic-light,
+.hb-cinematic-particles,
+.hb-cinematic-shade,
+.hb-cinematic-vignette,
+.hb-cinematic-transition {
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 
 .hb-cinematic-image {
+  z-index: -5;
   background: url("billiards-scenes/lounge-night.jpg") center / cover no-repeat;
-  animation: hb-cinematic-drift 7s ease-out both;
+  filter: brightness(0.82) saturate(1.08) contrast(1.04);
+  transform-origin: 52% 42%;
+  animation: hb-cinematic-drift 8s cubic-bezier(0.18, 0.72, 0.22, 1) both;
+}
+
+.hb-cinematic-light {
+  z-index: -4;
+  background:
+    linear-gradient(112deg, transparent 18%, var(--hb-cinematic-light) 43%, rgba(255, 245, 218, 0.12) 49%, transparent 67%),
+    radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--hb-cinematic-accent) 34%, transparent) 0, transparent 58%);
+  mix-blend-mode: screen;
+  transform: translateX(-28%) skewX(-6deg);
+  animation: hb-cinematic-light-sweep 5.8s ease-in-out both;
+}
+
+.hb-cinematic-particles {
+  z-index: -3;
+  inset: -12% -8%;
+  background:
+    radial-gradient(circle at 8% 74%, rgba(255, 242, 207, 0.78) 0 1px, transparent 2px),
+    radial-gradient(circle at 17% 38%, color-mix(in srgb, var(--hb-cinematic-accent) 78%, white) 0 2px, transparent 3px),
+    radial-gradient(circle at 27% 82%, rgba(255, 227, 181, 0.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 36% 24%, rgba(255, 247, 226, 0.66) 0 1px, transparent 2px),
+    radial-gradient(circle at 48% 66%, color-mix(in srgb, var(--hb-cinematic-accent) 84%, white) 0 2px, transparent 3px),
+    radial-gradient(circle at 59% 18%, rgba(255, 235, 197, 0.74) 0 1px, transparent 2px),
+    radial-gradient(circle at 67% 79%, rgba(255, 247, 223, 0.72) 0 1px, transparent 2px),
+    radial-gradient(circle at 76% 43%, color-mix(in srgb, var(--hb-cinematic-accent) 82%, white) 0 2px, transparent 3px),
+    radial-gradient(circle at 88% 70%, rgba(255, 229, 182, 0.74) 0 2px, transparent 3px),
+    radial-gradient(circle at 95% 31%, rgba(255, 248, 229, 0.7) 0 1px, transparent 2px);
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--hb-cinematic-accent) 64%, transparent));
+  mix-blend-mode: screen;
+  animation: hb-cinematic-particles 7s ease-out both;
 }
 
 .hb-cinematic[data-kind="confession"] .hb-cinematic-image {
   background-image: url("billiards-scenes/confession-night.jpg");
   background-position: 62% center;
+}
+
+.hb-cinematic[data-kind="confession"] {
+  --hb-cinematic-accent: #e3a1ae;
+  --hb-cinematic-light: rgba(218, 128, 146, 0.38);
 }
 
 .hb-cinematic[data-kind="proposal"] .hb-cinematic-image,
@@ -669,13 +766,43 @@ button {
   background-position: 58% center;
 }
 
+.hb-cinematic[data-kind="proposal"],
+.hb-cinematic[data-kind="ending"] {
+  --hb-cinematic-accent: #f0cc82;
+  --hb-cinematic-light: rgba(245, 201, 116, 0.42);
+}
+
 .hb-cinematic-shade {
-  background: linear-gradient(180deg, rgba(5, 8, 8, 0.08) 24%, rgba(5, 8, 8, 0.9) 80%);
+  z-index: -2;
+  background:
+    linear-gradient(180deg, rgba(2, 6, 5, 0.48), rgba(2, 6, 5, 0.06) 25%, rgba(2, 6, 5, 0.12) 62%, rgba(2, 6, 5, 0.74)),
+    linear-gradient(90deg, rgba(2, 6, 5, 0.6), transparent 28%, transparent 72%, rgba(2, 6, 5, 0.6));
+}
+
+.hb-cinematic-vignette {
+  z-index: -1;
+  background: radial-gradient(ellipse at center, transparent 38%, rgba(2, 5, 5, 0.26) 69%, rgba(1, 3, 3, 0.82) 100%);
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.42);
+}
+
+.hb-cinematic-transition {
+  z-index: 8;
+  background: #030706;
+  transform-origin: center top;
+  animation: hb-cinematic-curtain 900ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.hb-cinematic:not([hidden]) {
+  animation: hb-cinematic-enter 620ms ease-out both;
+}
+
+.hb-cinematic:not([hidden]) .hb-cinematic-copy {
+  animation: hb-cinematic-copy-enter 1050ms 180ms cubic-bezier(0.18, 0.72, 0.22, 1) both;
 }
 
 .hb-cinematic-skip {
   position: absolute;
-  z-index: 2;
+  z-index: 10;
   top: max(10px, var(--safe-top));
   right: max(10px, var(--safe-right));
   width: 34px;
@@ -684,35 +811,43 @@ button {
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.38);
   color: #fff;
+  font-size: 18px;
   cursor: pointer;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .hb-cinematic-copy {
   position: absolute;
-  z-index: 2;
+  z-index: 6;
+  top: 50%;
   right: 8%;
-  bottom: max(10%, calc(var(--safe-bottom) + 34px));
   left: 8%;
-  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.82);
+  max-width: 360px;
+  margin: 0 auto;
+  transform: translateY(-50%);
+  text-align: center;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.86);
 }
 
 .hb-cinematic-copy span {
-  color: var(--hb-gold);
+  color: var(--hb-cinematic-accent);
   font-size: 9px;
   font-weight: 800;
 }
 
 .hb-cinematic-copy strong {
   display: block;
-  margin-top: 8px;
+  margin-top: 10px;
   font-family: "Songti SC", "STSong", serif;
   font-size: 32px;
   font-weight: 650;
-  line-height: 1.25;
+  line-height: 1.22;
 }
 
 .hb-cinematic-copy p {
-  margin: 13px 0 0;
+  max-width: 340px;
+  margin: 14px auto 0;
   color: #eee8dc;
   font-family: "Songti SC", "STSong", serif;
   font-size: 13px;
@@ -749,6 +884,7 @@ button {
 }
 
 .hb-result {
+  z-index: 60;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -823,9 +959,21 @@ button {
 }
 
 @keyframes hb-micro-arrive {
-  0% { opacity: 0; transform: translate(-50%, -42%) scale(0.96); filter: blur(6px); }
-  18%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
-  100% { opacity: 0; transform: translate(-50%, -56%) scale(1.02); filter: blur(2px); }
+  0% { opacity: 0; transform: translate(-50%, -44%) scale(0.94); filter: blur(12px); }
+  16%, 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, -57%) scale(1.025); filter: blur(4px); }
+}
+
+@keyframes hb-micro-halo {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.58); }
+  24%, 68% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.18); }
+}
+
+@keyframes hb-micro-particles {
+  0% { opacity: 0; transform: translateY(12px) scale(0.92); }
+  20%, 64% { opacity: 0.92; }
+  100% { opacity: 0; transform: translateY(-18px) scale(1.05); }
 }
 
 @keyframes hb-judgement {
@@ -835,8 +983,36 @@ button {
 }
 
 @keyframes hb-cinematic-drift {
-  from { transform: scale(1.03); }
-  to { transform: scale(1.09); }
+  from { transform: scale(1.025) translate3d(0, 0, 0); }
+  to { transform: scale(1.105) translate3d(-1.2%, -0.8%, 0); }
+}
+
+@keyframes hb-cinematic-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hb-cinematic-light-sweep {
+  0% { opacity: 0; transform: translateX(-34%) skewX(-6deg); }
+  22% { opacity: 0.9; }
+  100% { opacity: 0.46; transform: translateX(18%) skewX(-6deg); }
+}
+
+@keyframes hb-cinematic-particles {
+  0% { opacity: 0; transform: translateY(28px) scale(0.98); }
+  24% { opacity: 0.82; }
+  100% { opacity: 0.32; transform: translateY(-46px) scale(1.04); }
+}
+
+@keyframes hb-cinematic-curtain {
+  0%, 18% { opacity: 1; transform: scaleY(1); }
+  99% { opacity: 1; transform: scaleY(0); }
+  100% { opacity: 0; transform: scaleY(0); }
+}
+
+@keyframes hb-cinematic-copy-enter {
+  0% { opacity: 0; transform: translateY(calc(-50% + 20px)); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(-50%); filter: blur(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

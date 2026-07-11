@@ -6,7 +6,8 @@ const test = require("node:test");
 const source = readFileSync(path.join(__dirname, "../assets/billiards-love-game.js"), "utf8");
 
 test("builds a zero-gravity fixed-120Hz Matter table with stable collision settings", () => {
-  assert.match(source, /const FIXED_STEP = 1000 \/ 120/);
+  assert.match(source, /const FIXED_HZ = 120/);
+  assert.match(source, /const FIXED_STEP = 1000 \/ FIXED_HZ/);
   assert.match(source, /const MAX_STEPS_PER_FRAME = 8/);
   assert.match(source, /const engine = Engine\.create\(\{ enableSleeping: false \}\)/);
   assert.match(source, /engine\.gravity\.x = 0/);
@@ -20,12 +21,12 @@ test("builds a zero-gravity fixed-120Hz Matter table with stable collision setti
 
 test("uses one portrait logical world with the cue below a complete upward-facing rack", () => {
   assert.match(source, /const WORLD = Object\.freeze\(\{ width: 720, height: 1440 \}\)/);
-  assert.match(source, /const TABLE = Object\.freeze\(\{ left: 74, right: 646, top: 148, bottom: 1292 \}\)/);
+  assert.match(source, /const TABLE = Object\.freeze\(\{ left: 58, right: 662, top: 116, bottom: 1324 \}\)/);
   const [, left, right, top, bottom] = source.match(/const TABLE = Object\.freeze\(\{ left: (\d+), right: (\d+), top: (\d+), bottom: (\d+) \}\)/).map(Number);
   const width = right - left;
   const height = bottom - top;
-  assert.ok(width / 540 >= 1.055 && width / 540 <= 1.065, "playing width should grow about 6%");
-  assert.ok(height / 1080 >= 1.055 && height / 1080 <= 1.065, "playing length should grow about 6%");
+  assert.ok(width / 540 >= 1.11 && width / 540 <= 1.13, "playing width should grow about 12%");
+  assert.ok(height / 1080 >= 1.11 && height / 1080 <= 1.13, "playing length should grow about 12%");
   assert.ok(Math.abs(height / width - 2) < 0.01, "playing surface should remain approximately 1:2");
   assert.match(source, /const CUE_SPOT = Object\.freeze\(\{ x: WORLD\.width \/ 2, y: 1080 \}\)/);
   assert.match(source, /const RACK_APEX = Object\.freeze\(\{ x: WORLD\.width \/ 2, y: 510 \}\)/);
@@ -53,12 +54,12 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
   assert.match(source, /y: mouthY \+ inwardY \* dropDepth/);
   assert.match(source, /const POCKET_MIN_DURATION = 280/);
   assert.match(source, /const POCKET_MAX_DURATION = 450/);
-  assert.match(source, /function crossedPocketLine\(body, pocket, lineDepth, halfWidth\)/);
+  assert.match(source, /function crossedPocketLine\(body, pocket, lineDepth, halfWidth, depthTolerance = 0, lateralTolerance = 0\)/);
   assert.match(source, /function enterPocketMouth\(body, pocket\)/);
   assert.match(source, /function advancePocketApproach\(body, pocket\)/);
   assert.match(source, /enteredAt: simulationTime/);
   assert.match(source, /approach\.enteredAt < simulationTime/);
-  assert.match(source, /currentDepth >= pocket\.shelf/);
+  assert.match(source, /approach\.maximumDepth >= pocket\.shelf - POCKET_SHELF_DEPTH_TOLERANCE/);
   assert.match(source, /inwardPocketSpeed\(body, pocket\) <= POCKET_MIN_INWARD_SPEED/);
   assert.doesNotMatch(source, /Body\.applyForce/);
   assert.match(source, /if \(!shotState \|\| !data \|\| data\.potted \|\| data\.pocketing\) return false/);
@@ -148,8 +149,8 @@ test("supports direct pull-direction-and-power touch aiming without target selec
     assert.ok(source.includes(`"${event}"`), `missing ${event}`);
   }
   assert.doesNotMatch(source, /先点选这一杆的目标球/);
-  assert.match(source, /const aimedContact = traceAim\(\)\?\.hitBall/);
-  assert.match(source, /const inferredTarget = completedShot\.firstContact \|\| completedShot\.declaredBall/);
+  assert.match(source, /declaredBall: null/);
+  assert.doesNotMatch(source, /const inferredTarget/);
   assert.match(source, /canvas\.setPointerCapture\?\.\(event\.pointerId\)/);
   assert.match(source, /pointerAim\.power = clamp\(\(pullDistance - MIN_PULL\)/);
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
@@ -166,8 +167,9 @@ test("tracks cumulative roll and rotates numbered texture and highlights with it
   assert.match(source, /data\.rollVelocity = angleDelta \/ \(FIXED_STEP \/ 1000\)/);
   assert.match(source, /context\.rotate\(data\.rollAngle\)/);
   assert.match(source, /const highlight = context\.createRadialGradient/);
-  assert.match(source, /if \(ball\.speed < NATURAL_STOP_SPEED\)/);
-  assert.match(source, /Body\.setVelocity\(ball, \{ x: ball\.velocity\.x \* 0\.86/);
+  assert.match(source, /function applyClothDamping\(\)/);
+  assert.match(source, /const speedLoss = CLOTH_LINEAR_SPEED_LOSS \+ ball\.speed \* CLOTH_SPEED_DRAG/);
+  assert.doesNotMatch(source, /ball\.velocity\.x \* 0\.86/);
 });
 
 test("adds physical compression, expanding impact rings, particles, and collision audio", () => {
@@ -193,23 +195,27 @@ test("evaluates every settled shot exactly through the pure relationship rules e
   assert.match(source, /function finalizeShot\(\)/);
   assert.match(source, /if \(!shotState \|\| resolvingShot\) return/);
   assert.match(source, /outcome = rules\.evaluateShot\(runState, \{/);
-  for (const field of ["declaredBall", "firstContact", "pottedNumbers", "cueScratch", "breakShot", "bankedNumbers"]) {
+  for (const field of ["pottedNumbers", "cueScratch", "breakShot", "bankedNumbers"]) {
     assert.ok(source.includes(`${field}:`), `missing ${field} shot input`);
   }
+  assert.doesNotMatch(source, /declaredBall: completedShot/);
+  assert.doesNotMatch(source, /firstContact: completedShot/);
   assert.match(source, /runState = outcome\.state/);
   assert.match(source, /processOutcomePerformances\(outcome\)/);
 });
 
-test("connects all fifteen micro performances plus confession and proposal cinematics", () => {
+test("connects ordinary center beats and all seven full-screen stage performances", () => {
   assert.match(source, /content\.selectPerformance\(\{/);
-  assert.match(source, /queueMicro\(performance, event\)/);
-  assert.match(source, /specialCopy\("confessionSuccess"/);
-  assert.match(source, /specialCopy\("feelingsExposed"/);
-  assert.match(source, /specialCopy\("proposalSuccess"/);
-  assert.match(source, /kind: "confession"/);
-  assert.match(source, /kind: "proposal"/);
+  assert.match(source, /content\.selectStageEvent\(\{/);
+  assert.match(source, /content\.selectStageTransition\(\{/);
+  assert.match(source, /queueBallMicro\(performance, event\)/);
+  assert.match(source, /queueStageMicro\(/);
+  assert.match(source, /queueCinematic\(copy\)/);
+  assert.match(source, /STAGE_SCENE_ASSETS/);
+  assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
+  assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 1500/);
   assert.match(source, /content\.getEnding\(grade\)/);
-  assert.match(source, /"confession-too-early": "confessionTooEarly"/);
+  assert.doesNotMatch(source, /specialCopy\("confessionTooEarly"/);
 });
 
 test("starts immediately with no start gate or pause state", () => {
