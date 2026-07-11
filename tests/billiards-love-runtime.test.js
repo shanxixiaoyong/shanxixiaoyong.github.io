@@ -52,6 +52,14 @@ test("requires target declaration and supports pull-direction-and-power touch ai
   assert.match(source, /!pointerAim \|\| event\.pointerId !== pointerAim\.id/);
 });
 
+test("maps portrait and landscape pointer coordinates into the same physics world", () => {
+  assert.match(source, /function clientPointToWorld\(clientX, clientY, rect/);
+  assert.match(source, /if \(height > width\)/);
+  assert.match(source, /x: displayY \* WORLD\.width/);
+  assert.match(source, /y: \(1 - displayX\) \* WORLD\.height/);
+  assert.match(source, /mapClientPoint\(clientX, clientY, rect\)/);
+});
+
 test("draws the required first-contact and target-ball prediction lines", () => {
   assert.match(source, /function rayCircleDistance\(/);
   assert.match(source, /function traceAim\(/);

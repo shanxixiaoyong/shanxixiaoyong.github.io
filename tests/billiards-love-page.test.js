@@ -13,7 +13,7 @@ function linked(htmlSource, tag, attribute) {
   return [...htmlSource.matchAll(expression)].map((match) => match[1].split(/[?#]/, 1)[0]);
 }
 
-test("publishes the landscape standard-fifteen-ball identity", () => {
+test("publishes the portrait-first standard-fifteen-ball identity", () => {
   for (const token of [
     "<title>心动桌球 - 刘勇 / Yong Liu</title>",
     '<body class="heartbeat-billiards-page">',
@@ -21,12 +21,11 @@ test("publishes the landscape standard-fifteen-ball identity", () => {
     '<canvas id="hb-canvas" width="1280" height="640"',
     'id="hb-relationship-track"',
     'id="hb-interest"',
-    'id="hb-selected-ball"',
-    'id="hb-rotate"'
+    'id="hb-selected-ball"'
   ]) {
     assert.match(html, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(html, /横过来，球桌才刚刚好/);
+  assert.doesNotMatch(html, /横过来|旋转设备|手机横屏/);
   assert.match(html, /开始这一局/);
   assert.doesNotMatch(html, /今晚的片段|回忆日志|心动值|剩余回合/);
 });
@@ -61,12 +60,14 @@ test("uses project-local lounge, confession, and proposal art", () => {
   assert.doesNotMatch(html + css, /https?:\/\//);
 });
 
-test("keeps gameplay full-viewport and protects a phone landscape layout", () => {
+test("keeps gameplay full-viewport and protects a 9:16 phone portrait layout", () => {
   assert.match(css, /\.hb-app \{[\s\S]*?position: fixed;[\s\S]*?inset: 0;/);
   assert.match(css, /\.hb-table-wrap \{[\s\S]*?aspect-ratio: 2 \/ 1;/);
-  assert.match(css, /@media \(max-height: 560px\) and \(orientation: landscape\)/);
-  assert.match(css, /width: min\(74vw, calc\(\(100dvh - 124px\) \* 2\), 740px\)/);
-  assert.match(css, /@media \(max-aspect-ratio: 4 \/ 3\) and \(max-width: 1180px\)/);
+  assert.match(css, /@media \(max-aspect-ratio: 4 \/ 3\)/);
+  assert.match(css, /width: min\(100vw, calc\(100dvh \* 9 \/ 16\)\)/);
+  assert.match(css, /\.hb-table-wrap \{[\s\S]*?aspect-ratio: 1 \/ 2;/);
+  assert.match(css, /#hb-canvas \{[\s\S]*?transform: rotate\(90deg\)/);
+  assert.doesNotMatch(css, /\.hb-rotate \{[\s\S]*?display: grid/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(css, /env\(safe-area-inset-/);
 });

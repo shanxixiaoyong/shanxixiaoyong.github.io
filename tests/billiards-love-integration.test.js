@@ -128,6 +128,17 @@ test("boots the real browser runtime with one cue ball and a complete standard r
   assertFiniteTable(snapshot);
 });
 
+test("inverse-maps a rotated portrait table without DPR or letterbox offset drift", () => {
+  const debug = bootRuntime();
+  const portrait = { left: 25, top: 140, width: 360, height: 720 };
+  const landscape = { left: 10, top: 20, width: 1280, height: 640 };
+
+  assert.deepEqual({ ...debug.mapClientPoint(205, 500, portrait) }, { x: 640, y: 320 });
+  assert.deepEqual({ ...debug.mapClientPoint(650, 340, landscape) }, { x: 640, y: 320 });
+  assert.deepEqual({ ...debug.mapClientPoint(385, 140, portrait) }, { x: 0, y: 0 });
+  assert.deepEqual({ ...debug.mapClientPoint(25, 860, portrait) }, { x: 1280, y: 640 });
+});
+
 test("executes and settles a full-power opening break without NaN, tunnelling, or duplicate settlement", () => {
   const debug = bootRuntime();
   debug.reset();

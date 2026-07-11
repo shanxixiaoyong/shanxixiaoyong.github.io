@@ -608,12 +608,29 @@
     return nearest;
   }
 
-  function pointerToWorld(event) {
-    const rect = canvas.getBoundingClientRect();
+  function clientPointToWorld(clientX, clientY, rect = canvas.getBoundingClientRect()) {
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+    const displayX = clamp((clientX - rect.left) / width, 0, 1);
+    const displayY = clamp((clientY - rect.top) / height, 0, 1);
+
+    // Portrait CSS rotates the horizontal physics table clockwise. Undo that
+    // presentation transform here so touch, mouse and high-DPR screens all use
+    // the same 1280 x 640 world coordinates.
+    if (height > width) {
+      return {
+        x: displayY * WORLD.width,
+        y: (1 - displayX) * WORLD.height
+      };
+    }
     return {
-      x: (event.clientX - rect.left) / Math.max(1, rect.width) * WORLD.width,
-      y: (event.clientY - rect.top) / Math.max(1, rect.height) * WORLD.height
+      x: displayX * WORLD.width,
+      y: displayY * WORLD.height
     };
+  }
+
+  function pointerToWorld(event) {
+    return clientPointToWorld(event.clientX, event.clientY);
   }
 
   function canInteract() {
@@ -1517,6 +1534,9 @@
   frameHandle = requestAnimationFrame(frame);
 
   window.__heartbeatBilliardsDebug = Object.freeze({
+    mapClientPoint(clientX, clientY, rect) {
+      return Object.freeze(clientPointToWorld(clientX, clientY, rect));
+    },
     snapshot() {
       return Object.freeze({
         started,
