@@ -49,7 +49,13 @@ test("covers road, conversation, date, companion, compensation, endings, and fin
   for (const grade of ["S", "A", "B"]) assert.strictEqual(Content.getEnding(grade.toLowerCase()), Content.FINAL_ENDINGS[grade]);
   assert.equal(Content.BOX_REVEAL.boundary, "post-reveal");
   assert.ok(Content.BOX_REVEAL.shots.length >= 4);
-  assert.match(Content.BOX_REVEAL.restraint, /不补充病因/);
+  assert.match(Content.BOX_REVEAL.restraint, /不使用死亡、背叛或哭喊解释/);
+  assert.match(Content.BOX_REVEAL.line, /一起走了很远/);
+  for (const shot of Content.BOX_REVEAL.shots) {
+    assert.equal(typeof shot.title, "string");
+    assert.equal(typeof shot.framing, "string");
+    assert.equal(typeof shot.line, "string");
+  }
 });
 
 test("keeps all pre-reveal copy in present-tense language without exposure words", () => {

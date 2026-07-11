@@ -62,6 +62,26 @@ test("pauses for each stage performance and reaches the final long-hold reveal",
   const final = debug.snapshot(); assert.equal(final.mode, "result"); assert.equal(final.runState.grade, "S"); assert.equal(final.saved.profile.completedRuns, 1);
 });
 
+test("reveals the ended relationship in four paced shots before showing the rating", () => {
+  const { debug, nodes } = boot(); debug.start();
+  for (let stage = 0; stage < 7; stage += 1) {
+    debug.completeStage("perfect");
+    if (stage < 6) debug.continueStage();
+  }
+  assert.equal(debug.hold(1600), true);
+  const next = nodes.get("[data-reveal-next]");
+  const reveal = nodes.get("[data-reveal]");
+  assert.equal(reveal.attributes["data-shot"], "1");
+  for (let shot = 2; shot <= 4; shot += 1) {
+    next.listeners.click();
+    assert.equal(debug.snapshot().mode, "reveal");
+    assert.equal(reveal.attributes["data-shot"], String(shot));
+  }
+  assert.equal(next.textContent, "走向清晨");
+  next.listeners.click();
+  assert.equal(debug.snapshot().mode, "result");
+});
+
 test("enters a compensation segment at a reached checkpoint and persists it", () => {
   const { debug } = boot(); debug.start(); for (let i = 0; i < 5; i += 1) debug.beat("good");
   const state = debug.time(35100); assert.equal(state.runState.stage.compensation, true); assert.equal(state.runState.usedCompensation, true);

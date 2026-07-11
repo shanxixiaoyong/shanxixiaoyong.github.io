@@ -133,6 +133,29 @@ test("billiards pins the independent physics and ball renderer before the game r
   assert.equal(gameContract.ACTIVE_PUBLIC_JS_FILES.includes("assets/billiards-ball-renderer.js"), false);
 });
 
+test("runner publishes its local Three.js renderer and complete dependency graph", () => {
+  const runner = gameContract.GAME_CONTRACTS.find(({ file }) => file === "game-runner-love.html");
+
+  assert.deepEqual(runner.scripts, [
+    "assets/runner-love-rules.js",
+    "assets/runner-love-content.js",
+    "assets/runner-love-engine.js",
+    "assets/runner-love-visuals.js",
+    "assets/runner-love-game.js"
+  ]);
+  assert.equal(runner.cacheVersion, "runner-love-3d-20260711c");
+  assert.equal(runner.pending, undefined);
+  assert.deepEqual(runner.dependencies, [
+    "assets/vendor/three-0.185.1.module.min.js",
+    "assets/vendor/three.core.min.js",
+    "assets/vendor/three-0.185.1.LICENSE.txt"
+  ]);
+  for (const dependency of runner.dependencies) {
+    assert.ok(gameContract.ACTIVE_PUBLIC_DEPENDENCY_FILES.includes(dependency), dependency);
+    assert.ok(fs.existsSync(path.join(root, dependency)), dependency);
+  }
+});
+
 test("assets/games.js remains Heartbeat-2048-only and retired games remain absent", () => {
   assert.equal((gamesSource.match(/\bid:\s*"/g) || []).length, 1);
   assert.equal((gamesSource.match(/\bfunction run\w*\s*\(/g) || []).length, 1);

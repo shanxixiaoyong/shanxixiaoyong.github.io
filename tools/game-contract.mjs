@@ -35,14 +35,20 @@ export const GAME_CONTRACTS = [
     file: RUNNER_GAME_PAGE,
     name: "心动跑酷",
     portalAsset: "assets/portal/heartbeat-runner.png",
+    cacheVersion: "runner-love-3d-20260711c",
     styles: ["assets/runner-love.css"],
     scripts: [
       "assets/runner-love-rules.js",
       "assets/runner-love-content.js",
       "assets/runner-love-engine.js",
+      "assets/runner-love-visuals.js",
       "assets/runner-love-game.js"
     ],
-    pending: true
+    dependencies: [
+      "assets/vendor/three-0.185.1.module.min.js",
+      "assets/vendor/three.core.min.js",
+      "assets/vendor/three-0.185.1.LICENSE.txt"
+    ]
   }
 ];
 
@@ -51,9 +57,9 @@ export const ACTIVE_GAMES = GAME_CONTRACTS.map(({ file, name }) => ({ file, name
 export const ACTIVE_GAME_PAGES = ACTIVE_GAMES.map(({ file }) => file);
 
 export const PENDING_GAME_FILES = [...new Set(GAME_CONTRACTS
-  .flatMap(({ pending, pendingFiles = [], file, portalAsset, styles, scripts }) => [
+  .flatMap(({ pending, pendingFiles = [], dependencies = [], file, portalAsset, styles, scripts }) => [
     ...pendingFiles,
-    ...(pending ? [file, portalAsset, ...styles, ...scripts] : [])
+    ...(pending ? [file, portalAsset, ...styles, ...scripts, ...dependencies] : [])
   ]))];
 
 export const ACTIVE_PUBLIC_HTML_FILES = [
@@ -81,12 +87,19 @@ export const ACTIVE_PUBLIC_STYLE_FILES = [...new Set([
   ...GAME_CONTRACTS.filter(({ pending }) => !pending).flatMap(({ styles }) => styles)
 ])];
 
+export const ACTIVE_PUBLIC_DEPENDENCY_FILES = [...new Set(
+  GAME_CONTRACTS
+    .filter(({ pending }) => !pending)
+    .flatMap(({ dependencies = [] }) => dependencies)
+)];
+
 export const ACTIVE_PUBLIC_DOCUMENT_FILES = ["README.md"];
 
 export const ACTIVE_PUBLIC_FILES = [
   ...ACTIVE_PUBLIC_HTML_FILES,
   ...ACTIVE_PUBLIC_JS_FILES,
   ...ACTIVE_PUBLIC_STYLE_FILES,
+  ...ACTIVE_PUBLIC_DEPENDENCY_FILES,
   ...ACTIVE_PUBLIC_DOCUMENT_FILES
 ];
 

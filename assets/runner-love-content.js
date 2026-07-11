@@ -12,13 +12,13 @@
   }
 
   const STAGES = [
-    { id: "first-sight", order: 1, name: "初见", scene: "傍晚校园", palette: "香樟绿与夕照金", weather: "风吹过刚停的雨", music: ["木吉他", "鞋底轻响"], objective: "追上前方撑透明伞的女孩", opening: "下课铃刚停，她从香樟道另一端跑过。你加快脚步，雨水正从叶尖落下。", closing: "她在路口停半步，把伞向你这边偏过来。" },
+    { id: "first-sight", order: 1, name: "初见", scene: "傍晚校园", palette: "香樟绿与夕照金", weather: "风吹过刚停的雨", music: ["木吉他", "鞋底轻响"], objective: "抓住两条路线短暂交汇的机会", opening: "下课铃刚停，她从香樟道另一侧经过。雨水正从叶尖落下，你们在路口第一次看见彼此。", closing: "她在路口停半步，把伞向你这边偏过来。" },
     { id: "familiar-steps", order: 2, name: "熟悉", scene: "清晨河堤", palette: "薄雾蓝与晨光白", weather: "河面有轻雾", music: ["轻鼓点", "自行车铃"], objective: "保持并肩并收集共同话题", opening: "她已经在桥下热身，见你靠近便抬手示意。两双鞋落在同一个节拍里。", closing: "终点还没到，你们已经约好下一次出发时间。" },
-    { id: "first-date", order: 3, name: "赴约", scene: "周末旧城", palette: "砖红与晴空青", weather: "阳光穿过窄巷", music: ["手风琴", "街巷人声"], objective: "选择话题并抵达约会地点", opening: "她站在书店门口看表，抬头时正好看见你。今天的路线由两个人一起决定。", closing: "街灯亮起，她没有走向最近的车站。" },
-    { id: "heart-spoken", order: 4, name: "心意", scene: "雨夜天桥", palette: "霓虹青与暖灯橙", weather: "细雨持续落下", music: ["钢琴单音", "雨打伞面"], objective: "护住心意信标并完成告白", opening: "风把伞沿推高，她伸手帮你按住。天桥尽头只剩这一句需要说清。", closing: "她握住你的手，指尖很凉，掌心却慢慢变暖。" },
-    { id: "shared-days", order: 5, name: "同行", scene: "四季街区", palette: "晴日黄与生活绿", weather: "光影随街区切换", music: ["完整吉他主题", "城市节拍"], objective: "用同行动作维持默契", opening: "路线穿过菜场、站台和晚归的街。她时快时慢，总在下一个路口与你并肩。", closing: "窗里的灯一盏盏亮起，你们把明天也写进共同清单。" },
+    { id: "first-date", order: 3, name: "暧昧", scene: "霓虹夜街", palette: "砖红与夜色青", weather: "晚风穿过街巷", music: ["轻柔合成器", "消息提示音"], objective: "连续收集成对的邀请与回应", opening: "夜色把聊天气泡变成沿街灯光。她时而靠近，时而在下一个路口等你的回应。", closing: "雨棚下，她很自然地问起这个周末有没有空。" },
+    { id: "heart-spoken", order: 4, name: "约会", scene: "雨夜旧城", palette: "霓虹青与暖灯橙", weather: "细雨持续落下", music: ["钢琴单音", "雨打伞面"], objective: "跟随同行动作完成第一次正式约会", opening: "风把伞沿推高，她伸手帮你按住。两个人在雨里沿同一条路继续向前。", closing: "约会结束的路口，她没有告别，只是很自然地牵住你的手。" },
+    { id: "shared-days", order: 5, name: "相恋", scene: "四季街区", palette: "晴日黄与生活绿", weather: "光影随街区切换", music: ["完整吉他主题", "城市节拍"], objective: "收集日常并维持双人光轨", opening: "路线穿过菜场、站台和晚归的街。她时快时慢，总在下一个路口与你并肩。", closing: "窗里的灯一盏盏亮起，你们把明天也写进共同清单。" },
     { id: "rough-weather", order: 6, name: "磨合", scene: "台风前的城市", palette: "铅灰与信号红", weather: "阵风推着云层", music: ["低音弦乐", "远处雷声"], objective: "避开误解并修复节奏", opening: "风越来越急，计划和路线同时改变。她放慢脚步，等你把真正担心的事说完。", closing: "雨势没有立刻减弱，你们却重新找到同一个速度。" },
-    { id: "toward-home", order: 7, name: "归途", scene: "星光长街", palette: "深夜靛与窗灯金", weather: "夜空清澈", music: ["钢琴与弦乐", "稳定心跳"], objective: "带着七枚心章抵达亮灯的家", opening: "长街笔直向前，远处那扇窗为你们亮着。她在终点旁抱着一个小盒子。", closing: "你们一起推开门，奔跑的声音在门内安静下来。" }
+    { id: "toward-home", order: 7, name: "未来", scene: "黎明星光长路", palette: "深夜靛与窗灯金", weather: "夜空逐渐转亮", music: ["钢琴与弦乐", "稳定心跳"], objective: "收集约定并共同抵达发光终点", opening: "长街笔直向前，沿途收集的物件化作光点铺在路上。她始终与你并肩。", closing: "终点在晨光中打开，她停下来，向你伸出手。" }
   ];
 
   const COLLECTIBLES = [
@@ -95,40 +95,40 @@
   const STAGE_ENDINGS = STAGES.map((stage) => ({
     id: `stage-ending-${stage.id}`,
     stage: stage.order,
-    title: ["同一把伞", "同频清晨", "舍不得散场", "答案落下", "亮灯日常", "重新并肩", "门内灯光"][stage.order - 1],
+    title: ["一次对视", "聊到深夜", "主动邀约", "第一次牵手", "亮灯日常", "重新并肩", "伸出的手"][stage.order - 1],
     line: stage.closing,
     nextHint: stage.order < 7 ? `下一段路通向${STAGES[stage.order].scene}。` : "盒盖上的心形凹槽正等待七枚心章。"
   }));
 
   const FINAL_ENDINGS = {
-    S: { id: "ending-s-ordinary-together", grade: "S", title: "寻常长跑", requirement: "高默契、七枚心章、关键对话完整", scene: "晨光照进厨房，跑鞋并排放在门边。", line: "你们没有急着定义终点，只把下一程写进同一张日历。", coda: "水壶响起，她问今天走哪条路。" },
-    A: { id: "ending-a-next-crossing", grade: "A", title: "下个路口", requirement: "中等默契或缺少一枚心章", scene: "末班车进站，两个人隔着车门确认下一次见面。", line: "有些步频仍需磨合，好在约定具体，方向也清楚。", coda: "车门合上前，她指了指明天的时间。" },
-    B: { id: "ending-b-kind-distance", grade: "B", title: "各自向前", requirement: "低默契或关键对话缺失", scene: "岔路口的信号灯转绿，两条路分别延伸。", line: "你们把没有说完的话认真说完，也尊重彼此选择的方向。", coda: "转身以前，你们平静地道一声保重。" }
+    S: { id: "ending-s-complete-journey", grade: "S", title: "完整走过", requirement: "七段旅程高完成度且收集足够隐藏物件", scene: "晨光照进安静的房间，旧物盒已经合上。", line: "这段爱情没有留在今天，却完整地存在过，也把你带到了这里。", coda: "你穿上外套走入清晨，熟悉的光轨在身后亮起片刻，然后自然消失。" },
+    A: { id: "ending-a-real-love", grade: "A", title: "一段完整的爱情", requirement: "完成七段旅程并抵达最终揭示", scene: "旧照片被轻轻放回盒中，窗外已经天亮。", line: "你们确实一起走了很远。终点不是重新开始，而是终于能够平静地回望。", coda: "你合上盒子，独自走出房间，街道仍向前延伸。" },
+    B: { id: "ending-b-stumbling-journey", grade: "B", title: "跌跌撞撞地走过", requirement: "完成旅程但遗漏较多物件", scene: "盒中的票根和照片并不完整，留下的空位对应一路错过的片段。", line: "这段关系并不完美，但每一次靠近都真实发生过。", coda: "你没有急着给它结论，只把盒子收好，走向已经亮起的街道。" }
   };
 
   const BOX_REVEAL = {
     id: "final-box-reveal",
-    title: "盒中长路",
+    title: "原来，这条路早已走过",
     boundary: "post-reveal",
     requires: ["umbrella-pin", "earbud", "ticket-stub", "brave-word", "door-key", "repair-thread", "heart-seal"],
     shots: [
-      "七枚心章嵌入盒盖，锁扣轻响。",
-      "盒中没有戒指，只有两双磨旧的鞋带、体检手环和一张折叠路线图。",
-      "路线图末端写着今天的日期，医院康复花园与家门被一条红线连在一起。",
-      "她系好鞋带，扶你站稳。屏幕上的跑酷长街收束成窗外真实的步道。"
+      { title: "光芒褪去", framing: "旧物盒近景", line: "七枚心章失去光芒，变成褪色的电影票、旧车票、钥匙扣和拍立得照片。" },
+      { title: "房间里只有一个人", framing: "镜头缓慢后退", line: "刚才并肩奔跑的人并不在房间里，只有你独自坐在打开的旧物盒前。" },
+      { title: "这条路跨过了很多年", framing: "照片与季节交叠", line: "照片里的季节跨过数年。前面连成一条路的场景，原来是这段关系留下的真实轨迹。" },
+      { title: "天已经亮了", framing: "现实房间与窗外街道", line: "窗外正是初见时的那条街。你看完最后一张照片，把它轻轻放回盒中。" }
     ],
-    line: "这不是一次漂亮的冲刺。你们只是把每一步都算作抵达。",
-    restraint: "镜头停在相握的手与迈出的第一步，不补充病因，不渲染苦难。"
+    line: "我们确实一起走了很远。",
+    restraint: "不使用死亡、背叛或哭喊解释，只让角色合上盒子，在天亮后继续生活。"
   };
 
   const NEW_GAME_PLUS_CLUES = [
-    { id: "clue-wristband", stage: 1, layer: "foreground", detail: "冲刺后袖口短暂滑开，腕上露出白色窄带。", payoff: "最终盒中的体检手环与它尺寸一致。" },
-    { id: "clue-bench-count", stage: 2, layer: "environment", detail: "河堤每隔固定距离出现同款长椅，同行者总在长椅旁放慢。", payoff: "这些位置对应康复步道的休息点。" },
+    { id: "clue-wristband", stage: 1, layer: "foreground", detail: "冲刺后袖口短暂滑开，腕上露出一截褪色的音乐节手环。", payoff: "最终盒中保存着同一条手环。" },
+    { id: "clue-bench-count", stage: 2, layer: "environment", detail: "河堤每隔固定距离出现同款长椅，同行者总在其中一张旁边放慢。", payoff: "最终照片背面写着那张长椅的位置。" },
     { id: "clue-route-fold", stage: 3, layer: "prop", detail: "票根背面的蓝线在折角处中断，形状像一张缩小路线图。", payoff: "盒中路线图沿同一折角展开。" },
-    { id: "clue-rain-loop", stage: 4, layer: "audio", detail: "雨声音轨每四十秒轻微回环，天桥远端始终没有车辆。", payoff: "场景是训练界面对真实步道的温和转译。" },
-    { id: "clue-left-step", stage: 5, layer: "animation", detail: "角色左脚落地稍慢，同行者会自然调整到左侧。", payoff: "揭示镜头中，她也站在左侧提供支撑。" },
-    { id: "clue-breath-marker", stage: 6, layer: "ui", detail: "风声增强时，节拍提示变成规律的呼吸圆环。", payoff: "圆环用于稳定步频，不是竞速加速提示。" },
-    { id: "clue-window", stage: 7, layer: "background", detail: "终点窗框与前几关边缘反复出现的白色框线完全重合。", payoff: "所有道路都以窗外步道为视觉基准。" }
+    { id: "clue-rain-loop", stage: 4, layer: "audio", detail: "雨声中短暂混入更早季节的蝉鸣，随后又恢复正常。", payoff: "这些场景并非发生在同一天，而是跨越数年。" },
+    { id: "clue-left-step", stage: 5, layer: "animation", detail: "经过熟悉路口时，同行者总会自然走到左侧。", payoff: "旧照片里，她也一直站在相同一侧。" },
+    { id: "clue-breath-marker", stage: 6, layer: "ui", detail: "风声增强时，两条光轨偶尔只剩下一条。", payoff: "同行的人只存在于这次重新走过的轨迹中。" },
+    { id: "clue-window", stage: 7, layer: "background", detail: "终点窗框与前几程边缘反复出现的白色框线完全重合。", payoff: "所有道路最终都收束到现实房间的这扇窗。" }
   ];
 
   function stableIndex(seed, salt, length) {
