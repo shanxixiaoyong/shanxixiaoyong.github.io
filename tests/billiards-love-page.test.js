@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-physics-theatre-20260711d";
-const styleCacheVersion = "billiards-love-physics-theatre-20260711d";
+const runtimeCacheVersion = "billiards-love-physics-theatre-20260711e";
+const styleCacheVersion = "billiards-love-physics-theatre-20260711e";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -61,6 +61,10 @@ test("opens directly into play without visible opening or pause UI", () => {
     assert.match(topbar, new RegExp(escapeRegExp(token)));
   }
   assert.match(topbar, /class="hb-sr-only" id="hb-stage-targets"/);
+  assert.match(topbar, />心绪</);
+  assert.match(topbar, /id="hb-interest">安稳</);
+  assert.doesNotMatch(topbar, /兴趣值\s*\d|id="hb-interest">\d/);
+  assert.match(html, />最终心绪</);
   assert.doesNotMatch(topbar, /hb-pause/);
 
   for (const id of ["hb-opening", "hb-start", "hb-pause", "hb-pause-sheet", "hb-resume", "hb-restart-pause"]) {
@@ -185,7 +189,7 @@ test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture
   const headerSpace = 6 + 44;
   const footerSpace = 5 + 38;
   const playfieldHeight = targetHeight - headerSpace - footerSpace;
-  const tableSurfaceWidth = targetWidth * 1.08;
+  const tableSurfaceWidth = targetWidth * 1.05;
   const tableSurfaceHeight = tableSurfaceWidth * 2;
   const tableLeft = (targetWidth - tableSurfaceWidth) / 2;
   const tableTop = headerSpace + (playfieldHeight - tableSurfaceHeight) / 2;
@@ -210,7 +214,7 @@ test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture
   assert.ok(tableOuterTop > topHudBottom, "top HUD must remain outside the rendered table");
   assert.ok(tableOuterBottom < relationshipTrackTop, "all table pockets must end before relationship progress");
   assert.ok(tableOuterBottom < bottomHudTop, "bottom status must remain outside the rendered table");
-  assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.86, "visible table should use the portrait height");
+  assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.83, "visible table should use the portrait height");
 });
 
 test("uses a native portrait canvas without a CSS rotation layout", () => {

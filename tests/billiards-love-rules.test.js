@@ -11,13 +11,13 @@ const {
   RULES,
   BALLS,
   STAGES,
-  VIOLATION_CODES,
   FAILURE_ENDINGS,
-  ballByNumber,
-  stageForBall,
+  EARLY_SUCCESS_ENDING,
   createRunState,
   validateRunState,
   currentStage,
+  stageProgress,
+  interestStatus,
   availableTargets,
   remainingNumbers,
   classifyTarget,
@@ -25,612 +25,277 @@ const {
   computeRating
 } = rules;
 
-const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
-
-function makeShot(pottedNumbers = [], overrides = {}) {
-  const shot = {
+function shot(pottedNumbers = [], overrides = {}) {
+  return {
     pottedNumbers,
     cueScratch: overrides.cueScratch === true,
     breakShot: overrides.breakShot === true,
     bankedNumbers: overrides.bankedNumbers || []
   };
-  if (hasOwn(overrides, "declaredBall")) shot.declaredBall = overrides.declaredBall;
-  if (hasOwn(overrides, "firstContact")) shot.firstContact = overrides.firstContact;
-  return shot;
 }
 
-function openingShot(pottedNumbers = [], overrides = {}) {
-  return makeShot(pottedNumbers, { ...overrides, breakShot: true });
-}
-
-function normalShot(pottedNumbers = [], overrides = {}) {
-  return makeShot(pottedNumbers, { ...overrides, breakShot: false });
-}
-
-function begin(pottedNumbers = [], overrides = {}) {
-  return evaluateShot(createRunState(), openingShot(pottedNumbers, overrides)).state;
+function open(pottedNumbers = [], overrides = {}) {
+  return evaluateShot(createRunState(), shot(pottedNumbers, { ...overrides, breakShot: true }));
 }
 
 function play(state, pottedNumbers = [], overrides = {}) {
-  return evaluateShot(state, normalShot(pottedNumbers, overrides));
+  return evaluateShot(state, shot(pottedNumbers, overrides));
 }
 
-function finishFreeOrder(options = {}) {
-  let state = begin([3, 2, 1]);
-  const groups = [
-    [5, 4],
-    [7, 6],
-    [8],
-    [11, 10, 9],
-    [13, 12],
-    [15, 14]
-  ];
-  let result = null;
-  groups.forEach((group) => {
-    if (options.missBeforeEach) state = play(state, []).state;
-    result = play(state, group);
-    state = result.state;
-  });
+const ORDINARY_ORDER = Object.freeze([15, 1, 14, 2, 13, 3, 12, 4, 11, 5, 10, 6, 9, 7]);
+
+function perfectOrdinaryRun(count = 14) {
+  let result = open([ORDINARY_ORDER[0]]);
+  for (const number of ORDINARY_ORDER.slice(1, count)) result = play(result.state, [number]);
   return result;
 }
 
-test("exports seven free-order relationship groups covering all 15 balls", () => {
+test("defines arbitrary-ball quotas, hidden stage floors, and black eight as the final gate", () => {
   assert.equal(RULES.title, "心动桌球");
-  assert.equal(RULES.version, 1);
-  assert.equal(RULES.ballCount, 15);
-  assert.equal(RULES.stageCount, 7);
+  assert.equal(RULES.interest.initial, 72);
+  assert.deepEqual(RULES.criticalNumbers, [8]);
   assert.deepEqual(RULES.breakRespotNumbers, []);
-  assert.equal(RULES.rhythm, undefined);
-  assert.deepEqual(VIOLATION_CODES, ["cue-scratch"]);
-  assert.deepEqual(FAILURE_ENDINGS, ["losing-contact"]);
+  assert.deepEqual(STAGES.map((stage) => stage.quota), [3, 2, 2, 1, 3, 2, 2]);
+  assert.deepEqual(STAGES.map((stage) => stage.ordinaryTarget), [3, 5, 7, 8, 11, 13, 14]);
+  assert.deepEqual(STAGES.map((stage) => stage.interestFloor), [38, 36, 34, 32, 30, 28, 26]);
+  assert.deepEqual(STAGES.map((stage) => stage.requiresEight), [false, false, false, false, false, false, true]);
   assert.equal(BALLS.length, 15);
-  assert.deepEqual(STAGES.map((stage) => stage.ballNumbers), [
-    [1, 2, 3],
-    [4, 5],
-    [6, 7],
-    [8],
-    [9, 10, 11],
-    [12, 13],
-    [14, 15]
-  ]);
-  assert.deepEqual(STAGES.flatMap((stage) => stage.ballNumbers), [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-  ]);
-  assert.ok(STAGES.every((stage) => !hasOwn(stage, "idealOrder") && !hasOwn(stage, "strictOrder")));
-  assert.deepEqual(BALLS.map((ball) => ball.name), [
-    "对视",
-    "主动搭话",
-    "交换联系方式",
-    "找到共同话题",
-    "频繁聊天",
-    "单独吃饭",
-    "正式约会",
-    "告白",
-    "第一次牵手",
-    "拥抱",
-    "共同旅行",
-    "面对分歧",
-    "沟通与和好",
-    "谈论未来",
-    "求婚"
-  ]);
-  assert.deepEqual(BALLS.map((ball) => ball.suit), [
-    ...Array(7).fill("solid"),
-    "eight",
-    ...Array(7).fill("stripe")
-  ]);
-  assert.equal(ballByNumber(8).colorName, "黑");
-  assert.equal(stageForBall(13).id, "learning-together");
+  assert.deepEqual(FAILURE_ENDINGS, ["losing-contact", "reckless-rejection"]);
+  assert.equal(EARLY_SUCCESS_ENDING, "early-mutual-choice");
   assert.ok(Object.isFrozen(rules));
-  assert.ok(Object.isFrozen(RULES.interest));
-  assert.ok(BALLS.every(Object.isFrozen));
   assert.ok(STAGES.every((stage) => Object.isFrozen(stage) && Object.isFrozen(stage.ballNumbers)));
 });
 
-test("loads as an equivalent frozen browser UMD global", () => {
+test("loads the same deeply frozen API through browser UMD", () => {
   const source = readFileSync(path.join(__dirname, "../assets/billiards-love-rules.js"), "utf8");
   const browser = {};
   vm.runInNewContext(source, browser, { filename: "billiards-love-rules.js" });
-  const browserRules = browser.BilliardsLoveRules;
-
-  assert.equal(browserRules.BALLS.length, 15);
-  assert.equal(browserRules.STAGES.length, 7);
-  assert.equal(typeof browserRules.evaluateShot, "function");
-  assert.ok(Object.isFrozen(browserRules));
-
-  const result = browserRules.evaluateShot(
-    browserRules.createRunState(),
-    openingShot([8, 15])
+  assert.equal(browser.BilliardsLoveRules.STAGES.length, 7);
+  assert.equal(typeof browser.BilliardsLoveRules.interestStatus, "function");
+  assert.ok(Object.isFrozen(browser.BilliardsLoveRules));
+  const outcome = browser.BilliardsLoveRules.evaluateShot(
+    browser.BilliardsLoveRules.createRunState(),
+    shot([8], { breakShot: true })
   );
-  assert.deepEqual(Array.from(result.respotNumbers), []);
-  assert.deepEqual(Array.from(result.state.pottedNumbers), [8, 15]);
-  assert.equal(result.state.endState.status, "playing");
+  assert.equal(outcome.state.endState.ending, "reckless-rejection");
 });
 
-test("keeps the version-one runtime state sequence JSON-compatible and deeply frozen", () => {
+test("creates a JSON-safe, immutable state without exposing interest through the presentation API", () => {
   const state = createRunState();
-  assert.deepEqual(Object.keys(state), [
-    "version",
-    "pottedNumbers",
-    "interest",
-    "rhythmScore",
-    "consecutiveMisses",
-    "shots",
-    "successfulShots",
-    "potStreak",
-    "bestPotStreak",
-    "cueScratches",
-    "bankedPots",
-    "multiBallShots",
-    "violations",
-    "pocketOrder",
-    "breakCompleted",
-    "endState"
-  ]);
-  assert.deepEqual(state, {
-    version: 1,
-    pottedNumbers: [],
-    interest: 100,
-    rhythmScore: 100,
-    consecutiveMisses: 0,
-    shots: 0,
-    successfulShots: 0,
-    potStreak: 0,
-    bestPotStreak: 0,
-    cueScratches: 0,
-    bankedPots: 0,
-    multiBallShots: 0,
-    violations: [],
-    pocketOrder: [],
-    breakCompleted: false,
-    endState: { ended: false, status: "playing", ending: null, grade: null }
-  });
+  assert.equal(state.interest, 72);
   assert.equal(validateRunState(state), true);
+  assert.deepEqual(interestStatus(state), { band: "steady", label: "自然靠近" });
   assert.deepEqual(JSON.parse(JSON.stringify(state)), state);
   assert.ok(Object.isFrozen(state));
   assert.ok(Object.isFrozen(state.pottedNumbers));
-  assert.ok(Object.isFrozen(state.violations));
-  assert.ok(Object.isFrozen(state.endState));
+  assert.ok(Object.isFrozen(interestStatus(state)));
   assert.throws(() => state.pottedNumbers.push(1), TypeError);
   assert.throws(() => createRunState(0), TypeError);
 });
 
-test("reports only the current group as available while future balls remain legal", () => {
+test("treats every remaining non-eight ball as a valid target and maps pots to story order", () => {
   const initial = createRunState();
+  assert.deepEqual(availableTargets(initial), [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]);
   assert.equal(currentStage(initial).id, "first-contact");
-  assert.deepEqual(availableTargets(initial), [1, 2, 3]);
-  assert.equal(remainingNumbers(initial).length, 15);
-  assert.deepEqual(classifyTarget(initial, 1), {
-    number: 1,
-    stage: STAGES[0],
-    currentStage: STAGES[0],
-    stageGap: null,
-    stageStatus: "current",
-    completedEarly: false,
-    timing: "break-only",
-    interestDelta: 0,
-    rhythmDelta: 0,
-    failure: null
+  assert.deepEqual(stageProgress(initial), {
+    stage: STAGES[0], completed: 0, remaining: 3, quota: 3, target: "ordinary"
   });
+  assert.equal(classifyTarget(initial, 15).storyNumber, 1);
+  assert.equal(classifyTarget(initial, 15).stageStatus, "current");
+  assert.equal(classifyTarget(initial, 8).stageStatus, "eight-early");
 
-  const opened = begin();
-  assert.equal(classifyTarget(opened, 3).timing, "on-time");
-  assert.equal(classifyTarget(opened, 3).interestDelta, RULES.interest.currentStagePotRecovery);
-  const future = classifyTarget(opened, 15);
-  assert.equal(future.stageGap, 6);
-  assert.equal(future.stageStatus, "future");
-  assert.equal(future.completedEarly, true);
-  assert.equal(future.timing, "early-completion");
-  assert.equal(future.interestDelta, 0);
-  assert.equal(future.rhythmDelta, 0);
-  assert.equal(future.failure, null);
-
-  const partial = play(opened, [3]).state;
-  assert.deepEqual(availableTargets(partial), [1, 2]);
-  assert.deepEqual(remainingNumbers(partial), [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
-  assert.ok(Object.isFrozen(availableTargets(partial)));
+  const first = open([15]);
+  assert.equal(first.pocketEvents[0].number, 15);
+  assert.equal(first.pocketEvents[0].storyNumber, 1);
+  assert.equal(first.pocketEvents[0].stageId, "first-contact");
+  assert.equal(classifyTarget(first.state, 2).storyNumber, 2);
+  assert.equal(remainingNumbers(first.state).includes(15), false);
+  assert.equal(availableTargets(first.state).includes(8), false);
 });
 
-test("credits 8 and 15 on the break without respotting or special consequences", () => {
-  const result = evaluateShot(createRunState(), openingShot(
-    [8, 1, 15, 4],
-    { bankedNumbers: [8, 4] }
-  ));
+test("advances stages by arbitrary pot counts rather than physical ball numbers", () => {
+  const firstStage = open([15, 2, 11]);
+  assert.deepEqual(firstStage.pocketEvents.map((event) => event.storyNumber), [1, 2, 3]);
+  assert.deepEqual(firstStage.newlyCompletedStageIds, ["first-contact"]);
+  assert.equal(firstStage.stageAfter.id, "growing-familiar");
+  assert.equal(stageProgress(firstStage.state).remaining, 2);
 
-  assert.deepEqual(result.respotNumbers, []);
-  assert.deepEqual(result.pottedNumbers, [8, 1, 15, 4]);
-  assert.deepEqual(result.state.pottedNumbers, [1, 4, 8, 15]);
-  assert.deepEqual(result.state.pocketOrder, [8, 1, 15, 4]);
-  assert.equal(result.state.endState.status, "playing");
-  assert.equal(result.state.interest, 100);
-  assert.equal(result.state.rhythmScore, 100);
-  assert.equal(result.state.violations.length, 0);
-  assert.equal(result.state.bankedPots, 2);
-  assert.equal(result.state.multiBallShots, 1);
-  assert.equal(result.pocketEvents.find((event) => event.number === 8).completedEarly, true);
-  assert.equal(result.pocketEvents.find((event) => event.number === 15).credited, true);
-  assert.ok(result.pocketEvents.every((event) => event.type === "pocket" && event.mode === "break"));
-  assert.deepEqual(result.newlyCompletedStageIds, []);
-  assert.deepEqual(result.newlyEarlyCompletedStageIds, ["spoken-heart"]);
-  assert.equal(currentStage(result.state).id, "first-contact");
-  assert.deepEqual(availableTargets(result.state), [2, 3]);
+  const secondStage = play(firstStage.state, [1, 14]);
+  assert.deepEqual(secondStage.pocketEvents.map((event) => event.storyNumber), [4, 5]);
+  assert.deepEqual(secondStage.newlyCompletedStageIds, ["growing-familiar"]);
+  assert.equal(secondStage.stageAfter.id, "intentional-dates");
+  assert.ok(secondStage.pocketEvents.every((event) => event.completedEarly === false));
 });
 
-test("accepts declaration-free shots and ignores legacy declaration and contact values", () => {
-  const opened = begin();
-  const simple = play(opened, [1]);
-  const legacy = evaluateShot(opened, normalShot([1], {
-    declaredBall: 15,
-    firstContact: 8
-  }));
-
-  assert.deepEqual(legacy.state, simple.state);
-  assert.deepEqual(legacy.pocketEvents, simple.pocketEvents);
-  assert.equal(legacy.shot.declaredBall, null);
-  assert.equal(legacy.shot.firstContact, null);
-  assert.equal(legacy.declaredPotted, false);
-  assert.equal(legacy.activePottedNumber, null);
-  assert.equal(legacy.contactMatched, null);
-  assert.equal(legacy.endState.status, "playing");
-
-  const continued = evaluateShot(simple.state, normalShot([2], {
-    declaredBall: 1,
-    firstContact: 1
-  }));
-  assert.deepEqual(continued.state.pottedNumbers, [1, 2]);
-});
-
-test("emits explicit pocket, scratch, and unified performance events", () => {
-  const result = play(begin(), [1, 4], {
-    cueScratch: true,
-    bankedNumbers: [4]
-  });
-
-  assert.deepEqual(result.pocketEvents.map((event) => ({
-    type: event.type,
-    number: event.number,
-    stageId: event.stageId,
-    stageStatus: event.stageStatus,
-    completedEarly: event.completedEarly,
-    mode: event.mode,
-    timing: event.timing,
+test("emits one stage-appropriate immutable event for every potted ball", () => {
+  const outcome = open([15, 2, 11], { bankedNumbers: [2] });
+  assert.equal(outcome.pocketEvents.length, 3);
+  assert.deepEqual(outcome.pocketEvents.map((event) => ({
+    physical: event.number,
+    story: event.storyNumber,
+    stage: event.stageId,
     banked: event.banked,
-    interestDelta: event.interestDelta
+    credited: event.credited
   })), [
-    {
-      type: "pocket",
-      number: 1,
-      stageId: "first-contact",
-      stageStatus: "current",
-      completedEarly: false,
-      mode: "active",
-      timing: "on-time",
-      banked: false,
-      interestDelta: 3
-    },
-    {
-      type: "pocket",
-      number: 4,
-      stageId: "growing-familiar",
-      stageStatus: "future",
-      completedEarly: true,
-      mode: "accidental",
-      timing: "early-completion",
-      banked: true,
-      interestDelta: 0
-    }
+    { physical: 15, story: 1, stage: "first-contact", banked: false, credited: true },
+    { physical: 2, story: 2, stage: "first-contact", banked: true, credited: true },
+    { physical: 11, story: 3, stage: "first-contact", banked: false, credited: true }
   ]);
-  assert.deepEqual(result.accidentalPottedNumbers, [4]);
-  assert.equal(result.missEvent, null);
-  assert.deepEqual(result.scratchEvent, {
-    type: "scratch",
-    shot: 2,
-    code: "cue-scratch",
-    interestDelta: -10,
-    rhythmDelta: 0,
-    credited: false
+  assert.equal(outcome.events.filter((event) => event.type === "pocket").length, 3);
+  assert.ok(Object.isFrozen(outcome));
+  assert.ok(outcome.pocketEvents.every(Object.isFrozen));
+  assert.throws(() => outcome.pocketEvents[0].storyNumber = 9, TypeError);
+});
+
+test("turns an early black eight into an immediate reckless-rejection ending", () => {
+  const outcome = open([8]);
+  assert.deepEqual(outcome.respotNumbers, []);
+  assert.deepEqual(outcome.state.pottedNumbers, [8]);
+  assert.equal(outcome.activeTiming, "eight-too-early");
+  assert.equal(outcome.earlyEight.success, false);
+  assert.equal(outcome.pocketEvents[0].storyNumber, 15);
+  assert.equal(outcome.pocketEvents[0].completedEarly, true);
+  assert.deepEqual(outcome.state.endState, {
+    ended: true, status: "failed", ending: "reckless-rejection", grade: null
   });
-  assert.deepEqual(result.events.map((event) => event.type), ["pocket", "pocket", "scratch"]);
-  assert.equal(result.rawInterestDelta, -7);
-  assert.equal(result.state.interest, 93);
-  assert.equal(result.state.rhythmScore, 100);
-  assert.deepEqual(result.state.violations.map((violation) => violation.code), ["cue-scratch"]);
+  assert.throws(() => play(outcome.state, [1]), RangeError);
 });
 
-test("banks future stages and continuously advances once preceding stages clear", () => {
-  let state = begin([], { cueScratch: true });
-  assert.equal(state.interest, 90);
-  const early = play(state, [5, 4, 7, 6, 8]);
-  state = early.state;
+test("unlocks the rare early black-eight success only after sustained mutual momentum", () => {
+  const perfect = perfectOrdinaryRun(7);
+  assert.equal(perfect.state.potStreak, 7);
+  assert.equal(perfect.state.interest, 100);
+  const success = play(perfect.state, [8]);
+  assert.equal(success.earlyEight.success, true);
+  assert.equal(success.state.endState.status, "completed");
+  assert.equal(success.state.endState.ending, EARLY_SUCCESS_ENDING);
+  assert.equal(success.state.pottedNumbers.length, 8);
+  assert.equal(computeRating(success.state).ending, EARLY_SUCCESS_ENDING);
 
-  assert.equal(early.rawInterestDelta, 0);
-  assert.equal(state.interest, 90);
-  assert.equal(currentStage(state).id, "first-contact");
-  assert.deepEqual(early.newlyCompletedStageIds, []);
-  assert.deepEqual(early.newlyEarlyCompletedStageIds, [
-    "growing-familiar",
-    "intentional-dates",
-    "spoken-heart"
-  ]);
-  assert.deepEqual(early.earlyCompletedStageIds, [
-    "growing-familiar",
-    "intentional-dates",
-    "spoken-heart"
-  ]);
-  assert.ok(early.pocketEvents.every((event) => event.completedEarly));
-  assert.equal(early.endState.status, "playing");
-
-  const unlocked = play(state, [3, 1, 2]);
-  assert.deepEqual(unlocked.newlyCompletedStageIds, [
-    "first-contact",
-    "growing-familiar",
-    "intentional-dates",
-    "spoken-heart"
-  ]);
-  assert.deepEqual(unlocked.completedStageIds, unlocked.newlyCompletedStageIds);
-  assert.deepEqual(unlocked.stageEvents.map((event) => event.stageId), unlocked.newlyCompletedStageIds);
-  assert.deepEqual(unlocked.stageEvents.map((event) => event.precompleted), [false, true, true, true]);
-  assert.deepEqual(unlocked.stageEvents.map((event) => event.cascaded), [false, true, true, true]);
-  assert.equal(unlocked.completedCurrentStage, true);
-  assert.equal(unlocked.rawInterestDelta, 49);
-  assert.equal(unlocked.state.interest, 100);
-  assert.equal(unlocked.stageAfter.id, "confirmed-love");
-  assert.equal(currentStage(unlocked.state).id, "confirmed-love");
-  assert.deepEqual(unlocked.earlyCompletedStageIds, []);
+  let hesitant = perfectOrdinaryRun(6).state;
+  hesitant = play(hesitant, []).state;
+  hesitant = play(hesitant, [12]).state;
+  assert.equal(hesitant.potStreak, 1);
+  const rejected = play(hesitant, [8]);
+  assert.equal(rejected.earlyEight.success, false);
+  assert.equal(rejected.state.endState.ending, "reckless-rejection");
 });
 
-test("allows every within-stage order and does not require 8 or 15 to be last", () => {
-  const result = finishFreeOrder();
+test("requires all fourteen ordinary balls before black eight becomes the normal final target", () => {
+  const beforeEight = perfectOrdinaryRun(14);
+  assert.equal(beforeEight.state.pottedNumbers.length, 14);
+  assert.equal(currentStage(beforeEight.state).id, "shared-future");
+  assert.deepEqual(stageProgress(beforeEight.state), {
+    stage: STAGES[6], completed: 1, remaining: 1, quota: 2, target: "eight"
+  });
+  assert.deepEqual(availableTargets(beforeEight.state), [8]);
 
-  assert.equal(result.state.endState.status, "completed");
-  assert.equal(result.state.endState.grade, "S");
-  assert.equal(result.state.endState.ending, "mutual-devotion");
-  assert.equal(result.state.pocketOrder.at(-2), 15);
-  assert.equal(result.state.pocketOrder.at(-1), 14);
-  assert.equal(result.state.rhythmScore, 100);
-  assert.deepEqual(result.state.violations, []);
-  assert.deepEqual(availableTargets(result.state), []);
-  assert.equal(currentStage(result.state), null);
-
-  const earlyMilestones = play(begin(), [15, 8]);
-  assert.equal(earlyMilestones.endState.status, "playing");
-  assert.equal(earlyMilestones.state.interest, 100);
-  assert.deepEqual(earlyMilestones.state.violations, []);
-  assert.ok(earlyMilestones.pocketEvents.every((event) => event.timing === "early-completion"));
-  assert.ok(earlyMilestones.pocketEvents.every((event) => event.completedEarly));
+  const finish = play(beforeEight.state, [8]);
+  assert.equal(finish.earlyEight, null);
+  assert.equal(finish.pocketEvents[0].storyNumber, 15);
+  assert.equal(finish.pocketEvents[0].stageStatus, "current");
+  assert.deepEqual(finish.newlyCompletedStageIds, ["shared-future"]);
+  assert.equal(finish.state.endState.status, "completed");
+  assert.equal(finish.state.endState.ending, "mutual-devotion");
+  assert.equal(currentStage(finish.state), null);
+  assert.deepEqual(availableTargets(finish.state), []);
 });
 
-test("changes interest only for technical mistakes and current-stage recovery", () => {
-  let state = begin([], { cueScratch: true });
-  assert.equal(state.interest, 90);
+test("raises hidden interest for consecutive pots and emits qualitative trend signals", () => {
+  const first = open([15]);
+  assert.equal(first.state.interest, 75);
+  assert.equal(first.streakBonus, 0);
+  assert.equal(first.interestTrend.direction, "up");
 
-  const futureBank = play(state, [4], { bankedNumbers: [4] });
-  state = futureBank.state;
-  assert.equal(futureBank.rawInterestDelta, 0);
-  assert.deepEqual(futureBank.interestChanges, []);
-  assert.equal(state.interest, 90);
-  assert.equal(state.bankedPots, 1);
+  const second = play(first.state, [1]);
+  assert.equal(second.state.potStreak, 2);
+  assert.equal(second.streakBonus, 2);
+  assert.equal(second.state.interest, 80);
+  assert.equal(second.interestSignal.band, "warm");
 
-  const currentMulti = play(state, [2, 1], { bankedNumbers: [1] });
-  state = currentMulti.state;
-  assert.equal(currentMulti.rawInterestDelta, 6);
-  assert.equal(state.interest, 96);
-  assert.deepEqual(currentMulti.interestChanges.map((change) => change.code), [
+  const stageClear = play(second.state, [14]);
+  assert.equal(stageClear.state.potStreak, 3);
+  assert.equal(stageClear.streakBonus, 4);
+  assert.deepEqual(stageClear.interestChanges.map((change) => change.code), [
     "current-stage-pot-recovery",
-    "current-stage-pot-recovery"
+    "stage-complete-recovery",
+    "pot-streak-bonus"
   ]);
-
-  const completion = play(state, [3]);
-  assert.equal(completion.rawInterestDelta, 13);
-  assert.equal(completion.interestDelta, 4);
-  assert.equal(completion.state.interest, 100);
-  assert.deepEqual(completion.interestChanges.map((change) => change.code), [
-    "current-stage-pot-recovery",
-    "stage-complete-recovery"
-  ]);
-  assert.deepEqual(completion.newlyCompletedStageIds, ["first-contact"]);
-  assert.equal(currentStage(completion.state).id, "growing-familiar");
-  assert.deepEqual(availableTargets(completion.state), [5]);
+  assert.equal(stageClear.state.interest, 93);
+  assert.equal(stageClear.interestSignal.band, "devoted");
 });
 
-test("emits miss and scratch events with exact consecutive-miss losses", () => {
-  let state = begin([], { cueScratch: true });
-  const openingOutcome = evaluateShot(createRunState(), openingShot([], { cueScratch: true }));
-  assert.equal(openingOutcome.state.interest, 90);
-  assert.equal(openingOutcome.state.consecutiveMisses, 0);
-  assert.equal(openingOutcome.miss, true);
-  assert.equal(openingOutcome.missEvent.counted, false);
-  assert.equal(openingOutcome.missEvent.interestDelta, 0);
-  assert.deepEqual(openingOutcome.events.map((event) => event.type), ["scratch", "miss"]);
-
-  const firstMiss = play(state, []);
-  state = firstMiss.state;
-  assert.equal(firstMiss.missEvent.code, "miss");
-  assert.equal(firstMiss.missEvent.counted, true);
-  assert.equal(firstMiss.state.consecutiveMisses, 1);
-  assert.equal(firstMiss.interestDelta, 0);
-
-  const secondMiss = play(state, []);
-  state = secondMiss.state;
-  assert.equal(secondMiss.missEvent.code, "second-consecutive-miss");
-  assert.equal(secondMiss.missEvent.interestDelta, RULES.interest.secondConsecutiveMiss);
-  assert.equal(secondMiss.state.interest, 85);
-
-  const thirdMissAndScratch = play(state, [], { cueScratch: true });
-  state = thirdMissAndScratch.state;
-  assert.equal(thirdMissAndScratch.missEvent.code, "continued-consecutive-miss");
-  assert.equal(thirdMissAndScratch.missEvent.interestDelta, RULES.interest.continuedConsecutiveMiss);
-  assert.equal(thirdMissAndScratch.scratchEvent.interestDelta, RULES.interest.cueScratch);
-  assert.deepEqual(thirdMissAndScratch.events.map((event) => event.type), ["scratch", "miss"]);
-  assert.equal(state.interest, 67);
-  assert.equal(state.consecutiveMisses, 3);
-  assert.equal(state.cueScratches, 2);
-  assert.equal(state.rhythmScore, 100);
-
-  const recovered = play(state, [2]);
-  assert.equal(recovered.state.consecutiveMisses, 0);
-  assert.equal(recovered.state.potStreak, 1);
-  assert.equal(recovered.state.interest, 70);
-});
-
-test("rates technique and interest without numerical-order criteria", () => {
-  const ideal = finishFreeOrder();
-  assert.equal(ideal.rating.grade, "S");
-  assert.equal(ideal.rating.technical.grade, "S");
-  assert.equal(ideal.rating.rhythm.grade, "S");
-  assert.deepEqual(Object.keys(ideal.rating.rhythm), ["score", "grade", "interest"]);
-
-  const ordinary = finishFreeOrder({ missBeforeEach: true });
-  assert.equal(ordinary.state.endState.status, "completed");
-  assert.equal(ordinary.state.endState.grade, "A");
-  assert.equal(ordinary.state.endState.ending, "together-at-last");
-  assert.equal(ordinary.rating.technical.grade, "A");
-  assert.equal(ordinary.rating.rhythm.grade, "S");
-  assert.equal(ordinary.state.interest, 100);
-
-  let state = begin();
-  state = play(state, [15, 8]).state;
-  for (const group of [[1, 2, 3], [4, 5], [6, 7], [9, 10, 11], [12, 13], [14]]) {
-    state = play(state, group).state;
-  }
-  const earlyFinishRating = computeRating(state);
-  assert.equal(state.endState.status, "completed");
-  assert.equal(state.pocketOrder[0], 15);
-  assert.equal(state.pocketOrder.at(-1), 14);
-  assert.equal(earlyFinishRating.grade, "S");
-  assert.equal(earlyFinishRating.ending, "mutual-devotion");
-});
-
-test("fails only when accumulated technical interest losses reach zero", () => {
-  let state = begin([], { cueScratch: true });
-  let result = null;
+test("applies escalating miss losses and fails at the active stage's hidden floor", () => {
+  let state = open().state;
+  const losses = [];
+  let result;
   while (!state.endState.ended) {
-    result = play(state, [], { cueScratch: true });
+    result = play(state, []);
+    losses.push(result.interestDelta);
     state = result.state;
   }
-
-  assert.equal(state.interest, 0);
-  assert.equal(state.endState.status, "failed");
+  assert.deepEqual(losses, [-2, -6, -10, -10, -10]);
+  assert.equal(state.interest, 34);
+  assert.equal(STAGES[0].interestFloor, 38);
+  assert.equal(result.interestSignal.band, "lost");
+  assert.equal(result.interestTrend.direction, "down");
   assert.equal(state.endState.ending, "losing-contact");
-  assert.equal(state.endState.grade, null);
-  assert.deepEqual(FAILURE_ENDINGS, ["losing-contact"]);
-  assert.ok(result.scratchEvent);
-  assert.ok(result.missEvent);
-  assert.throws(() => play(state, [1]), RangeError);
 });
 
-test("does not mutate inputs and deeply freezes all state and performance layers", () => {
-  const state = begin();
-  const before = JSON.parse(JSON.stringify(state));
-  const shot = normalShot([3, 2, 1, 4], {
-    cueScratch: true,
-    bankedNumbers: [4],
-    declaredBall: 15,
-    firstContact: 8
-  });
-  const resultA = evaluateShot(state, shot);
-  const resultB = evaluateShot(state, shot);
+test("combines scratch and miss feedback while preserving exact technical statistics", () => {
+  const opening = open([], { cueScratch: true });
+  assert.equal(opening.state.interest, 63);
+  assert.equal(opening.missEvent.counted, false);
+  assert.equal(opening.scratchEvent.interestDelta, -9);
+  assert.deepEqual(opening.events.map((event) => event.type), ["scratch", "miss"]);
 
+  const miss = play(opening.state, [], { cueScratch: true });
+  assert.equal(miss.interestDelta, -11);
+  assert.equal(miss.missEvent.interestDelta, -2);
+  assert.equal(miss.scratchEvent.interestDelta, -9);
+  assert.equal(miss.state.cueScratches, 2);
+  assert.equal(miss.state.consecutiveMisses, 1);
+});
+
+test("keeps ratings separate from relationship order and supports arbitrary clear sequences", () => {
+  const finish = play(perfectOrdinaryRun(14).state, [8]);
+  assert.equal(finish.rating.grade, "S");
+  assert.equal(finish.rating.technical.grade, "S");
+  assert.equal(finish.rating.rhythm.grade, "S");
+  assert.equal(finish.state.pocketOrder[0], 15);
+  assert.equal(finish.state.pocketOrder.at(-1), 8);
+  assert.deepEqual(finish.state.violations, []);
+});
+
+test("does not mutate inputs and deeply freezes every output layer", () => {
+  const state = open().state;
+  const before = JSON.parse(JSON.stringify(state));
+  const input = shot([15, 2], { bankedNumbers: [2] });
+  const resultA = evaluateShot(state, input);
+  const resultB = evaluateShot(state, input);
   assert.deepEqual(state, before);
   assert.deepEqual(resultA, resultB);
-  assert.equal(Object.isFrozen(shot), false);
-  assert.equal(Object.isFrozen(shot.pottedNumbers), false);
-  assert.ok(Object.isFrozen(resultA));
+  assert.equal(Object.isFrozen(input), false);
   assert.ok(Object.isFrozen(resultA.state));
   assert.ok(Object.isFrozen(resultA.shot));
-  assert.ok(Object.isFrozen(resultA.shot.pottedNumbers));
   assert.ok(Object.isFrozen(resultA.events));
-  assert.ok(resultA.events.every(Object.isFrozen));
-  assert.ok(Object.isFrozen(resultA.pocketEvents));
-  assert.ok(resultA.pocketEvents.every(Object.isFrozen));
-  assert.ok(Object.isFrozen(resultA.stageEvents));
-  assert.ok(resultA.stageEvents.every(Object.isFrozen));
-  assert.ok(Object.isFrozen(resultA.scratchEvent));
-  assert.ok(Object.isFrozen(resultA.interestChanges));
-  assert.ok(resultA.interestChanges.every(Object.isFrozen));
-  assert.ok(Object.isFrozen(resultA.newlyCompletedStageIds));
-  assert.strictEqual(resultA.events[0], resultA.pocketEvents[0]);
+  assert.ok(Object.isFrozen(resultA.interestSignal));
+  assert.ok(Object.isFrozen(resultA.interestTrend));
   assert.throws(() => resultA.events.push({}), TypeError);
-  assert.throws(() => resultA.pocketEvents[0].number = 9, TypeError);
-  assert.throws(() => resultA.state.pocketOrder.push(9), TypeError);
-
-  const dry = play(resultA.state, []);
-  assert.ok(Object.isFrozen(dry.missEvent));
 });
 
-test("accepts JSON round trips and rejects forged or malformed runtime states", () => {
-  const serialized = JSON.parse(JSON.stringify(play(begin(), [1]).state));
+test("validates JSON round trips and rejects malformed state or shot input", () => {
+  const serialized = JSON.parse(JSON.stringify(open([15]).state));
   assert.equal(validateRunState(serialized), true);
-  const continued = play(serialized, [2]);
-  assert.ok(Object.isFrozen(continued.state));
+  assert.ok(Object.isFrozen(play(serialized, [2]).state));
 
   const missing = { ...serialized };
   delete missing.interest;
   assert.throws(() => validateRunState(missing), TypeError);
-
-  const extra = { ...serialized, currentStageIndex: 0 };
-  assert.throws(() => validateRunState(extra), TypeError);
-
-  const duplicate = { ...serialized, pottedNumbers: [1, 1] };
-  assert.throws(() => validateRunState(duplicate), RangeError);
-
-  const unsorted = { ...serialized, pottedNumbers: [2, 1], pocketOrder: [1, 2] };
-  assert.throws(() => validateRunState(unsorted), RangeError);
-
-  const wrongOrderSet = { ...serialized, pocketOrder: [2] };
-  assert.throws(() => validateRunState(wrongOrderSet), RangeError);
-
-  const forgedRhythm = { ...serialized, rhythmScore: 99 };
-  assert.throws(() => validateRunState(forgedRhythm), RangeError);
-
-  const forgedSuccessCount = { ...begin(), successfulShots: 1 };
-  assert.throws(() => validateRunState(forgedSuccessCount), RangeError);
-
-  const forgedScratchCount = { ...serialized, cueScratches: 1 };
-  assert.throws(() => validateRunState(forgedScratchCount), RangeError);
-
-  const excessiveInterest = { ...serialized, interest: 101 };
-  assert.throws(() => validateRunState(excessiveInterest), RangeError);
-
-  const mutableEnd = JSON.parse(JSON.stringify(serialized));
-  mutableEnd.endState = { ended: true, status: "completed", ending: "mutual-devotion", grade: "S" };
-  assert.throws(() => validateRunState(mutableEnd), RangeError);
-  assert.throws(() => validateRunState(new Date()), TypeError);
-});
-
-test("strictly validates simplified and legacy-compatible shot inputs", () => {
-  const initial = createRunState();
-  const opened = begin();
-  assert.throws(() => evaluateShot(initial, normalShot([1])), RangeError);
-  assert.throws(() => evaluateShot(opened, openingShot()), RangeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), cueScratch: 1 }), TypeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), breakShot: "yes" }), TypeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), pottedNumbers: [1, 1] }), RangeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), pottedNumbers: [1, , 2] }), TypeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), pottedNumbers: [16] }), RangeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), bankedNumbers: [2] }), RangeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), declaredBall: 0 }), RangeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), firstContact: "1" }), TypeError);
-  assert.throws(() => evaluateShot(initial, { ...openingShot(), power: 0.5 }), TypeError);
-  assert.throws(() => evaluateShot(initial, new Date()), TypeError);
-
-  const missingField = normalShot([1]);
-  delete missingField.bankedNumbers;
-  assert.throws(() => evaluateShot(opened, missingField), TypeError);
-
-  const pottedOne = play(opened, [1]).state;
-  assert.throws(() => play(pottedOne, [1]), RangeError);
-  assert.throws(() => classifyTarget(pottedOne, 1), RangeError);
-  assert.throws(() => ballByNumber(0), RangeError);
-  assert.throws(() => stageForBall(1.5), TypeError);
-
-  const noCallOrContact = evaluateShot(opened, {
-    pottedNumbers: [2],
-    cueScratch: false,
-    breakShot: false,
-    bankedNumbers: []
-  });
-  assert.deepEqual(noCallOrContact.state.pottedNumbers, [2]);
-  assert.equal(noCallOrContact.shot.declaredBall, null);
-  assert.equal(noCallOrContact.shot.firstContact, null);
+  assert.throws(() => validateRunState({ ...serialized, pottedNumbers: [15, 15] }), RangeError);
+  assert.throws(() => validateRunState({ ...serialized, pottedNumbers: [15, 2], pocketOrder: [15, 2] }), RangeError);
+  assert.throws(() => evaluateShot(createRunState(), shot([1])), RangeError);
+  assert.throws(() => evaluateShot(createRunState(), { ...shot([1], { breakShot: true }), pottedNumbers: [1, 1] }), RangeError);
+  assert.throws(() => evaluateShot(createRunState(), { ...shot([], { breakShot: true }), power: 0.5 }), TypeError);
+  assert.throws(() => classifyTarget(serialized, 15), RangeError);
 });

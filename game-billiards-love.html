@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/love-scenes/starlight-vow.webp" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-physics-theatre-20260711d">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-physics-theatre-20260711e">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -32,16 +32,16 @@
       <div class="hb-stage-copy" aria-live="polite">
         <span id="hb-stage-kicker">阶段 01 · 初次接触</span>
         <strong id="hb-stage-title">刚刚注意到彼此</strong>
-        <small class="hb-sr-only" id="hb-stage-targets">本阶段任选：1 对视、2 主动搭话、3 交换联系方式</small>
+        <small class="hb-sr-only" id="hb-stage-targets">任意非黑 8 彩球均可，再进 3 颗进入下一阶段</small>
       </div>
 
-      <div class="hb-interest" id="hb-interest-wrap" aria-label="兴趣值 100">
+      <div class="hb-interest" id="hb-interest-wrap" aria-label="心绪状态：自然靠近">
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle cx="22" cy="22" r="18"></circle>
           <circle id="hb-interest-ring" cx="22" cy="22" r="18"></circle>
         </svg>
-        <span>兴趣</span>
-        <strong id="hb-interest">100</strong>
+        <span>心绪</span>
+        <strong id="hb-interest">安稳</strong>
       </div>
 
       <div class="hb-toolbar" aria-label="游戏设置">
@@ -127,7 +127,7 @@
         <span><small>总杆数</small><b id="hb-result-shots">0</b></span>
         <span><small>进球率</small><b id="hb-result-accuracy">0%</b></span>
         <span><small>最佳连进</small><b id="hb-result-streak">0</b></span>
-        <span><small>剩余兴趣</small><b id="hb-result-interest">0</b></span>
+        <span><small>最终心绪</small><b id="hb-result-interest">安稳</b></span>
       </div>
       <div class="hb-result-actions">
         <button id="hb-retry" type="button">再遇一次</button>
@@ -138,9 +138,9 @@
   </main>
 
   <script src="assets/vendor/matter-0.20.0.min.js?v=0.20.0"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-physics-theatre-20260711d"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-physics-theatre-20260711d"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-physics-theatre-20260711d"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-physics-theatre-20260711d"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-physics-theatre-20260711e"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-physics-theatre-20260711e"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-physics-theatre-20260711e"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-physics-theatre-20260711e"></script>
 </body>
 </html>

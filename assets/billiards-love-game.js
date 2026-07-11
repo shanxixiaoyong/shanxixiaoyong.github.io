@@ -174,6 +174,8 @@
   const TIMING_LABELS = Object.freeze({
     "on-time": "本章片段",
     "early-completion": "意外先发生",
+    "eight-too-early": "心意还没到时候",
+    "break-respot": "黑 8 回置",
     "break-pot": "开局相遇",
     break: "开球",
     miss: "这一杆没有进球"
@@ -451,7 +453,7 @@
   let screenShake = 0;
   let coachSeen = Boolean(readStorage(COACH_KEY, false));
   let cachedStageNumber = 1;
-  let cachedAvailableTargets = new Set([1, 2, 3]);
+  let cachedAvailableTargets = new Set([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15]);
   let renderScale = 1;
   let ballRenderer = null;
   let ballRendererCanvas = null;
@@ -810,6 +812,8 @@
 
   function syncUI() {
     const stage = rules.currentStage(runState);
+    const progress = rules.stageProgress(runState);
+    const interestSignal = rules.interestStatus(runState);
     const stageNumber = stage?.number || 7;
     const narrativeStage = content.getStage(stageNumber);
     const targets = rules.availableTargets(runState);
@@ -820,22 +824,36 @@
       ? `STAGE ${String(stage.number).padStart(2, "0")} · ${stage.name}`
       : "COMPLETE · 共同未来";
     elements.stageTitle.textContent = narrativeStage.enterLine;
-    elements.stageTargets.textContent = targets.length
-      ? `本阶段任选：${targets.map((number) => `${number} ${content.getBall(number).name}`).join("、")}`
+    elements.stageTargets.textContent = progress
+      ? progress.target === "eight"
+        ? "本阶段目标：打进黑 8，完成告白"
+        : `任意非黑 8 彩球均可，再进 ${progress.remaining} 颗进入下一阶段`
       : "今晚已经走到最后";
-    elements.interest.textContent = String(runState.interest);
-    elements.interestWrap.setAttribute("aria-label", `兴趣值 ${runState.interest}`);
-    elements.interestWrap.classList.toggle("is-low", runState.interest <= 30);
-    elements.interestRing.style.strokeDashoffset = String(113.1 * (1 - runState.interest / 100));
+    const interestLabels = {
+      devoted: "炽热",
+      warm: "升温",
+      steady: "安稳",
+      uncertain: "摇摆",
+      danger: "疏远",
+      lost: "熄灭"
+    };
+    const interestLevels = { devoted: 1, warm: 0.84, steady: 0.66, uncertain: 0.44, danger: 0.2, lost: 0 };
+    elements.interest.textContent = interestLabels[interestSignal.band] || "安稳";
+    elements.interestWrap.setAttribute("aria-label", `心绪状态：${interestSignal.label}`);
+    elements.interestWrap.dataset.signal = interestSignal.band;
+    elements.interestWrap.classList.toggle("is-low", ["danger", "lost"].includes(interestSignal.band));
+    elements.interestRing.style.strokeDashoffset = String(113.1 * (1 - interestLevels[interestSignal.band]));
     elements.shots.textContent = String(runState.shots);
     elements.streak.textContent = String(runState.potStreak);
     elements.trackProgress.style.width = `${runState.pottedNumbers.length / 15 * 100}%`;
-    const potted = new Set(runState.pottedNumbers);
-    const recommended = new Set(targets);
+    const completedStoryCount = runState.pottedNumbers.length;
+    const recommended = new Set(stage && progress
+      ? stage.ballNumbers.slice(progress.completed)
+      : []);
     trackNodeMap.forEach((node, number) => {
-      node.classList.toggle("is-complete", potted.has(number));
+      node.classList.toggle("is-complete", number <= completedStoryCount);
       node.classList.toggle("is-current", recommended.has(number));
-      node.classList.remove("is-danger");
+      node.classList.toggle("is-danger", progress?.target === "eight" && number === 15);
     });
     if (!runState.breakCompleted) {
       elements.selectedBall.textContent = "—";
@@ -845,17 +863,17 @@
       elements.callHint.textContent = "从白球向后拖动，松开完成开球";
     } else if (selectedBallNumber !== null) {
       selectedBallNumber = null;
-      elements.selectedBall.textContent = String(targets.length);
-      elements.selectedName.textContent = `${narrativeStage.name} · 本组剩余`;
+      elements.selectedBall.textContent = String(progress?.remaining || 0);
+      elements.selectedName.textContent = progress?.target === "eight" ? "等待黑 8 · 告白" : `${narrativeStage.name} · 还差`;
       elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
-      elements.callTitle.textContent = "本阶段目标自由选择";
-      elements.callHint.textContent = "清完高亮球组，进入下一章";
+      elements.callTitle.textContent = progress?.target === "eight" ? "这一杆，只等黑 8" : "任意彩球都能推进关系";
+      elements.callHint.textContent = progress?.target === "eight" ? "打进黑 8，进入相恋阶段" : `再进 ${progress?.remaining || 0} 颗，进入下一章`;
     } else {
-      elements.selectedBall.textContent = String(targets.length);
-      elements.selectedName.textContent = `${narrativeStage.name} · 本组剩余`;
+      elements.selectedBall.textContent = String(progress?.remaining || 0);
+      elements.selectedName.textContent = progress?.target === "eight" ? "等待黑 8 · 告白" : `${narrativeStage.name} · 还差`;
       elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
-      elements.callTitle.textContent = "本阶段目标自由选择";
-      elements.callHint.textContent = "清完高亮球组，进入下一章";
+      elements.callTitle.textContent = progress?.target === "eight" ? "这一杆，只等黑 8" : "任意彩球都能推进关系";
+      elements.callHint.textContent = progress?.target === "eight" ? "打进黑 8，进入相恋阶段" : `再进 ${progress?.remaining || 0} 颗，进入下一章`;
     }
     elements.aimToggle.setAttribute("aria-pressed", String(aimAssist));
     elements.aimToggle.setAttribute("aria-label", aimAssist ? "关闭瞄准辅助" : "开启瞄准辅助");
@@ -900,7 +918,7 @@
 
   function canInteract() {
     return !shotState && !pointerAim && !resolvingShot
-      && !cinematicActive && !resultVisible && cueBall;
+      && !cinematicActive && !resultVisible && !runState.endState.ended && cueBall;
   }
 
   function selectTarget(number) {
@@ -1331,6 +1349,7 @@
   function showNextMicro() {
     if (!microQueue.length) {
       elements.micro.hidden = true;
+      if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
       return;
     }
     const item = microQueue.shift();
@@ -1348,26 +1367,29 @@
     }, clamp(item.durationMs + 220, 1200, 2000));
   }
 
-  function queueBallMicro(performance, event) {
-    const ball = content.getBall(performance.ballNumber);
+  function queueBallMicro(performance, event, outcome) {
+    const ball = content.getBall(event.storyNumber || performance.ballNumber);
+    const streaking = outcome.streakBonus > 0;
     queueMicro({
       id: performance.id,
-      type: event.completedEarly ? "early" : "pocket",
-      kicker: event.completedEarly ? "意外先发生" : classificationLabel(event.timing),
-      title: `${performance.ballNumber} · ${ball.name}`,
-      line: `${performance.visual} ${performance.line}`,
+      type: streaking ? "streak" : event.completedEarly ? "early" : "pocket",
+      kicker: streaking
+        ? `${outcome.state.potStreak} 连进 · ${outcome.interestSignal.label}`
+        : classificationLabel(event.timing),
+      title: `${event.number}号球 · ${ball.name}`,
+      line: `${performance.visual} ${performance.line} ${outcome.interestTrend.line}`,
       durationMs: performance.durationMs
     });
   }
 
-  function queueStageMicro(stageNumber, eventType, seed) {
+  function queueStageMicro(stageNumber, eventType, seed, trend) {
     const performance = content.selectStageEvent({ stage: stageNumber, eventType, seed });
     queueMicro({
       id: performance.id,
       type: eventType,
       kicker: performance.kicker,
       title: performance.title,
-      line: `${performance.visual} ${performance.line}`,
+      line: `${performance.visual} ${performance.line}${trend ? ` ${trend.line}` : ""}`,
       durationMs: performance.durationMs
     });
   }
@@ -1416,7 +1438,7 @@
     cinematicCurrent = null;
     completed?.onClose?.();
     if (cinematicQueue.length) setTimeout(showNextCinematic, 70);
-    else if (runState.endState.ended && !resultVisible) showResult();
+    else if (runState.endState.ended && elements.micro.hidden && !microQueue.length && !resultVisible) showResult();
     else root.dataset.state = "aiming";
   }
 
@@ -1434,36 +1456,91 @@
     };
   }
 
+  function earlyEightCopy(outcome) {
+    const success = outcome.earlyEight.success;
+    return {
+      id: `black-eight-${success ? "mutual" : "rejected"}-${outcome.state.shots}`,
+      kind: success ? "early-success" : "rejection",
+      stageId: success ? "spoken-heart" : "learning-together",
+      image: success
+        ? "assets/billiards-scenes/confession-night.jpg"
+        : "assets/love-scenes/rain-night.webp",
+      kicker: success ? "黑 8 · 稀有结局" : "黑 8 · 越过时机",
+      title: success ? "冒险提前命中了答案" : "这份承诺来得太快",
+      line: success
+        ? "此前每一次靠近都得到了回应。黑 8 提前落袋时，她没有后退，而是伸手接住了答案。"
+        : "关系还没有走到最后，你却先击中了最重的承诺。她认真听完，然后温柔而明确地拒绝。",
+      sound: success ? "proposal" : "scratch",
+      autoCloseMs: 4200,
+      actionLabel: null
+    };
+  }
+
   function processOutcomePerformances(outcome) {
     const stageTransitions = outcome.newlyCompletedStageIds || outcome.completedStageIds || [];
-    if (stageTransitions.length) {
+    if (outcome.earlyEight) {
+      clearTimeout(microTimer);
       microQueue = [];
       elements.micro.hidden = true;
-    } else if (outcome.cueScratch) {
-      queueStageMicro(outcome.stageBefore?.number || currentStageNumber(), content.STAGE_EVENT_TYPES.SCRATCH, outcome.state.shots * 41);
-    } else if (outcome.pocketEvents?.length) {
-      outcome.pocketEvents.slice(0, 3).forEach((event, index) => {
+      queueCinematic(earlyEightCopy(outcome));
+      return;
+    }
+
+    const queuePocketPerformances = () => {
+      outcome.pocketEvents?.forEach((event, index) => {
         const performance = content.selectPerformance({
-          ballNumber: event.number,
+          ballNumber: event.storyNumber || event.number,
           intent: content.INTENTS.ACTIVE,
           timing: content.TIMINGS.RIGHT,
           seed: outcome.state.shots * 31 + event.number * 7 + index
         });
-        queueBallMicro(performance, event);
+        queueBallMicro(performance, event, outcome);
         const color = BALL_COLORS[event.number] || "#e4c178";
         const burst = [...pocketBursts].reverse().find((item) => item.number === event.number);
         spawnParticles(burst?.x || WORLD.width / 2, burst?.y || WORLD.height / 2, color, 18);
       });
-    } else if (outcome.miss && !outcome.shot.breakShot) {
+    };
+    const queueTechnicalPerformance = () => {
+      if (outcome.cueScratch) {
+        queueStageMicro(
+          outcome.stageBefore?.number || currentStageNumber(),
+          content.STAGE_EVENT_TYPES.SCRATCH,
+          outcome.state.shots * 41,
+          outcome.interestTrend
+        );
+      } else if (outcome.miss && !outcome.shot.breakShot) {
       const eventType = outcome.state.consecutiveMisses <= 1
         ? content.STAGE_EVENT_TYPES.SETUP
         : content.STAGE_EVENT_TYPES.MISS;
-      queueStageMicro(outcome.stageBefore?.number || currentStageNumber(), eventType, outcome.state.shots * 43);
+        queueStageMicro(
+          outcome.stageBefore?.number || currentStageNumber(),
+          eventType,
+          outcome.state.shots * 43,
+          outcome.interestTrend
+        );
+      }
+    };
+
+    if (!stageTransitions.length) {
+      queuePocketPerformances();
+      queueTechnicalPerformance();
+      return;
     }
 
-    stageTransitions.forEach((stageId, index) => {
+    clearTimeout(microTimer);
+    microQueue = [];
+    elements.micro.hidden = true;
+    const copies = stageTransitions.map((stageId, index) => {
       const copy = stageCopy(stageId, outcome.state.shots * 47 + index);
-      if (!copy) return;
+      return copy;
+    }).filter(Boolean);
+    if (copies.length) {
+      copies[copies.length - 1].onClose = () => {
+        queuePocketPerformances();
+        queueTechnicalPerformance();
+      };
+    }
+    copies.forEach((copy) => {
       audio.cue("stage");
       screenFlash = Math.max(screenFlash, 0.34);
       queueCinematic(copy);
@@ -1513,15 +1590,22 @@
     let line;
     let kicker;
     if (runState.endState.status === "completed") {
-      const ending = content.getEnding(grade);
-      kicker = `${grade} · ${ending.title}`;
-      title = ending.line;
-      line = ending.epilogue;
+      if (runState.endState.ending === rules.EARLY_SUCCESS_ENDING) {
+        kicker = `${grade} · 提前双向奔赴`;
+        title = "黑 8 提前落袋，她却没有后退";
+        line = "你此前每一次稳定靠近都得到了回应，所以这次冒险没有成为冒犯。";
+      } else {
+        const ending = content.getEnding(grade);
+        kicker = `${grade} · ${ending.title}`;
+        title = ending.line;
+        line = ending.epilogue;
+      }
     } else {
       const failure = {
         "confession-too-early": ["告白过早", "心意先于时机落袋", "不是每一次直球，都适合发生在刚认识的时候。"],
         "commitment-too-heavy": ["承诺过重", "很远的以后来得太早", "这一桌停在这里，下一次可以慢慢清完。"],
-        "lost-contact": ["渐渐失去联系", "话题在几次停顿后安静下来", "没有现实里的否定，只是这一局需要重新开始。"]
+        "losing-contact": ["渐渐失去联系", "话题在几次停顿后安静下来", "几次迟疑没有被重新接住，这段关系停在了当前章节。"],
+        "reckless-rejection": ["过于鲁莽", "黑 8 在关系成熟前落袋", "她认真听完，却没有接受这份来得太快的承诺。"]
       }[runState.endState.ending] || ["今晚未完", "这一桌停在了这里", "下一次开球，关系轨迹会重新亮起。"];
       [kicker, title, line] = failure;
     }
@@ -1531,7 +1615,7 @@
     elements.resultShots.textContent = String(rating.technical.shots);
     elements.resultAccuracy.textContent = `${rating.technical.successfulShotRate}%`;
     elements.resultStreak.textContent = String(rating.technical.bestStreak);
-    elements.resultInterest.textContent = String(runState.interest);
+    elements.resultInterest.textContent = rules.interestStatus(runState).label;
     elements.result.hidden = false;
     saveRecord(rating);
   }

@@ -204,16 +204,19 @@ test("evaluates every settled shot exactly through the pure relationship rules e
   assert.match(source, /processOutcomePerformances\(outcome\)/);
 });
 
-test("connects ordinary center beats and all seven full-screen stage performances", () => {
+test("connects per-pot center beats, streak feedback, seven stage performances, and black-eight endings", () => {
   assert.match(source, /content\.selectPerformance\(\{/);
   assert.match(source, /content\.selectStageEvent\(\{/);
   assert.match(source, /content\.selectStageTransition\(\{/);
-  assert.match(source, /queueBallMicro\(performance, event\)/);
+  assert.match(source, /queueBallMicro\(performance, event, outcome\)/);
   assert.match(source, /queueStageMicro\(/);
   assert.match(source, /queueCinematic\(copy\)/);
   assert.match(source, /STAGE_SCENE_ASSETS/);
   assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
   assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 1500/);
+  assert.match(source, /function earlyEightCopy\(outcome\)/);
+  assert.match(source, /outcome\.streakBonus > 0/);
+  assert.match(source, /outcome\.interestTrend\.line/);
   assert.match(source, /content\.getEnding\(grade\)/);
   assert.doesNotMatch(source, /specialCopy\("confessionTooEarly"/);
 });

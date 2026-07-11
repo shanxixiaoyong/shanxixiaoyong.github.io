@@ -20,13 +20,13 @@
   }
 
   const STAGES = deepFreeze([
-    { index: 0, number: 1, id: "first-contact", name: "初次接触", ballNumbers: [1, 2, 3] },
-    { index: 1, number: 2, id: "growing-familiar", name: "逐渐熟悉", ballNumbers: [4, 5] },
-    { index: 2, number: 3, id: "intentional-dates", name: "暧昧升温", ballNumbers: [6, 7] },
-    { index: 3, number: 4, id: "spoken-heart", name: "关系转折", ballNumbers: [8] },
-    { index: 4, number: 5, id: "confirmed-love", name: "正式相恋", ballNumbers: [9, 10, 11] },
-    { index: 5, number: 6, id: "learning-together", name: "磨合", ballNumbers: [12, 13] },
-    { index: 6, number: 7, id: "shared-future", name: "共同未来", ballNumbers: [14, 15] }
+    { index: 0, number: 1, id: "first-contact", name: "初次接触", ballNumbers: [1, 2, 3], quota: 3, ordinaryTarget: 3, requiresEight: false, interestFloor: 38 },
+    { index: 1, number: 2, id: "growing-familiar", name: "逐渐熟悉", ballNumbers: [4, 5], quota: 2, ordinaryTarget: 5, requiresEight: false, interestFloor: 36 },
+    { index: 2, number: 3, id: "intentional-dates", name: "暧昧升温", ballNumbers: [6, 7], quota: 2, ordinaryTarget: 7, requiresEight: false, interestFloor: 34 },
+    { index: 3, number: 4, id: "spoken-heart", name: "关系转折", ballNumbers: [8], quota: 1, ordinaryTarget: 8, requiresEight: false, interestFloor: 32 },
+    { index: 4, number: 5, id: "confirmed-love", name: "正式相恋", ballNumbers: [9, 10, 11], quota: 3, ordinaryTarget: 11, requiresEight: false, interestFloor: 30 },
+    { index: 5, number: 6, id: "learning-together", name: "磨合", ballNumbers: [12, 13], quota: 2, ordinaryTarget: 13, requiresEight: false, interestFloor: 28 },
+    { index: 6, number: 7, id: "shared-future", name: "共同未来", ballNumbers: [14, 15], quota: 2, ordinaryTarget: 14, requiresEight: true, interestFloor: 26 }
   ]);
 
   const BALL_NAMES = deepFreeze([
@@ -90,17 +90,26 @@
     version: 1,
     ballCount: 15,
     stageCount: 7,
-    criticalNumbers: [8, 15],
+    criticalNumbers: [8],
     breakRespotNumbers: [],
     interest: {
-      initial: 100,
+      initial: 72,
       minimum: 0,
       maximum: 100,
-      secondConsecutiveMiss: -5,
-      continuedConsecutiveMiss: -8,
-      cueScratch: -10,
+      firstConsecutiveMiss: -2,
+      secondConsecutiveMiss: -6,
+      continuedConsecutiveMiss: -10,
+      cueScratch: -9,
       currentStagePotRecovery: 3,
-      stageCompleteRecovery: 10
+      stageCompleteRecovery: 6,
+      streakTwo: 2,
+      streakThree: 4,
+      streakFourPlus: 6
+    },
+    earlyEight: {
+      minimumOrdinaryPots: 7,
+      minimumInterest: 90,
+      minimumStreak: 4
     },
     rating: {
       technicalS: 85,
@@ -168,7 +177,8 @@
     A: "together-at-last",
     B: "bumpy-love"
   });
-  const FAILURE_ENDINGS = Object.freeze(["losing-contact"]);
+  const FAILURE_ENDINGS = Object.freeze(["losing-contact", "reckless-rejection"]);
+  const EARLY_SUCCESS_ENDING = "early-mutual-choice";
   const LEGACY_FAILURE_ENDINGS = Object.freeze(["confession-too-early", "commitment-too-heavy"]);
   const EMPTY_ARRAY = Object.freeze([]);
 
@@ -235,8 +245,22 @@
     return STAGES[ballByNumber(number).stageIndex];
   }
 
+  function ordinaryPotCount(potted) {
+    let count = 0;
+    potted.forEach((number) => {
+      if (number !== 8) count += 1;
+    });
+    return count;
+  }
+
+  function storyNumberForPocket(number, potted) {
+    if (number === 8) return 15;
+    return ordinaryPotCount(potted) + 1;
+  }
+
   function isStageComplete(stage, potted) {
-    return stage.ballNumbers.every((number) => potted.has(number));
+    return ordinaryPotCount(potted) >= stage.ordinaryTarget
+      && (!stage.requiresEight || potted.has(8));
   }
 
   function completedStageCountFromSet(potted) {
@@ -326,7 +350,9 @@
     }
     return {
       grade,
-      ending: grade === null ? state.endState.ending : SUCCESS_ENDINGS[grade],
+      ending: state.endState.ending === EARLY_SUCCESS_ENDING
+        ? EARLY_SUCCESS_ENDING
+        : grade === null ? state.endState.ending : SUCCESS_ENDINGS[grade],
       technical: {
         score: technicalScore,
         grade: technicalGrade,
@@ -399,7 +425,7 @@
       throw new RangeError("state current pot streak is inconsistent with its last shot");
     }
     if (state.shots === 0) {
-      if (state.breakCompleted || pottedSet.size > 0 || state.interest !== 100 || state.rhythmScore !== 100) {
+      if (state.breakCompleted || pottedSet.size > 0 || state.interest !== RULES.interest.initial || state.rhythmScore !== 100) {
         throw new RangeError("an unstarted state is inconsistent");
       }
     } else if (!state.breakCompleted) {
@@ -461,15 +487,20 @@
       if (state.endState.ended || state.endState.ending !== null || state.endState.grade !== null) {
         throw new RangeError("a playing end state is inconsistent");
       }
-      if (state.interest === 0 || pottedSet.size === RULES.ballCount) {
+      if (state.interest <= activeInterestFloor(pottedSet) || pottedSet.size === RULES.ballCount) {
         throw new RangeError("a finished run cannot remain in playing status");
       }
     } else if (state.endState.status === "completed") {
-      if (!state.endState.ended || pottedSet.size !== RULES.ballCount || state.interest === 0) {
+      const earlySuccess = state.endState.ending === EARLY_SUCCESS_ENDING;
+      if (!state.endState.ended
+          || (!earlySuccess && pottedSet.size !== RULES.ballCount)
+          || (earlySuccess && (!pottedSet.has(8) || pottedSet.size >= RULES.ballCount))
+          || state.interest <= activeInterestFloor(pottedSet)) {
         throw new RangeError("a completed end state is inconsistent");
       }
       const expectedGrade = ratingData(state, true).grade;
-      if (state.endState.grade !== expectedGrade || state.endState.ending !== SUCCESS_ENDINGS[expectedGrade]) {
+      const expectedEnding = earlySuccess ? EARLY_SUCCESS_ENDING : SUCCESS_ENDINGS[expectedGrade];
+      if (state.endState.grade !== expectedGrade || state.endState.ending !== expectedEnding) {
         throw new RangeError("state completion rating is inconsistent");
       }
     } else {
@@ -478,8 +509,11 @@
       if (!state.endState.ended || state.endState.grade !== null || !knownFailure) {
         throw new RangeError("a failed end state is inconsistent");
       }
-      if (state.endState.ending === "losing-contact" && state.interest !== 0) {
-        throw new RangeError("losing-contact requires zero interest");
+      if (state.endState.ending === "losing-contact" && state.interest > activeInterestFloor(pottedSet)) {
+        throw new RangeError("losing-contact requires interest below the active stage threshold");
+      }
+      if (state.endState.ending === "reckless-rejection" && !pottedSet.has(8)) {
+        throw new RangeError("reckless-rejection requires an early eight ball");
       }
       if (state.endState.ending === "confession-too-early" && !violationExists(state, "early-confession")) {
         throw new RangeError("confession-too-early requires its historical violation");
@@ -501,13 +535,56 @@
     return index === null ? null : STAGES[index];
   }
 
+  function activeInterestFloor(potted) {
+    const index = currentStageIndexFromSet(potted);
+    return STAGES[index === null ? STAGES.length - 1 : index].interestFloor;
+  }
+
+  function interestStatusData(interest, potted) {
+    const margin = interest - activeInterestFloor(potted);
+    if (margin <= 0) return { band: "lost", label: "回应熄灭" };
+    if (margin <= 8) return { band: "danger", label: "正在疏远" };
+    if (margin <= 18) return { band: "uncertain", label: "有些动摇" };
+    if (interest >= RULES.earlyEight.minimumInterest) return { band: "devoted", label: "双向炽热" };
+    if (interest >= 78) return { band: "warm", label: "明显升温" };
+    return { band: "steady", label: "自然靠近" };
+  }
+
+  function interestStatus(state) {
+    assertRunState(state);
+    return deepFreeze(interestStatusData(state.interest, new Set(state.pottedNumbers)));
+  }
+
+  function stageProgress(state) {
+    assertRunState(state);
+    const potted = new Set(state.pottedNumbers);
+    const index = currentStageIndexFromSet(potted);
+    if (index === null) return null;
+    const stage = STAGES[index];
+    const previousOrdinaryTarget = index === 0 ? 0 : STAGES[index - 1].ordinaryTarget;
+    const completedOrdinary = clamp(ordinaryPotCount(potted) - previousOrdinaryTarget, 0, stage.quota);
+    const completed = completedOrdinary + (stage.requiresEight && potted.has(8) ? 1 : 0);
+    return deepFreeze({
+      stage,
+      completed,
+      remaining: stage.quota - completed,
+      quota: stage.quota,
+      target: stage.requiresEight && ordinaryPotCount(potted) >= stage.ordinaryTarget ? "eight" : "ordinary"
+    });
+  }
+
   function availableTargets(state) {
     assertRunState(state);
     if (state.endState.ended) return EMPTY_ARRAY;
     const potted = new Set(state.pottedNumbers);
     const index = currentStageIndexFromSet(potted);
     if (index === null) return EMPTY_ARRAY;
-    return Object.freeze(STAGES[index].ballNumbers.filter((number) => !potted.has(number)));
+    if (index === 6 && ordinaryPotCount(potted) >= STAGES[6].ordinaryTarget) {
+      return potted.has(8) ? EMPTY_ARRAY : Object.freeze([8]);
+    }
+    return Object.freeze(BALLS
+      .map((ball) => ball.number)
+      .filter((number) => number !== 8 && !potted.has(number)));
   }
 
   function remainingNumbers(state) {
@@ -526,17 +603,21 @@
     }
     const potted = new Set(state.pottedNumbers);
     const currentIndex = currentStageIndexFromSet(potted);
-    const stageIndex = BALL_BY_NUMBER[number].stageIndex;
+    const storyNumber = storyNumberForPocket(number, potted);
+    const stageIndex = BALL_BY_NUMBER[storyNumber].stageIndex;
     const stageGap = currentIndex === null ? null : stageIndex - currentIndex;
-    const current = stageGap === 0;
+    const current = number === 8
+      ? currentIndex === 6 && ordinaryPotCount(potted) >= STAGES[6].ordinaryTarget
+      : true;
     return deepFreeze({
       number,
+      storyNumber,
       stage: STAGES[stageIndex],
       currentStage: currentIndex === null ? null : STAGES[currentIndex],
       stageGap: state.breakCompleted ? stageGap : null,
-      stageStatus: current ? "current" : "future",
+      stageStatus: current ? "current" : "eight-early",
       completedEarly: !current,
-      timing: !state.breakCompleted ? "break-only" : current ? "on-time" : "early-completion",
+      timing: !state.breakCompleted ? "break-only" : current ? "on-time" : number === 8 ? "eight-too-early" : "early-completion",
       interestDelta: state.breakCompleted && current ? RULES.interest.currentStagePotRecovery : 0,
       rhythmDelta: 0,
       failure: null
@@ -603,17 +684,40 @@
     const completedCountBefore = completedStageCountFromSet(pottedBefore);
     const stageBeforeIndex = currentStageIndexFromSet(pottedBefore);
     const stageBefore = stageBeforeIndex === null ? null : STAGES[stageBeforeIndex];
-    const creditedNumbers = [...normalized.pottedNumbers];
+    const creditedNumbers = [];
+    const respotNumbers = [];
+    const pocketDrafts = [];
+    const pottedAfter = new Set(pottedBefore);
+    normalized.pottedNumbers.forEach((number) => {
+      const currentIndexAtPot = currentStageIndexFromSet(pottedAfter);
+      const storyNumber = storyNumberForPocket(number, pottedAfter);
+      const storyBall = BALL_BY_NUMBER[storyNumber];
+      const earlyEight = number === 8
+        && !(currentIndexAtPot === 6 && ordinaryPotCount(pottedAfter) >= STAGES[6].ordinaryTarget);
+      const current = !earlyEight && storyBall.stageIndex === currentIndexAtPot;
+      creditedNumbers.push(number);
+      pottedAfter.add(number);
+      pocketDrafts.push({
+        number,
+        storyNumber,
+        stageId: storyBall.stageId,
+        stageIndex: storyBall.stageIndex,
+        stageStatus: current ? "current" : "eight-early",
+        completedEarly: earlyEight,
+        mode: normalized.breakShot ? "break" : current ? "active" : "accidental",
+        timing: earlyEight ? "eight-too-early" : normalized.breakShot ? "break-pot" : "on-time",
+        stageGap: currentIndexAtPot === null ? null : storyBall.stageIndex - currentIndexAtPot,
+        credited: true,
+        respotted: false,
+        interestDelta: current ? RULES.interest.currentStagePotRecovery : 0
+      });
+    });
     const creditedSet = new Set(creditedNumbers);
     const effectiveBankedNumbers = normalized.bankedNumbers.filter((number) => creditedSet.has(number));
-    const currentStagePottedNumbers = creditedNumbers.filter((number) => (
-      BALL_BY_NUMBER[number].stageIndex === stageBeforeIndex
-    ));
-    const earlyPottedNumbers = creditedNumbers.filter((number) => (
-      BALL_BY_NUMBER[number].stageIndex > stageBeforeIndex
-    ));
-    const pottedAfter = new Set(pottedBefore);
-    creditedNumbers.forEach((number) => pottedAfter.add(number));
+    const currentStagePottedEvents = pocketDrafts.filter((event) => event.credited && !event.completedEarly);
+    const earlyPottedNumbers = pocketDrafts
+      .filter((event) => event.completedEarly)
+      .map((event) => event.number);
     const completedCountAfter = completedStageCountFromSet(pottedAfter);
     const newlyCompletedStages = STAGES.slice(completedCountBefore, completedCountAfter);
     const newlyCompletedStageIds = newlyCompletedStages.map((stage) => stage.id);
@@ -629,9 +733,10 @@
       .map((stage) => stage.id);
 
     const successfulShot = creditedNumbers.length > 0;
+    const madePhysicalPot = normalized.pottedNumbers.length > 0;
     const consecutiveMisses = normalized.breakShot
       ? 0
-      : successfulShot ? 0 : state.consecutiveMisses + 1;
+      : madePhysicalPot ? 0 : state.consecutiveMisses + 1;
     const potStreak = successfulShot ? state.potStreak + creditedNumbers.length : 0;
     const interestChanges = [];
     const addedViolations = [];
@@ -658,8 +763,11 @@
 
     let missCode = null;
     let missDelta = 0;
-    if (!normalized.breakShot && !successfulShot) {
-      if (consecutiveMisses === 2) {
+    if (!normalized.breakShot && !madePhysicalPot) {
+      if (consecutiveMisses === 1) {
+        missCode = "first-consecutive-miss";
+        missDelta = RULES.interest.firstConsecutiveMiss;
+      } else if (consecutiveMisses === 2) {
         missCode = "second-consecutive-miss";
         missDelta = RULES.interest.secondConsecutiveMiss;
       } else if (consecutiveMisses >= 3) {
@@ -669,12 +777,12 @@
       if (missCode) addInterestChange(missCode, missDelta, null, null);
     }
 
-    currentStagePottedNumbers.forEach((number) => {
+    currentStagePottedEvents.forEach((event) => {
       addInterestChange(
         "current-stage-pot-recovery",
         RULES.interest.currentStagePotRecovery,
-        number,
-        BALL_BY_NUMBER[number].stageId
+        event.number,
+        event.stageId
       );
     });
     newlyCompletedStages.forEach((stage) => {
@@ -685,6 +793,14 @@
         stage.id
       );
     });
+
+    let streakBonus = 0;
+    if (successfulShot && potStreak >= 2) {
+      streakBonus = potStreak >= 4
+        ? RULES.interest.streakFourPlus
+        : potStreak === 3 ? RULES.interest.streakThree : RULES.interest.streakTwo;
+      addInterestChange("pot-streak-bonus", streakBonus, null, stageBefore?.id || null);
+    }
 
     const rawInterestDelta = interestChanges.reduce((sum, change) => sum + change.amount, 0);
     const nextInterest = clamp(state.interest + rawInterestDelta, 0, 100);
@@ -710,7 +826,19 @@
       endState: { ended: false, status: "playing", ending: null, grade: null }
     };
 
-    if (nextInterest === 0) {
+    const earlyEightEvent = pocketDrafts.find((event) => event.number === 8 && event.completedEarly) || null;
+    const earlyEightSuccess = Boolean(earlyEightEvent
+      && ordinaryPotCount(pottedBefore) >= RULES.earlyEight.minimumOrdinaryPots
+      && state.interest >= RULES.earlyEight.minimumInterest
+      && state.potStreak >= RULES.earlyEight.minimumStreak);
+    if (earlyEightEvent) {
+      if (earlyEightSuccess) {
+        const grade = ratingData(baseState, true).grade;
+        baseState.endState = { ended: true, status: "completed", ending: EARLY_SUCCESS_ENDING, grade };
+      } else {
+        baseState.endState = { ended: true, status: "failed", ending: "reckless-rejection", grade: null };
+      }
+    } else if (nextInterest <= activeInterestFloor(pottedAfter)) {
       baseState.endState = { ended: true, status: "failed", ending: "losing-contact", grade: null };
     } else if (sortedPottedNumbers.length === RULES.ballCount) {
       const grade = ratingData(baseState, true).grade;
@@ -721,27 +849,13 @@
     assertRunState(nextState);
     const stageAfterIndex = currentStageIndexFromSet(pottedAfter);
     const stageAfter = stageAfterIndex === null ? null : STAGES[stageAfterIndex];
-    const pocketEvents = creditedNumbers.map((number) => {
-      const ball = BALL_BY_NUMBER[number];
-      const current = ball.stageIndex === stageBeforeIndex;
-      const early = ball.stageIndex > stageBeforeIndex;
-      return {
+    const pocketEvents = pocketDrafts.map((draft) => ({
         type: "pocket",
         shot: shotNumber,
-        number,
-        stageId: ball.stageId,
-        stageIndex: ball.stageIndex,
-        stageStatus: current ? "current" : "future",
-        completedEarly: early,
-        mode: normalized.breakShot ? "break" : current ? "active" : "accidental",
-        timing: normalized.breakShot ? "break-pot" : current ? "on-time" : "early-completion",
-        stageGap: stageBeforeIndex === null ? null : ball.stageIndex - stageBeforeIndex,
-        banked: effectiveBankedNumbers.includes(number),
-        credited: true,
-        interestDelta: current ? RULES.interest.currentStagePotRecovery : 0,
+        ...draft,
+        banked: draft.credited && effectiveBankedNumbers.includes(draft.number),
         rhythmDelta: 0
-      };
-    });
+      }));
     const stageEvents = newlyCompletedStages.map((stage) => ({
       type: "stage-complete",
       shot: shotNumber,
@@ -764,7 +878,7 @@
           credited: false
         }
       : null;
-    const missEvent = !successfulShot
+    const missEvent = !madePhysicalPot
       ? {
           type: "miss",
           shot: shotNumber,
@@ -783,16 +897,31 @@
       ...(scratchEvent ? [scratchEvent] : []),
       ...(missEvent ? [missEvent] : [])
     ];
-    const activeTiming = normalized.breakShot
-      ? "break"
-      : currentStagePottedNumbers.length > 0
+    const activeTiming = earlyEightEvent
+      ? "eight-too-early"
+      : normalized.breakShot ? "break"
+      : currentStagePottedEvents.length > 0
         ? "on-time"
-        : successfulShot ? "early-completion" : "miss";
+        : madePhysicalPot
+          ? earlyEightEvent ? "eight-too-early" : "early-completion"
+          : "miss";
     const frozenShot = deepFreeze({
       ...normalized,
       pottedNumbers: [...normalized.pottedNumbers],
       bankedNumbers: [...normalized.bankedNumbers]
     });
+
+    const signal = interestStatusData(nextInterest, pottedAfter);
+    const interestTrend = {
+      direction: rawInterestDelta > 0 ? "up" : rawInterestDelta < 0 ? "down" : "steady",
+      band: signal.band,
+      label: signal.label,
+      line: rawInterestDelta > 0
+        ? streakBonus > 0 ? "连续命中让回应明显变热。" : "这一次靠近得自然，她的回应更明亮。"
+        : rawInterestDelta < 0
+          ? ["danger", "lost"].includes(signal.band) ? "几次停顿叠在一起，她正在慢慢退远。" : "气氛有了一点迟疑，下一杆最好重新接住。"
+          : "关系仍在观察，没有更近，也没有走远。"
+    };
 
     return deepFreeze({
       state: nextState,
@@ -800,7 +929,7 @@
       stageBefore,
       stageAfter,
       pottedNumbers: creditedNumbers,
-      respotNumbers: [],
+      respotNumbers,
       declaredPotted: false,
       activePottedNumber: null,
       accidentalPottedNumbers: earlyPottedNumbers,
@@ -816,10 +945,14 @@
       earlyCompletedStageIds,
       completedCurrentStage: newlyCompletedStageIds.includes(stageBefore && stageBefore.id),
       interestChanges,
+      streakBonus,
+      interestSignal: signal,
+      interestTrend,
+      earlyEight: earlyEightEvent ? { success: earlyEightSuccess, event: earlyEightEvent } : null,
       rawInterestDelta,
       interestDelta: nextInterest - state.interest,
       rhythmDelta: nextRhythm - state.rhythmScore,
-      miss: !successfulShot,
+      miss: !madePhysicalPot,
       cueScratch: normalized.cueScratch,
       contactMatched: null,
       endState: nextState.endState,
@@ -838,12 +971,15 @@
     STAGES,
     VIOLATION_CODES,
     SUCCESS_ENDINGS,
+    EARLY_SUCCESS_ENDING,
     FAILURE_ENDINGS,
     ballByNumber,
     stageForBall,
     createRunState,
     validateRunState,
     currentStage,
+    interestStatus,
+    stageProgress,
     availableTargets,
     remainingNumbers,
     classifyTarget,

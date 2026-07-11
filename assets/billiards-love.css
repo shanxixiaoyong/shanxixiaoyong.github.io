@@ -287,6 +287,15 @@ button {
   stroke: var(--hb-danger);
 }
 
+.hb-interest[data-signal="devoted"] circle:last-child,
+.hb-interest[data-signal="warm"] circle:last-child {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--stage-accent) 72%, transparent));
+}
+
+.hb-interest[data-signal="uncertain"] circle:last-child {
+  stroke: #d4b46f;
+}
+
 .hb-toolbar {
   display: grid;
   grid-template-columns: repeat(2, 32px);
@@ -499,6 +508,15 @@ button {
 .hb-micro strong,
 .hb-micro p {
   display: block;
+}
+
+.hb-micro[data-type="streak"] strong {
+  color: #fff4d2;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--stage-accent) 86%, transparent), 0 3px 20px rgba(0, 0, 0, 0.98);
+}
+
+.hb-micro[data-type="streak"]::before {
+  background: radial-gradient(ellipse at center, rgba(255, 218, 139, 0.5) 0, color-mix(in srgb, var(--stage-accent) 30%, transparent) 34%, transparent 72%);
 }
 
 .hb-micro span {

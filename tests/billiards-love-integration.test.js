@@ -227,7 +227,7 @@ test("boots immediately into a playable portrait rack with bounded high-DPR outp
   }
   assert.deepEqual([...snapshot.ballNumbers], Array.from({ length: 16 }, (_, number) => number));
   assert.equal(snapshot.runState.breakCompleted, false);
-  assert.equal(snapshot.runState.interest, 100);
+  assert.equal(snapshot.runState.interest, 72);
   assert.ok(snapshot.cue.y > Math.max(...snapshot.balls.filter((ball) => ball.number > 0).map((ball) => ball.y)));
   assert.ok(snapshot.render.width <= 1440);
   assert.ok(snapshot.render.height <= 2880);
@@ -392,7 +392,7 @@ test("routes ordinary shots to center beats and stage clears to full-screen perf
   let snapshot = debug.presentShot({ pottedNumbers: [1] });
   assert.equal(snapshot.presentation.microVisible, true);
   assert.equal(snapshot.presentation.microType, "pocket");
-  assert.match(snapshot.presentation.microTitle, /^1 · /);
+  assert.match(snapshot.presentation.microTitle, /^1号球 · /);
   assert.equal(snapshot.presentation.cinematicActive, false);
 
   debug.presentShot({ pottedNumbers: [2] });
@@ -413,6 +413,12 @@ test("routes ordinary shots to center beats and stage clears to full-screen perf
   snapshot = scratchDebug.presentShot({ cueScratch: true });
   assert.equal(snapshot.presentation.microVisible, true);
   assert.equal(snapshot.presentation.microType, "scratch");
+
+  const eightDebug = bootRuntime();
+  snapshot = eightDebug.presentShot({ pottedNumbers: [8], breakShot: true });
+  assert.equal(snapshot.runState.endState.ending, "reckless-rejection");
+  assert.equal(snapshot.presentation.cinematicActive, true);
+  assert.match(snapshot.presentation.cinematicTitle, /承诺来得太快/);
 });
 
 test("requires mouth entry plus shelf crossing and lets a jaw collision reject a pocket graze", () => {
