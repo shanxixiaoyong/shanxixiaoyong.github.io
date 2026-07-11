@@ -37,13 +37,14 @@ test("implements six fixed pockets, natural pocket capture, cue scratches, and r
   assert.match(source, /if \(!cueBall && !runState\.endState\.ended\) respotBall\(0\)/);
 });
 
-test("requires target declaration and supports pull-direction-and-power touch aiming", () => {
+test("supports direct pull-direction-and-power touch aiming without target selection", () => {
   for (const event of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
     assert.ok(source.includes(`"${event}"`), `missing ${event}`);
   }
-  assert.match(source, /const target = nearestObjectBall\(point, 46\)/);
-  assert.match(source, /selectTarget\(bodyData\(target\)\.number\)/);
-  assert.match(source, /runState\.breakCompleted && selectedBallNumber === null/);
+  assert.doesNotMatch(source, /先点选这一杆的目标球/);
+  assert.doesNotMatch(source, /if \(!canInteract\(\) \|\| \(runState\.breakCompleted && selectedBallNumber === null\)\)/);
+  assert.match(source, /const aimedContact = traceAim\(\)\?\.hitBall/);
+  assert.match(source, /const inferredTarget = completedShot\.firstContact \|\| completedShot\.declaredBall/);
   assert.match(source, /canvas\.setPointerCapture\?\.\(event\.pointerId\)/);
   assert.match(source, /pointerAim\.power = clamp\(\(pullDistance - MIN_PULL\)/);
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
@@ -65,7 +66,7 @@ test("draws the required first-contact and target-ball prediction lines", () => 
   assert.match(source, /function traceAim\(/);
   assert.match(source, /context\.lineTo\(trace\.impact\.x, trace\.impact\.y\)/);
   assert.match(source, /context\.lineTo\(target\.x \+ trace\.targetDirection\.x \* length/);
-  assert.match(source, /bodyData\(trace\.hitBall\)\?\.number === selectedBallNumber/);
+  assert.match(source, /cachedAvailableTargets\.has\(contactNumber\)/);
 });
 
 test("evaluates every settled shot exactly through the pure relationship rules engine", () => {
@@ -99,6 +100,12 @@ test("restores the sole animation loop when a mobile browser returns from BFCach
   assert.match(source, /if \(!event\.persisted\) return/);
   assert.match(source, /lastFrameAt = performance\.now\(\)/);
   assert.match(source, /frameHandle = requestAnimationFrame\(frame\)/);
+});
+
+test("resets frame timing across visibility changes without pausing gameplay", () => {
+  assert.match(source, /function resetFrameTiming\(\) \{\s*accumulator = 0;\s*lastFrameAt = performance\.now\(\);\s*\}/);
+  assert.match(source, /document\.addEventListener\("visibilitychange", resetFrameTiming\)/);
+  assert.doesNotMatch(source, /document\.hidden[\s\S]{0,120}togglePause\(\)/);
 });
 
 test("synthesizes three adaptive local music layers and physical sound cues", () => {

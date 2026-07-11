@@ -67,9 +67,18 @@ test("keeps gameplay full-viewport and protects a 9:16 phone portrait layout", (
   assert.match(css, /width: min\(100vw, calc\(100dvh \* 9 \/ 16\)\)/);
   assert.match(css, /\.hb-table-wrap \{[\s\S]*?aspect-ratio: 1 \/ 2;/);
   assert.match(css, /#hb-canvas \{[\s\S]*?transform: rotate\(90deg\)/);
+  assert.match(css, /top: calc\(max\(8px, var\(--safe-top\)\) \+ 84px\)/);
+  assert.match(css, /bottom: calc\(max\(8px, var\(--safe-bottom\)\) \+ 90px\)/);
+  assert.match(css, /calc\(\(100dvh - 190px\) \/ 2\)/);
   assert.doesNotMatch(css, /\.hb-rotate \{[\s\S]*?display: grid/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(css, /env\(safe-area-inset-/);
+});
+
+test("presents direct shooting and recommendation guidance without mandatory selection copy", () => {
+  assert.match(html, /从白球向后拖动瞄准蓄力，松开击球/);
+  assert.match(html, /第一碰球/);
+  assert.doesNotMatch(html, /先点击目标球|先选中目标球/);
 });
 
 test("does not expose retired game concepts or implementation notes", () => {

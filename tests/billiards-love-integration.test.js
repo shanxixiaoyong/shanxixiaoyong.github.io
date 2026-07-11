@@ -153,19 +153,23 @@ test("executes and settles a full-power opening break without NaN, tunnelling, o
   assert.equal(afterIdle.runState.shots, 1, "a settled shot must be evaluated exactly once");
 });
 
-test("declares a legal relationship target and settles the next normal shot", () => {
+test("settles a normal shot directly without selecting a relationship target", () => {
   const debug = bootRuntime();
   debug.reset();
   debug.shoot(0.9, { x: 1, y: 0 });
   let snapshot = debug.step(6500);
-  const present = new Set(snapshot.ballNumbers);
-  const target = BilliardsLoveRules.availableTargets(snapshot.runState).find((number) => present.has(number));
-  assert.ok(target, "at least one current-stage ball should remain selectable");
-  debug.select(target);
-  assert.equal(debug.snapshot().selectedBallNumber, target);
+  assert.equal(snapshot.selectedBallNumber, null);
   assert.equal(debug.shoot(0.44), true);
   snapshot = debug.step(6500);
   assert.equal(snapshot.runState.shots, 2);
   assert.equal(snapshot.moving, false);
   assertFiniteTable(snapshot);
+});
+
+test("keeps an active game unpaused when visibility changes", () => {
+  const debug = bootRuntime();
+  debug.reset();
+  assert.equal(debug.snapshot().paused, false);
+  assert.equal(debug.visibilityChange().paused, false);
+  assert.equal(debug.snapshot().paused, false);
 });

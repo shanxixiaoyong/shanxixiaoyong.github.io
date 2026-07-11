@@ -577,10 +577,10 @@
       elements.callHint.textContent = "从白球向后拖动，松开击球";
     } else {
       elements.selectedBall.textContent = "—";
-      elements.selectedName.textContent = "点击桌上的目标球";
+      elements.selectedName.textContent = "按实际第一碰球判断";
       elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
-      elements.callTitle.textContent = "先选定这一杆想完成的事";
-      elements.callHint.textContent = "当前阶段球会带有柔和光圈";
+      elements.callTitle.textContent = "直接瞄准，第一碰球决定这一杆";
+      elements.callHint.textContent = "当前推荐阶段球带有柔和光圈";
     }
     elements.aimToggle.setAttribute("aria-pressed", String(aimAssist));
     elements.aimToggle.setAttribute("aria-label", aimAssist ? "关闭瞄准辅助" : "开启瞄准辅助");
@@ -657,10 +657,6 @@
 
   function beginAim(event, point) {
     if (!cueBall) return;
-    if (runState.breakCompleted && selectedBallNumber === null) {
-      showJudgement("先点选这一杆的目标球");
-      return;
-    }
     if (distance(point, cueBall.position) > 54) {
       showJudgement("从白球向后拉动球杆");
       return;
@@ -707,11 +703,15 @@
   }
 
   function shoot(direction, power) {
-    if (!canInteract() || (runState.breakCompleted && selectedBallNumber === null)) return false;
+    if (!canInteract()) return false;
+    aimDirection = { ...direction };
+    const aimedContact = traceAim()?.hitBall;
     const speed = MIN_SHOT_SPEED + Math.pow(clamp(power, 0, 1), 0.78) * (MAX_SHOT_SPEED - MIN_SHOT_SPEED);
     resetShotRailHits();
     shotState = {
-      declaredBall: runState.breakCompleted ? selectedBallNumber : null,
+      declaredBall: runState.breakCompleted
+        ? selectedBallNumber || bodyData(aimedContact)?.number || null
+        : null,
       firstContact: null,
       pottedNumbers: [],
       cueScratch: false,
@@ -967,8 +967,10 @@
     stableSteps = 0;
     let outcome;
     try {
+      const inferredTarget = completedShot.firstContact || completedShot.declaredBall
+        || rules.remainingNumbers(runState)[0];
       outcome = rules.evaluateShot(runState, {
-        declaredBall: completedShot.declaredBall,
+        declaredBall: completedShot.breakShot ? null : inferredTarget,
         firstContact: completedShot.firstContact,
         pottedNumbers: [...completedShot.pottedNumbers],
         cueScratch: completedShot.cueScratch,
@@ -1268,10 +1270,10 @@
 
   function drawAim() {
     if (!cueBall || shotState || resolvingShot || paused || cinematicActive || resultVisible) return;
-    if (runState.breakCompleted && selectedBallNumber === null) return;
     const trace = traceAim();
     if (!trace) return;
-    const correct = trace.hitBall && bodyData(trace.hitBall)?.number === selectedBallNumber;
+    const contactNumber = bodyData(trace.hitBall)?.number;
+    const correct = !runState.breakCompleted || (contactNumber && cachedAvailableTargets.has(contactNumber));
     context.save();
     context.lineWidth = 1.35;
     context.setLineDash([8, 7]);
@@ -1418,11 +1420,6 @@
     if (!canInteract()) return;
     event.preventDefault();
     const point = pointerToWorld(event);
-    const target = nearestObjectBall(point, 46);
-    if (target && runState.breakCompleted) {
-      selectTarget(bodyData(target).number);
-      return;
-    }
     beginAim(event, point);
   });
 
@@ -1511,9 +1508,12 @@
   elements.cinematicSkip.addEventListener("click", closeCinematic);
   elements.cinematicAction.addEventListener("click", closeCinematic);
 
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && started && !resultVisible && !cinematicActive && !paused) togglePause();
-  });
+  function resetFrameTiming() {
+    accumulator = 0;
+    lastFrameAt = performance.now();
+  }
+
+  document.addEventListener("visibilitychange", resetFrameTiming);
   window.addEventListener("pagehide", (event) => {
     if (!event.persisted) cancelAnimationFrame(frameHandle);
   });
@@ -1536,6 +1536,10 @@
   window.__heartbeatBilliardsDebug = Object.freeze({
     mapClientPoint(clientX, clientY, rect) {
       return Object.freeze(clientPointToWorld(clientX, clientY, rect));
+    },
+    visibilityChange() {
+      resetFrameTiming();
+      return this.snapshot();
     },
     snapshot() {
       return Object.freeze({

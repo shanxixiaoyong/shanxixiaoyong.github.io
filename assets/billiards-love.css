@@ -1198,9 +1198,9 @@ button {
     top: max(8px, var(--safe-top));
     right: max(10px, var(--safe-right));
     left: max(10px, var(--safe-left));
-    min-height: 82px;
+    min-height: 68px;
     grid-template-columns: 36px minmax(0, 1fr) 52px;
-    grid-template-rows: 38px 34px;
+    grid-template-rows: 34px 28px;
     gap: 3px 8px;
     align-items: center;
   }
@@ -1246,21 +1246,21 @@ button {
 
   .hb-toolbar {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 2px);
     right: 0;
     gap: 5px;
   }
 
   .hb-playfield {
-    top: calc(max(8px, var(--safe-top)) + 114px);
+    top: calc(max(8px, var(--safe-top)) + 84px);
     right: 8px;
-    bottom: calc(max(8px, var(--safe-bottom)) + 142px);
+    bottom: calc(max(8px, var(--safe-bottom)) + 90px);
     left: 8px;
     padding: 0;
   }
 
   .hb-table-wrap {
-    width: min(calc(100% - 2px), calc((100dvh - 276px) / 2));
+    width: min(calc(100% - 2px), calc((100dvh - 190px) / 2));
     min-width: 0;
     max-width: 100%;
     aspect-ratio: 1 / 2;
@@ -1342,9 +1342,9 @@ button {
 
   .hb-relationship-track {
     right: max(12px, var(--safe-right));
-    bottom: calc(max(8px, var(--safe-bottom)) + 64px);
+    bottom: calc(max(4px, var(--safe-bottom)) + 42px);
     left: max(12px, var(--safe-left));
-    height: 60px;
+    height: 42px;
   }
 
   .hb-track-line {
@@ -1364,7 +1364,7 @@ button {
   .hb-track-node span {
     writing-mode: vertical-rl;
     width: auto;
-    height: 31px;
+    height: 18px;
     overflow: hidden;
     font-size: 7px;
     line-height: 1;
@@ -1374,9 +1374,9 @@ button {
 
   .hb-bottom-bar {
     right: max(12px, var(--safe-right));
-    bottom: max(8px, var(--safe-bottom));
+    bottom: max(2px, var(--safe-bottom));
     left: max(12px, var(--safe-left));
-    height: 48px;
+    height: 38px;
     grid-template-columns: 54px minmax(0, 1fr) 54px;
     gap: 8px;
   }

@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-scenes/lounge-night.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-portrait-20260711">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-release-20260711">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
@@ -41,7 +41,7 @@
 
     <section class="hb-playfield" id="hb-playfield" aria-label="标准十五球桌球游戏区域">
       <div class="hb-table-wrap" id="hb-table-wrap">
-        <canvas id="hb-canvas" width="1280" height="640" tabindex="0" aria-label="先点击目标球，再从白球向后拖动，松开击球"></canvas>
+        <canvas id="hb-canvas" width="1280" height="640" tabindex="0" aria-label="从白球向后拖动瞄准蓄力，松开击球"></canvas>
 
         <div class="hb-call" id="hb-call" aria-live="polite">
           <span id="hb-call-label">开球</span>
@@ -66,7 +66,7 @@
           <i class="hb-coach-ball">1</i>
           <span></span>
           <i class="hb-coach-cue"></i>
-          <p><strong>先选中目标球</strong><small>再从白球向后拉动</small></p>
+          <p><strong>从白球向后拉动</strong><small>瞄准蓄力，松开击球</small></p>
         </div>
       </div>
     </section>
@@ -83,7 +83,7 @@
       </div>
       <div class="hb-selected" id="hb-selected">
         <i id="hb-selected-ball">—</i>
-        <span><small>本杆目标</small><strong id="hb-selected-name">开球无需声明</strong></span>
+        <span><small>第一碰球</small><strong id="hb-selected-name">开球无需声明</strong></span>
       </div>
       <div class="hb-shot-stat hb-streak">
         <span>连续进球</span>
