@@ -152,7 +152,10 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.match(source, /declaredBall: null/);
   assert.doesNotMatch(source, /const inferredTarget/);
   assert.match(source, /canvas\.setPointerCapture\?\.\(event\.pointerId\)/);
+  assert.match(source, /const MAX_PULL = 300/);
   assert.match(source, /pointerAim\.power = clamp\(\(pullDistance - MIN_PULL\)/);
+  assert.match(source, /elements\.powerValue\.textContent = ""/);
+  assert.doesNotMatch(source, /elements\.powerValue\.textContent = `\$\{Math\.round\(aimPower \* 100\)\}%`/);
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
   assert.match(source, /event\.isPrimary === false/);
   assert.match(source, /!shotState && !pointerAim && !resolvingShot/);
@@ -183,11 +186,13 @@ test("adds physical compression, expanding impact rings, particles, and collisio
   assert.match(source, /spawnParticles\(contact\.x, contact\.y/);
 });
 
-test("draws the required first-contact and target-ball prediction lines", () => {
+test("draws only the cue-ball first-contact guide and removes the second target trajectory", () => {
   assert.match(source, /function rayCircleDistance\(/);
   assert.match(source, /function traceAim\(/);
   assert.match(source, /context\.lineTo\(trace\.impact\.x, trace\.impact\.y\)/);
-  assert.match(source, /context\.lineTo\(target\.x \+ trace\.targetDirection\.x \* length/);
+  assert.doesNotMatch(source, /context\.lineTo\(target\.x \+ trace\.targetDirection\.x \* length/);
+  assert.doesNotMatch(source, /const length = 102/);
+  assert.match(source, /if \(aimAssist\) \{/);
   assert.match(source, /cachedAvailableTargets\.has\(contactNumber\)/);
 });
 
@@ -213,10 +218,12 @@ test("connects per-pot center beats, streak feedback, seven stage performances, 
   assert.match(source, /queueCinematic\(copy\)/);
   assert.match(source, /STAGE_SCENE_ASSETS/);
   assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
-  assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 1500/);
+  assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 3200, 5000, 6500\)/);
   assert.match(source, /function earlyEightCopy\(outcome\)/);
   assert.match(source, /outcome\.streakBonus > 0/);
   assert.match(source, /outcome\.interestTrend\.line/);
+  assert.match(source, /clamp\(item\.durationMs \+ 3000, 4200, 5200\)/);
+  assert.match(source, /audio\.cue\(item\.sound \|\| "event"/);
   assert.match(source, /content\.getEnding\(grade\)/);
   assert.doesNotMatch(source, /specialCopy\("confessionTooEarly"/);
 });
@@ -242,13 +249,17 @@ test("restores the sole animation loop and frame timing after browser lifecycle 
   assert.match(source, /document\.addEventListener\("visibilitychange", resetFrameTiming\)/);
 });
 
-test("synthesizes three adaptive local music layers and physical sound cues", () => {
+test("synthesizes adaptive music plus distinct ball, rail, pocket, event, and streak cues", () => {
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);
   assert.match(source, /this\.baseGain = this\.context\.createGain\(\)/);
   assert.match(source, /this\.warmGain = this\.context\.createGain\(\)/);
   assert.match(source, /this\.futureGain = this\.context\.createGain\(\)/);
   assert.match(source, /setStage\(stageNumber\)/);
-  for (const cue of ["strike", "pocket", "scratch", "stage", "confession", "proposal"]) {
+  assert.match(source, /noise\(duration, gainValue, frequency/);
+  assert.match(source, /rail\(speed\)/);
+  assert.match(source, /audio\.rail\(bodyA\.speed\)/);
+  assert.match(source, /audio\.collision\(relative\)/);
+  for (const cue of ["strike", "pocket", "scratch", "event", "streak", "miss", "stage", "confession", "proposal"]) {
     assert.ok(source.includes(`name === "${cue}"`) || source.includes(`cue("${cue}"`), `missing ${cue} audio`);
   }
 });

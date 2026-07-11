@@ -86,8 +86,8 @@
   const POCKET_JAW_LENGTH = BALL_DIAMETER * 1.75;
   const FIXED_HZ = 120;
   const FIXED_STEP = 1000 / FIXED_HZ;
-  const CLOTH_LINEAR_SPEED_LOSS = 0.008;
-  const CLOTH_SPEED_DRAG = 0.00035;
+  const CLOTH_LINEAR_SPEED_LOSS = 0.0165;
+  const CLOTH_SPEED_DRAG = 0.0008;
   const CUSHION_RESTITUTION_MIN = 0.87;
   const CUSHION_RESTITUTION_MAX = 0.92;
   const CUSHION_RESTITUTION_REFERENCE_SPEED = 18;
@@ -97,7 +97,7 @@
   const RAIL_MIN_NORMAL_IMPACT_SPEED = 0.045;
   const MAX_STEPS_PER_FRAME = 8;
   const MIN_PULL = 14;
-  const MAX_PULL = 202;
+  const MAX_PULL = 300;
   const MIN_SHOT_SPEED = 8.1;
   const MAX_SHOT_SPEED = 30.9;
   const STOP_SPEED = 0.045;
@@ -269,7 +269,7 @@
 
   function configurePortraitSurface() {
     Object.assign(tableWrap.style, {
-      width: "min(calc(100% - 2px), calc((100dvh - 80px) / 2))",
+      width: "min(calc(100% - 10px), calc((100dvh - 92px) / 2))",
       height: "auto",
       minWidth: "0",
       maxWidth: "100%",
@@ -301,6 +301,8 @@
       this.futureGain = null;
       this.nodes = [];
       this.lastCollisionAt = 0;
+      this.lastRailAt = 0;
+      this.noiseBuffer = null;
     }
 
     unlock() {
@@ -371,31 +373,90 @@
       oscillator.stop(now + duration + 0.03);
     }
 
+    noise(duration, gainValue, frequency, filterType = "bandpass", delay = 0) {
+      if (!this.enabled) return;
+      this.unlock();
+      if (!this.context
+          || typeof this.context.createBuffer !== "function"
+          || typeof this.context.createBufferSource !== "function"
+          || typeof this.context.createBiquadFilter !== "function") return;
+      const sampleRate = this.context.sampleRate || 44100;
+      if (!this.noiseBuffer) {
+        this.noiseBuffer = this.context.createBuffer(1, Math.ceil(sampleRate * 0.55), sampleRate);
+        const data = this.noiseBuffer.getChannelData(0);
+        let state = 0x51f15e;
+        for (let index = 0; index < data.length; index += 1) {
+          state = Math.imul(state ^ (state >>> 13), 1597334677) >>> 0;
+          data[index] = (state / 0xffffffff) * 2 - 1;
+        }
+      }
+      const now = this.context.currentTime + delay;
+      const source = this.context.createBufferSource();
+      const filter = this.context.createBiquadFilter();
+      const gain = this.context.createGain();
+      source.buffer = this.noiseBuffer;
+      filter.type = filterType;
+      filter.frequency.setValueAtTime(frequency, now);
+      filter.Q?.setValueAtTime?.(filterType === "bandpass" ? 1.8 : 0.7, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(gainValue, now + 0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      source.connect(filter).connect(gain).connect(this.master);
+      source.start(now);
+      source.stop(now + Math.min(duration + 0.02, 0.54));
+    }
+
     cue(name, intensity = 1) {
       if (!this.enabled) return;
       if (name === "strike") {
-        this.tone(92, 0.08, 0.055 * intensity, "triangle");
-        this.tone(184, 0.05, 0.018 * intensity, "sine", 0.012);
+        this.noise(0.045, 0.095 * intensity, 1450, "bandpass");
+        this.tone(104, 0.1, 0.075 * intensity, "triangle");
+        this.tone(410, 0.045, 0.028 * intensity, "sine", 0.008);
       } else if (name === "pocket") {
-        this.tone(126, 0.22, 0.048 * intensity, "sine");
-        this.tone(252, 0.16, 0.025 * intensity, "triangle", 0.025);
+        this.noise(0.18, 0.09 * intensity, 620, "lowpass");
+        this.tone(92, 0.26, 0.085 * intensity, "sine");
+        this.tone(184, 0.16, 0.036 * intensity, "triangle", 0.018);
       } else if (name === "scratch" || name === "warning") {
-        this.tone(128, 0.32, 0.035, "sawtooth");
-        this.tone(96, 0.38, 0.025, "triangle", 0.08);
+        this.noise(0.22, 0.055, 480, "lowpass");
+        this.tone(138, 0.34, 0.055, "sawtooth");
+        this.tone(94, 0.42, 0.04, "triangle", 0.09);
+      } else if (name === "event") {
+        [392, 493.88, 587.33].forEach((frequency, index) => this.tone(frequency, 0.38, 0.024 * intensity, "sine", index * 0.055));
+        this.noise(0.2, 0.018 * intensity, 2800, "highpass", 0.04);
+      } else if (name === "streak") {
+        [392, 493.88, 587.33, 783.99].forEach((frequency, index) => this.tone(frequency, 0.48, 0.03 * intensity, "triangle", index * 0.065));
+        this.noise(0.28, 0.026 * intensity, 3400, "highpass", 0.05);
+      } else if (name === "miss") {
+        this.tone(196, 0.24, 0.026, "sine");
+        this.tone(146.83, 0.34, 0.024, "triangle", 0.08);
       } else if (name === "stage") {
-        [220, 277.18, 329.63, 440].forEach((frequency, index) => this.tone(frequency, 0.45, 0.022, "sine", index * 0.07));
+        [220, 277.18, 329.63, 440, 554.37].forEach((frequency, index) => this.tone(frequency, 0.72, 0.032, "sine", index * 0.085));
+        this.noise(0.42, 0.028, 3000, "highpass", 0.12);
       } else if (name === "confession") {
-        [196, 246.94, 293.66, 392].forEach((frequency, index) => this.tone(frequency, 0.72, 0.03, "triangle", index * 0.11));
+        [196, 246.94, 293.66, 392, 493.88].forEach((frequency, index) => this.tone(frequency, 0.9, 0.038, "triangle", index * 0.12));
+        this.noise(0.45, 0.025, 2500, "highpass", 0.16);
       } else if (name === "proposal") {
-        [196, 246.94, 293.66, 392, 493.88, 587.33].forEach((frequency, index) => this.tone(frequency, 0.92, 0.026, "sine", index * 0.1));
+        [196, 246.94, 293.66, 392, 493.88, 587.33, 783.99].forEach((frequency, index) => this.tone(frequency, 1.08, 0.036, "sine", index * 0.11));
+        this.noise(0.5, 0.032, 3600, "highpass", 0.18);
       }
     }
 
     collision(speed) {
       const now = performance.now();
-      if (now - this.lastCollisionAt < 45 || speed < 0.7) return;
+      if (now - this.lastCollisionAt < 24 || speed < 0.45) return;
       this.lastCollisionAt = now;
-      this.tone(180 + Math.min(180, speed * 13), 0.045, Math.min(0.025, speed * 0.0018), "triangle");
+      const intensity = clamp(speed / 16, 0.16, 1);
+      this.noise(0.028, 0.04 + intensity * 0.055, 1800 + speed * 55, "bandpass");
+      this.tone(420 + Math.min(360, speed * 18), 0.055, 0.025 + intensity * 0.045, "triangle");
+    }
+
+    rail(speed) {
+      const now = performance.now();
+      if (now - this.lastRailAt < 34 || speed < 0.5) return;
+      this.lastRailAt = now;
+      const intensity = clamp(speed / 18, 0.14, 1);
+      this.noise(0.065, 0.035 + intensity * 0.05, 760, "bandpass");
+      this.tone(156 + Math.min(110, speed * 5), 0.095, 0.026 + intensity * 0.038, "triangle");
     }
 
     toggle() {
@@ -963,7 +1024,8 @@
     aimDirection = { ...pointerAim.direction };
     aimPower = pointerAim.power;
     elements.powerFill.style.width = `${Math.round(aimPower * 100)}%`;
-    elements.powerValue.textContent = `${Math.round(aimPower * 100)}%`;
+    elements.powerValue.textContent = "";
+    elements.power.setAttribute("aria-label", `力度：${aimPower < 0.34 ? "轻" : aimPower < 0.72 ? "适中" : aimPower < 0.96 ? "强" : "满"}`);
   }
 
   function cancelAim() {
@@ -1361,10 +1423,11 @@
     elements.microLine.textContent = item.line;
     elements.micro.hidden = false;
     void elements.micro.offsetWidth;
+    audio.cue(item.sound || "event", item.intensity || 1);
     microTimer = setTimeout(() => {
       elements.micro.hidden = true;
       setTimeout(showNextMicro, 70);
-    }, clamp(item.durationMs + 220, 1200, 2000));
+    }, clamp(item.durationMs + 3000, 4200, 5200));
   }
 
   function queueBallMicro(performance, event, outcome) {
@@ -1378,7 +1441,9 @@
         : classificationLabel(event.timing),
       title: `${event.number}号球 · ${ball.name}`,
       line: `${performance.visual} ${performance.line} ${outcome.interestTrend.line}`,
-      durationMs: performance.durationMs
+      durationMs: performance.durationMs,
+      sound: streaking ? "streak" : "event",
+      intensity: streaking ? clamp(0.82 + outcome.state.potStreak * 0.05, 0.9, 1.25) : 0.86
     });
   }
 
@@ -1390,7 +1455,11 @@
       kicker: performance.kicker,
       title: performance.title,
       line: `${performance.visual} ${performance.line}${trend ? ` ${trend.line}` : ""}`,
-      durationMs: performance.durationMs
+      durationMs: performance.durationMs,
+      sound: eventType === content.STAGE_EVENT_TYPES.SCRATCH
+        ? "warning"
+        : eventType === content.STAGE_EVENT_TYPES.MISS ? "miss" : "event",
+      intensity: eventType === content.STAGE_EVENT_TYPES.SCRATCH ? 0.9 : 0.72
     });
   }
 
@@ -1451,7 +1520,7 @@
       kind: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
       image: STAGE_SCENE_ASSETS[stage.id],
       sound: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
-      autoCloseMs: clamp(performance.durationMs + 1500, 3200, 4200),
+      autoCloseMs: clamp(performance.durationMs + 3200, 5000, 6500),
       actionLabel: null
     };
   }
@@ -1471,7 +1540,7 @@
         ? "此前每一次靠近都得到了回应。黑 8 提前落袋时，她没有后退，而是伸手接住了答案。"
         : "关系还没有走到最后，你却先击中了最重的承诺。她认真听完，然后温柔而明确地拒绝。",
       sound: success ? "proposal" : "scratch",
-      autoCloseMs: 4200,
+      autoCloseMs: 5600,
       actionLabel: null
     };
   }
@@ -1541,7 +1610,6 @@
       };
     }
     copies.forEach((copy) => {
-      audio.cue("stage");
       screenFlash = Math.max(screenFlash, 0.34);
       queueCinematic(copy);
     });
@@ -2170,30 +2238,22 @@
     if (!trace) return;
     const contactNumber = bodyData(trace.hitBall)?.number;
     const correct = !runState.breakCompleted || (contactNumber && cachedAvailableTargets.has(contactNumber));
-    context.save();
-    context.lineWidth = 1.35;
-    context.setLineDash([8, 7]);
-    context.strokeStyle = correct || !runState.breakCompleted ? "rgba(235, 210, 154, 0.78)" : "rgba(229, 119, 112, 0.62)";
-    context.beginPath();
-    context.moveTo(trace.origin.x, trace.origin.y);
-    context.lineTo(trace.impact.x, trace.impact.y);
-    context.stroke();
-    context.setLineDash([]);
-    if (trace.hitBall && aimAssist) {
-      const target = trace.hitBall.position;
-      const length = 102;
-      context.strokeStyle = correct ? "rgba(111, 205, 183, 0.88)" : "rgba(238, 183, 120, 0.68)";
-      context.lineWidth = 2;
+    if (aimAssist) {
+      context.save();
+      context.lineWidth = 1.35;
+      context.setLineDash([8, 7]);
+      context.strokeStyle = correct || !runState.breakCompleted ? "rgba(235, 210, 154, 0.78)" : "rgba(229, 119, 112, 0.62)";
       context.beginPath();
-      context.moveTo(target.x, target.y);
-      context.lineTo(target.x + trace.targetDirection.x * length, target.y + trace.targetDirection.y * length);
+      context.moveTo(trace.origin.x, trace.origin.y);
+      context.lineTo(trace.impact.x, trace.impact.y);
       context.stroke();
+      context.setLineDash([]);
       context.fillStyle = context.strokeStyle;
       context.beginPath();
       context.arc(trace.impact.x, trace.impact.y, 3.2, 0, Math.PI * 2);
       context.fill();
+      context.restore();
     }
-    context.restore();
     drawCueStick(trace.direction, pointerAim?.power || 0);
   }
 
@@ -2358,12 +2418,12 @@
       if (dataA && isRail(bodyB)) {
         dataA.shotRailHits += 1;
         impactBall(bodyA, Math.atan2(-bodyA.velocity.y, -bodyA.velocity.x), bodyA.speed);
-        audio.collision(bodyA.speed * 0.72);
+        audio.rail(bodyA.speed);
       }
       if (dataB && isRail(bodyA)) {
         dataB.shotRailHits += 1;
         impactBall(bodyB, Math.atan2(-bodyB.velocity.y, -bodyB.velocity.x), bodyB.speed);
-        audio.collision(bodyB.speed * 0.72);
+        audio.rail(bodyB.speed);
       }
     });
   });

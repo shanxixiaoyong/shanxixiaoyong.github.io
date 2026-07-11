@@ -349,10 +349,10 @@ test("uses deterministic fixed-step stop distances and times at different launch
   const repeat = measureStopProfile(4);
 
   assert.deepEqual(repeat, fast, "the same initial state must produce the same 120 Hz roll-down profile");
-  assert.ok(slow.steps >= 225 && slow.steps <= 250, `unexpected slow-roll stop step ${slow.steps}`);
-  assert.ok(slow.distance >= 105 && slow.distance <= 130, `unexpected slow-roll distance ${slow.distance}`);
-  assert.ok(fast.steps >= 430 && fast.steps <= 470, `unexpected fast-roll stop step ${fast.steps}`);
-  assert.ok(fast.distance >= 420 && fast.distance <= 475, `unexpected fast-roll distance ${fast.distance}`);
+  assert.ok(slow.steps >= 108 && slow.steps <= 118, `unexpected slow-roll stop step ${slow.steps}`);
+  assert.ok(slow.distance >= 53 && slow.distance <= 62, `unexpected slow-roll distance ${slow.distance}`);
+  assert.ok(fast.steps >= 214 && fast.steps <= 225, `unexpected fast-roll stop step ${fast.steps}`);
+  assert.ok(fast.distance >= 205 && fast.distance <= 225, `unexpected fast-roll distance ${fast.distance}`);
   assert.ok(fast.milliseconds > slow.milliseconds * 1.8);
   assert.ok(fast.distance > slow.distance * 3.5);
 });

@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-physics-theatre-20260711e";
-const styleCacheVersion = "billiards-love-physics-theatre-20260711e";
+const runtimeCacheVersion = "billiards-love-physics-theatre-20260711f";
+const styleCacheVersion = "billiards-love-physics-theatre-20260711f";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -172,6 +172,7 @@ test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture
   assert.match(playfield, /bottom:\s*var\(--hb-footer-space\);/);
   assert.match(playfield, /left:\s*0;/);
   assert.match(playfield, /min-height:\s*72%;/);
+  assert.match(playfield, /padding:\s*0 12px;/);
   assert.match(table, /height:\s*auto;/);
   assert.match(table, /width:\s*var\(--hb-table-width\) !important;/);
   assert.match(table, /max-width:\s*var\(--hb-table-width\) !important;/);
@@ -189,7 +190,8 @@ test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture
   const headerSpace = 6 + 44;
   const footerSpace = 5 + 38;
   const playfieldHeight = targetHeight - headerSpace - footerSpace;
-  const tableSurfaceWidth = targetWidth * 1.05;
+  const horizontalPlayfieldPadding = 24;
+  const tableSurfaceWidth = (targetWidth - horizontalPlayfieldPadding) * 1.05;
   const tableSurfaceHeight = tableSurfaceWidth * 2;
   const tableLeft = (targetWidth - tableSurfaceWidth) / 2;
   const tableTop = headerSpace + (playfieldHeight - tableSurfaceHeight) / 2;
@@ -214,7 +216,10 @@ test("maps the 432 by 960 CSS viewport to a stable 1440 by 3200 portrait capture
   assert.ok(tableOuterTop > topHudBottom, "top HUD must remain outside the rendered table");
   assert.ok(tableOuterBottom < relationshipTrackTop, "all table pockets must end before relationship progress");
   assert.ok(tableOuterBottom < bottomHudTop, "bottom status must remain outside the rendered table");
-  assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.83, "visible table should use the portrait height");
+  assert.ok(tableSurfaceHeight / targetHeight >= 0.89, "the complete table surface should use most of the portrait height");
+  assert.ok((tableOuterBottom - tableOuterTop) / targetHeight >= 0.79, "the playable table should remain visually dominant");
+  assert.ok(tableLeft >= 1, "the frame must not be clipped by the viewport");
+  assert.ok(tableLeft + tableSurfaceWidth <= targetWidth - 1, "the complete right frame must remain visible");
 });
 
 test("uses a native portrait canvas without a CSS rotation layout", () => {
@@ -271,13 +276,28 @@ test("keeps the short performance centered, transient, and non-interactive", () 
   assert.match(micro, /left:\s*50%;/);
   assert.match(micro, /pointer-events:\s*none;/);
   assert.match(microVisible, /hb-micro-arrive 1600ms/);
+  assert.match(microVisible, /animation-duration:\s*4200ms;/);
   assert.match(microTitle, /font-size:\s*24px;/);
   assert.match(css, /\.hb-micro p\s*\{[^}]*font-size:\s*11px;[^}]*\}/s);
   assert.match(css, /\.hb-micro::before\s*\{[^}]*radial-gradient[^}]*\}/s);
   assert.match(css, /\.hb-micro::after\s*\{[^}]*radial-gradient[^}]*\}/s);
   assert.match(css, /@keyframes hb-micro-halo/);
   assert.match(css, /@keyframes hb-micro-particles/);
+  assert.match(game, /clamp\(item\.durationMs \+ 3000, 4200, 5200\)/);
   assert.doesNotMatch(queueMicro, /cinematicActive|root\.dataset\.state/);
+});
+
+test("shows power as a qualitative bar without a visible percentage", () => {
+  const powerHtml = fragment(html, '<div class="hb-power"', "</div>");
+  const power = rule(".hb-power");
+
+  assert.match(powerHtml, />力度</);
+  assert.match(powerHtml, /class="hb-sr-only" id="hb-power-value"><\/strong>/);
+  assert.doesNotMatch(powerHtml, /\d+%/);
+  assert.match(power, /grid-template-columns:\s*28px minmax\(0, 1fr\);/);
+  assert.match(game, /const MAX_PULL = 300;/);
+  assert.match(game, /elements\.powerFill\.style\.width/);
+  assert.match(game, /力度：\$\{aimPower < 0\.34 \? "轻"/);
 });
 
 test("keeps the full-screen performance layered, centered, and dismissible", () => {
@@ -308,6 +328,11 @@ test("keeps the full-screen performance layered, centered, and dismissible", () 
   assert.match(css, /\.hb-cinematic-image,[\s\S]*?\.hb-cinematic-transition\s*\{[\s\S]*?pointer-events:\s*none;/);
   assert.match(css, /@keyframes hb-cinematic-light-sweep/);
   assert.match(css, /@keyframes hb-cinematic-curtain/);
+  assert.match(css, /@keyframes hb-cinematic-drift/);
+  assert.match(css, /@keyframes hb-cinematic-particles/);
+  for (const kind of ["confession", "proposal", "early-success", "rejection"]) {
+    assert.match(css, new RegExp(`\\.hb-cinematic\\[data-kind="${kind}"\\]`));
+  }
   assert.match(game, /elements\.cinematic\.hidden = false;/);
   assert.match(game, /elements\.cinematic\.hidden = true;/);
   assert.match(game, /elements\.cinematicSkip\.addEventListener\("click", closeCinematic\);/);
