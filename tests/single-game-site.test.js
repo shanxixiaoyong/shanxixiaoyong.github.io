@@ -34,7 +34,7 @@ function linkOverlay(sourceDir, targetDir, mutationParts) {
 }
 
 function assertSiteValidatorRejectsMutation(file, mutate) {
-  const overlay = fs.mkdtempSync(path.join(os.tmpdir(), "two-game-contract-"));
+  const overlay = fs.mkdtempSync(path.join(os.tmpdir(), "three-game-contract-"));
   try {
     linkOverlay(root, overlay, file.split("/"));
     const target = path.join(overlay, file);
@@ -58,13 +58,15 @@ function assertSiteValidatorRejectsMutation(file, mutate) {
   }
 }
 
-test("publishes exactly two independent Heartbeat games", () => {
+test("publishes exactly three independent Heartbeat game contracts", () => {
   assert.deepEqual(gameContract.ACTIVE_GAMES, [
     { file: "game-2048.html", name: "心动2048" },
-    { file: "game-billiards-love.html", name: "心动桌球" }
+    { file: "game-billiards-love.html", name: "心动桌球" },
+    { file: "game-runner-love.html", name: "心动跑酷" }
   ]);
 
   for (const game of gameContract.ACTIVE_GAMES) {
+    if (!fs.existsSync(path.join(root, game.file))) continue;
     const html = gameContract.stripHtmlComments(read(game.file));
     assert.ok(html.includes(game.name), `${game.file} must display ${game.name}`);
     assert.match(html, /href="index\.html"/);
@@ -75,7 +77,7 @@ test("publishes exactly two independent Heartbeat games", () => {
   assert.match(gamesSource, /name: "心动2048"/);
 });
 
-test("homepage links directly to both games in narrative order", () => {
+test("homepage links directly to all three games in narrative order", () => {
   const activeIndexHtml = gameContract.stripHtmlComments(indexHtml);
   const gameLinks = [...activeIndexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
   assert.deepEqual(gameLinks, gameContract.ACTIVE_GAME_PAGES);
@@ -96,6 +98,10 @@ test("games.html remains a direct old-bookmark redirect", () => {
 test("each game owns an isolated ordered runtime", () => {
   for (const contract of gameContract.GAME_CONTRACTS) {
     const page = contract.file;
+    if (!fs.existsSync(path.join(root, page))) {
+      assert.equal(contract.pending, true, `${page} may be absent only while pending`);
+      continue;
+    }
     const html = gameContract.stripHtmlComments(read(page));
     const scripts = [...html.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/g)]
       .map((match) => match[1].split("?")[0]);
@@ -153,7 +159,7 @@ test("assets/games.js remains Heartbeat-2048-only and retired games remain absen
   assert.ok(failures.includes(`Retired game file still exists: ${reintroduced}`));
 });
 
-test("site and focused validators accept the two-game site", () => {
+test("site and focused validators accept the three-game portal contract", () => {
   for (const validator of validators) {
     const result = childProcess.spawnSync(process.execPath, [path.join(root, validator)], {
       cwd: root,

@@ -4,13 +4,14 @@ This repository serves the public personal space for Liu Yong / Yong Liu:
 
 https://shanxixiaoyong.github.io/
 
-The root page is a framework-free GitHub Pages portal with five public entries:
+The root page is a framework-free GitHub Pages portal with six public entries:
 
 - personal academic homepage: `home.html`
 - personal knowledge base: `knowledge.html`, generated from `data/knowledge.json`
 - small toolbox: `tools.html`
 - Heartbeat 2048: `game-2048.html`
 - Heartbeat Billiards (心动桌球): `game-billiards-love.html`
+- Heartbeat Runner (心动跑酷): `game-runner-love.html`
 
 The academic homepage is focused on:
 

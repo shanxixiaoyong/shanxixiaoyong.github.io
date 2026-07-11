@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#15161a">
+  <meta name="description" content="心动跑酷：一段跨越七程的双人三轨跑酷。">
+  <title>心动跑酷 · Yong Liu</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
+  <link rel="stylesheet" href="assets/runner-love.css?v=runner-love-20260711a">
+  <script src="assets/runner-love-rules.js?v=runner-love-20260711a" defer></script>
+  <script src="assets/runner-love-content.js?v=runner-love-20260711a" defer></script>
+  <script src="assets/runner-love-engine.js?v=runner-love-20260711a" defer></script>
+  <script src="assets/runner-love-game.js?v=runner-love-20260711a" defer></script>
+</head>
+<body>
+  <main class="runner-shell" id="runner-love" data-game="runner-love">
+    <section class="runner-phone" aria-label="心动跑酷">
+      <canvas id="runner-canvas" width="720" height="1280" aria-label="三轨跑酷游戏画面"></canvas>
+
+      <header class="runner-topbar">
+        <a class="icon-button runner-home" href="index.html" aria-label="返回个人天地" title="返回个人天地">‹</a>
+        <div class="stage-heading">
+          <span data-stage-kicker>第一程 · 初见</span>
+          <strong data-stage-name>勇气</strong>
+        </div>
+        <button class="icon-button sound-button" type="button" data-sound aria-label="开启声音" title="声音">♪</button>
+      </header>
+
+      <div class="runner-hud" aria-live="polite">
+        <ol class="stage-track" data-stage-track aria-label="七段旅程">
+          <li class="is-current"><i></i><span>初见</span></li><li><i></i><span>熟悉</span></li><li><i></i><span>赴约</span></li>
+          <li><i></i><span>心意</span></li><li><i></i><span>同行</span></li><li><i></i><span>磨合</span></li><li><i></i><span>归途</span></li>
+        </ol>
+        <div class="hud-meters">
+          <div class="heart-meter" aria-label="心动值"><span class="heart-glyph">♥</span><strong data-heartbeat>60</strong><div><i data-heart-fill></i></div></div>
+          <div class="stage-meter"><span data-progress>0 / 8</span><div><i data-progress-fill></i></div></div>
+          <strong class="combo" data-combo>×1</strong>
+        </div>
+      </div>
+
+      <div class="runner-toast" data-toast hidden></div>
+      <div class="gesture-cue" data-gesture-cue aria-hidden="true"><span>↑</span><span>←</span><span>↓</span><span>→</span></div>
+
+      <section class="runner-overlay runner-intro" data-intro>
+        <p class="eyebrow">HEARTBEAT RUN / 01</p>
+        <h1>心动跑酷</h1>
+        <p class="intro-line">下课铃刚停，她从香樟道另一端跑过。</p>
+        <button class="primary-button" type="button" data-start>开始追上她</button>
+        <div class="saved-run" data-saved-run hidden>
+          <button class="quiet-button" type="button" data-continue>继续旅程</button>
+          <button class="text-button" type="button" data-new-run>重新开始</button>
+        </div>
+        <button class="quiet-button new-game-plus" type="button" data-new-game-plus hidden>二周目 · 再次赴约</button>
+        <p class="new-game-clue" data-new-game-clue hidden>线索：熟悉的路上，会出现曾被忽略的回应。</p>
+      </section>
+
+      <section class="runner-overlay performance" data-performance hidden>
+        <p class="eyebrow" data-performance-kicker>第一程完成</p>
+        <h2 data-performance-title>同一把伞</h2>
+        <p data-performance-copy></p>
+        <button class="primary-button" type="button" data-performance-next>继续奔跑</button>
+      </section>
+
+      <section class="runner-overlay handhold" data-handhold hidden>
+        <p class="eyebrow">最后一程</p>
+        <h2>这一次，不松开</h2>
+        <p>按住她伸来的手，一起走完最后几步。</p>
+        <button class="hold-button" type="button" data-hold aria-label="长按牵手"><i data-hold-fill></i><span>长按牵手</span></button>
+      </section>
+
+      <section class="runner-overlay reveal" data-reveal hidden style="background:linear-gradient(180deg,rgba(8,10,12,.08) 20%,rgba(8,10,12,.9) 78%),url('assets/runner-scenes/08-reveal.jpg') center/cover no-repeat">
+        <p class="eyebrow">七枚心章 · <span data-stamp-count>0 / 7</span></p>
+        <div class="reveal-box" aria-hidden="true"><i></i><b>♥</b></div>
+        <h2 data-reveal-title>盒子打开了</h2>
+        <p data-reveal-copy></p>
+        <button class="primary-button" type="button" data-reveal-next>查看终点</button>
+      </section>
+
+      <section class="runner-overlay result" data-result hidden>
+        <p class="eyebrow">RUN COMPLETE</p>
+        <div class="grade" data-grade>S</div>
+        <h2 data-ending-title>寻常长跑</h2>
+        <p data-ending-copy></p>
+        <dl class="result-stats"><div><dt>完成</dt><dd data-stat-completion>100%</dd></div><div><dt>准确</dt><dd data-stat-accuracy>100%</dd></div><div><dt>心动</dt><dd data-stat-heartbeat>100</dd></div></dl>
+        <button class="primary-button" type="button" data-retry>从本程检查点重试</button>
+        <button class="quiet-button" type="button" data-restart>重新开始</button>
+        <a class="text-button" href="index.html">回到个人天地</a>
+      </section>
+
+      <div class="sr-only" role="status" aria-live="assertive" data-announcer></div>
+    </section>
+  </main>
+</body>
+</html>

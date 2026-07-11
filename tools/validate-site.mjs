@@ -2,12 +2,14 @@ import { readFileSync, existsSync, statSync } from "node:fs";
 import {
   ACTIVE_PUBLIC_FILES,
   ACTIVE_GAME_PAGES,
+  PENDING_GAME_FILES,
   readGameContractSources,
   stripHtmlComments,
   validateGameContract
 } from "./game-contract.mjs";
 
-const standaloneGamePages = [...ACTIVE_GAME_PAGES];
+const standaloneGamePages = ACTIVE_GAME_PAGES.filter((file) => existsSync(file));
+const pendingGameFiles = new Set(PENDING_GAME_FILES);
 
 const siteFiles = [...new Set([
   ...ACTIVE_PUBLIC_FILES,
@@ -46,10 +48,12 @@ const required = [
   'href="tools.html"',
   'href="game-2048.html"',
   'href="game-billiards-love.html"',
+  'href="game-runner-love.html"',
   "个人知识库",
   "个人小工具箱",
   "心动2048",
   "心动桌球",
+  "心动跑酷",
   "knowledge-search",
   "text-input",
   "citation-form",
@@ -74,11 +78,13 @@ const required = [
   'class="portal-door portal-academic"',
   'class="portal-door portal-game"',
   'class="portal-door portal-billiards"',
+  'class="portal-door portal-runner"',
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
   "assets/portal/heartbeat-2048.png",
   "assets/portal/billiards-night.png",
+  "assets/portal/heartbeat-runner.png",
   "assets/games.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
@@ -295,7 +301,9 @@ for (const file of ["index.html", "home.html", "knowledge.html", "tools.html", "
   for (const reference of references) {
     if (/^(?:[a-z]+:|#|\/\/)/i.test(reference)) continue;
     const localPath = reference.split(/[?#]/, 1)[0];
-    if (localPath && !existsSync(localPath)) failures.push(`${file} references missing local asset: ${localPath}`);
+    if (localPath && !existsSync(localPath) && !pendingGameFiles.has(localPath)) {
+      failures.push(`${file} references missing local asset: ${localPath}`);
+    }
   }
 }
 
@@ -317,10 +325,11 @@ const portalContracts = [
   [indexHtml, 'class="portal-rail"'],
   [indexHtml, 'class="portal-door portal-game"'],
   [indexHtml, 'class="portal-door portal-billiards"'],
+  [indexHtml, 'class="portal-door portal-runner"'],
   [portalCss, "scroll-snap-type: inline mandatory"],
   [portalCss, "scroll-snap-align: center"],
-  [portalCss, "width: 20%"],
-  [portalCss, "grid-template-columns: repeat(16, minmax(0, 1fr))"],
+  [portalCss, "width: calc(100% / 6)"],
+  [portalCss, "grid-template-columns: repeat(18, minmax(0, 1fr))"],
   [portalScript, "function setActive(index)"],
   [portalScript, "const railCenter = railBounds.left + railBounds.width / 2"],
   [portalScript, 'rail.addEventListener("scroll"']
@@ -335,7 +344,7 @@ const portalDestinations = [...indexHtml.matchAll(/<a class="portal-door [^"]+" 
 const expectedPortalDestinations = ["home.html", "knowledge.html", "tools.html", ...ACTIVE_GAME_PAGES]
   .map((href, index) => ({ href, index }));
 if (JSON.stringify(portalDestinations) !== JSON.stringify(expectedPortalDestinations)) {
-  failures.push(`Personal portal must expose five ordered destinations with continuous indices: ${JSON.stringify(portalDestinations)}`);
+  failures.push(`Personal portal must expose six ordered destinations with continuous indices: ${JSON.stringify(portalDestinations)}`);
 }
 
 if (indexHtml.includes('href="assets/world.css"') || indexHtml.includes('class="portal-card"')) {

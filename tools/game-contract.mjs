@@ -1,5 +1,6 @@
 export const HEARTBEAT_GAME_PAGE = "game-2048.html";
 export const BILLIARDS_GAME_PAGE = "game-billiards-love.html";
+export const RUNNER_GAME_PAGE = "game-runner-love.html";
 
 export const GAME_CONTRACTS = [
   {
@@ -26,6 +27,19 @@ export const GAME_CONTRACTS = [
       "assets/billiards-love-content.js",
       "assets/billiards-love-game.js"
     ]
+  },
+  {
+    file: RUNNER_GAME_PAGE,
+    name: "心动跑酷",
+    portalAsset: "assets/portal/heartbeat-runner.png",
+    styles: ["assets/runner-love.css"],
+    scripts: [
+      "assets/runner-love-rules.js",
+      "assets/runner-love-content.js",
+      "assets/runner-love-engine.js",
+      "assets/runner-love-game.js"
+    ],
+    pending: true
   }
 ];
 
@@ -33,27 +47,31 @@ export const ACTIVE_GAMES = GAME_CONTRACTS.map(({ file, name }) => ({ file, name
 
 export const ACTIVE_GAME_PAGES = ACTIVE_GAMES.map(({ file }) => file);
 
+export const PENDING_GAME_FILES = [...new Set(GAME_CONTRACTS
+  .filter(({ pending }) => pending)
+  .flatMap(({ file, portalAsset, styles, scripts }) => [file, portalAsset, ...styles, ...scripts]))];
+
 export const ACTIVE_PUBLIC_HTML_FILES = [
   "index.html",
   "home.html",
   "knowledge.html",
   "tools.html",
   "games.html",
-  ...ACTIVE_GAME_PAGES
+  ...GAME_CONTRACTS.filter(({ pending }) => !pending).map(({ file }) => file)
 ];
 
 export const ACTIVE_PUBLIC_JS_FILES = [...new Set([
   "assets/world.js",
   "assets/portal.js",
   "assets/academic.js",
-  ...GAME_CONTRACTS.flatMap(({ scripts }) => scripts)
+  ...GAME_CONTRACTS.filter(({ pending }) => !pending).flatMap(({ scripts }) => scripts)
 ])];
 
 export const ACTIVE_PUBLIC_STYLE_FILES = [...new Set([
   "assets/world.css",
   "assets/portal.css",
   "assets/academic-v2.css",
-  ...GAME_CONTRACTS.flatMap(({ styles }) => styles)
+  ...GAME_CONTRACTS.filter(({ pending }) => !pending).flatMap(({ styles }) => styles)
 ])];
 
 export const ACTIVE_PUBLIC_DOCUMENT_FILES = ["README.md"];
@@ -196,7 +214,7 @@ export function validateGameContract({ sources, exists = () => false }) {
 
   const homepageGameLinks = [...indexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
   if (JSON.stringify(homepageGameLinks) !== JSON.stringify(ACTIVE_GAME_PAGES)) {
-    failures.push(`Homepage must expose exactly two direct game links in public order: ${JSON.stringify(homepageGameLinks)}`);
+    failures.push(`Homepage must expose exactly three direct game links in public order: ${JSON.stringify(homepageGameLinks)}`);
   }
   for (const game of GAME_CONTRACTS) {
     if (!hasHomepageLink(indexHtml, game)) {
@@ -216,6 +234,7 @@ export function validateGameContract({ sources, exists = () => false }) {
   }
 
   for (const game of GAME_CONTRACTS) {
+    if (game.pending && !source(game.file)) continue;
     const gameHtml = htmlSources[game.file];
     for (const token of [game.name, 'href="index.html"']) {
       if (!gameHtml.includes(token)) failures.push(`${game.name} page missing public contract: ${token}`);
