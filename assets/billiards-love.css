@@ -403,56 +403,6 @@ button {
   white-space: nowrap;
 }
 
-.hb-power {
-  position: absolute;
-  z-index: 5;
-  right: 13px;
-  bottom: 3%;
-  left: 13px;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: center;
-  gap: 5px;
-  padding: 6px 7px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  background: rgba(3, 10, 8, 0.76);
-  color: #e7ede8;
-  font-size: 8px;
-  text-shadow: 0 1px 3px #000;
-  pointer-events: none;
-}
-
-.hb-power i {
-  position: relative;
-  height: 4px;
-  overflow: hidden;
-  border-radius: 2px;
-  background:
-    linear-gradient(90deg,
-      rgba(104, 190, 170, 0.3) 0 33.1%,
-      rgba(255, 255, 255, 0.46) 33.1% 33.55%,
-      rgba(221, 183, 112, 0.28) 33.55% 66.45%,
-      rgba(255, 255, 255, 0.46) 66.45% 66.9%,
-      rgba(210, 112, 128, 0.32) 66.9% 100%);
-}
-
-.hb-power b {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: linear-gradient(90deg,
-    var(--hb-teal) 0 33.333%,
-    var(--hb-gold) 33.333% 66.666%,
-    var(--hb-rose) 66.666% 100%);
-  transition: width 24ms ease-out;
-}
-
-.hb-power strong {
-  font-size: 8px;
-  text-align: right;
-}
-
 .hb-micro {
   position: absolute;
   z-index: 12;

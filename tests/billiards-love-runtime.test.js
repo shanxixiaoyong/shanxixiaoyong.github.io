@@ -58,9 +58,11 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
   assert.match(source, /const SIDE_POCKET_MOUTH = BALL_DIAMETER \* 2\.53/);
   assert.match(source, /const CORNER_POCKET_SHELF = BALL_DIAMETER \* 0\.65/);
   assert.match(source, /const SIDE_POCKET_SHELF = BALL_DIAMETER \* 0\.14/);
+  assert.match(source, /const POCKET_VISUAL_CAPTURE_RATIO = 0\.25/);
   assert.match(source, /const CORNER_CUT_ANGLE_DEGREES = 142/);
   assert.match(source, /const SIDE_CUT_ANGLE_DEGREES = 104/);
-  assert.match(source, /mouthX,[\s\S]*?mouthY,[\s\S]*?captureX:[\s\S]*?captureY:/);
+  assert.match(source, /const captureDepth = Math\.min\(shelf, BALL_RADIUS \* POCKET_VISUAL_CAPTURE_RATIO\)/);
+  assert.match(source, /mouthX,[\s\S]*?mouthY,[\s\S]*?captureX: mouthX \+ inwardX \* captureDepth,[\s\S]*?captureY: mouthY \+ inwardY \* captureDepth/);
   assert.match(source, /x: mouthX \+ inwardX \* dropDepth/);
   assert.match(source, /y: mouthY \+ inwardY \* dropDepth/);
   assert.match(source, /const POCKET_MIN_DURATION = 280/);
@@ -190,8 +192,9 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.match(source, /const STRONG_POWER_MIN = 0\.68/);
   assert.match(source, /const MAX_SHOT_SPEED = 42/);
   assert.doesNotMatch(source, /distance\(point, cueBall\.position\) > 54/);
-  assert.match(source, /elements\.powerValue\.textContent = ""/);
-  assert.doesNotMatch(source, /elements\.powerValue\.textContent = `\$\{Math\.round\(aimPower \* 100\)\}%`/);
+  assert.match(source, /function drawCuePowerGauge\(cueStart, back, normal, pullRatio\)/);
+  assert.match(source, /if \(pointerAim\) drawCuePowerGauge\(start, back, normal, pointerAim\.pullRatio\)/);
+  assert.doesNotMatch(source, /elements\.power(?:Fill|Value|\.hidden)/);
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
   assert.match(source, /event\.isPrimary === false/);
   assert.match(source, /!shotState && !pointerAim && !resolvingShot/);
@@ -260,7 +263,7 @@ test("connects per-pot center beats, streak feedback, seven stage performances, 
   assert.doesNotMatch(source, /copies\[copies\.length - 1\]\.onClose/);
   assert.match(source, /STAGE_SCENE_ASSETS/);
   assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
-  assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 3200, 5000, 6500\)/);
+  assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 1800, 3400, 4300\)/);
   assert.match(source, /function earlyEightCopy\(outcome\)/);
   assert.match(source, /outcome\.streakBonus > 0/);
   assert.match(source, /outcome\.interestTrend\.line/);

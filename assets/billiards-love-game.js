@@ -36,9 +36,6 @@
     callLabel: required("#hb-call-label"),
     callTitle: required("#hb-call-title"),
     callHint: required("#hb-call-hint"),
-    power: required("#hb-power"),
-    powerFill: required("#hb-power-fill"),
-    powerValue: required("#hb-power-value"),
     micro: required("#hb-micro"),
     microKicker: required("#hb-micro-kicker"),
     microTitle: required("#hb-micro-title"),
@@ -78,6 +75,7 @@
   const POCKET_SHELF_LATERAL_TOLERANCE = BALL_RADIUS * 0.08;
   const POCKET_APPROACH_EXIT_DEPTH = BALL_RADIUS * 0.30;
   const POCKET_LIP_SETTLE_RATIO = 0.88;
+  const POCKET_VISUAL_CAPTURE_RATIO = 0.25;
   const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.28;
   const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.53;
   const CORNER_POCKET_SHELF = BALL_DIAMETER * 0.65;
@@ -134,6 +132,7 @@
     const shelf = type === "corner" ? CORNER_POCKET_SHELF : SIDE_POCKET_SHELF;
     const cutAngleDegrees = type === "corner" ? CORNER_CUT_ANGLE_DEGREES : SIDE_CUT_ANGLE_DEGREES;
     const jawOffset = type === "corner" ? CORNER_JAW_OFFSET : SIDE_JAW_OFFSET;
+    const captureDepth = Math.min(shelf, BALL_RADIUS * POCKET_VISUAL_CAPTURE_RATIO);
     const dropDepth = shelf + BALL_RADIUS;
     return Object.freeze({
       id,
@@ -142,15 +141,16 @@
       mouthY,
       x: mouthX + inwardX * dropDepth,
       y: mouthY + inwardY * dropDepth,
-      captureX: mouthX + inwardX * shelf,
-      captureY: mouthY + inwardY * shelf,
+      captureX: mouthX + inwardX * captureDepth,
+      captureY: mouthY + inwardY * captureDepth,
       inwardX,
       inwardY,
       mouth,
       shelf,
+      captureDepth,
       cutAngleDegrees,
       jawOffset,
-      captureHalfWidth: mouth / 2 - shelf * Math.tan(jawOffset)
+      captureHalfWidth: mouth / 2 - captureDepth * Math.tan(jawOffset)
     });
   }
 
@@ -959,8 +959,7 @@
       power: 0
     };
     canvas.setPointerCapture?.(event.pointerId);
-    elements.powerFill.style.width = "0%";
-    elements.power.hidden = false;
+    canvas.setAttribute("aria-label", "正在调整击球力度：轻推");
     elements.call.classList.add("is-quiet");
     hideCoach();
   }
@@ -978,15 +977,16 @@
     pointerAim.power = powerFromPullRatio(pointerAim.pullRatio);
     aimDirection = { ...pointerAim.direction };
     aimPower = pointerAim.power;
-    elements.powerFill.style.width = `${Math.round(pointerAim.pullRatio * 100)}%`;
-    elements.powerValue.textContent = "";
-    elements.power.setAttribute("aria-label", `力度：${pointerAim.pullRatio < LIGHT_PULL_END ? "轻推" : pointerAim.pullRatio < STRONG_PULL_START ? "适中" : pointerAim.pullRatio < 0.96 ? "强力" : "满力"}`);
+    const powerLabel = pointerAim.pullRatio < LIGHT_PULL_END
+      ? "轻推"
+      : pointerAim.pullRatio < STRONG_PULL_START ? "适中" : pointerAim.pullRatio < 0.96 ? "强力" : "满力";
+    canvas.setAttribute("aria-label", `正在调整击球力度：${powerLabel}`);
   }
 
   function cancelAim() {
     pointerAim = null;
     aimPower = 0;
-    elements.power.hidden = true;
+    canvas.setAttribute("aria-label", "在桌面任意位置反向滑动瞄准蓄力，松开击球");
     elements.call.classList.remove("is-quiet");
   }
 
@@ -1069,7 +1069,7 @@
     const captureCrossing = crossedPocketLine(
       body,
       pocket,
-      pocket.shelf,
+      pocket.captureDepth,
       pocket.captureHalfWidth,
       POCKET_SHELF_DEPTH_TOLERANCE,
       POCKET_SHELF_LATERAL_TOLERANCE
@@ -1102,7 +1102,7 @@
       const captureCrossing = crossedPocketLine(
         body,
         pocket,
-        pocket.shelf,
+        pocket.captureDepth,
         pocket.captureHalfWidth,
         POCKET_SHELF_DEPTH_TOLERANCE,
         POCKET_SHELF_LATERAL_TOLERANCE
@@ -1113,7 +1113,7 @@
         approach.captureCrossY = captureCrossing.y;
       }
       const settledOverLip = body.speed <= NATURAL_STOP_SPEED
-        && approach.maximumDepth >= pocket.shelf * POCKET_LIP_SETTLE_RATIO
+        && approach.maximumDepth >= pocket.captureDepth * POCKET_LIP_SETTLE_RATIO
         && currentLateral <= pocket.captureHalfWidth + POCKET_SHELF_LATERAL_TOLERANCE;
       if (settledOverLip) {
         approach.captureCrossed = true;
@@ -1123,8 +1123,8 @@
       }
     }
     const requiredDepth = approach.settledOverLip
-      ? pocket.shelf * POCKET_LIP_SETTLE_RATIO
-      : pocket.shelf - POCKET_SHELF_DEPTH_TOLERANCE;
+      ? pocket.captureDepth * POCKET_LIP_SETTLE_RATIO
+      : pocket.captureDepth - POCKET_SHELF_DEPTH_TOLERANCE;
     return approach.captureCrossed
       && approach.enteredAt < simulationTime
       && approach.maximumDepth >= requiredDepth;
@@ -1477,7 +1477,7 @@
       kind: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
       image: STAGE_SCENE_ASSETS[stage.id],
       sound: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
-      autoCloseMs: clamp(performance.durationMs + 3200, 5000, 6500),
+      autoCloseMs: clamp(performance.durationMs + 1800, 3400, 4300),
       actionLabel: null
     };
   }
@@ -1497,7 +1497,7 @@
         ? "此前每一次靠近都得到了回应。黑 8 提前落袋时，她没有后退，而是伸手接住了答案。"
         : "关系还没有走到最后，你却先击中了最重的承诺。她认真听完，然后温柔而明确地拒绝。",
       sound: success ? "proposal" : "scratch",
-      autoCloseMs: 5600,
+      autoCloseMs: 4200,
       actionLabel: null
     };
   }
@@ -2220,6 +2220,7 @@
   function drawCueStick(direction, power) {
     if (!cueBall) return;
     const back = { x: -direction.x, y: -direction.y };
+    const normal = { x: -back.y, y: back.x };
     const startDistance = BALL_RADIUS + 9 + power * 44;
     const cueLength = 245;
     const start = { x: cueBall.position.x + back.x * startDistance, y: cueBall.position.y + back.y * startDistance };
@@ -2242,6 +2243,46 @@
     context.moveTo(start.x, start.y);
     context.lineTo(end.x, end.y);
     context.stroke();
+    context.restore();
+    if (pointerAim) drawCuePowerGauge(start, back, normal, pointerAim.pullRatio);
+  }
+
+  function drawCuePowerGauge(cueStart, back, normal, pullRatio) {
+    const colors = ["#72c8b2", "#e0bc75", "#dc798b"];
+    const segmentLength = 31;
+    const segmentGap = 6;
+    const gaugeStart = {
+      x: cueStart.x + back.x * 22 + normal.x * 14,
+      y: cueStart.y + back.y * 22 + normal.y * 14
+    };
+    context.save();
+    context.lineCap = "round";
+    for (let index = 0; index < 3; index += 1) {
+      const zoneStart = index * (segmentLength + segmentGap);
+      const activeRatio = clamp(pullRatio * 3 - index, 0, 1);
+      const startX = gaugeStart.x + back.x * zoneStart;
+      const startY = gaugeStart.y + back.y * zoneStart;
+      const endX = startX + back.x * segmentLength;
+      const endY = startY + back.y * segmentLength;
+      context.strokeStyle = "rgba(2, 10, 8, 0.68)";
+      context.lineWidth = 9;
+      context.beginPath();
+      context.moveTo(startX, startY);
+      context.lineTo(endX, endY);
+      context.stroke();
+      if (activeRatio <= 0) continue;
+      context.strokeStyle = colors[index];
+      context.shadowColor = colors[index];
+      context.shadowBlur = 7;
+      context.lineWidth = 5;
+      context.beginPath();
+      context.moveTo(startX, startY);
+      context.lineTo(
+        startX + back.x * segmentLength * activeRatio,
+        startY + back.y * segmentLength * activeRatio
+      );
+      context.stroke();
+    }
     context.restore();
   }
 
@@ -2551,6 +2592,7 @@
           pocketMouthDepthTolerance: POCKET_MOUTH_DEPTH_TOLERANCE,
           pocketShelfDepthTolerance: POCKET_SHELF_DEPTH_TOLERANCE,
           pocketLipSettleRatio: POCKET_LIP_SETTLE_RATIO,
+          pocketVisualCaptureRatio: POCKET_VISUAL_CAPTURE_RATIO,
           pocketMagnetism: false
         }),
         audio: audio.snapshot(),

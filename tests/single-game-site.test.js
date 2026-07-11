@@ -127,7 +127,7 @@ test("billiards pins the independent physics and ball renderer before the game r
     "assets/billiards-ball-renderer.js",
     "assets/billiards-love-game.js"
   ]);
-  assert.equal(billiards.cacheVersion, "billiards-love-touch-physics-20260711h");
+  assert.equal(billiards.cacheVersion, "billiards-love-touch-physics-20260711i");
   assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js"]);
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-ball-renderer.js"));
   assert.equal(gameContract.ACTIVE_PUBLIC_JS_FILES.includes("assets/billiards-ball-renderer.js"), false);
@@ -204,8 +204,8 @@ test("site contract rejects hidden portal doors and retired lobby copy", () => {
 });
 
 test("site contract rejects reordered billiards layers and stale renderer cache versions", () => {
-  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-love-touch-physics-20260711h"></script>';
-  const game = '  <script src="assets/billiards-love-game.js?v=billiards-love-touch-physics-20260711h"></script>';
+  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-love-touch-physics-20260711i"></script>';
+  const game = '  <script src="assets/billiards-love-game.js?v=billiards-love-touch-physics-20260711i"></script>';
 
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     `${renderer}\n${game}`,
@@ -213,6 +213,6 @@ test("site contract rejects reordered billiards layers and stale renderer cache 
   ));
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     renderer,
-    renderer.replace("20260711h", "20260711-stale")
+    renderer.replace("20260711i", "20260711-stale")
   ));
 });

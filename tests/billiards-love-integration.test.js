@@ -85,7 +85,7 @@ function bootRuntime(options = {}) {
     if (selector === "#hb-ball-canvas") return options.includeBallCanvas ? ballCanvas : null;
     if (!nodes.has(selector)) {
       const node = selector === "#hb-canvas" ? canvas : new FakeNode();
-      if (["#hb-power", "#hb-micro", "#hb-cinematic", "#hb-result"].includes(selector)) node.hidden = true;
+      if (["#hb-micro", "#hb-cinematic", "#hb-result"].includes(selector)) node.hidden = true;
       nodes.set(selector, node);
     }
     return nodes.get(selector);
@@ -222,12 +222,16 @@ test("boots immediately into a playable portrait rack with bounded high-DPR outp
     const dropDepth = (pocket.x - pocket.mouthX) * pocket.inwardX + (pocket.y - pocket.mouthY) * pocket.inwardY;
     const captureDepth = (pocket.captureX - pocket.mouthX) * pocket.inwardX
       + (pocket.captureY - pocket.mouthY) * pocket.inwardY;
+    const expectedCaptureDepth = Math.min(pocket.shelf, snapshot.wpaPocketSpec.ballDiameter * 0.125);
     assert.ok(Math.abs(pocket.mouth / snapshot.wpaPocketSpec.ballDiameter - expectedMouthRatio) < 1e-12);
     assert.ok(Math.abs(pocket.shelf / snapshot.wpaPocketSpec.ballDiameter - expectedShelfRatio) < 1e-12);
     assert.ok(dropDepth > pocket.shelf, `${pocket.id} drop center must be beyond its shelf`);
     assert.ok(dropDepth >= pocket.shelf + snapshot.wpaPocketSpec.ballDiameter / 2 - 1e-9,
       `${pocket.id} black-hole center must sit at least one ball radius outside mouth`);
-    assert.ok(Math.abs(captureDepth - pocket.shelf) < 1e-9, `${pocket.id} capture line must follow its shelf`);
+    assert.ok(Math.abs(pocket.captureDepth - expectedCaptureDepth) < 1e-9,
+      `${pocket.id} capture depth must match the visible half-ball drop threshold`);
+    assert.ok(Math.abs(captureDepth - expectedCaptureDepth) < 1e-9,
+      `${pocket.id} capture line must match its visible drop threshold`);
   }
   assert.deepEqual([...snapshot.ballNumbers], Array.from({ length: 16 }, (_, number) => number));
   assert.equal(snapshot.runState.breakCompleted, false);
@@ -447,7 +451,7 @@ test("routes ordinary shots to center beats and stage clears to full-screen perf
   assert.equal(snapshot.presentation.nextCinematicStageId, "learning-together");
 });
 
-test("requires mouth entry plus shelf crossing and lets a jaw collision reject a pocket graze", () => {
+test("requires mouth entry plus visible drop-line crossing and lets a jaw collision reject a pocket graze", () => {
   const debug = bootRuntime();
   debug.reset();
   debug.shoot(0.12);
@@ -517,12 +521,12 @@ test("keeps a clear delayed capture path through every corner and side mouth", (
       if (ball.pocketing) pocketStep = step;
     }
     assert.ok(mouthStep > 0, `${pocketId} should record mouth entry`);
-    assert.ok(pocketStep > mouthStep, `${pocketId} must cross shelf after mouth entry before capture`);
+    assert.ok(pocketStep > mouthStep, `${pocketId} must cross the visible drop line after mouth entry before capture`);
     assert.equal(findBall(snapshot, 1).pocketing?.pocketId, pocketId, `${pocketId} should accept a centered inward crossing`);
   }
 });
 
-test("reliably captures legal off-center and low-speed paths after the shelf", () => {
+test("reliably captures legal off-center and low-speed paths after the visible drop line", () => {
   const pocketIds = ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"];
   for (const [index, pocketId] of pocketIds.entries()) {
     const debug = bootRuntime();
@@ -545,7 +549,7 @@ test("reliably captures legal off-center and low-speed paths after the shelf", (
   }
 });
 
-test("recovers a low-speed ball that enters a corner mouth but stalls before the shelf", () => {
+test("recovers a low-speed ball that enters a corner mouth but stalls before the visible drop line", () => {
   const debug = bootRuntime();
   debug.shoot(0.12);
   const pocket = debug.snapshot().pockets.find((item) => item.id === "top-left");

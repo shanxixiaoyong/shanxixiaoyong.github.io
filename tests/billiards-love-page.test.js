@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-touch-physics-20260711h";
-const styleCacheVersion = "billiards-love-touch-physics-20260711h";
+const runtimeCacheVersion = "billiards-love-touch-physics-20260711i";
+const styleCacheVersion = "billiards-love-touch-physics-20260711i";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -120,7 +120,7 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
   assert.match(ballCanvas, /pointer-events:\s*none !important;/);
   assert.doesNotMatch(ballCanvas, /rotate/);
 
-  for (const selector of [".hb-call", ".hb-power", ".hb-micro", ".hb-judgement", ".hb-coach"]) {
+  for (const selector of [".hb-call", ".hb-micro", ".hb-judgement", ".hb-coach"]) {
     const zIndex = Number(rule(selector).match(/z-index:\s*(\d+);/)?.[1]);
     assert.ok(zIndex > 2, `${selector} must remain above the ball canvas`);
   }
@@ -307,20 +307,16 @@ test("keeps the short performance centered, transient, and non-interactive", () 
   assert.doesNotMatch(queueMicro, /cinematicActive|root\.dataset\.state/);
 });
 
-test("shows power as a qualitative bar without a visible percentage", () => {
-  const powerHtml = fragment(html, '<div class="hb-power"', "</div>");
-  const power = rule(".hb-power");
-
-  assert.match(powerHtml, />力度</);
-  assert.match(powerHtml, /class="hb-sr-only" id="hb-power-value"><\/strong>/);
-  assert.doesNotMatch(powerHtml, /\d+%/);
-  assert.match(power, /grid-template-columns:\s*28px minmax\(0, 1fr\);/);
+test("shows the qualitative three-zone power gauge beside the cue instead of at the bottom", () => {
+  assert.doesNotMatch(html, /id="hb-power"|id="hb-power-fill"|id="hb-power-value"/);
+  assert.doesNotMatch(css, /\.hb-power(?:\s|\{|\.)/);
   assert.match(game, /const MAX_PULL = 300;/);
   assert.match(game, /function powerFromPullRatio\(value\)/);
-  assert.match(game, /elements\.powerFill\.style\.width = `\$\{Math\.round\(pointerAim\.pullRatio \* 100\)\}%`/);
-  assert.match(game, /pointerAim\.pullRatio < LIGHT_PULL_END \? "轻推"/);
-  assert.match(rule(".hb-power i"), /33\.1%/);
-  assert.match(rule(".hb-power b"), /33\.333%/);
+  assert.match(game, /function drawCuePowerGauge\(cueStart, back, normal, pullRatio\)/);
+  assert.match(game, /const colors = \["#72c8b2", "#e0bc75", "#dc798b"\]/);
+  assert.match(game, /const activeRatio = clamp\(pullRatio \* 3 - index, 0, 1\)/);
+  assert.match(game, /if \(pointerAim\) drawCuePowerGauge\(start, back, normal, pointerAim\.pullRatio\)/);
+  assert.doesNotMatch(game, /Math\.round\(aimPower \* 100\)|Math\.round\(pointerAim\.pullRatio \* 100\)/);
 });
 
 test("keeps the full-screen performance lightweight, centered, and dismissible", () => {
@@ -356,6 +352,8 @@ test("keeps the full-screen performance lightweight, centered, and dismissible",
   assert.match(rule(".hb-cinematic-particles"), /display:\s*none;/);
   assert.match(rule(".hb-cinematic-vignette"), /display:\s*none;/);
   assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*hb-cinematic-simple-reveal 520ms[^}]*\}/s);
+  assert.match(game, /autoCloseMs: clamp\(performance\.durationMs \+ 1800, 3400, 4300\)/);
+  assert.match(game, /autoCloseMs: 4200/);
   assert.match(css, /@keyframes hb-cinematic-simple-reveal/);
   assert.match(css, /@keyframes hb-cinematic-simple-copy/);
   for (const kind of ["confession", "proposal", "early-success", "rejection"]) {
