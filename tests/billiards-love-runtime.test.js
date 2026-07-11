@@ -106,19 +106,19 @@ test("builds physical rotated corner and side-pocket jaws plus containment guard
 
 test("renders layered wood, wool, rubber, metal, leather, and deep pocket materials", () => {
   for (const token of [
-    "drawSolidWoodFrame", "drawDirectionalRailBands", "drawWoolCloth", "drawCushionRubber", "drawMetalSights", "drawPocketInnerWall", "drawLeatherPocket"
+    "drawSolidWoodFrame", "drawWoolCloth", "drawCushionRubber", "drawMetalSights", "drawPocketInnerWall", "drawLeatherPocket"
   ]) {
     assert.ok(source.includes(`function ${token}`), `missing table material renderer ${token}`);
   }
-  assert.match(source, /const shortRailColors = \["#21120e", "#a0643a", "#4a281b"\]/);
-  assert.match(source, /const longRailColors = \["#170b0b", "#71342b", "#301411"\]/);
+  assert.match(source, /for \(let y = TABLE_OUTER\.top \+ 14/);
   assert.match(source, /for \(let y = TABLE\.top \+ 2/);
   assert.match(source, /billiards-textures\/worsted-cloth\.jpg/);
   assert.match(source, /billiards-textures\/dark-walnut\.jpg/);
   assert.match(source, /drawMaterialTexture\(MATERIAL_TEXTURES\.cloth/);
   assert.doesNotMatch(source, /context\.setLineDash\(\[2, 3\]\)/);
   assert.match(source, /context\.shadowBlur = 12/);
-  assert.match(source, /context\.fillStyle = material\.kind === "jaw" \? "#183a31" : "#123a31"/);
+  assert.match(source, /\["#123a31", "#37866d", "#1b5848"\]/);
+  assert.match(source, /context\.strokeStyle = "rgba\(143, 224, 187, 0\.78\)"/);
   assert.doesNotMatch(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
   assert.doesNotMatch(source, /context\.scale\(0\.18, 1\)/);
   assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
@@ -195,8 +195,8 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.match(source, /const STRONG_POWER_MIN = 0\.76/);
   assert.match(source, /const MAX_SHOT_SPEED = 42/);
   assert.doesNotMatch(source, /distance\(point, cueBall\.position\) > 54/);
-  assert.match(source, /function drawCuePowerGauge\(cueStart, back, normal, pullRatio\)/);
-  assert.match(source, /if \(pointerAim\) drawCuePowerGauge\(start, back, normal, pointerAim\.pullRatio\)/);
+  assert.match(source, /function drawCuePowerGauge\(direction, pullRatio\)/);
+  assert.match(source, /if \(pointerAim\) drawCuePowerGauge\(direction, pointerAim\.pullRatio\)/);
   assert.doesNotMatch(source, /elements\.power(?:Fill|Value|\.hidden)/);
   assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
   assert.match(source, /event\.isPrimary === false/);

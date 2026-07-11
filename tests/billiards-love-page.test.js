@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-touch-physics-20260712a";
-const styleCacheVersion = "billiards-love-touch-physics-20260712a";
+const runtimeCacheVersion = "billiards-love-touch-physics-20260712b";
+const styleCacheVersion = "billiards-love-touch-physics-20260712b";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -307,28 +307,28 @@ test("keeps the short performance centered, transient, and non-interactive", () 
   assert.doesNotMatch(queueMicro, /cinematicActive|root\.dataset\.state/);
 });
 
-test("shows a continuous proportional power gauge beside the cue instead of at the bottom", () => {
+test("shows a conic-gradient proportional power arc around the cue ball", () => {
   assert.doesNotMatch(html, /id="hb-power"|id="hb-power-fill"|id="hb-power-value"/);
   assert.doesNotMatch(css, /\.hb-power(?:\s|\{|\.)/);
   assert.match(game, /const MAX_PULL = 300;/);
   assert.match(game, /function powerFromPullRatio\(value\)/);
-  assert.match(game, /function drawCuePowerGauge\(cueStart, back, normal, pullRatio\)/);
+  assert.match(game, /function drawCuePowerGauge\(direction, pullRatio\)/);
   assert.match(game, /const colors = \["#76cbb6", "#e3bd72", "#df7889"\]/);
   assert.match(game, /const zoneBoundaries = \[0, LIGHT_PULL_END, STRONG_PULL_START, 1\]/);
-  assert.match(game, /const gaugeLength = 118/);
-  assert.match(game, /const activeGradient = context\.createLinearGradient/);
+  assert.match(game, /const radius = BALL_RADIUS \+ 19/);
+  assert.match(game, /context\.createConicGradient\(arcStart, center\.x, center\.y\)/);
+  assert.match(game, /context\.arc\(center\.x, center\.y, radius, arcStart, activeEndAngle\)/);
   assert.match(game, /context\.arc\(activeEndX, activeEndY, 3\.2/);
-  assert.match(game, /if \(pointerAim\) drawCuePowerGauge\(start, back, normal, pointerAim\.pullRatio\)/);
+  assert.match(game, /if \(pointerAim\) drawCuePowerGauge\(direction, pointerAim\.pullRatio\)/);
   assert.doesNotMatch(game, /Math\.round\(aimPower \* 100\)|Math\.round\(pointerAim\.pullRatio \* 100\)/);
 });
 
-test("separates long mahogany rails from short amber rails with directional grain", () => {
-  assert.match(game, /function drawDirectionalRailBands\(\)/);
-  assert.match(game, /const shortRailColors = \["#21120e", "#a0643a", "#4a281b"\]/);
-  assert.match(game, /const longRailColors = \["#170b0b", "#71342b", "#301411"\]/);
-  assert.match(game, /axis: "horizontal"/);
-  assert.match(game, /axis: "vertical"/);
-  assert.match(game, /drawDirectionalRailBands\(\);/);
+test("separates the physical cushion bands from the cloth with a brighter beveled face", () => {
+  assert.match(game, /const tones = material\.kind === "jaw"/);
+  assert.match(game, /\["#123a31", "#37866d", "#1b5848"\]/);
+  assert.match(game, /context\.strokeStyle = "rgba\(143, 224, 187, 0\.78\)"/);
+  assert.match(game, /material\.id === "top"/);
+  assert.match(game, /material\.id\.startsWith\("left"\)/);
 });
 
 test("keeps the full-screen performance lightweight, centered, and dismissible", () => {

@@ -1739,80 +1739,6 @@
     return { origin, direction, impact, hitBall, targetDirection };
   }
 
-  function drawDirectionalRailBands() {
-    const outer = {
-      left: TABLE_OUTER.left + 12,
-      right: TABLE_OUTER.right - 12,
-      top: TABLE_OUTER.top + 12,
-      bottom: TABLE_OUTER.bottom - 12
-    };
-    const inner = {
-      left: TABLE.left - 18,
-      right: TABLE.right + 18,
-      top: TABLE.top - 18,
-      bottom: TABLE.bottom + 18
-    };
-    const shortRailColors = ["#21120e", "#a0643a", "#4a281b"];
-    const longRailColors = ["#170b0b", "#71342b", "#301411"];
-    const bands = [
-      { axis: "horizontal", colors: shortRailColors, points: [[outer.left, outer.top], [outer.right, outer.top], [inner.right, inner.top], [inner.left, inner.top]] },
-      { axis: "horizontal", colors: [...shortRailColors].reverse(), points: [[inner.left, inner.bottom], [inner.right, inner.bottom], [outer.right, outer.bottom], [outer.left, outer.bottom]] },
-      { axis: "vertical", colors: longRailColors, points: [[outer.left, outer.top], [inner.left, inner.top], [inner.left, inner.bottom], [outer.left, outer.bottom]] },
-      { axis: "vertical", colors: [...longRailColors].reverse(), points: [[outer.right, outer.top], [inner.right, inner.top], [inner.right, inner.bottom], [outer.right, outer.bottom]] }
-    ];
-
-    bands.forEach((band, bandIndex) => {
-      const xs = band.points.map(([x]) => x);
-      const ys = band.points.map(([, y]) => y);
-      const gradient = band.axis === "horizontal"
-        ? context.createLinearGradient(0, Math.min(...ys), 0, Math.max(...ys))
-        : context.createLinearGradient(Math.min(...xs), 0, Math.max(...xs), 0);
-      gradient.addColorStop(0, band.colors[0]);
-      gradient.addColorStop(0.56, band.colors[1]);
-      gradient.addColorStop(1, band.colors[2]);
-      context.save();
-      context.beginPath();
-      band.points.forEach(([x, y], index) => index ? context.lineTo(x, y) : context.moveTo(x, y));
-      context.closePath();
-      context.globalAlpha = 0.88;
-      context.fillStyle = gradient;
-      context.fill();
-      context.clip();
-      context.globalAlpha = 1;
-      context.lineWidth = 0.75;
-      if (band.axis === "horizontal") {
-        for (let y = Math.min(...ys) + 7, line = 0; y < Math.max(...ys); y += 8, line += 1) {
-          context.strokeStyle = line % 2 ? "rgba(54, 21, 12, 0.34)" : "rgba(247, 191, 113, 0.22)";
-          context.beginPath();
-          context.moveTo(outer.left, y);
-          context.lineTo(outer.right, y + (line % 3 - 1) * 1.2);
-          context.stroke();
-        }
-      } else {
-        for (let x = Math.min(...xs) + 6, line = 0; x < Math.max(...xs); x += 7, line += 1) {
-          context.strokeStyle = line % 2 ? "rgba(37, 10, 10, 0.38)" : "rgba(205, 112, 82, 0.2)";
-          context.beginPath();
-          context.moveTo(x, outer.top);
-          context.lineTo(x + (line % 3 - 1) * 1.2, outer.bottom);
-          context.stroke();
-        }
-      }
-      context.restore();
-
-      const isShortRail = band.axis === "horizontal";
-      context.save();
-      context.strokeStyle = isShortRail ? "rgba(239, 193, 119, 0.48)" : "rgba(190, 91, 73, 0.44)";
-      context.lineWidth = isShortRail ? 1.5 : 1.35;
-      context.beginPath();
-      if (bandIndex === 0) { context.moveTo(inner.left + 44, inner.top); context.lineTo(inner.right - 44, inner.top); }
-      else if (bandIndex === 1) { context.moveTo(inner.left + 44, inner.bottom); context.lineTo(inner.right - 44, inner.bottom); }
-      else if (bandIndex === 2) { context.moveTo(inner.left, inner.top + 54); context.lineTo(inner.left, inner.bottom - 54); }
-      else { context.moveTo(inner.right, inner.top + 54); context.lineTo(inner.right, inner.bottom - 54); }
-      context.stroke();
-      context.restore();
-    });
-  }
-
   function drawSolidWoodFrame() {
     context.save();
     context.shadowColor = "rgba(0, 0, 0, 0.66)";
@@ -1843,9 +1769,15 @@
     context.clip();
     drawMaterialTexture(MATERIAL_TEXTURES.walnut, TABLE_OUTER.left + 8, TABLE_OUTER.top + 8,
       TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 0.82);
+    context.lineWidth = 0.7;
+    for (let y = TABLE_OUTER.top + 14, index = 0; y < TABLE_OUTER.bottom - 10; y += 11, index += 1) {
+      context.strokeStyle = index % 3 === 0 ? "rgba(246, 184, 117, 0.2)" : "rgba(31, 12, 8, 0.24)";
+      context.beginPath();
+      context.moveTo(TABLE_OUTER.left + 8, y);
+      context.lineTo(TABLE_OUTER.right - 8, y + Math.sin(index * 1.73) * 4);
+      context.stroke();
+    }
     context.restore();
-
-    drawDirectionalRailBands();
 
     context.save();
     context.strokeStyle = "rgba(206, 180, 135, 0.34)";
@@ -1914,13 +1846,45 @@
       context.save();
       context.translate(railBody.position.x, railBody.position.y);
       context.rotate(railBody.angle);
-      context.fillStyle = material.kind === "jaw" ? "#183a31" : "#123a31";
+      const horizontal = material.width >= material.height;
+      const gradient = horizontal
+        ? context.createLinearGradient(0, -material.height / 2, 0, material.height / 2)
+        : context.createLinearGradient(-material.width / 2, 0, material.width / 2, 0);
+      const reverse = material.id.startsWith("bottom") || material.id.startsWith("right");
+      const tones = material.kind === "jaw"
+        ? ["#153f34", "#2c735d", "#17483b"]
+        : ["#123a31", "#37866d", "#1b5848"];
+      gradient.addColorStop(0, reverse ? tones[2] : tones[0]);
+      gradient.addColorStop(0.5, tones[1]);
+      gradient.addColorStop(1, reverse ? tones[0] : tones[2]);
+      context.fillStyle = gradient;
       roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-      context.strokeStyle = "rgba(102, 151, 132, 0.28)";
-      context.lineWidth = material.kind === "jaw" ? 0.9 : 1.1;
+      context.strokeStyle = material.kind === "jaw" ? "rgba(110, 185, 154, 0.46)" : "rgba(127, 207, 172, 0.62)";
+      context.lineWidth = material.kind === "jaw" ? 1 : 1.35;
       roundRectPath(context, -material.width / 2 + 1, -material.height / 2 + 1, material.width - 2, material.height - 2, material.kind === "jaw" ? 4 : 7);
       context.stroke();
+      if (material.kind === "cushion") {
+        context.strokeStyle = "rgba(143, 224, 187, 0.78)";
+        context.shadowColor = "rgba(4, 24, 19, 0.72)";
+        context.shadowBlur = 3;
+        context.lineWidth = 1.8;
+        context.beginPath();
+        if (material.id === "top") {
+          context.moveTo(-material.width / 2 + 9, material.height / 2 - 1.4);
+          context.lineTo(material.width / 2 - 9, material.height / 2 - 1.4);
+        } else if (material.id === "bottom") {
+          context.moveTo(-material.width / 2 + 9, -material.height / 2 + 1.4);
+          context.lineTo(material.width / 2 - 9, -material.height / 2 + 1.4);
+        } else if (material.id.startsWith("left")) {
+          context.moveTo(material.width / 2 - 1.4, -material.height / 2 + 9);
+          context.lineTo(material.width / 2 - 1.4, material.height / 2 - 9);
+        } else {
+          context.moveTo(-material.width / 2 + 1.4, -material.height / 2 + 9);
+          context.lineTo(-material.width / 2 + 1.4, material.height / 2 - 9);
+        }
+        context.stroke();
+      }
       context.restore();
     });
     context.restore();
@@ -2288,7 +2252,6 @@
   function drawCueStick(direction, power) {
     if (!cueBall) return;
     const back = { x: -direction.x, y: -direction.y };
-    const normal = { x: -back.y, y: back.x };
     const startDistance = BALL_RADIUS + 9 + power * 44;
     const cueLength = 245;
     const start = { x: cueBall.position.x + back.x * startDistance, y: cueBall.position.y + back.y * startDistance };
@@ -2312,64 +2275,56 @@
     context.lineTo(end.x, end.y);
     context.stroke();
     context.restore();
-    if (pointerAim) drawCuePowerGauge(start, back, normal, pointerAim.pullRatio);
+    if (pointerAim) drawCuePowerGauge(direction, pointerAim.pullRatio);
   }
 
-  function drawCuePowerGauge(cueStart, back, normal, pullRatio) {
+  function drawCuePowerGauge(direction, pullRatio) {
+    if (!cueBall) return;
     const colors = ["#76cbb6", "#e3bd72", "#df7889"];
     const zoneBoundaries = [0, LIGHT_PULL_END, STRONG_PULL_START, 1];
-    const gaugeLength = 118;
-    const gaugeStart = {
-      x: cueStart.x + back.x * 22 + normal.x * 13,
-      y: cueStart.y + back.y * 22 + normal.y * 13
-    };
-    const gaugeEnd = {
-      x: gaugeStart.x + back.x * gaugeLength,
-      y: gaugeStart.y + back.y * gaugeLength
-    };
+    const center = cueBall.position;
+    const radius = BALL_RADIUS + 19;
+    const gapHalfAngle = Math.PI * 0.36;
+    const backAngle = Math.atan2(direction.y, direction.x) + Math.PI;
+    const arcStart = backAngle + gapHalfAngle;
+    const arcSpan = Math.PI * 2 - gapHalfAngle * 2;
+    const arcEnd = arcStart + arcSpan;
+    const arcFraction = arcSpan / (Math.PI * 2);
     const activeRatio = clamp(pullRatio, 0, 1);
+    const gradient = typeof context.createConicGradient === "function"
+      ? context.createConicGradient(arcStart, center.x, center.y)
+      : context.createLinearGradient(center.x - radius, center.y - radius, center.x + radius, center.y + radius);
+    gradient.addColorStop(0, colors[0]);
+    gradient.addColorStop(arcFraction * LIGHT_PULL_END, colors[0]);
+    gradient.addColorStop(arcFraction * STRONG_PULL_START, colors[1]);
+    gradient.addColorStop(arcFraction, colors[2]);
+    gradient.addColorStop(1, colors[2]);
     context.save();
     context.lineCap = "round";
     context.strokeStyle = "rgba(2, 8, 7, 0.72)";
-    context.lineWidth = 10;
+    context.lineWidth = 11;
     context.beginPath();
-    context.moveTo(gaugeStart.x, gaugeStart.y);
-    context.lineTo(gaugeEnd.x, gaugeEnd.y);
+    context.arc(center.x, center.y, radius, arcStart, arcEnd);
     context.stroke();
 
-    zoneBoundaries.slice(0, -1).forEach((from, index) => {
-      const to = zoneBoundaries[index + 1];
-      const startX = gaugeStart.x + back.x * gaugeLength * from;
-      const startY = gaugeStart.y + back.y * gaugeLength * from;
-      const endX = gaugeStart.x + back.x * gaugeLength * to;
-      const endY = gaugeStart.y + back.y * gaugeLength * to;
-      context.globalAlpha = 0.3;
-      context.strokeStyle = colors[index];
-      context.lineWidth = 4.5;
-      context.beginPath();
-      context.moveTo(startX, startY);
-      context.lineTo(endX, endY);
-      context.stroke();
-    });
+    context.globalAlpha = 0.3;
+    context.strokeStyle = gradient;
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(center.x, center.y, radius, arcStart, arcEnd);
+    context.stroke();
 
     if (activeRatio > 0) {
-      const activeEndX = gaugeStart.x + back.x * gaugeLength * activeRatio;
-      const activeEndY = gaugeStart.y + back.y * gaugeLength * activeRatio;
-      const activeGradient = context.createLinearGradient(gaugeStart.x, gaugeStart.y, gaugeEnd.x, gaugeEnd.y);
-      activeGradient.addColorStop(0, colors[0]);
-      activeGradient.addColorStop(LIGHT_PULL_END, colors[0]);
-      activeGradient.addColorStop(Math.min(LIGHT_PULL_END + 0.04, STRONG_PULL_START), colors[1]);
-      activeGradient.addColorStop(STRONG_PULL_START, colors[1]);
-      activeGradient.addColorStop(Math.min(STRONG_PULL_START + 0.04, 1), colors[2]);
-      activeGradient.addColorStop(1, colors[2]);
+      const activeEndAngle = arcStart + arcSpan * activeRatio;
+      const activeEndX = center.x + Math.cos(activeEndAngle) * radius;
+      const activeEndY = center.y + Math.sin(activeEndAngle) * radius;
       context.globalAlpha = 1;
-      context.strokeStyle = activeGradient;
+      context.strokeStyle = gradient;
       context.shadowColor = activeRatio < LIGHT_PULL_END ? colors[0] : activeRatio < STRONG_PULL_START ? colors[1] : colors[2];
       context.shadowBlur = 8;
-      context.lineWidth = 5;
+      context.lineWidth = 6;
       context.beginPath();
-      context.moveTo(gaugeStart.x, gaugeStart.y);
-      context.lineTo(activeEndX, activeEndY);
+      context.arc(center.x, center.y, radius, arcStart, activeEndAngle);
       context.stroke();
       context.shadowBlur = 6;
       context.fillStyle = "#fff4d9";
@@ -2382,12 +2337,13 @@
     context.shadowBlur = 0;
     context.strokeStyle = "rgba(255, 247, 226, 0.72)";
     context.lineWidth = 1.15;
-    [LIGHT_PULL_END, STRONG_PULL_START].forEach((boundary) => {
-      const x = gaugeStart.x + back.x * gaugeLength * boundary;
-      const y = gaugeStart.y + back.y * gaugeLength * boundary;
+    zoneBoundaries.slice(1, -1).forEach((boundary) => {
+      const angle = arcStart + arcSpan * boundary;
+      const innerRadius = radius - 4.5;
+      const outerRadius = radius + 4.5;
       context.beginPath();
-      context.moveTo(x - normal.x * 3.5, y - normal.y * 3.5);
-      context.lineTo(x + normal.x * 3.5, y + normal.y * 3.5);
+      context.moveTo(center.x + Math.cos(angle) * innerRadius, center.y + Math.sin(angle) * innerRadius);
+      context.lineTo(center.x + Math.cos(angle) * outerRadius, center.y + Math.sin(angle) * outerRadius);
       context.stroke();
     });
     context.restore();
