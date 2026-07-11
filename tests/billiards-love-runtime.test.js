@@ -5,90 +5,107 @@ const test = require("node:test");
 
 const source = readFileSync(path.join(__dirname, "../assets/billiards-love-game.js"), "utf8");
 
-test("builds a fixed-step zero-gravity Matter billiards table", () => {
-  assert.match(source, /const engine = Engine\.create\(\{ enableSleeping: true \}\)/);
+test("builds a zero-gravity fixed-120Hz Matter table with stable collision settings", () => {
+  assert.match(source, /const FIXED_STEP = 1000 \/ 120/);
+  assert.match(source, /const MAX_STEPS_PER_FRAME = 8/);
+  assert.match(source, /const engine = Engine\.create\(\{ enableSleeping: false \}\)/);
+  assert.match(source, /engine\.gravity\.x = 0/);
   assert.match(source, /engine\.gravity\.y = 0/);
+  assert.match(source, /engine\.positionIterations = 12/);
   assert.match(source, /Bodies\.circle\s*\(/);
   assert.match(source, /Bodies\.rectangle\s*\(/);
-  assert.match(source, /Composite\.add\(engine\.world/);
+  assert.match(source, /while \(accumulator >= FIXED_STEP && steps < MAX_STEPS_PER_FRAME\)/);
   assert.match(source, /Events\.on\(engine, "collisionStart"/);
-  assert.match(source, /const MAX_CATCHUP_STEPS = 8/);
-  assert.match(source, /accumulator = Math\.min\(MAX_BACKLOG, accumulator \+ delta\)/);
-  assert.match(source, /while \(accumulator >= STEP && steps < MAX_CATCHUP_STEPS\)/);
 });
 
-test("tracks six pockets, scratches, cushion-first shots, and combinations", () => {
-  const pocketEntries = source.match(/\{ x: \d+, y: \d+, radius: [\d.]+, side: "(?:corner|middle)" \}/g) || [];
-  assert.equal(pocketEntries.length, 6);
-  assert.match(source, /shotState\.scratch = true/);
-  assert.match(source, /shotState\.cueRailBeforeContact = true/);
-  assert.match(source, /shotState\.combination = true/);
-  assert.match(source, /rules\.resolveShot\(runState/);
-  assert.match(source, /rules\.findCuePlacement\(/);
-  assert.match(source, /if \(outcome\.scratch\) respotCueBall\(\)/);
+test("racks one cue ball and all fifteen standard numbered balls with the eight in the center", () => {
+  assert.match(source, /const RACK = Object\.freeze\(\[\s*\[1\],\s*\[4, 9\],\s*\[2, 8, 10\]/s);
+  assert.match(source, /createBall\(0, 342, WORLD\.height \/ 2\)/);
+  assert.match(source, /RACK\.forEach\(\(row, rowIndex\)/);
+  assert.match(source, /const stripe = number > 8/);
+  assert.match(source, /number === 0 \? "hb-cue-ball" : `hb-object-ball-\$\{number\}`/);
 });
 
-test("implements a complete pull-and-release pointer gesture with trajectory preview", () => {
+test("implements six fixed pockets, natural pocket capture, cue scratches, and respots", () => {
+  for (const pocket of ["top-left", "top-middle", "top-right", "bottom-left", "bottom-middle", "bottom-right"]) {
+    assert.ok(source.includes(`id: "${pocket}"`), `missing ${pocket} pocket`);
+  }
+  assert.match(source, /shotState\.cueScratch = true/);
+  assert.match(source, /shotState\.pottedNumbers\.push\(number\)/);
+  assert.match(source, /shotState\.bankedNumbers\.push\(number\)/);
+  assert.match(source, /outcome\.respotNumbers\.forEach\(respotBall\)/);
+  assert.match(source, /if \(!cueBall && !runState\.endState\.ended\) respotBall\(0\)/);
+});
+
+test("requires target declaration and supports pull-direction-and-power touch aiming", () => {
   for (const event of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
     assert.ok(source.includes(`"${event}"`), `missing ${event}`);
   }
+  assert.match(source, /const target = nearestObjectBall\(point, 46\)/);
+  assert.match(source, /selectTarget\(bodyData\(target\)\.number\)/);
+  assert.match(source, /runState\.breakCompleted && selectedBallNumber === null/);
   assert.match(source, /canvas\.setPointerCapture\?\.\(event\.pointerId\)/);
-  assert.match(source, /rules\.computeAimGesture\(pointerAim\.start, pointerAim\.current\)/);
-  assert.match(source, /rules\.traceAimPath\(/);
-  assert.match(source, /if \(shouldShoot && gesture\?\.active\)/);
+  assert.match(source, /pointerAim\.power = clamp\(\(pullDistance - MIN_PULL\)/);
+  assert.match(source, /if \(shouldShoot && power > 0\.015\) shoot\(direction, power\)/);
+  assert.match(source, /event\.isPrimary === false/);
+  assert.match(source, /!shotState && !pointerAim && !resolvingShot/);
+  assert.match(source, /!pointerAim \|\| event\.pointerId !== pointerAim\.id/);
 });
 
-test("provides keyboard aiming, power control, and release-to-shoot fallback", () => {
-  assert.match(source, /key === "arrowleft" \|\| key === "a"/);
-  assert.match(source, /key === "arrowright" \|\| key === "d"/);
-  assert.match(source, /key === "arrowup" \|\| key === "w"/);
-  assert.match(source, /event\.code === "Space"/);
-  assert.match(source, /on\(window, "keyup"/);
-  assert.match(source, /shootKeyboard\(\)/);
-  assert.match(source, /key === "enter"/);
-  assert.match(source, /key === "r"/);
+test("draws the required first-contact and target-ball prediction lines", () => {
+  assert.match(source, /function rayCircleDistance\(/);
+  assert.match(source, /function traceAim\(/);
+  assert.match(source, /context\.lineTo\(trace\.impact\.x, trace\.impact\.y\)/);
+  assert.match(source, /context\.lineTo\(target\.x \+ trace\.targetDirection\.x \* length/);
+  assert.match(source, /bodyData\(trace\.hitBall\)\?\.number === selectedBallNumber/);
 });
 
-test("synthesizes adaptive local music and collision-specific sound effects", () => {
+test("evaluates every settled shot exactly through the pure relationship rules engine", () => {
+  assert.match(source, /function finalizeShot\(\)/);
+  assert.match(source, /if \(!shotState \|\| resolvingShot\) return/);
+  assert.match(source, /outcome = rules\.evaluateShot\(runState, \{/);
+  for (const field of ["declaredBall", "firstContact", "pottedNumbers", "cueScratch", "breakShot", "bankedNumbers"]) {
+    assert.ok(source.includes(`${field}:`), `missing ${field} shot input`);
+  }
+  assert.match(source, /runState = outcome\.state/);
+  assert.match(source, /processOutcomePerformances\(outcome\)/);
+});
+
+test("connects all fifteen micro performances plus confession and proposal cinematics", () => {
+  assert.match(source, /content\.selectPerformance\(\{/);
+  assert.match(source, /queueMicro\(performance, event\)/);
+  assert.match(source, /specialCopy\("confessionSuccess"/);
+  assert.match(source, /specialCopy\("feelingsExposed"/);
+  assert.match(source, /specialCopy\("proposalSuccess"/);
+  assert.match(source, /kind: "confession"/);
+  assert.match(source, /kind: "proposal"/);
+  assert.match(source, /content\.getEnding\(grade\)/);
+  assert.match(source, /"confession-too-early": "confessionTooEarly"/);
+  assert.doesNotMatch(source, /confession-too-soon/);
+});
+
+test("restores the sole animation loop when a mobile browser returns from BFCache", () => {
+  assert.match(source, /window\.addEventListener\("pagehide", \(event\) => \{/);
+  assert.match(source, /if \(!event\.persisted\) cancelAnimationFrame\(frameHandle\)/);
+  assert.match(source, /window\.addEventListener\("pageshow", \(event\) => \{/);
+  assert.match(source, /if \(!event\.persisted\) return/);
+  assert.match(source, /lastFrameAt = performance\.now\(\)/);
+  assert.match(source, /frameHandle = requestAnimationFrame\(frame\)/);
+});
+
+test("synthesizes three adaptive local music layers and physical sound cues", () => {
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);
-  assert.match(source, /createOscillator\(\)/);
-  assert.match(source, /createBiquadFilter\(\)/);
-  assert.match(source, /createBuffer\(1, length, this\.context\.sampleRate\)/);
-  assert.match(source, /scheduleMusic\(\)/);
-  assert.match(source, /setMood\(level, intensity\)/);
-  for (const sound of ["shot", "ball", "rail", "pocket", "foul", "reply", "victory"]) {
-    assert.ok(source.includes(`name === "${sound}"`) || source.includes(`"${sound}"`), `missing ${sound} sound`);
+  assert.match(source, /this\.baseGain = this\.context\.createGain\(\)/);
+  assert.match(source, /this\.warmGain = this\.context\.createGain\(\)/);
+  assert.match(source, /this\.futureGain = this\.context\.createGain\(\)/);
+  assert.match(source, /setStage\(stageNumber\)/);
+  for (const cue of ["strike", "pocket", "scratch", "stage", "confession", "proposal"]) {
+    assert.ok(source.includes(`name === "${cue}"`) || source.includes(`cue("${cue}"`), `missing ${cue} audio`);
   }
 });
 
-test("renders a high-DPI canvas and caps pathological pixel ratios", () => {
-  assert.match(source, /dpr = Math\.min\(3, Math\.max\(1, window\.devicePixelRatio \|\| 1\)\)/);
-  assert.match(source, /canvas\.width = Math\.max\(1, Math\.round\(rect\.width \* dpr\)\)/);
-  assert.match(source, /canvas\.height = Math\.max\(1, Math\.round\(rect\.height \* dpr\)\)/);
-  assert.match(source, /context\.setTransform\(/);
-  assert.match(source, /new ResizeObserver\(resizeCanvas\)/);
-});
-
-test("first milestone performances persist while repeated events stay lightweight", () => {
-  assert.match(source, /const MILESTONE_KEY = "yl-billiards-love-performances"/);
-  assert.match(source, /performedMilestones = loadPerformedMilestones\(\)/);
-  assert.match(source, /if \(hasPerformed\(scene\.key\)\) \{\s*showToast/s);
-  assert.match(source, /markPerformed\(scene\.key\)/);
-  for (const scene of ["first-approach", "first-echo", "first-combination", "final-dawn"]) {
-    assert.ok(source.includes(`"${scene}"`), `missing milestone ${scene}`);
+test("does not introduce forbidden balls, AI opponents, power-ups, or physics modifiers", () => {
+  for (const forbidden of ["powerUp", "power-up", "movingPocket", "aiOpponent", "jumpShot", "masse", "spinControl", "skillBall"] ) {
+    assert.equal(source.includes(forbidden), false, `forbidden mechanic present: ${forbidden}`);
   }
-});
-
-test("pauses safely and tears down every long-lived browser resource", () => {
-  assert.match(source, /const lifecycle = new AbortController\(\)/);
-  assert.match(source, /document, "visibilitychange"/);
-  assert.match(source, /window, "pagehide"/);
-  assert.match(source, /if \(event\.persisted\)/);
-  assert.match(source, /window, "pageshow"/);
-  assert.match(source, /cancelAnimationFrame\(frameHandle\)/);
-  assert.match(source, /resizeObserver\?\.disconnect\(\)/);
-  assert.match(source, /lifecycle\.abort\(\)/);
-  assert.match(source, /Events\.off\(engine\)/);
-  assert.match(source, /Engine\.clear\(engine\)/);
-  assert.match(source, /audio\.destroy\(\)/);
 });

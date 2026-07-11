@@ -1,7 +1,4 @@
 export const HEARTBEAT_GAME_PAGE = "game-2048.html";
-export const WATERMELON_GAME_PAGE = "game-watermelon.html";
-export const TETRIS_GAME_PAGE = "game-tetris-love.html";
-export const BREAKOUT_GAME_PAGE = "game-breakout-love.html";
 export const BILLIARDS_GAME_PAGE = "game-billiards-love.html";
 
 export const GAME_CONTRACTS = [
@@ -19,31 +16,6 @@ export const GAME_CONTRACTS = [
     ]
   },
   {
-    file: WATERMELON_GAME_PAGE,
-    name: "心动大西瓜",
-    portalAsset: "assets/portal/heartmelon-memories.png",
-    styles: ["assets/watermelon.css"],
-    scripts: [
-      "assets/vendor/matter-0.20.0.min.js",
-      "assets/watermelon-rules.js",
-      "assets/watermelon-game.js"
-    ]
-  },
-  {
-    file: TETRIS_GAME_PAGE,
-    name: "心动俄罗斯方块",
-    portalAsset: "assets/portal/tetris-rhythm.png",
-    styles: ["assets/tetris-love.css"],
-    scripts: ["assets/tetris-love-rules.js", "assets/tetris-love-game.js"]
-  },
-  {
-    file: BREAKOUT_GAME_PAGE,
-    name: "心动打砖块",
-    portalAsset: "assets/portal/breakout-reply.png",
-    styles: ["assets/breakout-love.css"],
-    scripts: ["assets/breakout-love-rules.js", "assets/breakout-love-game.js"]
-  },
-  {
     file: BILLIARDS_GAME_PAGE,
     name: "心动桌球",
     portalAsset: "assets/portal/billiards-night.png",
@@ -51,6 +23,7 @@ export const GAME_CONTRACTS = [
     scripts: [
       "assets/vendor/matter-0.20.0.min.js",
       "assets/billiards-love-rules.js",
+      "assets/billiards-love-content.js",
       "assets/billiards-love-game.js"
     ]
   }
@@ -83,11 +56,60 @@ export const ACTIVE_PUBLIC_STYLE_FILES = [...new Set([
   ...GAME_CONTRACTS.flatMap(({ styles }) => styles)
 ])];
 
+export const ACTIVE_PUBLIC_DOCUMENT_FILES = ["README.md"];
+
 export const ACTIVE_PUBLIC_FILES = [
   ...ACTIVE_PUBLIC_HTML_FILES,
   ...ACTIVE_PUBLIC_JS_FILES,
-  ...ACTIVE_PUBLIC_STYLE_FILES
+  ...ACTIVE_PUBLIC_STYLE_FILES,
+  ...ACTIVE_PUBLIC_DOCUMENT_FILES
 ];
+
+export const RETIRED_GAMES = [
+  {
+    file: "game-watermelon.html",
+    name: "心动大西瓜",
+    files: [
+      "game-watermelon.html",
+      "assets/watermelon.css",
+      "assets/watermelon-rules.js",
+      "assets/watermelon-game.js",
+      "assets/portal/heartmelon-memories.png",
+      "assets/portal/watermelon-summer.webp",
+      "tests/watermelon-rules.test.js",
+      "tests/watermelon-runtime.test.js",
+      "tools/validate-watermelon.mjs"
+    ]
+  },
+  {
+    file: "game-tetris-love.html",
+    name: "心动俄罗斯方块",
+    files: [
+      "game-tetris-love.html",
+      "assets/tetris-love.css",
+      "assets/tetris-love-rules.js",
+      "assets/tetris-love-game.js",
+      "assets/portal/tetris-rhythm.png",
+      "tests/tetris-love-page.test.js",
+      "tests/tetris-love-rules.test.js"
+    ]
+  },
+  {
+    file: "game-breakout-love.html",
+    name: "心动打砖块",
+    files: [
+      "game-breakout-love.html",
+      "assets/breakout-love.css",
+      "assets/breakout-love-rules.js",
+      "assets/breakout-love-game.js",
+      "assets/portal/breakout-reply.png",
+      "tests/breakout-love-rules.test.js",
+      "tests/breakout-love-runtime.test.js"
+    ]
+  }
+];
+
+export const RETIRED_GAME_FILES = [...new Set(RETIRED_GAMES.flatMap(({ files }) => files))];
 
 export const LEGACY_GAMES = [
   { file: "game-tetris.html", title: "熔炉方块", runtime: "runTetris", asset: "assets/game-art/tetris-forge-ui.jpg" },
@@ -153,7 +175,7 @@ function linkedScripts(html) {
     .map((match) => resourcePath(match[1]));
 }
 
-export function validateFiveGameContract({ sources, exists = () => false }) {
+export function validateGameContract({ sources, exists = () => false }) {
   const failures = [];
   const source = (file) => String(sources[file] || "");
 
@@ -168,12 +190,13 @@ export function validateFiveGameContract({ sources, exists = () => false }) {
   const activePublicSurface = [
     ...ACTIVE_PUBLIC_HTML_FILES.map((file) => htmlSources[file]),
     ...ACTIVE_PUBLIC_JS_FILES.map(source),
-    ...ACTIVE_PUBLIC_STYLE_FILES.map(source)
+    ...ACTIVE_PUBLIC_STYLE_FILES.map(source),
+    ...ACTIVE_PUBLIC_DOCUMENT_FILES.map(source)
   ].join("\n");
 
   const homepageGameLinks = [...indexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
   if (JSON.stringify(homepageGameLinks) !== JSON.stringify(ACTIVE_GAME_PAGES)) {
-    failures.push(`Homepage must expose exactly five direct game links in public order: ${JSON.stringify(homepageGameLinks)}`);
+    failures.push(`Homepage must expose exactly two direct game links in public order: ${JSON.stringify(homepageGameLinks)}`);
   }
   for (const game of GAME_CONTRACTS) {
     if (!hasHomepageLink(indexHtml, game)) {
@@ -239,6 +262,18 @@ export function validateFiveGameContract({ sources, exists = () => false }) {
   }
   for (const copy of LEGACY_LOBBY_COPY) {
     if (activePublicSurface.includes(copy)) failures.push(`Legacy lobby copy still public: ${copy}`);
+  }
+  for (const retired of RETIRED_GAMES) {
+    if (activePublicSurface.includes(retired.name)) {
+      failures.push(`Retired game name still public: ${retired.name}`);
+    }
+    for (const file of retired.files) {
+      const relativeAsset = file.replace(/^assets\//, "");
+      if (exists(file)) failures.push(`Retired game file still exists: ${file}`);
+      if (activePublicSurface.includes(file) || (relativeAsset !== file && activePublicSurface.includes(relativeAsset))) {
+        failures.push(`Retired game file still referenced publicly: ${file}`);
+      }
+    }
   }
   for (const legacy of LEGACY_GAMES) {
     const relativeAsset = legacy.asset.replace(/^assets\//, "");

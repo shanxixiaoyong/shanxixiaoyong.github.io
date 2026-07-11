@@ -12,8 +12,7 @@ const redirectHtml = read("games.html");
 const gamesSource = read("assets/games.js");
 const validators = [
   "tools/validate-site.mjs",
-  "tools/validate-love-2048.mjs",
-  "tools/validate-watermelon.mjs"
+  "tools/validate-love-2048.mjs"
 ];
 let gameContract;
 
@@ -35,7 +34,7 @@ function linkOverlay(sourceDir, targetDir, mutationParts) {
 }
 
 function assertSiteValidatorRejectsMutation(file, mutate) {
-  const overlay = fs.mkdtempSync(path.join(os.tmpdir(), "five-game-contract-"));
+  const overlay = fs.mkdtempSync(path.join(os.tmpdir(), "two-game-contract-"));
   try {
     linkOverlay(root, overlay, file.split("/"));
     const target = path.join(overlay, file);
@@ -59,12 +58,9 @@ function assertSiteValidatorRejectsMutation(file, mutate) {
   }
 }
 
-test("publishes exactly five independent Heartbeat games", () => {
+test("publishes exactly two independent Heartbeat games", () => {
   assert.deepEqual(gameContract.ACTIVE_GAMES, [
     { file: "game-2048.html", name: "心动2048" },
-    { file: "game-watermelon.html", name: "心动大西瓜" },
-    { file: "game-tetris-love.html", name: "心动俄罗斯方块" },
-    { file: "game-breakout-love.html", name: "心动打砖块" },
     { file: "game-billiards-love.html", name: "心动桌球" }
   ]);
 
@@ -79,7 +75,7 @@ test("publishes exactly five independent Heartbeat games", () => {
   assert.match(gamesSource, /name: "心动2048"/);
 });
 
-test("homepage links directly to all five games in narrative order", () => {
+test("homepage links directly to both games in narrative order", () => {
   const activeIndexHtml = gameContract.stripHtmlComments(indexHtml);
   const gameLinks = [...activeIndexHtml.matchAll(/href="(game-[^"]+\.html)"/g)].map((match) => match[1]);
   assert.deepEqual(gameLinks, gameContract.ACTIVE_GAME_PAGES);
@@ -134,9 +130,30 @@ test("assets/games.js remains Heartbeat-2048-only and retired games remain absen
       assert.equal(source.includes(legacy.runtime), false, `${file}: ${legacy.runtime}`);
     }
   }
+
+  for (const file of gameContract.RETIRED_GAME_FILES) {
+    assert.equal(fs.existsSync(path.join(root, file)), false, file);
+  }
+  for (const retired of gameContract.RETIRED_GAMES) {
+    for (const file of gameContract.ACTIVE_PUBLIC_FILES) {
+      const source = read(file);
+      assert.equal(source.includes(retired.name), false, `${file}: ${retired.name}`);
+      for (const retiredFile of retired.files) {
+        assert.equal(source.includes(retiredFile), false, `${file}: ${retiredFile}`);
+      }
+    }
+  }
+
+  const contractSources = gameContract.readGameContractSources(read);
+  const reintroduced = gameContract.RETIRED_GAME_FILES[0];
+  const failures = gameContract.validateGameContract({
+    sources: contractSources,
+    exists: (file) => file === reintroduced
+  });
+  assert.ok(failures.includes(`Retired game file still exists: ${reintroduced}`));
 });
 
-test("site and focused validators accept the five-game site", () => {
+test("site and focused validators accept the two-game site", () => {
   for (const validator of validators) {
     const result = childProcess.spawnSync(process.execPath, [path.join(root, validator)], {
       cwd: root,

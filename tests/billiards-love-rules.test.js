@@ -1,3 +1,5 @@
+"use strict";
+
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const path = require("node:path");
@@ -7,267 +9,565 @@ const vm = require("node:vm");
 const rules = require("../assets/billiards-love-rules.js");
 const {
   RULES,
-  MOMENTS,
-  LEVELS,
-  computeAimGesture,
-  traceAimPath,
+  BALLS,
+  STAGES,
+  FAILURE_ENDINGS,
+  ballByNumber,
+  stageForBall,
   createRunState,
-  resolveShot,
-  advanceLevel,
-  findCuePlacement
+  validateRunState,
+  currentStage,
+  availableTargets,
+  remainingNumbers,
+  classifyTarget,
+  evaluateShot,
+  computeRating
 } = rules;
 
-test("exports an immutable three-chapter romantic table catalog", () => {
+function breakShot(overrides = {}) {
+  const pottedNumbers = overrides.pottedNumbers || [];
+  return {
+    declaredBall: null,
+    firstContact: overrides.firstContact === undefined ? (pottedNumbers[0] || 1) : overrides.firstContact,
+    pottedNumbers,
+    cueScratch: overrides.cueScratch || false,
+    breakShot: true,
+    bankedNumbers: overrides.bankedNumbers || []
+  };
+}
+
+function normalShot(declaredBall, pottedNumbers = [declaredBall], overrides = {}) {
+  return {
+    declaredBall,
+    firstContact: overrides.firstContact === undefined ? declaredBall : overrides.firstContact,
+    pottedNumbers,
+    cueScratch: overrides.cueScratch || false,
+    breakShot: false,
+    bankedNumbers: overrides.bankedNumbers || []
+  };
+}
+
+function begin(overrides = {}) {
+  return evaluateShot(createRunState(), breakShot(overrides)).state;
+}
+
+function play(state, declaredBall, pottedNumbers = [declaredBall], overrides = {}) {
+  return evaluateShot(state, normalShot(declaredBall, pottedNumbers, overrides));
+}
+
+function advance(state, groups) {
+  let next = state;
+  for (const group of groups) next = play(next, group[0], group).state;
+  return next;
+}
+
+function stateAtAdjustment() {
+  return advance(begin({ pottedNumbers: [1, 2, 3], firstContact: 1 }), [
+    [4, 5],
+    [6, 7],
+    [8],
+    [9, 10, 11]
+  ]);
+}
+
+function finishIdeal(options = {}) {
+  let state = begin({ pottedNumbers: [1, 2, 3], firstContact: 1 });
+  const groups = [[4, 5], [6, 7], [8], [9, 10, 11], [12, 13], [14], [15]];
+  let finalResult = null;
+  for (const group of groups) {
+    if (options.missBeforeEach) state = play(state, group[0], []).state;
+    finalResult = play(state, group[0], group);
+    state = finalResult.state;
+  }
+  return finalResult;
+}
+
+test("exports the frozen standard 15-ball relationship catalog and seven stages", () => {
   assert.equal(RULES.title, "心动桌球");
-  assert.equal(LEVELS.length, 3);
-  assert.equal(MOMENTS.length, 12);
-  assert.deepEqual(LEVELS.map((level) => level.goal), [2, 3, 4]);
-  assert.deepEqual(LEVELS.map((level) => level.shots), [6, 7, 8]);
-  assert.deepEqual(MOMENTS.map((moment) => moment.number), Array.from({ length: 12 }, (_, index) => index + 1));
-  assert.equal(new Set(MOMENTS.map((moment) => moment.id)).size, MOMENTS.length);
-  assert.ok(MOMENTS.every((moment) => moment.points > 0 && moment.line.length > 8));
+  assert.equal(RULES.ballCount, 15);
+  assert.equal(BALLS.length, 15);
+  assert.equal(STAGES.length, 7);
+  assert.deepEqual(STAGES.map((stage) => stage.ballNumbers), [
+    [1, 2, 3],
+    [4, 5],
+    [6, 7],
+    [8],
+    [9, 10, 11],
+    [12, 13],
+    [14, 15]
+  ]);
+  assert.deepEqual(BALLS.map((ball) => ball.name), [
+    "对视",
+    "主动搭话",
+    "交换联系方式",
+    "找到共同话题",
+    "频繁聊天",
+    "单独吃饭",
+    "正式约会",
+    "告白",
+    "第一次牵手",
+    "拥抱",
+    "共同旅行",
+    "面对分歧",
+    "沟通与和好",
+    "谈论未来",
+    "求婚"
+  ]);
+  assert.deepEqual(BALLS.map((ball) => ball.suit), [
+    ...Array(7).fill("solid"),
+    "eight",
+    ...Array(7).fill("stripe")
+  ]);
+  assert.deepEqual(BALLS.filter((ball) => ball.critical).map((ball) => ball.number), [8, 15]);
+  assert.equal(ballByNumber(8).colorName, "黑");
+  assert.equal(stageForBall(13).id, "learning-together");
   assert.ok(Object.isFrozen(rules));
-  assert.ok(Object.isFrozen(RULES));
-  assert.ok(Object.isFrozen(MOMENTS));
-  assert.ok(Object.isFrozen(LEVELS));
-  assert.ok(MOMENTS.every(Object.isFrozen));
-  assert.ok(LEVELS.every((level) => Object.isFrozen(level) && Object.isFrozen(level.moments)));
+  assert.ok(Object.isFrozen(RULES.interest));
+  assert.ok(BALLS.every(Object.isFrozen));
+  assert.ok(STAGES.every((stage) => Object.isFrozen(stage) && Object.isFrozen(stage.ballNumbers)));
 });
 
-test("loads as a browser global without CommonJS", () => {
+test("loads as an equivalent frozen browser UMD global", () => {
   const source = readFileSync(path.join(__dirname, "../assets/billiards-love-rules.js"), "utf8");
   const browser = {};
   vm.runInNewContext(source, browser, { filename: "billiards-love-rules.js" });
+  const browserRules = browser.BilliardsLoveRules;
 
-  assert.equal(browser.BilliardsLoveRules.RULES.title, "心动桌球");
-  assert.equal(browser.BilliardsLoveRules.LEVELS.length, 3);
-  assert.equal(typeof browser.BilliardsLoveRules.resolveShot, "function");
-  assert.equal(typeof browser.BilliardsLoveRules.traceAimPath, "function");
+  assert.equal(browserRules.BALLS.length, 15);
+  assert.equal(browserRules.STAGES.length, 7);
+  assert.equal(typeof browserRules.evaluateShot, "function");
+  assert.equal(typeof browserRules.computeRating, "function");
+  assert.ok(Object.isFrozen(browserRules));
+
+  const result = browserRules.evaluateShot(browserRules.createRunState(), breakShot({
+    pottedNumbers: [8, 1, 15],
+    firstContact: 1
+  }));
+  assert.deepEqual(Array.from(result.respotNumbers), [8, 15]);
+  assert.deepEqual(Array.from(result.state.pottedNumbers), [1]);
 });
 
-test("aim gesture turns a backward pull into a clamped deliberate shot", () => {
-  const tooShort = computeAimGesture({ x: 100, y: 100 }, { x: 100, y: 94 });
-  assert.equal(tooShort.active, false);
-  assert.equal(tooShort.power, 0);
-  assert.equal(tooShort.speed, 0);
-
-  const upwardShot = computeAimGesture({ x: 100, y: 100 }, { x: 100, y: 200 });
-  assert.equal(upwardShot.active, true);
-  assert.ok(Math.abs(upwardShot.direction.x) < 1e-12);
-  assert.equal(upwardShot.direction.y, -1);
-  assert.ok(upwardShot.power > 0.9 && upwardShot.power < 1);
-  assert.ok(upwardShot.speed > RULES.minShotSpeed);
-
-  const clamped = computeAimGesture({ x: 0, y: 0 }, { x: -1000, y: 0 });
-  assert.equal(clamped.pull, RULES.maxPull);
-  assert.equal(clamped.power, 1);
-  assert.equal(clamped.speed, RULES.maxShotSpeed);
-  assert.equal(clamped.direction.x, 1);
-  assert.ok(Object.isFrozen(clamped));
-  assert.ok(Object.isFrozen(clamped.direction));
+test("creates a JSON-serializable deeply immutable initial state", () => {
+  const state = createRunState();
+  assert.deepEqual(state, {
+    version: 1,
+    pottedNumbers: [],
+    interest: 100,
+    rhythmScore: 100,
+    consecutiveMisses: 0,
+    shots: 0,
+    successfulShots: 0,
+    potStreak: 0,
+    bestPotStreak: 0,
+    cueScratches: 0,
+    bankedPots: 0,
+    multiBallShots: 0,
+    violations: [],
+    pocketOrder: [],
+    breakCompleted: false,
+    endState: { ended: false, status: "playing", ending: null, grade: null }
+  });
+  assert.equal(validateRunState(state), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(state)), state);
+  assert.ok(Object.isFrozen(state));
+  assert.ok(Object.isFrozen(state.pottedNumbers));
+  assert.ok(Object.isFrozen(state.violations));
+  assert.ok(Object.isFrozen(state.endState));
+  assert.throws(() => state.pottedNumbers.push(1), TypeError);
+  assert.throws(() => createRunState(0), TypeError);
 });
 
-test("aim gesture rejects malformed points and pull ranges", () => {
-  assert.throws(() => computeAimGesture(null, { x: 0, y: 0 }), TypeError);
-  assert.throws(() => computeAimGesture({ x: NaN, y: 0 }, { x: 0, y: 0 }), TypeError);
-  assert.throws(() => computeAimGesture({ x: 0, y: 0 }, { x: 0, y: 0 }, { minPull: 10, maxPull: 10 }), RangeError);
-  assert.throws(() => computeAimGesture({ x: 0, y: 0 }, { x: 0, y: 0 }, []), TypeError);
-});
-
-test("aim trace predicts the first object-ball contact", () => {
-  const trace = traceAimPath(
-    { x: 50, y: 50 },
-    { x: 3, y: 0 },
-    { left: 0, right: 100, top: 0, bottom: 100 },
-    [
-      { id: "near", x: 80, y: 50, radius: 5 },
-      { id: "far", x: 95, y: 50, radius: 5 }
-    ],
-    1,
-    5
-  );
-
-  assert.equal(trace.hitBallId, "near");
-  assert.equal(trace.segments.length, 1);
-  assert.equal(trace.segments[0].type, "ball");
-  assert.equal(trace.segments[0].end.x, 70);
-  assert.equal(trace.segments[0].end.y, 50);
-  assert.equal(trace.cushionHits, 0);
-  assert.ok(Object.isFrozen(trace));
-  assert.ok(Object.isFrozen(trace.segments));
-});
-
-test("aim trace reflects from a cushion for an indirect preview", () => {
-  const trace = traceAimPath(
-    { x: 50, y: 50 },
-    { x: 1, y: 0 },
-    { left: 0, right: 100, top: 0, bottom: 100 },
-    [],
-    1,
-    5
-  );
-
-  assert.equal(trace.hitBallId, null);
-  assert.equal(trace.segments.length, 2);
-  assert.deepEqual(trace.segments.map((segment) => segment.type), ["cushion", "cushion"]);
-  assert.equal(trace.segments[0].end.x, 100);
-  assert.equal(trace.segments[1].end.x, 0);
-  assert.equal(trace.finalDirection.x, -1);
-  assert.equal(trace.cushionHits, 2);
-});
-
-test("aim trace validates geometry and bounded bounce counts", () => {
-  const bounds = { left: 0, right: 100, top: 0, bottom: 100 };
-  assert.throws(() => traceAimPath({ x: 50, y: 50 }, { x: 0, y: 0 }, bounds), RangeError);
-  assert.throws(() => traceAimPath({ x: 50, y: 50 }, { x: 1, y: 0 }, { left: 2, right: 1, top: 0, bottom: 2 }), RangeError);
-  assert.throws(() => traceAimPath({ x: 50, y: 50 }, { x: 1, y: 0 }, bounds, [{ id: "", x: 1, y: 1, radius: 2 }]), TypeError);
-  assert.throws(() => traceAimPath({ x: 50, y: 50 }, { x: 1, y: 0 }, bounds, [], RULES.maxAimBounces + 1), RangeError);
-});
-
-test("a direct pocket unlocks a concrete moment and spends one turn", () => {
+test("reports the current stage, suggested targets, remaining balls, and target timing", () => {
   const initial = createRunState();
-  const result = resolveShot(initial, {
-    firstContactId: "umbrella",
-    pottedIds: ["umbrella"],
-    scratch: false,
-    cueRailBeforeContact: false,
-    railHits: 0,
-    combination: false
-  });
+  assert.equal(currentStage(initial).id, "first-contact");
+  assert.deepEqual(availableTargets(initial), [1, 2, 3]);
+  assert.equal(remainingNumbers(initial).length, 15);
+  assert.equal(classifyTarget(initial, 1).timing, "break-only");
 
-  assert.equal(result.foul, false);
-  assert.equal(result.indirect, false);
-  assert.equal(result.replyShot, false);
-  assert.equal(result.basePoints, 120);
-  assert.equal(result.scoreDelta, 120);
-  assert.equal(result.state.score, 120);
-  assert.equal(result.state.shotsRemaining, 5);
-  assert.equal(result.state.chapterPockets, 1);
-  assert.deepEqual(result.state.unlockedMomentIds, ["umbrella"]);
-  assert.deepEqual(result.milestones, ["first-approach"]);
-  assert.deepEqual(initial, createRunState());
-  assert.ok(Object.isFrozen(result));
-  assert.ok(Object.isFrozen(result.state));
+  const opened = begin();
+  assert.equal(classifyTarget(opened, 1).timing, "on-time");
+  assert.equal(classifyTarget(opened, 4).timing, "next-stage");
+  assert.equal(classifyTarget(opened, 6).timing, "multi-stage");
+  assert.deepEqual(classifyTarget(opened, 8), {
+    number: 8,
+    stage: STAGES[3],
+    currentStage: STAGES[0],
+    stageGap: 3,
+    timing: "early-confession",
+    interestDelta: 0,
+    rhythmDelta: RULES.rhythm.earlyConfession,
+    failure: "confession-too-early"
+  });
+  assert.equal(classifyTarget(opened, 15).failure, "commitment-too-heavy");
+
+  const partial = play(opened, 3).state;
+  assert.deepEqual(availableTargets(partial), [1, 2]);
+  assert.deepEqual(remainingNumbers(partial), [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  assert.ok(Object.isFrozen(availableTargets(partial)));
 });
 
-test("cushion and combination pockets become an indirect reply that refunds the turn", () => {
-  const bank = resolveShot(createRunState(), {
-    firstContactId: "umbrella",
-    pottedIds: ["umbrella"],
-    cueRailBeforeContact: true,
-    railHits: 1,
-    combination: false
-  });
+test("protects 8 and 15 on the opening break and skips relationship timing", () => {
+  const result = evaluateShot(createRunState(), breakShot({
+    pottedNumbers: [8, 1, 15, 4],
+    firstContact: 1,
+    bankedNumbers: [8, 4]
+  }));
 
-  assert.equal(bank.indirect, true);
-  assert.equal(bank.replyShot, true);
-  assert.equal(bank.state.shotsRemaining, 6);
-  assert.equal(bank.indirectBonus, Math.round(120 * 0.55) + RULES.indirectFlatBonus);
-  assert.ok(bank.milestones.includes("first-echo"));
+  assert.deepEqual(result.respotNumbers, [8, 15]);
+  assert.deepEqual(result.pottedNumbers, [1, 4]);
+  assert.deepEqual(result.state.pottedNumbers, [1, 4]);
+  assert.deepEqual(result.state.pocketOrder, [1, 4]);
+  assert.equal(result.state.interest, 100);
+  assert.equal(result.state.rhythmScore, 100);
+  assert.equal(result.state.violations.length, 0);
+  assert.equal(result.state.bankedPots, 1);
+  assert.equal(result.state.multiBallShots, 1);
+  assert.equal(result.events.find((event) => event.number === 8).timing, "protected-respot");
+  assert.equal(result.events.find((event) => event.number === 15).credited, false);
+  assert.equal(currentStage(result.state).id, "first-contact");
+  assert.deepEqual(availableTargets(result.state), [2, 3]);
 
-  const combination = resolveShot(createRunState(), {
-    firstContactId: "umbrella",
-    pottedIds: ["last-train"],
-    cueRailBeforeContact: false,
-    railHits: 0,
-    combination: true
-  });
-  assert.equal(combination.indirect, true);
-  assert.equal(combination.combinationBonus, RULES.combinationBonus);
-  assert.ok(combination.milestones.includes("first-combination"));
+  const emptyBreak = evaluateShot(createRunState(), breakShot());
+  assert.equal(emptyBreak.miss, true);
+  assert.equal(emptyBreak.state.consecutiveMisses, 0);
+  assert.equal(emptyBreak.state.interest, 100);
+  assert.throws(() => evaluateShot(result.state, breakShot()), RangeError);
 });
 
-test("scratches and missed contacts are fouls with bounded score penalties", () => {
-  const miss = resolveShot(createRunState(), {
-    firstContactId: null,
-    pottedIds: [],
-    scratch: false,
-    railHits: 2
-  });
-  assert.equal(miss.foul, true);
-  assert.equal(miss.penalty, RULES.foulPenalty);
-  assert.equal(miss.state.score, 0);
-  assert.equal(miss.state.fouls, 1);
-  assert.equal(miss.state.shotsRemaining, 5);
+test("distinguishes active, accidental-next, and accidental-multi-stage pots", () => {
+  const mixed = play(begin(), 1, [1, 4, 6]);
+  assert.equal(mixed.declaredPotted, true);
+  assert.equal(mixed.activePottedNumber, 1);
+  assert.deepEqual(mixed.accidentalPottedNumbers, [4, 6]);
+  assert.deepEqual(mixed.events.map((event) => [event.number, event.mode, event.timing]), [
+    [1, "active", "on-time"],
+    [4, "accidental", "accidental-next-stage"],
+    [6, "accidental", "accidental-multi-stage"]
+  ]);
+  assert.equal(mixed.state.interest, 95);
+  assert.equal(mixed.state.rhythmScore, 89);
+  assert.deepEqual(mixed.state.violations.map((violation) => violation.code), [
+    "accidental-next-stage",
+    "accidental-multi-stage"
+  ]);
 
-  const scored = resolveShot(createRunState(), {
-    firstContactId: "umbrella",
-    pottedIds: ["umbrella"]
-  }).state;
-  const scratch = resolveShot(scored, {
-    firstContactId: "last-train",
-    pottedIds: [],
-    scratch: true
-  });
-  assert.equal(scratch.foul, true);
-  assert.equal(scratch.scratch, true);
-  assert.equal(scratch.state.score, 40);
+  const next = play(begin(), 4);
+  assert.equal(next.activeTiming, "next-stage");
+  assert.equal(next.state.interest, 92);
+  assert.equal(next.state.rhythmScore, 90);
+
+  const multi = play(begin(), 6);
+  assert.equal(multi.activeTiming, "multi-stage");
+  assert.equal(multi.state.interest, 80);
+  assert.equal(multi.state.rhythmScore, 80);
 });
 
-test("chapter completion advances to an escalating fresh table", () => {
-  let state = createRunState();
-  state = resolveShot(state, { firstContactId: "umbrella", pottedIds: ["umbrella"] }).state;
-  const completion = resolveShot(state, { firstContactId: "last-train", pottedIds: ["last-train"] });
+test("fails an actively declared early 8 but lets an accidental 8 continue in danger", () => {
+  const early = play(begin(), 8);
+  assert.equal(early.endState.status, "failed");
+  assert.equal(early.endState.ending, "confession-too-early");
+  assert.equal(early.activeTiming, "early-confession");
+  assert.deepEqual(early.state.pottedNumbers, [8]);
+  assert.throws(() => play(early.state, 1), RangeError);
 
-  assert.equal(completion.levelComplete, true);
-  assert.equal(completion.victory, false);
-  assert.equal(completion.state.chapterComplete, true);
-  assert.ok(completion.milestones.includes("chapter-rain-platform"));
-
-  const next = advanceLevel(completion.state);
-  assert.equal(next.levelIndex, 1);
-  assert.equal(next.chapterPockets, 0);
-  assert.equal(next.shotsRemaining, 7);
-  assert.equal(next.score, completion.state.score);
-  assert.deepEqual(next.unlockedMomentIds, ["umbrella", "last-train"]);
-  assert.throws(() => advanceLevel(createRunState()), RangeError);
+  const accidental = play(begin(), 1, [8]);
+  assert.equal(accidental.declaredPotted, false);
+  assert.equal(accidental.events[0].timing, "accidental-confession");
+  assert.equal(accidental.state.interest, 80);
+  assert.equal(accidental.state.rhythmScore, 80);
+  assert.equal(accidental.state.endState.status, "playing");
+  assert.deepEqual(availableTargets(accidental.state), [1, 2, 3]);
 });
 
-test("exhausting turns loses, while completing the final table wins", () => {
-  let losing = createRunState();
-  let lastMiss;
-  for (let index = 0; index < LEVELS[0].shots; index += 1) {
-    lastMiss = resolveShot(losing, { firstContactId: null, pottedIds: [] });
-    losing = lastMiss.state;
-  }
-  assert.equal(lastMiss.gameOver, true);
-  assert.equal(losing.shotsRemaining, 0);
-  assert.throws(() => resolveShot(losing, { firstContactId: null, pottedIds: [] }), RangeError);
-
-  let winning = createRunState(2);
-  for (const id of ["rooftop-wind", "sea-glow", "postcard", "promise"]) {
-    const result = resolveShot(winning, { firstContactId: id, pottedIds: [id] });
-    winning = result.state;
-    if (id === "promise") {
-      assert.equal(result.victory, true);
-      assert.ok(result.milestones.includes("final-dawn"));
-    }
-  }
-  assert.equal(winning.chapterComplete, true);
-  assert.throws(() => advanceLevel(winning), RangeError);
+test("treats a declared ball potted after the wrong first contact as accidental", () => {
+  const outcome = evaluateShot(begin(), normalShot(8, [8], { firstContact: 1 }));
+  assert.equal(outcome.contactMatched, false);
+  assert.equal(outcome.declaredPotted, false);
+  assert.equal(outcome.activePottedNumber, null);
+  assert.deepEqual(outcome.accidentalPottedNumbers, [8]);
+  assert.equal(outcome.events[0].mode, "accidental");
+  assert.equal(outcome.events[0].timing, "accidental-confession");
+  assert.equal(outcome.endState.status, "playing");
 });
 
-test("cue-ball respot clamps to the table and avoids occupied balls", () => {
-  const bounds = { left: 20, right: 316, top: 20, bottom: 528 };
-  const open = findCuePlacement({ x: 168, y: 460 }, [], bounds, RULES.ballRadius);
-  assert.deepEqual(open, { x: 168, y: 460 });
+test("fails a two-stage early active 15, heavily penalizes one-stage early 15, and softens accidents", () => {
+  const severe = play(begin(), 15);
+  assert.equal(severe.endState.status, "failed");
+  assert.equal(severe.endState.ending, "commitment-too-heavy");
+  assert.equal(severe.activeTiming, "commitment-too-heavy");
 
-  const occupied = findCuePlacement(
-    { x: 168, y: 460 },
-    [{ x: 168, y: 460, radius: RULES.ballRadius }],
-    bounds,
-    RULES.ballRadius
+  const adjustment = stateAtAdjustment();
+  assert.equal(currentStage(adjustment).id, "learning-together");
+  const oneStageEarly = play(adjustment, 15);
+  assert.equal(oneStageEarly.activeTiming, "premature-commitment");
+  assert.equal(oneStageEarly.state.interest, 70);
+  assert.equal(oneStageEarly.state.rhythmScore, 75);
+  assert.equal(oneStageEarly.state.endState.status, "playing");
+  assert.equal(oneStageEarly.state.violations.at(-1).severity, "severe");
+  const recoveredFromPremature = play(
+    play(play(oneStageEarly.state, 12).state, 13).state,
+    14
   );
-  assert.ok(Math.hypot(occupied.x - 168, occupied.y - 460) >= RULES.ballRadius * 2 + 2);
-  assert.ok(occupied.x > bounds.left && occupied.x < bounds.right);
-  assert.ok(occupied.y > bounds.top && occupied.y < bounds.bottom);
-  assert.ok(Object.isFrozen(occupied));
+  assert.equal(recoveredFromPremature.state.endState.grade, "B");
+  assert.equal(recoveredFromPremature.rating.rhythm.commitmentLast, false);
+
+  const finalStage = play(play(adjustment, 12).state, 13).state;
+  assert.equal(currentStage(finalStage).id, "shared-future");
+  const beforeFourteen = play(finalStage, 15);
+  assert.equal(beforeFourteen.activeTiming, "premature-commitment");
+  assert.equal(beforeFourteen.state.endState.status, "playing");
+
+  const accident = play(begin(), 1, [15]);
+  assert.equal(accident.events[0].timing, "accidental-commitment");
+  assert.equal(accident.state.interest, 85);
+  assert.equal(accident.state.rhythmScore, 85);
+  assert.equal(accident.state.endState.status, "playing");
 });
 
-test("shot resolution rejects duplicate, foreign, or inconsistent state", () => {
-  assert.throws(() => resolveShot({}, { firstContactId: null, pottedIds: [] }), TypeError);
-  assert.throws(() => resolveShot(createRunState(), { firstContactId: "unknown", pottedIds: [] }), RangeError);
-  assert.throws(() => resolveShot(createRunState(), { firstContactId: "umbrella", pottedIds: ["umbrella", "umbrella"] }), RangeError);
-  assert.throws(() => resolveShot(createRunState(), { firstContactId: "umbrella", pottedIds: ["sea-glow"] }), RangeError);
-  assert.throws(() => resolveShot(createRunState(), { firstContactId: "umbrella", pottedIds: [], scratch: 1 }), TypeError);
+test("keeps free-order stages free while scoring the preferred and required internal orders", () => {
+  let free = begin({ pottedNumbers: [3, 1, 2], firstContact: 3 });
+  assert.equal(currentStage(free).id, "growing-familiar");
+  free = play(free, 5).state;
+  free = play(free, 4).state;
+  assert.equal(free.rhythmScore, 100);
+
+  const warming = advance(begin({ pottedNumbers: [1, 2, 3], firstContact: 1 }), [[4, 5]]);
+  const dateFirst = play(warming, 7);
+  assert.equal(dateFirst.state.endState.status, "playing");
+  assert.equal(dateFirst.state.rhythmScore, 95);
+  assert.equal(dateFirst.state.violations.at(-1).code, "date-before-meal");
+
+  const adjustment = stateAtAdjustment();
+  const reconcileFirst = play(adjustment, 13);
+  assert.equal(reconcileFirst.state.endState.status, "playing");
+  assert.equal(reconcileFirst.state.rhythmScore, 90);
+  assert.equal(reconcileFirst.state.violations.at(-1).code, "reconcile-before-conflict");
+
+  const inLove = advance(begin({ pottedNumbers: [1, 2, 3], firstContact: 1 }), [[4, 5], [6, 7], [8]]);
+  const embraceFirst = play(inLove, 10);
+  assert.equal(embraceFirst.state.violations.at(-1).code, "embrace-before-handholding");
+  const travelFirst = play(inLove, 11);
+  assert.equal(travelFirst.state.violations.at(-1).code, "travel-before-closeness");
+});
+
+test("applies exact consecutive-miss and cue-scratch interest losses", () => {
+  let state = begin();
+  const firstMiss = play(state, 1, []);
+  assert.equal(firstMiss.state.consecutiveMisses, 1);
+  assert.equal(firstMiss.state.interest, 100);
+
+  const secondMiss = play(firstMiss.state, 1, []);
+  assert.equal(secondMiss.state.consecutiveMisses, 2);
+  assert.equal(secondMiss.interestDelta, RULES.interest.secondConsecutiveMiss);
+  assert.equal(secondMiss.state.interest, 95);
+
+  const thirdMiss = play(secondMiss.state, 1, []);
+  assert.equal(thirdMiss.state.consecutiveMisses, 3);
+  assert.equal(thirdMiss.interestDelta, RULES.interest.continuedConsecutiveMiss);
+  assert.equal(thirdMiss.state.interest, 87);
+
+  const recoveredStreak = play(thirdMiss.state, 1);
+  assert.equal(recoveredStreak.state.consecutiveMisses, 0);
+  assert.equal(recoveredStreak.state.potStreak, 1);
+
+  const scratch = evaluateShot(createRunState(), breakShot({ cueScratch: true }));
+  assert.equal(scratch.state.interest, 90);
+  assert.equal(scratch.state.cueScratches, 1);
+  assert.equal(scratch.state.violations[0].code, "cue-scratch");
+});
+
+test("restores interest for a current target, current-stage multi-pot, stage completion, and banks", () => {
+  let state = evaluateShot(createRunState(), breakShot({ cueScratch: true })).state;
+  state = play(state, 1, [], { cueScratch: true }).state;
+  assert.equal(state.interest, 80);
+
+  const multiBank = play(state, 1, [1, 2], { bankedNumbers: [1] });
+  assert.equal(multiBank.rawInterestDelta, 16);
+  assert.equal(multiBank.state.interest, 96);
+  assert.equal(multiBank.state.bankedPots, 1);
+  assert.equal(multiBank.state.multiBallShots, 1);
+  assert.equal(multiBank.state.potStreak, 2);
+  assert.deepEqual(multiBank.interestChanges.map((change) => change.code), [
+    "current-target-recovery",
+    "current-stage-multi-recovery",
+    "banked-pot-recovery"
+  ]);
+
+  const completion = play(multiBank.state, 3);
+  assert.equal(completion.completedCurrentStage, true);
+  assert.deepEqual(completion.completedStageIds, ["first-contact"]);
+  assert.equal(completion.rawInterestDelta, 13);
+  assert.equal(completion.interestDelta, 4);
+  assert.equal(completion.state.interest, 100);
+  assert.equal(currentStage(completion.state).id, "growing-familiar");
+});
+
+test("tracks technical performance separately from relationship rhythm", () => {
+  let state = begin({ pottedNumbers: [1, 2], firstContact: 1, bankedNumbers: [2] });
+  state = play(state, 3).state;
+  state = play(state, 4, []).state;
+  state = play(state, 4, [4, 5]).state;
+  const rating = computeRating(state);
+
+  assert.equal(state.shots, 4);
+  assert.equal(state.successfulShots, 3);
+  assert.equal(state.potStreak, 2);
+  assert.equal(state.bestPotStreak, 3);
+  assert.equal(state.bankedPots, 1);
+  assert.equal(state.multiBallShots, 2);
+  assert.equal(rating.grade, null);
+  assert.equal(rating.technical.shots, 4);
+  assert.equal(rating.technical.successfulShotRate, 75);
+  assert.equal(rating.rhythm.score, state.rhythmScore);
+  assert.notEqual(rating.technical.score, rating.rhythm.score);
+  assert.ok(Object.isFrozen(rating));
+  assert.ok(Object.isFrozen(rating.technical));
+  assert.ok(Object.isFrozen(rating.rhythm));
+});
+
+test("awards S for an ideal efficient clear and leaves 15 as the final ball", () => {
+  const result = finishIdeal();
+  assert.equal(result.state.endState.status, "completed");
+  assert.equal(result.state.endState.grade, "S");
+  assert.equal(result.state.endState.ending, "mutual-devotion");
+  assert.equal(result.state.pocketOrder.at(-1), 15);
+  assert.equal(result.rating.grade, "S");
+  assert.equal(result.rating.technical.grade, "S");
+  assert.equal(result.rating.rhythm.grade, "S");
+  assert.equal(result.rating.rhythm.confessionOnTime, true);
+  assert.equal(result.rating.rhythm.conflictOrderKept, true);
+  assert.equal(result.rating.rhythm.commitmentLast, true);
+  assert.deepEqual(availableTargets(result.state), []);
+  assert.equal(currentStage(result.state), null);
+  assert.throws(() => play(result.state, 1), RangeError);
+});
+
+test("awards A to natural relationship pacing even when table technique is ordinary", () => {
+  const result = finishIdeal({ missBeforeEach: true });
+  assert.equal(result.state.endState.status, "completed");
+  assert.equal(result.state.endState.grade, "A");
+  assert.equal(result.state.endState.ending, "together-at-last");
+  assert.equal(result.rating.rhythm.grade, "S");
+  assert.equal(result.rating.technical.grade, "A");
+  assert.equal(result.state.interest, 100);
+});
+
+test("awards B when repeated active stage skips damage relationship rhythm", () => {
+  let state = begin();
+  state = play(state, 6).state;
+  state = play(state, 4).state;
+  state = play(state, 5).state;
+  state = play(state, 1, [1, 2, 3]).state;
+  state = play(state, 7).state;
+  state = play(state, 8).state;
+  state = play(state, 9, [9, 10, 11]).state;
+  state = play(state, 12, [12, 13]).state;
+  state = play(state, 14).state;
+  const result = play(state, 15);
+
+  assert.equal(result.state.rhythmScore, 60);
+  assert.equal(result.state.endState.status, "completed");
+  assert.equal(result.state.endState.grade, "B");
+  assert.equal(result.state.endState.ending, "bumpy-love");
+  assert.equal(result.rating.technical.grade, "S");
+  assert.equal(result.rating.rhythm.grade, "B");
+});
+
+test("ends with losing-contact exactly when accumulated interest reaches zero", () => {
+  let state = begin();
+  let result = null;
+  for (let index = 0; index < 7; index += 1) {
+    result = play(state, 1, [], { cueScratch: true });
+    state = result.state;
+  }
+
+  assert.equal(state.interest, 0);
+  assert.equal(state.endState.status, "failed");
+  assert.equal(state.endState.ending, "losing-contact");
+  assert.equal(state.endState.grade, null);
+  assert.deepEqual(FAILURE_ENDINGS, ["confession-too-early", "commitment-too-heavy", "losing-contact"]);
+  assert.throws(() => play(state, 1), RangeError);
+});
+
+test("does not mutate state or shot inputs and deeply freezes every result layer", () => {
+  const state = begin();
+  const before = JSON.parse(JSON.stringify(state));
+  const shot = normalShot(1, [1, 2], { bankedNumbers: [2] });
+  const resultA = evaluateShot(state, shot);
+  const resultB = evaluateShot(state, shot);
+
+  assert.deepEqual(state, before);
+  assert.deepEqual(resultA, resultB);
+  assert.equal(Object.isFrozen(shot), false);
+  assert.equal(Object.isFrozen(shot.pottedNumbers), false);
+  assert.ok(Object.isFrozen(resultA));
+  assert.ok(Object.isFrozen(resultA.state));
+  assert.ok(Object.isFrozen(resultA.shot));
+  assert.ok(Object.isFrozen(resultA.shot.pottedNumbers));
+  assert.ok(Object.isFrozen(resultA.events));
+  assert.ok(resultA.events.every(Object.isFrozen));
+  assert.ok(Object.isFrozen(resultA.interestChanges));
+  assert.ok(resultA.interestChanges.every(Object.isFrozen));
+  assert.ok(Object.isFrozen(resultA.state.violations));
+  assert.ok(resultA.state.violations.every(Object.isFrozen));
+  assert.throws(() => resultA.events.push({}), TypeError);
+  assert.throws(() => resultA.state.pocketOrder.push(9), TypeError);
+});
+
+test("accepts a valid JSON round trip and rejects forged or malformed states", () => {
+  const serialized = JSON.parse(JSON.stringify(play(begin(), 1).state));
+  assert.equal(validateRunState(serialized), true);
+  const continued = play(serialized, 2);
+  assert.ok(Object.isFrozen(continued.state));
+
+  const missing = { ...serialized };
+  delete missing.interest;
+  assert.throws(() => validateRunState(missing), TypeError);
+
+  const duplicate = { ...serialized, pottedNumbers: [1, 1] };
+  assert.throws(() => validateRunState(duplicate), RangeError);
+
+  const wrongOrderSet = { ...serialized, pocketOrder: [2] };
+  assert.throws(() => validateRunState(wrongOrderSet), RangeError);
+
+  const forgedRhythm = { ...serialized, rhythmScore: 99 };
+  assert.throws(() => validateRunState(forgedRhythm), RangeError);
+
+  const forgedSuccessCount = { ...begin(), successfulShots: 1 };
+  assert.throws(() => validateRunState(forgedSuccessCount), RangeError);
+
+  const forgedScratchCount = { ...serialized, cueScratches: 1 };
+  assert.throws(() => validateRunState(forgedScratchCount), RangeError);
+
+  const mutableEnd = JSON.parse(JSON.stringify(serialized));
+  mutableEnd.endState = { ended: true, status: "completed", ending: "mutual-devotion", grade: "S" };
+  assert.throws(() => validateRunState(mutableEnd), RangeError);
+  assert.throws(() => validateRunState(new Date()), TypeError);
+});
+
+test("strictly validates shot shape, types, uniqueness, and physical consistency", () => {
+  const initial = createRunState();
+  const opened = begin();
+  assert.throws(() => evaluateShot(initial, normalShot(1)), RangeError);
+  assert.throws(() => evaluateShot(initial, { ...breakShot(), declaredBall: 1 }), RangeError);
+  assert.throws(() => evaluateShot(initial, { ...breakShot(), cueScratch: 1 }), TypeError);
+  assert.throws(() => evaluateShot(initial, { ...breakShot(), pottedNumbers: [1, 1] }), RangeError);
+  assert.throws(() => evaluateShot(initial, { ...breakShot(), bankedNumbers: [2] }), RangeError);
+  assert.throws(() => evaluateShot(initial, { ...breakShot({ pottedNumbers: [1] }), firstContact: null }), RangeError);
+  assert.throws(() => evaluateShot(initial, { ...breakShot(), pottedNumbers: [1, , 2] }), TypeError);
+  assert.throws(() => evaluateShot(opened, { ...normalShot(1), bankedNumbers: [2] }), RangeError);
+  assert.throws(() => evaluateShot(opened, { ...normalShot(1), pottedNumbers: [16] }), RangeError);
+  assert.throws(() => evaluateShot(opened, { ...normalShot(1), declaredBall: null }), RangeError);
+  assert.throws(() => evaluateShot(opened, { ...normalShot(1), firstContact: "1" }), TypeError);
+
+  const missingField = normalShot(1);
+  delete missingField.bankedNumbers;
+  assert.throws(() => evaluateShot(opened, missingField), TypeError);
+
+  const pottedOne = play(opened, 1).state;
+  assert.throws(() => play(pottedOne, 1), RangeError);
+  assert.throws(() => evaluateShot(pottedOne, normalShot(2, [1])), RangeError);
+  assert.throws(() => classifyTarget(pottedOne, 1), RangeError);
+  assert.throws(() => ballByNumber(0), RangeError);
+  assert.throws(() => stageForBall(1.5), TypeError);
 });

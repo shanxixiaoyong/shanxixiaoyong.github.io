@@ -4,13 +4,14 @@ import {
   ACTIVE_GAME_PAGES,
   readGameContractSources,
   stripHtmlComments,
-  validateFiveGameContract
+  validateGameContract
 } from "./game-contract.mjs";
 
 const standaloneGamePages = [...ACTIVE_GAME_PAGES];
 
 const siteFiles = [...new Set([
   ...ACTIVE_PUBLIC_FILES,
+  "assets/vendor/matter-0.20.0.LICENSE.txt",
   "data/knowledge.json",
   "tools/sync-obsidian.mjs"
 ])];
@@ -44,16 +45,10 @@ const required = [
   'href="knowledge.html"',
   'href="tools.html"',
   'href="game-2048.html"',
-  'href="game-watermelon.html"',
-  'href="game-tetris-love.html"',
-  'href="game-breakout-love.html"',
   'href="game-billiards-love.html"',
   "个人知识库",
   "个人小工具箱",
   "心动2048",
-  "心动大西瓜",
-  "心动俄罗斯方块",
-  "心动打砖块",
   "心动桌球",
   "knowledge-search",
   "text-input",
@@ -71,28 +66,18 @@ const required = [
   "assets/academic.js",
   "assets/world.js",
   "assets/portal.js",
-  "assets/watermelon.css",
   "assets/vendor/matter-0.20.0.min.js",
-  "assets/watermelon-rules.js",
-  "assets/watermelon-game.js",
-  "assets/tetris-love-game.js",
-  "assets/breakout-love-game.js",
+  "assets/billiards-love-content.js",
   "assets/billiards-love-game.js",
   'class="portal-page"',
   'class="portal-rail"',
   'class="portal-door portal-academic"',
   'class="portal-door portal-game"',
-  'class="portal-door portal-watermelon"',
-  'class="portal-door portal-tetris"',
-  'class="portal-door portal-breakout"',
   'class="portal-door portal-billiards"',
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
   "assets/portal/heartbeat-2048.png",
-  "assets/portal/heartmelon-memories.png",
-  "assets/portal/tetris-rhythm.png",
-  "assets/portal/breakout-reply.png",
   "assets/portal/billiards-night.png",
   "assets/games.js",
   "0000-0002-7584-2953",
@@ -259,9 +244,6 @@ const requiredAssets = [
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
   "assets/portal/heartbeat-2048.png",
-  "assets/portal/heartmelon-memories.png",
-  "assets/portal/tetris-rhythm.png",
-  "assets/portal/breakout-reply.png",
   "assets/portal/billiards-night.png",
   "assets/academic-v2.css",
   "assets/academic.js",
@@ -285,9 +267,6 @@ const requiredAssets = [
 
 const distinctGameChecks = [
   { file: "assets/games.js", tokens: ["love-2048", "board-love-2048", "narrativeScenes"] },
-  { file: "assets/watermelon-game.js", tokens: ["WatermelonRules", "Matter"] },
-  { file: "assets/tetris-love-game.js", tokens: ["TetrisLoveRules", "canvas"] },
-  { file: "assets/breakout-love-game.js", tokens: ["BreakoutLoveRules", "canvas"] },
   { file: "assets/billiards-love-game.js", tokens: ["BilliardsLoveRules", "canvas"] }
 ];
 
@@ -308,7 +287,7 @@ const requiredLinks = [
 
 const failures = [];
 const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
-failures.push(...validateFiveGameContract({ sources: gameContractSources, exists: existsSync }));
+failures.push(...validateGameContract({ sources: gameContractSources, exists: existsSync }));
 
 for (const file of ["index.html", "home.html", "knowledge.html", "tools.html", "games.html", ...standaloneGamePages]) {
   const source = stripHtmlComments(readFileSync(file, "utf8"));
@@ -333,17 +312,17 @@ const academicThemeContracts = [
 ];
 
 const portalContracts = [
-  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260711a">'],
-  [indexHtml, '<script src="assets/portal.js?v=portal-20260711a" defer></script>'],
+  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-20260711b">'],
+  [indexHtml, '<script src="assets/portal.js?v=portal-20260711b" defer></script>'],
   [indexHtml, 'class="portal-rail"'],
   [indexHtml, 'class="portal-door portal-game"'],
-  [indexHtml, 'class="portal-door portal-watermelon"'],
-  [indexHtml, 'class="portal-door portal-tetris"'],
-  [indexHtml, 'class="portal-door portal-breakout"'],
   [indexHtml, 'class="portal-door portal-billiards"'],
   [portalCss, "scroll-snap-type: inline mandatory"],
+  [portalCss, "scroll-snap-align: center"],
+  [portalCss, "width: 20%"],
   [portalCss, "grid-template-columns: repeat(16, minmax(0, 1fr))"],
   [portalScript, "function setActive(index)"],
+  [portalScript, "const railCenter = railBounds.left + railBounds.width / 2"],
   [portalScript, 'rail.addEventListener("scroll"']
 ];
 
@@ -351,8 +330,12 @@ for (const [source, token] of portalContracts) {
   if (!source.includes(token)) failures.push(`Personal portal missing contract: ${token}`);
 }
 
-if ((indexHtml.match(/data-portal-index="\d"/g) || []).length !== 8) {
-  failures.push("Personal portal must contain exactly eight destinations");
+const portalDestinations = [...indexHtml.matchAll(/<a class="portal-door [^"]+" href="([^"]+)" data-portal-index="(\d+)"/g)]
+  .map((match) => ({ href: match[1], index: Number(match[2]) }));
+const expectedPortalDestinations = ["home.html", "knowledge.html", "tools.html", ...ACTIVE_GAME_PAGES]
+  .map((href, index) => ({ href, index }));
+if (JSON.stringify(portalDestinations) !== JSON.stringify(expectedPortalDestinations)) {
+  failures.push(`Personal portal must expose five ordered destinations with continuous indices: ${JSON.stringify(portalDestinations)}`);
 }
 
 if (indexHtml.includes('href="assets/world.css"') || indexHtml.includes('class="portal-card"')) {

@@ -24,12 +24,13 @@
   }
 
   function nearestDoor() {
-    const padding = Number.parseFloat(getComputedStyle(rail).paddingLeft) || 0;
-    const railLeft = rail.getBoundingClientRect().left + padding;
+    const railBounds = rail.getBoundingClientRect();
+    const railCenter = railBounds.left + railBounds.width / 2;
     let nearestIndex = 0;
     let nearestDistance = Number.POSITIVE_INFINITY;
     doors.forEach((door, index) => {
-      const distance = Math.abs(door.getBoundingClientRect().left - railLeft);
+      const bounds = door.getBoundingClientRect();
+      const distance = Math.abs(bounds.left + bounds.width / 2 - railCenter);
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestIndex = index;
@@ -45,9 +46,13 @@
 
   function scrollToDoor(index) {
     const door = doors[Math.max(0, Math.min(doors.length - 1, index))];
-    const padding = Number.parseFloat(getComputedStyle(rail).paddingLeft) || 0;
+    const railBounds = rail.getBoundingClientRect();
+    const doorBounds = door.getBoundingClientRect();
+    const centeredLeft = rail.scrollLeft
+      + doorBounds.left + doorBounds.width / 2
+      - railBounds.left - railBounds.width / 2;
     rail.scrollTo({
-      left: Math.max(0, door.offsetLeft - padding),
+      left: Math.max(0, centeredLeft),
       behavior: reducedMotion.matches ? "auto" : "smooth"
     });
     setActive(index);

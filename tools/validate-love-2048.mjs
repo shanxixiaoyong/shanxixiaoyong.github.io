@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import {
   readGameContractSources,
-  validateFiveGameContract
+  validateGameContract
 } from "./game-contract.mjs";
 
 function readOptional(path) {
@@ -24,9 +24,9 @@ const files = {
 };
 
 const gameContractSources = readGameContractSources((file) => readFileSync(file, "utf8"));
-const gameContractFailures = validateFiveGameContract({ sources: gameContractSources, exists: existsSync });
+const gameContractFailures = validateGameContract({ sources: gameContractSources, exists: existsSync });
 if (gameContractFailures.length) {
-  console.error("Love 2048 five-game site contract validation failed:");
+  console.error("Love 2048 two-game site contract validation failed:");
   for (const failure of gameContractFailures) console.error(`- ${failure}`);
   process.exit(1);
 }

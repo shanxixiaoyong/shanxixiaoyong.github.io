@@ -1,99 +1,88 @@
 const assert = require("node:assert/strict");
-const { readFileSync } = require("node:fs");
+const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
 const root = path.join(__dirname, "..");
-const html = readFileSync(path.join(root, "game-billiards-love.html"), "utf8");
-const css = readFileSync(path.join(root, "assets/billiards-love.css"), "utf8");
-const rules = readFileSync(path.join(root, "assets/billiards-love-rules.js"), "utf8");
-const game = readFileSync(path.join(root, "assets/billiards-love-game.js"), "utf8");
+const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
+const html = read("game-billiards-love.html");
+const css = read("assets/billiards-love.css");
 
-function resourcePath(value) {
-  return value.split(/[?#]/, 1)[0];
+function linked(htmlSource, tag, attribute) {
+  const expression = new RegExp(`<${tag}\\b[^>]*\\b${attribute}="([^"]+)"[^>]*>`, "g");
+  return [...htmlSource.matchAll(expression)].map((match) => match[1].split(/[?#]/, 1)[0]);
 }
 
-test("standalone page exposes the exact romantic billiards identity", () => {
+test("publishes the landscape standard-fifteen-ball identity", () => {
   for (const token of [
     "<title>心动桌球 - 刘勇 / Yong Liu</title>",
-    '<meta name="description" content="心动桌球：',
-    '<body class="solo-game-billiards-love">',
-    '<main class="bl-app" id="billiards-love-game" aria-label="心动桌球">',
-    "<h1>心动桌球</h1>",
-    'href="index.html"',
-    'id="bl-canvas"',
-    'id="bl-cinematic"',
-    'id="bl-pause-sheet"',
-    'id="bl-result"',
-    'id="bl-journal-sheet"'
+    '<body class="heartbeat-billiards-page">',
+    '<main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球"',
+    '<canvas id="hb-canvas" width="1280" height="640"',
+    'id="hb-relationship-track"',
+    'id="hb-interest"',
+    'id="hb-selected-ball"',
+    'id="hb-rotate"'
   ]) {
-    assert.ok(html.includes(token), `missing page identity token: ${token}`);
+    assert.match(html, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  assert.match(html, /横过来，球桌才刚刚好/);
+  assert.match(html, /开始这一局/);
+  assert.doesNotMatch(html, /今晚的片段|回忆日志|心动值|剩余回合/);
 });
 
-test("page loads only the dedicated stylesheet and ordered local scripts", () => {
-  const styles = [...html.matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"[^>]*>/g)]
-    .map((match) => resourcePath(match[1]));
-  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*><\/script>/g)]
-    .map((match) => resourcePath(match[1]));
-
-  assert.deepEqual(styles, ["assets/billiards-love.css"]);
-  assert.deepEqual(scripts, [
+test("loads only the local billiards runtime dependencies in exact order", () => {
+  assert.deepEqual(linked(html, "link", "href").filter((file) => file.endsWith(".css")), [
+    "assets/billiards-love.css"
+  ]);
+  assert.deepEqual(linked(html, "script", "src"), [
     "assets/vendor/matter-0.20.0.min.js",
     "assets/billiards-love-rules.js",
+    "assets/billiards-love-content.js",
     "assets/billiards-love-game.js"
   ]);
 });
 
-test("touch-first shell includes complete controls and accessible live state", () => {
-  for (const id of [
-    "bl-sound",
-    "bl-pause",
-    "bl-restart",
-    "bl-resume",
-    "bl-retry",
-    "bl-new-night",
-    "bl-journal",
-    "bl-journal-close",
-    "bl-scene-skip",
-    "bl-scene-action"
+test("uses project-local lounge, confession, and proposal art", () => {
+  for (const asset of [
+    "assets/billiards-scenes/lounge-night.jpg",
+    "assets/billiards-scenes/confession-night.jpg",
+    "assets/billiards-scenes/proposal-dawn.jpg"
   ]) {
-    assert.match(html, new RegExp(`<button[^>]+id="${id}"`), `missing button ${id}`);
+    assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
   }
-  assert.match(html, /<canvas id="bl-canvas"[^>]+tabindex="0"[^>]+aria-label=/);
-  assert.match(html, /id="bl-toast" role="status" aria-live="polite"/);
-  assert.match(html, /id="bl-cinematic"[^>]+aria-live="polite"/);
+  for (const reference of [
+    'url("billiards-scenes/lounge-night.jpg")',
+    'url("billiards-scenes/confession-night.jpg")',
+    'url("billiards-scenes/proposal-dawn.jpg")'
+  ]) {
+    assert.match(css, new RegExp(reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.doesNotMatch(html + css, /https?:\/\//);
+});
+
+test("keeps gameplay full-viewport and protects a phone landscape layout", () => {
+  assert.match(css, /\.hb-app \{[\s\S]*?position: fixed;[\s\S]*?inset: 0;/);
+  assert.match(css, /\.hb-table-wrap \{[\s\S]*?aspect-ratio: 2 \/ 1;/);
+  assert.match(css, /@media \(max-height: 560px\) and \(orientation: landscape\)/);
+  assert.match(css, /width: min\(74vw, calc\(\(100dvh - 124px\) \* 2\), 740px\)/);
+  assert.match(css, /@media \(max-aspect-ratio: 4 \/ 3\) and \(max-width: 1180px\)/);
   assert.match(html, /viewport-fit=cover/);
+  assert.match(css, /env\(safe-area-inset-/);
 });
 
-test("stylesheet locks the mobile canvas, honors safe areas, and reduces motion", () => {
-  assert.match(css, /#bl-canvas\s*\{[^}]*touch-action:\s*none/s);
-  assert.match(css, /\.bl-app\s*\{[^}]*height:\s*100svh/s);
-  assert.match(css, /width:\s*min\(100%,\s*430px\)/);
-  assert.match(css, /env\(safe-area-inset-top\)/);
-  assert.match(css, /env\(safe-area-inset-bottom\)/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(css, /aspect-ratio:\s*336\s*\/\s*548/);
-  assert.equal(/@import\b/i.test(css), false);
-});
-
-test("all owned production sources remain static and remote-free", () => {
-  for (const [file, source] of [
-    ["game-billiards-love.html", html],
-    ["assets/billiards-love.css", css],
-    ["assets/billiards-love-rules.js", rules],
-    ["assets/billiards-love-game.js", game]
+test("does not expose retired game concepts or implementation notes", () => {
+  const publicSurface = `${html}\n${css}`;
+  for (const retired of [
+    "心动大西瓜",
+    "心动俄罗斯方块",
+    "心动打砖块",
+    "回忆球",
+    "技能道具",
+    "AI对手",
+    "第一版原型",
+    "产品定位"
   ]) {
-    assert.equal(/https?:\/\//i.test(source), false, `${file} contains an external URL`);
-    assert.equal(/["'`]\/\/[a-z0-9]/i.test(source), false, `${file} contains a protocol-relative URL`);
-  }
-  for (const networkPattern of [
-    /\bfetch\s*\(/,
-    /\bXMLHttpRequest\b/,
-    /\bWebSocket\b/,
-    /\bEventSource\b/,
-    /\bsendBeacon\s*\(/
-  ]) {
-    assert.equal(networkPattern.test(`${rules}\n${game}`), false);
+    assert.equal(publicSurface.includes(retired), false, `${retired} should not be public copy`);
   }
 });
