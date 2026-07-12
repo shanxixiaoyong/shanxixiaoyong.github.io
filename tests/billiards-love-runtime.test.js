@@ -117,8 +117,8 @@ test("renders layered wood, wool, rubber, metal, leather, and deep pocket materi
   assert.match(source, /drawMaterialTexture\(MATERIAL_TEXTURES\.cloth/);
   assert.doesNotMatch(source, /context\.setLineDash\(\[2, 3\]\)/);
   assert.match(source, /context\.shadowBlur = 12/);
-  assert.match(source, /\["#42172b", "#a8526e", "#622640"\]/);
-  assert.match(source, /context\.strokeStyle = "rgba\(244, 166, 194, 0\.8\)"/);
+  assert.match(source, /\["#0c121c", "#536277", "#172230"\]/);
+  assert.match(source, /context\.strokeStyle = "rgba\(199, 230, 255, 0\.82\)"/);
   assert.doesNotMatch(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
   assert.doesNotMatch(source, /context\.scale\(0\.18, 1\)/);
   assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
@@ -265,51 +265,43 @@ test("evaluates every settled shot exactly through the pure relationship rules e
   }
 });
 
-test("turns physical shots into a persistent six-pocket date map", () => {
+test("turns physical shots into a persistent ball-color and pocket-effect field", () => {
   assert.match(source, /content\.selectPerformance\(\{/);
   assert.match(source, /content\.analyzeShot\(\{/);
   assert.match(source, /content\.selectShotStory\(\{/);
-  assert.match(source, /beginCompletedPocketStory\(number\)/);
-  assert.match(source, /showTableMoment\(story\)/);
-  assert.match(source, /updateVisibleTableMoment\(story\)/);
   assert.match(source, /function rememberDateMoment\(/);
   assert.match(source, /dateMapState\.routes\.push\(route\)/);
-  assert.match(source, /function drawDateMap\(timestamp\)/);
+  assert.match(source, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
+  assert.match(source, /0: Object\.freeze\(\{ id: "pearl"/);
+  assert.match(source, /8: Object\.freeze\(\{ id: "eclipse"/);
+  assert.match(source, /15: Object\.freeze\(\{ id: "ruby-stripe"/);
+  for (const effect of ["ripple", "comet", "prism", "pulse", "lightning", "aurora"]) {
+    assert.match(source, new RegExp(`id: "${effect}"`));
+  }
+  assert.match(source, /activeTheme: \{ \.\.\.BALL_CHROMA_THEMES\[0\] \}/);
+  assert.match(source, /activeEffect: null/);
+  assert.match(source, /themeTransition: null/);
+  assert.match(source, /rollingTrails: \[\]/);
+  assert.match(source, /railBursts: \[\]/);
+  assert.match(source, /pocketFlares: \[\]/);
+  assert.match(source, /blackEightBlast: null/);
+  assert.match(source, /rememberDateMoment\(0, \{/);
+  assert.match(source, /function spawnChromaRailBurst\(/);
+  assert.match(source, /dateMapState\.rollingTrails\.push\(\{/);
+  assert.match(source, /function drawChromaThemeField\(/);
+  assert.match(source, /function drawChromaCloth\(timestamp\)/);
+  assert.match(source, /function drawChromaPattern\(timestamp\)/);
+  assert.match(source, /function drawRollingChromaTrails\(timestamp\)/);
+  assert.match(source, /function drawChromaRailBursts\(timestamp\)/);
+  assert.match(source, /function drawPocketGlyph\(/);
+  assert.match(source, /function drawBlackEightBlast\(timestamp\)/);
   assert.match(source, /function drawDateMapLayer\(timestamp\)/);
-  assert.match(source, /function rebuildDateMapFrame\(timestamp\)/);
   assert.match(source, /const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
-  assert.match(source, /function drawDateMapPhotoBase\(/);
-  assert.match(source, /function drawScenePortalPhoto\(/);
-  assert.match(source, /function drawScenePortalLighting\(/);
-  assert.match(source, /function drawSceneImage\(/);
-  assert.match(source, /DATE_SCENE_TEXTURES/);
-  assert.match(source, /DATE_SCENE_VARIANTS/);
-  assert.match(source, /STAGE_SCENE_MOODS/);
-  assert.match(source, /function drawMotifAtmosphere\(/);
-  assert.match(source, /date-map-rose-v3\.jpg/);
-  assert.match(source, /function playSceneLens\(/);
-  assert.match(source, /function cssSceneImage\(asset\)/);
-  assert.match(source, /return `url\(\\"\/\$\{String\(asset \|\| ""\)\.replace/);
-  assert.doesNotMatch(source, /setProperty\("--hb-(?:scene|backdrop)-image", `url\(\\"\$\{asset\}/);
-  assert.match(source, /originX: pocket\.captureX/);
-  assert.match(source, /originY: pocket\.captureY/);
-  assert.match(source, /sceneTransition = \{/);
-  assert.match(source, /function drawDateConnections\(/);
-  assert.match(source, /function pointAlongDateRoute\(/);
-  assert.match(source, /function drawDateRouteSparkle\(/);
-  assert.doesNotMatch(source, /context\.strokeStyle = "#fff1cf"/);
-  assert.match(source, /scheduleResultAfterTable\(success \? 7800 : 2500\)/);
-  assert.match(source, /function drawCueJourney\(/);
-  assert.match(source, /function drawFinalDateShape\(/);
-  assert.match(source, /function beginFinalDateMapReveal\(outcome\)/);
-  assert.match(source, /beginFinalDateMapReveal\(outcome\)/);
-  assert.doesNotMatch(source, /STAGE_SCENE_ASSETS|MEMORY_MILESTONES|showLiveMemory|setCompanionGesture/);
-  const outcomes = source.slice(source.indexOf("function processOutcomePerformances"), source.indexOf("function finalizeShot"));
-  assert.doesNotMatch(outcomes, /queueCinematic\(|queueStageMicro\(/);
-  assert.match(outcomes, /setDateFlow\(0, true\)/);
+  assert.match(source, /fillStyle = "rgba\(1, 6, 12, 0\.3\)"/);
+  assert.match(source, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
+  assert.doesNotMatch(source, /loadMaterialTexture\("assets\/billiards-scenes/);
   assert.match(source, /content\.getEnding\(grade\)/);
 });
-
 test("freezes full-screen cinematics and preserves the completed canvas without repainting under results", () => {
   assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
   assert.match(source, /if \(!ballRendererDirty && !hasDynamicBall\) return true/);

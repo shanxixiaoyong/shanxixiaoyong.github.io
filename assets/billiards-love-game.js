@@ -4,12 +4,12 @@
   const rules = window.BilliardsLoveRules;
   const content = window.BilliardsLoveContent;
   const Physics = window.BilliardsPhysics;
-  if (!rules || !content || !Physics) throw new Error("心动桌球运行依赖未加载");
+  if (!rules || !content || !Physics) throw new Error("幻彩桌球运行依赖未加载");
 
   const { Engine, Bodies, Body, Composite, Events } = Physics;
   const required = (selector) => {
     const node = document.querySelector(selector);
-    if (!node) throw new Error(`缺少心动桌球节点：${selector}`);
+    if (!node) throw new Error(`缺少幻彩桌球节点：${selector}`);
     return node;
   };
 
@@ -138,52 +138,81 @@
     9: "#e9c348", 10: "#2676bf", 11: "#c33f40", 12: "#754493",
     13: "#df7b30", 14: "#358553", 15: "#8e3740"
   });
+  const BALL_CHROMA_THEMES = Object.freeze({
+    0: Object.freeze({ id: "pearl", label: "极光白", primary: "#eefaff", secondary: "#9ec9ff", accent: "#ffb9ef", deep: "#102130", glow: "#ffffff" }),
+    1: Object.freeze({ id: "solar", label: "日冕金", primary: "#ffd85d", secondary: "#ff8f2f", accent: "#fff1a8", deep: "#3a1d08", glow: "#fff7c4" }),
+    2: Object.freeze({ id: "cobalt", label: "电光蓝", primary: "#3aa8ff", secondary: "#3157ff", accent: "#9eeaff", deep: "#071c4a", glow: "#d4f7ff" }),
+    3: Object.freeze({ id: "crimson", label: "脉冲红", primary: "#ff4f68", secondary: "#b5144c", accent: "#ffb29f", deep: "#3d0717", glow: "#ffd7cf" }),
+    4: Object.freeze({ id: "nebula", label: "星云紫", primary: "#b96cff", secondary: "#6437d9", accent: "#ff9ae8", deep: "#210b48", glow: "#f2d5ff" }),
+    5: Object.freeze({ id: "molten", label: "熔光橙", primary: "#ff9b3e", secondary: "#ef4428", accent: "#ffd27d", deep: "#421407", glow: "#ffe3a8" }),
+    6: Object.freeze({ id: "emerald", label: "生物绿", primary: "#3ee6a0", secondary: "#087c6b", accent: "#b7ff98", deep: "#042c27", glow: "#d8ffd0" }),
+    7: Object.freeze({ id: "ruby", label: "深红晶", primary: "#e93673", secondary: "#6f173d", accent: "#ff9dba", deep: "#310717", glow: "#ffd1df" }),
+    8: Object.freeze({ id: "eclipse", label: "黑曜日蚀", primary: "#11131d", secondary: "#612caa", accent: "#ffcc62", deep: "#010208", glow: "#ffffff" }),
+    9: Object.freeze({ id: "solar-stripe", label: "日冕流金", primary: "#ffd85d", secondary: "#fff6d0", accent: "#ff8f2f", deep: "#3a1d08", glow: "#ffffff" }),
+    10: Object.freeze({ id: "cobalt-stripe", label: "电光冰蓝", primary: "#3aa8ff", secondary: "#edf8ff", accent: "#755dff", deep: "#071c4a", glow: "#ffffff" }),
+    11: Object.freeze({ id: "crimson-stripe", label: "脉冲银红", primary: "#ff4f68", secondary: "#fff1ed", accent: "#d01a57", deep: "#3d0717", glow: "#ffffff" }),
+    12: Object.freeze({ id: "nebula-stripe", label: "星云银紫", primary: "#b96cff", secondary: "#f7ecff", accent: "#ff82d8", deep: "#210b48", glow: "#ffffff" }),
+    13: Object.freeze({ id: "molten-stripe", label: "熔光银橙", primary: "#ff9b3e", secondary: "#fff4df", accent: "#ef4428", deep: "#421407", glow: "#ffffff" }),
+    14: Object.freeze({ id: "emerald-stripe", label: "生物银绿", primary: "#3ee6a0", secondary: "#effff8", accent: "#28b46c", deep: "#042c27", glow: "#ffffff" }),
+    15: Object.freeze({ id: "ruby-stripe", label: "深红银晶", primary: "#e93673", secondary: "#fff0f5", accent: "#92214f", deep: "#310717", glow: "#ffffff" })
+  });
+  const POCKET_VFX_PROFILES = Object.freeze({
+    "top-left": Object.freeze({ id: "ripple", label: "液态潮汐", glyph: "rings", primary: "#54d8ff", secondary: "#8a7dff" }),
+    "top-right": Object.freeze({ id: "comet", label: "彗星火花", glyph: "burst", primary: "#ffcf5a", secondary: "#ff5d84" }),
+    "middle-left": Object.freeze({ id: "prism", label: "棱镜折射", glyph: "prism", primary: "#9af7ff", secondary: "#ef72ff" }),
+    "middle-right": Object.freeze({ id: "pulse", label: "量子脉冲", glyph: "segments", primary: "#62ffca", secondary: "#3b78ff" }),
+    "bottom-left": Object.freeze({ id: "lightning", label: "电弧裂变", glyph: "bolts", primary: "#d7f7ff", secondary: "#6a5cff" }),
+    "bottom-right": Object.freeze({ id: "aurora", label: "极光绸带", glyph: "ribbons", primary: "#68ffc8", secondary: "#d967ff" })
+  });
+  const CHROMA_TRANSITION_MS = 1180;
+  const ROLL_TRAIL_LIFETIME_MS = 980;
+  const RAIL_BURST_LIFETIME_MS = 780;
   const DATE_SCENE_STYLES = Object.freeze({
     "corner-store": Object.freeze({
-      asset: "assets/billiards-scenes/portal-corner-store-v1.jpg",
-      primary: "#82d9e4",
-      secondary: "#f48eaf",
-      rail: "#c7f4f1"
+      asset: null,
+      primary: "#54d8ff",
+      secondary: "#8a7dff",
+      rail: "#d7f8ff"
     }),
     "coffee-window": Object.freeze({
-      asset: "assets/billiards-scenes/portal-coffee-window-v1.jpg",
-      primary: "#f0ae67",
-      secondary: "#c85f73",
-      rail: "#ffe1a9"
+      asset: null,
+      primary: "#ffcf5a",
+      secondary: "#ff5d84",
+      rail: "#fff3bf"
     }),
     "late-cinema": Object.freeze({
-      asset: "assets/billiards-scenes/portal-late-cinema-v1.jpg",
-      primary: "#d34061",
-      secondary: "#d6a85d",
-      rail: "#ffd9a3"
+      asset: null,
+      primary: "#9af7ff",
+      secondary: "#ef72ff",
+      rail: "#efffff"
     }),
     "river-walk": Object.freeze({
-      asset: "assets/billiards-scenes/portal-river-walk-v1.jpg",
-      primary: "#8068dc",
-      secondary: "#9fc9ef",
-      rail: "#d4c8ff"
+      asset: null,
+      primary: "#62ffca",
+      secondary: "#3b78ff",
+      rail: "#d7fff2"
     }),
     "last-train": Object.freeze({
-      asset: "assets/billiards-scenes/portal-last-train-v1.jpg",
-      primary: "#43c5c9",
-      secondary: "#ba83df",
-      rail: "#d2fbef"
+      asset: null,
+      primary: "#d7f7ff",
+      secondary: "#6a5cff",
+      rail: "#ffffff"
     }),
     "walk-home": Object.freeze({
-      asset: "assets/billiards-scenes/portal-walk-home-v1.jpg",
-      primary: "#f28d72",
-      secondary: "#f3c374",
-      rail: "#fff0bb"
+      asset: null,
+      primary: "#68ffc8",
+      secondary: "#d967ff",
+      rail: "#eafff8"
     })
   });
   const STAGE_SCENE_MOODS = Object.freeze([
-    Object.freeze({ id: "first-glance", label: "初遇微光", primary: "#8edbe5", secondary: "#f4a7bc", tint: "#547d94", imageAlpha: 0.72, light: 0.44 }),
-    Object.freeze({ id: "getting-close", label: "熟悉暖光", primary: "#f0b06d", secondary: "#ef8c8d", tint: "#b76b61", imageAlpha: 0.75, light: 0.52 }),
-    Object.freeze({ id: "almost-love", label: "暧昧霓虹", primary: "#e7659a", secondary: "#9d72df", tint: "#a64378", imageAlpha: 0.78, light: 0.61 }),
-    Object.freeze({ id: "spoken-heart", label: "心意盛放", primary: "#f0c069", secondary: "#d84368", tint: "#bc6756", imageAlpha: 0.82, light: 0.72 }),
-    Object.freeze({ id: "together", label: "相恋长夜", primary: "#ed72a1", secondary: "#f0c880", tint: "#bb4f7a", imageAlpha: 0.84, light: 0.79 }),
-    Object.freeze({ id: "through-rain", label: "雨后靠近", primary: "#8073d9", secondary: "#e780a9", tint: "#594f93", imageAlpha: 0.82, light: 0.72 }),
-    Object.freeze({ id: "shared-dawn", label: "共同黎明", primary: "#f39478", secondary: "#f4d17f", tint: "#d27772", imageAlpha: 0.9, light: 0.94 })
+    Object.freeze({ id: "ignition", label: "原色点火", primary: "#5ff6ff", secondary: "#4878ff", tint: "#173c59", imageAlpha: 0.72, light: 0.44 }),
+    Object.freeze({ id: "dispersion", label: "色散展开", primary: "#ffce61", secondary: "#ff6e45", tint: "#743f22", imageAlpha: 0.75, light: 0.52 }),
+    Object.freeze({ id: "refraction", label: "棱镜折射", primary: "#db70ff", secondary: "#5e7aff", tint: "#482a7a", imageAlpha: 0.78, light: 0.61 }),
+    Object.freeze({ id: "pulse", label: "脉冲同步", primary: "#63ffca", secondary: "#3978ff", tint: "#155c54", imageAlpha: 0.82, light: 0.72 }),
+    Object.freeze({ id: "overdrive", label: "光场过载", primary: "#ff5b7c", secondary: "#ffb43f", tint: "#70233b", imageAlpha: 0.84, light: 0.79 }),
+    Object.freeze({ id: "spectrum", label: "全谱共振", primary: "#75eaff", secondary: "#d967ff", tint: "#39376f", imageAlpha: 0.82, light: 0.72 }),
+    Object.freeze({ id: "eclipse", label: "黑曜日蚀", primary: "#ffffff", secondary: "#7d55ff", tint: "#171126", imageAlpha: 0.9, light: 0.94 })
   ]);
   const DATE_SCENE_VARIANTS = Object.freeze([
     Object.freeze({ name: "全景", zoom: 1, focusX: 0.5, focusY: 0.5, backdropX: 50, backdropY: 50 }),
@@ -211,12 +240,12 @@
     night: Object.freeze({ primary: "#d991aa", secondary: "#8dcfd5", tint: "#704058" })
   });
   const DEFAULT_DATE_SCENES = Object.freeze([
-    { id: "corner-store", pocketId: "top-left", name: "街角便利店", x: 178, y: 238, focusX: 18, focusY: 8, color: "#d991aa" },
-    { id: "coffee-window", pocketId: "top-right", name: "临窗咖啡店", x: 542, y: 238, focusX: 82, focusY: 8, color: "#edbd91" },
-    { id: "late-cinema", pocketId: "middle-left", name: "午夜电影院", x: 360, y: 478, focusX: 50, focusY: 28, color: "#e4759a" },
-    { id: "river-walk", pocketId: "middle-right", name: "河边步道", x: 360, y: 716, focusX: 50, focusY: 48, color: "#bf8db5" },
-    { id: "last-train", pocketId: "bottom-left", name: "末班车站", x: 360, y: 968, focusX: 50, focusY: 69, color: "#b99bc5" },
-    { id: "walk-home", pocketId: "bottom-right", name: "回家的街道", x: 360, y: 1192, focusX: 50, focusY: 90, color: "#efc17f" }
+    { id: "corner-store", pocketId: "top-left", name: "液态涟漪", x: 178, y: 238, focusX: 18, focusY: 8, color: "#54d8ff" },
+    { id: "coffee-window", pocketId: "top-right", name: "彗星火花", x: 542, y: 238, focusX: 82, focusY: 8, color: "#ffcf5a" },
+    { id: "late-cinema", pocketId: "middle-left", name: "棱镜折射", x: 360, y: 478, focusX: 50, focusY: 28, color: "#9af7ff" },
+    { id: "river-walk", pocketId: "middle-right", name: "量子脉冲", x: 360, y: 716, focusX: 50, focusY: 48, color: "#62ffca" },
+    { id: "last-train", pocketId: "bottom-left", name: "电弧裂变", x: 360, y: 968, focusX: 50, focusY: 69, color: "#d7f7ff" },
+    { id: "walk-home", pocketId: "bottom-right", name: "极光绸带", x: 360, y: 1192, focusX: 50, focusY: 90, color: "#68ffc8" }
   ]);
   const sourceDateScenes = Array.isArray(content.POCKET_DATE_SCENES)
     ? content.POCKET_DATE_SCENES
@@ -310,11 +339,9 @@
   const MATERIAL_TEXTURES = Object.freeze({
     cloth: loadMaterialTexture("assets/billiards-textures/worsted-cloth.jpg"),
     walnut: loadMaterialTexture("assets/billiards-textures/dark-walnut.jpg"),
-    dateMap: loadMaterialTexture("assets/billiards-scenes/date-map-rose-v3.jpg")
+    dateMap: null
   });
-  const DATE_SCENE_TEXTURES = Object.freeze(Object.fromEntries(
-    Object.entries(DATE_SCENE_STYLES).map(([id, style]) => [id, loadMaterialTexture(style.asset)])
-  ));
+  const DATE_SCENE_TEXTURES = Object.freeze({});
 
   function readStorage(key, fallback) {
     try {
@@ -375,6 +402,29 @@
     ctx.arcTo(x, y + height, x, y, r);
     ctx.arcTo(x, y, x + width, y, r);
     ctx.closePath();
+  }
+
+  function ellipsePath(ctx, x, y, radiusX, radiusY, rotation = 0, start = 0, end = Math.PI * 2) {
+    if (typeof ctx.ellipse === "function") {
+      ctx.ellipse(x, y, radiusX, radiusY, rotation, start, end);
+      return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(radiusX, radiusY);
+    ctx.arc(0, 0, 1, start, end);
+    ctx.restore();
+  }
+
+  function bezierPath(ctx, controlX1, controlY1, controlX2, controlY2, x, y) {
+    if (typeof ctx.bezierCurveTo === "function") {
+      ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, x, y);
+    } else if (typeof ctx.quadraticCurveTo === "function") {
+      ctx.quadraticCurveTo((controlX1 + controlX2) / 2, (controlY1 + controlY2) / 2, x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
   }
 
   function drawMaterialTexture(image, x, y, width, height, opacity) {
@@ -744,12 +794,21 @@
       completed: false,
       finalProgress: 0,
       ending: null,
-      style: { precise: 0, bold: 0, adventurous: 0, playful: 0 }
+      style: { precise: 0, bold: 0, adventurous: 0, playful: 0 },
+      activeBallNumber: null,
+      activeTheme: { ...BALL_CHROMA_THEMES[0] },
+      previousTheme: null,
+      activeEffect: null,
+      themeTransition: null,
+      rollingTrails: [],
+      railBursts: [],
+      pocketFlares: [],
+      blackEightBlast: null
     };
   }
 
   function rememberDateMoment(number, detail = {}, options = {}) {
-    if (!Number.isInteger(number) || number < 1 || number > 15 || number === 8 && options.ignoreEight) return null;
+    if (!Number.isInteger(number) || number < 0 || number > 15 || number === 8 && options.ignoreEight) return null;
     if (detail.dateRouteId) {
       return dateMapState.routes.find((route) => route.id === detail.dateRouteId) || null;
     }
@@ -765,29 +824,28 @@
           { x: (fallbackStart.x + pocket.captureX) / 2, y: (fallbackStart.y + pocket.captureY) / 2 },
           { x: pocket.captureX, y: pocket.captureY }
         ];
-    const motif = motifForBall(number);
     const now = performance.now();
-    const stageNumber = clamp(currentStageNumber(), 1, STAGE_SCENE_MOODS.length);
-    const sceneStyle = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
-    const variant = sceneVariantFor(zone, number, motif, options.archetype);
+    const theme = BALL_CHROMA_THEMES[number] || BALL_CHROMA_THEMES[0];
+    const effect = POCKET_VFX_PROFILES[pocket.id] || POCKET_VFX_PROFILES["top-left"];
+    const stageNumber = clamp(currentStageNumber(), 1, 7);
     const route = {
-      id: `date-route-${runState.shots + 1}-${number}-${dateMapState.routes.length}`,
+      id: `chroma-route-${runState.shots + 1}-${number}-${dateMapState.routes.length}`,
       number,
       physicalNumber: number,
       storyNumber: null,
-      motif,
+      motif: theme.id,
       pocketId: pocket.id,
-      sceneId: scene.id,
-      sceneName: scene.name,
-      sceneAsset: sceneStyle.asset,
+      sceneId: effect.id,
+      sceneName: effect.label,
+      sceneAsset: null,
       stageNumber,
-      stageMood: stageSceneMood(stageNumber).id,
-      variantIndex: variant.index,
-      variantName: variant.name,
-      backdropX: variant.backdropX,
-      backdropY: variant.backdropY,
-      zoom: variant.zoom,
-      color: BALL_COLORS[number] || scene.color,
+      stageMood: theme.id,
+      variantIndex: POCKETS.indexOf(pocket),
+      variantName: effect.label,
+      backdropX: pocket.x / WORLD.width * 100,
+      backdropY: pocket.y / WORLD.height * 100,
+      zoom: 1,
+      color: theme.primary,
       path,
       railHits: Number(detail.railHits) || 0,
       jawHits: Number(detail.jawHits) || 0,
@@ -805,23 +863,35 @@
       zone.reveal = clamp(zone.reveal + (zone.visits ? 0.22 : 0.48), 0, 1);
       zone.pulse = 1;
       zone.visits += 1;
-      if (!zone.motifs.includes(motif)) zone.motifs.push(motif);
+      if (!zone.motifs.includes(theme.id)) zone.motifs.push(theme.id);
     }
+    dateMapState.previousTheme = dateMapState.activeTheme ? { ...dateMapState.activeTheme } : null;
+    dateMapState.activeTheme = { ...theme, number };
+    dateMapState.activeBallNumber = number;
+    dateMapState.activeEffect = { ...effect, pocketId: pocket.id };
+    dateMapState.themeTransition = {
+      from: dateMapState.previousTheme,
+      to: dateMapState.activeTheme,
+      originX: pocket.captureX,
+      originY: pocket.captureY,
+      startedAt: now,
+      duration: CHROMA_TRANSITION_MS
+    };
     dateMapState.previousScene = dateMapState.activeScene ? { ...dateMapState.activeScene } : null;
     dateMapState.activeScene = {
-      sceneId: scene.id,
-      sceneName: scene.name,
+      sceneId: effect.id,
+      sceneName: effect.label,
       pocketId: pocket.id,
       number,
-      motif,
+      motif: theme.id,
       archetype: route.archetype,
       stageNumber,
-      variantIndex: variant.index,
-      variantName: variant.name,
-      asset: sceneStyle.asset,
-      primary: sceneStyle.primary,
-      secondary: sceneStyle.secondary,
-      rail: sceneStyle.rail,
+      variantIndex: route.variantIndex,
+      variantName: effect.label,
+      asset: null,
+      primary: theme.primary,
+      secondary: theme.secondary,
+      rail: effect.primary,
       originX: pocket.captureX,
       originY: pocket.captureY,
       bornAt: now
@@ -834,6 +904,28 @@
     };
     dateMapState.sceneHistory.push({ ...dateMapState.activeScene });
     if (dateMapState.sceneHistory.length > 15) dateMapState.sceneHistory.shift();
+    dateMapState.pocketFlares.push({
+      x: pocket.x,
+      y: pocket.y,
+      pocketId: pocket.id,
+      effectId: effect.id,
+      color: theme.primary,
+      secondary: effect.secondary,
+      bornAt: now,
+      life: 1
+    });
+    if (dateMapState.pocketFlares.length > 12) dateMapState.pocketFlares.shift();
+    if (number === 8) {
+      dateMapState.blackEightBlast = {
+        startedAt: now,
+        ageMs: 0,
+        duration: 3900,
+        pocketId: pocket.id,
+        originX: pocket.x,
+        originY: pocket.y,
+        life: 1
+      };
+    }
     if (dateMapState.lastPocketId && dateMapState.lastPocketId !== pocket.id) {
       dateMapState.links.push({
         from: dateMapState.lastPocketId,
@@ -845,6 +937,7 @@
     }
     dateMapState.lastPocketId = pocket.id;
     dateMapState.flow = 1;
+    lastStoryWorldOrigin = { x: pocket.x, y: pocket.y };
     focusBackdropScene(scene, route, { commit: false });
     return route;
   }
@@ -920,6 +1013,36 @@
       restitution: details.restitution ?? Physics.CONFIG.cushionRestitutionMin,
       tangentialRetention: details.tangentialRetention ?? 1
     };
+  }
+
+  function spawnChromaRailBurst(ball, rail, collision, impactSpeed) {
+    const data = bodyData(ball);
+    const effect = dateMapState.activeEffect;
+    if (!data || !effect || data.potted || data.pocketing || impactSpeed < 0.42) return;
+    const contact = collision?.supports?.[0] || { x: ball.position.x, y: ball.position.y };
+    const normal = normalize(collision?.normal || {
+      x: ball.position.x - rail.position.x,
+      y: ball.position.y - rail.position.y
+    });
+    const theme = BALL_CHROMA_THEMES[data.number] || dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    dateMapState.railBursts.push({
+      x: contact.x,
+      y: contact.y,
+      normalX: normal.x,
+      normalY: normal.y,
+      railId: rail.plugin.heartbeatRail?.id || "rail",
+      effectId: effect.id,
+      color: theme.primary,
+      secondary: effect.secondary,
+      intensity: clamp(impactSpeed / 18, 0.25, 1),
+      bornAt: performance.now(),
+      life: 1
+    });
+    if (dateMapState.railBursts.length > 36) {
+      dateMapState.railBursts.splice(0, dateMapState.railBursts.length - 36);
+    }
+    dateMapFrameDirty = true;
+    sceneLightingFrameDirty = true;
   }
 
   function createRail(x, y, width, height, id, angle = 0, kind = "cushion") {
@@ -1057,6 +1180,7 @@
       lastSafePosition: { x, y },
       outsideSteps: 0,
       lastRailImpact: null,
+      lastChromaTrailAt: -Infinity,
       compression: 0,
       impactGlow: 0,
       impactAngle: 0
@@ -1140,6 +1264,7 @@
         data.shotTrail = [{ x: ball.position.x, y: ball.position.y }];
         data.pocketMouthEntries = 0;
         data.lastRailImpact = null;
+        data.lastChromaTrailAt = -Infinity;
       }
     });
   }
@@ -1193,15 +1318,17 @@
     elements.pocketFocus.hidden = true;
     elements.sceneLens.classList.remove("is-active");
     elements.micro.hidden = true;
-    root.dataset.scene = "night-map";
-    root.dataset.motif = "night";
+    root.dataset.scene = "spectrum";
+    root.dataset.motif = "pearl";
     root.dataset.sceneVariant = "0";
     root.style.setProperty("--hb-scene-x", "50%");
     root.style.setProperty("--hb-scene-y", "18%");
-    root.style.setProperty("--hb-scene-opacity", "0.12");
-    root.style.setProperty("--hb-scene-scale", "1.04");
-    root.style.setProperty("--hb-backdrop-image", "url(\"/assets/billiards-scenes/date-map-rose-v3.jpg\")");
-    root.style.setProperty("--hb-scene-image", "url(\"/assets/billiards-scenes/date-map-rose-v3.jpg\")");
+    root.style.setProperty("--hb-scene-opacity", "0.32");
+    root.style.setProperty("--hb-scene-scale", "1");
+    root.style.setProperty("--hb-scene-color", BALL_CHROMA_THEMES[0].primary);
+    root.style.setProperty("--hb-scene-secondary", BALL_CHROMA_THEMES[0].secondary);
+    root.style.setProperty("--hb-backdrop-image", "none");
+    root.style.setProperty("--hb-scene-image", "none");
     setDateFlow(0, true);
     rackBalls();
     syncUI();
@@ -1249,28 +1376,22 @@
   }
 
   function focusBackdropScene(scene, route, options = {}) {
-    if (!scene) return;
-    const style = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
-    const mood = stageSceneMood(route?.stageNumber);
-    const motifPalette = motifScenePalette(route?.motif || "night");
-    const asset = route?.sceneAsset || style.asset;
-    const variant = DATE_SCENE_VARIANTS[route?.variantIndex ?? 0] || DATE_SCENE_VARIANTS[0];
-    const revealCount = Math.max(1, dateMapState.routes.length);
-    const opacity = clamp(0.46 + revealCount * 0.022 + mood.light * 0.13 + dateMapState.activeStreak * 0.018, 0.48, 0.88);
-    root.dataset.scene = scene.id;
-    root.dataset.motif = route?.motif || "night";
+    const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const effect = dateMapState.activeEffect || POCKET_VFX_PROFILES[route?.pocketId] || POCKET_VFX_PROFILES["top-left"];
+    root.dataset.scene = effect.id;
+    root.dataset.motif = theme.id;
     root.dataset.sceneVariant = String(route?.variantIndex ?? 0);
-    root.dataset.sceneMood = mood.id;
-    root.style.setProperty("--hb-scene-image", cssSceneImage(asset));
-    root.style.setProperty("--hb-scene-x", `${route?.backdropX ?? variant.backdropX ?? scene.focusX ?? 50}%`);
-    root.style.setProperty("--hb-scene-y", `${route?.backdropY ?? variant.backdropY ?? scene.focusY ?? 50}%`);
-    root.style.setProperty("--hb-scene-scale", String(clamp(route?.zoom ?? variant.zoom ?? 1, 1, 1.28)));
-    root.style.setProperty("--hb-scene-color", motifPalette.primary || style.primary || scene.color || "#db91aa");
-    root.style.setProperty("--hb-scene-secondary", motifPalette.secondary || style.secondary || mood.secondary);
-    root.style.setProperty("--hb-stage-scene-primary", mood.primary);
-    root.style.setProperty("--hb-stage-scene-secondary", mood.secondary);
-    root.style.setProperty("--hb-scene-opacity", String(opacity));
-    if (options.commit !== false) root.style.setProperty("--hb-backdrop-image", cssSceneImage(asset));
+    root.dataset.sceneMood = theme.id;
+    root.style.setProperty("--hb-scene-image", "none");
+    root.style.setProperty("--hb-backdrop-image", "none");
+    root.style.setProperty("--hb-scene-x", `${route?.backdropX ?? 50}%`);
+    root.style.setProperty("--hb-scene-y", `${route?.backdropY ?? 50}%`);
+    root.style.setProperty("--hb-scene-scale", "1");
+    root.style.setProperty("--hb-scene-color", theme.primary);
+    root.style.setProperty("--hb-scene-secondary", theme.secondary);
+    root.style.setProperty("--hb-stage-scene-primary", effect.primary);
+    root.style.setProperty("--hb-stage-scene-secondary", effect.secondary);
+    root.style.setProperty("--hb-scene-opacity", String(clamp(0.38 + dateMapState.activeStreak * 0.045, 0.38, 0.72)));
   }
 
   function playSceneLens(scene, route, pocket) {
@@ -1280,15 +1401,10 @@
     root.style.setProperty("--hb-scene-origin-x", `${origin.x}%`);
     root.style.setProperty("--hb-scene-origin-y", `${origin.y}%`);
     clearTimeout(sceneLensTimer);
-    clearTimeout(backdropCommitTimer);
     elements.sceneLens.dataset.camera = route?.archetype || "direct";
     elements.sceneLens.classList.remove("is-active");
     void elements.sceneLens.offsetWidth;
     elements.sceneLens.classList.add("is-active");
-    backdropCommitTimer = setTimeout(() => {
-      const style = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
-      root.style.setProperty("--hb-backdrop-image", cssSceneImage(route?.sceneAsset || style.asset));
-    }, 650);
     sceneLensTimer = setTimeout(() => elements.sceneLens.classList.remove("is-active"), SCENE_PORTAL_DURATION_MS + 120);
   }
 
@@ -1330,7 +1446,7 @@
     elements.tableMoment.dataset.motion = story.visualMode || story.archetype || "straight";
     elements.tableMoment.dataset.scene = story.sceneId || story.stageId || "date-map";
     elements.tableMoment.style.setProperty("--hb-moment-duration", `${story.durationMs || TABLE_MOMENT_DEFAULT_DURATION}ms`);
-    elements.tableMomentScene.textContent = story.sceneName || story.scene || story.technique || "约会地图";
+    elements.tableMomentScene.textContent = story.sceneName || story.scene || story.technique || "幻彩球台";
     elements.tableMomentTitle.textContent = story.title;
     elements.tableMomentLine.textContent = story.line;
     elements.tableMoment.hidden = true;
@@ -1353,7 +1469,8 @@
     const litScenes = [...dateMapState.zones.values()].filter((zone) => zone.visits > 0).length;
     const lastScene = DATE_SCENE_BY_POCKET.get(dateMapState.lastPocketId);
     const lastRoute = dateMapState.routes.at(-1);
-    const sceneMood = stageSceneMood(lastRoute?.stageNumber || stageNumber);
+    const activeTheme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const activeEffect = dateMapState.activeEffect;
     if (stageNumber !== cachedStageNumber) tableCacheDirty = true;
     cachedStageNumber = stageNumber;
     cachedAvailableTargets = new Set(targets);
@@ -1361,23 +1478,23 @@
     ballRendererDirty = true;
     root.dataset.stage = String(stageNumber);
     elements.stageKicker.textContent = runState.endState.ended
-      ? "今晚的瞬间 · 全部抵达"
-      : `今晚的瞬间 · ${String(runState.pottedNumbers.length).padStart(2, "0")} / 15`;
+      ? "幻彩清台 · 能量闭环"
+      : `色谱进度 · ${String(runState.pottedNumbers.length).padStart(2, "0")} / 15`;
     elements.stageTitle.textContent = progress?.target === "eight"
-      ? "整座夜城，只等最后一次靠近"
-      : lastScene ? `${lastScene.name} · ${sceneMood.label}` : "桌布下藏着一场尚未发生的约会";
+      ? "黑曜日蚀已经进入最终轨道"
+      : activeEffect ? `${activeTheme.label} × ${activeEffect.label}` : "第一颗落袋球将重构整张球台";
     elements.stageTargets.textContent = progress
       ? progress.target === "eight"
-        ? "黑 8 将连接整晚留下的全部路线"
-        : `任意非黑 8 彩球都能继续显影，还剩 ${15 - runState.pottedNumbers.length} 颗`
-      : "所有路线已经回到同一盏灯下";
+        ? "击入黑 8，触发六种袋口效果同时爆发"
+        : `球色控制桌布色谱，袋口控制滚动与碰库特效 · 还剩 ${15 - runState.pottedNumbers.length} 颗`
+      : "全部能量已经汇入黑曜核心";
     const flowLabels = dateMapState.activeStreak >= 5
-      ? ["流动", 1]
-      : dateMapState.activeStreak >= 3 ? ["鲜活", 0.84]
-        : dateMapState.activeStreak >= 1 ? ["亮起", 0.68]
-          : runState.consecutiveMisses > 0 ? ["驻足", 0.46] : ["未醒", 0.32];
+      ? ["超载", 1]
+      : dateMapState.activeStreak >= 3 ? ["共振", 0.84]
+        : dateMapState.activeStreak >= 1 ? ["激活", 0.68]
+          : runState.consecutiveMisses > 0 ? ["降频", 0.46] : ["待机", 0.32];
     elements.interest.textContent = flowLabels[0];
-    elements.interestWrap.setAttribute("aria-label", `夜色状态：${flowLabels[0]}`);
+    elements.interestWrap.setAttribute("aria-label", `能量状态：${flowLabels[0]}`);
     elements.interestWrap.dataset.signal = interestSignal.band;
     elements.interestWrap.classList.toggle("is-low", false);
     elements.interestRing.style.strokeDashoffset = String(113.1 * (1 - flowLabels[1]));
@@ -1392,21 +1509,21 @@
     });
     if (!runState.breakCompleted) {
       elements.selectedBall.textContent = "—";
-      elements.selectedName.textContent = "今晚尚未落笔";
+      elements.selectedName.textContent = "色谱尚未激活";
       elements.callLabel.textContent = "开球";
-      elements.callTitle.textContent = "第一杆会唤醒整张地图";
+      elements.callTitle.textContent = "第一杆将点燃整张球台";
       elements.callHint.textContent = "向后拖动，松手或第二指轻触出杆";
     } else {
       selectedBallNumber = null;
       elements.selectedBall.textContent = progress?.target === "eight" ? "8" : String(Math.max(0, 15 - runState.pottedNumbers.length));
-      elements.selectedName.textContent = progress?.target === "eight" ? "最后一笔 · 黑 8" : `${litScenes} / 6 处夜景已亮`;
-      elements.callLabel.textContent = dateMapState.activeStreak > 0 ? `夜色流动 · ${dateMapState.activeStreak}` : "夜色未停";
+      elements.selectedName.textContent = progress?.target === "eight" ? "最终核心 · 黑 8" : `${litScenes} / 6 种袋口已触发`;
+      elements.callLabel.textContent = dateMapState.activeStreak > 0 ? `能量连锁 · ${dateMapState.activeStreak}` : "色谱运行中";
       elements.callTitle.textContent = progress?.target === "eight"
-        ? "整晚的灯光正在等最后一笔"
-        : lastScene ? `${lastScene.name}的灯还亮着` : "这场夜游才刚刚开始";
+        ? "日蚀核心正在等待最终一击"
+        : activeEffect ? `${activeTheme.label}正在以${activeEffect.label}运行` : "下一次落袋将定义视觉法则";
       elements.callHint.textContent = dateMapState.activeStreak >= 3
-        ? "两个人影沿着连起的灯光继续向前"
-        : lastScene ? "短暂驻足后，他们又看向下一段路" : "第一盏灯正藏在桌布下面";
+        ? "保持连进，轨迹、边条与环境光会持续升档"
+        : activeEffect ? "下一颗球会换色，下一处袋口会换特效" : "六个袋口各自携带不同运动效果";
     }
     elements.aimToggle.setAttribute("aria-pressed", String(aimAssist));
     elements.aimToggle.setAttribute("aria-label", aimAssist ? "关闭瞄准辅助" : "开启瞄准辅助");
@@ -1738,9 +1855,23 @@
         shotState.storyFocusNumber = data.number;
         beginPocketStoryFocus(pocket, dateRoute);
       }
+    } else {
+      const cuePath = data.shotTrail?.slice(-48).map((point) => ({ ...point })) || [];
+      cuePath.push({ x: pocket.captureX, y: pocket.captureY });
+      const cueRoute = rememberDateMoment(0, {
+        pocketId: pocket.id,
+        pocketX: pocket.x,
+        pocketY: pocket.y,
+        entrySpeed: speed,
+        railHits: data.shotRailHits,
+        jawHits: data.shotJawHits,
+        travel: data.shotTravel,
+        path: cuePath
+      }, { archetype: "scratch" });
+      beginPocketStoryFocus(pocket, cueRoute);
     }
     audio.cue(data.number === 0 ? "scratch" : "pocket", clamp(0.72 + speed / 30, 0.7, 1.15));
-    screenFlash = Math.max(screenFlash, data.number === 8 || data.number === 15 ? 0.36 : 0.12);
+    screenFlash = Math.max(screenFlash, data.number === 8 ? 0.62 : data.number === 0 ? 0.24 : 0.14);
     return true;
   }
 
@@ -1798,18 +1929,44 @@
       const dy = ball.position.y - data.lastPosition.y;
       const travel = Math.hypot(dx, dy);
       data.lastPosition = { x: ball.position.x, y: ball.position.y };
-      if (shotState && data.number > 0) {
-        data.shotTravel += travel;
+      if (shotState) {
+        if (data.number > 0) data.shotTravel += travel;
         const lastTrailPoint = data.shotTrail[data.shotTrail.length - 1];
         if (!lastTrailPoint || Math.hypot(ball.position.x - lastTrailPoint.x, ball.position.y - lastTrailPoint.y) >= 8) {
           data.shotTrail.push({ x: ball.position.x, y: ball.position.y });
           if (data.shotTrail.length > 64) data.shotTrail.shift();
         }
-        const pocketDistance = POCKETS.reduce((minimum, pocket) => Math.min(
-          minimum,
-          Math.hypot(ball.position.x - pocket.mouthX, ball.position.y - pocket.mouthY)
-        ), Infinity);
-        shotState.closestPocketDistance = Math.min(shotState.closestPocketDistance, pocketDistance);
+        if (data.number > 0) {
+          const pocketDistance = POCKETS.reduce((minimum, pocket) => Math.min(
+            minimum,
+            Math.hypot(ball.position.x - pocket.mouthX, ball.position.y - pocket.mouthY)
+          ), Infinity);
+          shotState.closestPocketDistance = Math.min(shotState.closestPocketDistance, pocketDistance);
+        }
+      }
+      if (dateMapState.activeEffect && travel > 1.1 && ball.speed > 0.22) {
+        const lastSampleAt = data.lastChromaTrailAt ?? -Infinity;
+        if (simulationTime - lastSampleAt >= 25) {
+          const theme = BALL_CHROMA_THEMES[data.number] || BALL_CHROMA_THEMES[0];
+          dateMapState.rollingTrails.push({
+            x1: ball.position.x - dx,
+            y1: ball.position.y - dy,
+            x2: ball.position.x,
+            y2: ball.position.y,
+            speed: ball.speed,
+            ballNumber: data.number,
+            effectId: dateMapState.activeEffect.id,
+            color: theme.primary,
+            secondary: dateMapState.activeEffect.secondary,
+            bornAt: performance.now(),
+            life: 1
+          });
+          data.lastChromaTrailAt = simulationTime;
+          if (dateMapState.rollingTrails.length > 180) {
+            dateMapState.rollingTrails.splice(0, dateMapState.rollingTrails.length - 180);
+          }
+          dateMapFrameDirty = true;
+        }
       }
       if (ball.physics) {
         data.rollAngle = ball.physics.rollAngle;
@@ -2043,7 +2200,7 @@
     if (!microQueue.length) {
       elements.micro.hidden = true;
       if (cinematicQueue.length && !cinematicActive) showNextCinematic();
-      else if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
+      else if (runState.endState.ended && !cinematicActive && !resultVisible && !finalRevealActive) showResult();
       return;
     }
     const item = microQueue.shift();
@@ -2089,7 +2246,7 @@
       cinematicActive = false;
       cinematicCurrent = null;
       elements.cinematic.hidden = true;
-      if (runState.endState.ended && !resultVisible) showResult();
+      if (runState.endState.ended && !resultVisible && !finalRevealActive) showResult();
       return;
     }
     cinematicCurrent = cinematicQueue.shift();
@@ -2143,28 +2300,45 @@
     const early = Boolean(outcome.earlyEight);
     const success = outcome.state.endState.status === "completed";
     dateMapState.completed = success;
-    dateMapState.ending = success ? "complete" : "reckless";
+    dateMapState.ending = success ? "eclipse-clear" : "eclipse-break";
     dateMapState.finalProgress = 0.001;
     dateMapState.stagePulse = 1;
+    const eightRoute = [...dateMapState.routes].reverse().find((route) => route.number === 8);
+    const eightPocket = POCKETS.find((pocket) => pocket.id === eightRoute?.pocketId)
+      || POCKETS.find((pocket) => pocket.id === dateMapState.lastPocketId)
+      || POCKETS[0];
+    dateMapState.blackEightBlast = {
+      startedAt: performance.now(),
+      ageMs: 0,
+      duration: success ? 4400 : 3200,
+      pocketId: eightPocket.id,
+      originX: eightPocket.x,
+      originY: eightPocket.y,
+      life: 1,
+      success
+    };
+    dateMapFrameDirty = true;
+    sceneLightingFrameDirty = true;
     setDateFlow(success ? Math.max(5, outcome.state.bestPotStreak) : 0, !success);
     root.dataset.state = "map-finale";
-    screenFlash = Math.max(screenFlash, success ? 0.46 : 0.16);
+    screenFlash = Math.max(screenFlash, success ? 0.78 : 0.5);
+    screenShake = Math.max(screenShake, success ? 7.2 : 4.2);
     showTableMoment({
-      id: `date-map-${success ? "complete" : "interrupted"}-${outcome.state.shots}`,
+      id: `eclipse-${success ? "complete" : "interrupted"}-${outcome.state.shots}`,
       archetype: success ? "multi" : "near",
-      motion: success ? "city-unite" : "city-pause",
-      sceneId: success ? "whole-night" : "crossroads",
-      sceneName: success ? "整张约会地图" : "夜路提前转弯",
+      motion: success ? "eclipse-supernova" : "eclipse-fracture",
+      sceneId: "eclipse",
+      sceneName: "黑 8 · 日蚀核心",
       title: success
-        ? early ? "这条意外的近路，也被她接住了" : "今晚所有走过的路，终于连在一起"
-        : "最后的答案来得太早",
+        ? early ? "极限抢攻，日蚀提前引爆" : "黑曜日蚀，全场超载"
+        : "核心失稳，能量链断裂",
       line: success
-        ? "六处灯光沿着你的真实球路依次亮起，两个人影从街角走到了同一条归途。"
-        : "城市没有熄灭，只是两个人在这个路口选择了不同方向。",
-      durationMs: success ? 3000 : 2200
+        ? "六种袋口效应同时点火，整张球台进入最终色谱。"
+        : "黑 8 的冲击仍然炸开了全场，但本局能量未能闭环。",
+      durationMs: success ? 2100 : 1700
     });
     audio.cue(success ? "proposal" : "warning", success ? 1 : 0.82);
-    scheduleResultAfterTable(success ? 7800 : 2500);
+    scheduleResultAfterTable(success ? 5000 : 3500);
   }
 
   function processOutcomePerformances(outcome, completedShot = {}) {
@@ -2283,9 +2457,9 @@
     let kicker;
     if (runState.endState.status === "completed") {
       if (runState.endState.ending === rules.EARLY_SUCCESS_ENDING) {
-        kicker = `${grade} · 提前双向奔赴`;
-        title = "黑 8 提前落袋，她却没有后退";
-        line = "你此前每一次稳定靠近都得到了回应，所以这次冒险没有成为冒犯。";
+        kicker = `${grade} · 极限抢攻`;
+        title = "黑 8 提前引爆，色谱仍然完成闭环";
+        line = "此前积累的高能连锁撑住了这次冒险，六种袋口效应同时点火。";
       } else {
         const ending = content.getEnding(grade);
         kicker = `${grade} · ${ending.title}`;
@@ -2294,11 +2468,11 @@
       }
     } else {
       const failure = {
-        "confession-too-early": ["告白过早", "心意先于时机落袋", "不是每一次直球，都适合发生在刚认识的时候。"],
-        "commitment-too-heavy": ["承诺过重", "很远的以后来得太早", "这一桌停在这里，下一次可以慢慢清完。"],
-        "losing-contact": ["渐渐失去联系", "话题在几次停顿后安静下来", "几次迟疑没有被重新接住，这段关系停在了当前章节。"],
-        "reckless-rejection": ["过于鲁莽", "黑 8 在关系成熟前落袋", "她认真听完，却没有接受这份来得太快的承诺。"]
-      }[runState.endState.ending] || ["今晚未完", "这一桌停在了这里", "下一次开球，关系轨迹会重新亮起。"];
+        "confession-too-early": ["核心抢跑", "黑 8 提前切断了能量链", "重启后先完成更多色谱，再挑战最终核心。"],
+        "commitment-too-heavy": ["负载过高", "核心在闭环前进入过载", "这一局停在这里，下一次可以更稳地完成清台。"],
+        "losing-contact": ["能量耗尽", "连续失误让色谱停止运转", "重新开球即可再次激活六种袋口效果。"],
+        "reckless-rejection": ["日蚀失控", "黑 8 在能量不足时提前落袋", "冲击已经炸开全场，但这次未能形成最终闭环。"]
+      }[runState.endState.ending] || ["本局中止", "色谱停在当前状态", "重新开球，整张桌面会再次被点亮。"];
       [kicker, title, line] = failure;
     }
     elements.resultGrade.textContent = kicker;
@@ -2307,7 +2481,15 @@
     elements.resultShots.textContent = String(rating.technical.shots);
     elements.resultAccuracy.textContent = `${rating.technical.successfulShotRate}%`;
     elements.resultStreak.textContent = String(rating.technical.bestStreak);
-    elements.resultInterest.textContent = rules.interestStatus(runState).label;
+    const energyLabels = {
+      lost: "能量耗尽",
+      danger: "能量告急",
+      uncertain: "输出波动",
+      devoted: "峰值超载",
+      warm: "高频共振",
+      steady: "稳定运行"
+    };
+    elements.resultInterest.textContent = energyLabels[rules.interestStatus(runState).band] || "稳定运行";
     elements.result.hidden = false;
     saveRecord(rating);
   }
@@ -2361,6 +2543,17 @@
     dateMapState.routes.forEach((route) => { route.glow = Math.max(0.46, route.glow * 0.994); });
     dateMapState.stagePulse *= 0.958;
     dateMapState.powerWave *= 0.94;
+    dateMapState.rollingTrails.forEach((trail) => { trail.life -= FIXED_STEP / ROLL_TRAIL_LIFETIME_MS; });
+    dateMapState.rollingTrails = dateMapState.rollingTrails.filter((trail) => trail.life > 0);
+    dateMapState.railBursts.forEach((burst) => { burst.life -= FIXED_STEP / RAIL_BURST_LIFETIME_MS; });
+    dateMapState.railBursts = dateMapState.railBursts.filter((burst) => burst.life > 0);
+    dateMapState.pocketFlares.forEach((flare) => { flare.life -= FIXED_STEP / 1500; });
+    dateMapState.pocketFlares = dateMapState.pocketFlares.filter((flare) => flare.life > 0);
+    if (dateMapState.blackEightBlast) {
+      dateMapState.blackEightBlast.ageMs += FIXED_STEP;
+      dateMapState.blackEightBlast.life = clamp(1 - dateMapState.blackEightBlast.ageMs / dateMapState.blackEightBlast.duration, 0, 1);
+      if (dateMapState.blackEightBlast.life <= 0) dateMapState.blackEightBlast = null;
+    }
     if (dateMapState.completed && dateMapState.finalProgress < 1) {
       dateMapState.finalProgress = Math.min(1, dateMapState.finalProgress + 0.009);
     }
@@ -2429,11 +2622,11 @@
     context.shadowBlur = 34;
     context.shadowOffsetY = 20;
     const wood = context.createLinearGradient(TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right, TABLE_OUTER.bottom);
-    wood.addColorStop(0, "#190910");
-    wood.addColorStop(0.18, "#512132");
-    wood.addColorStop(0.42, "#2a101b");
-    wood.addColorStop(0.68, "#64283d");
-    wood.addColorStop(1, "#14070d");
+    wood.addColorStop(0, "#05070b");
+    wood.addColorStop(0.18, "#202735");
+    wood.addColorStop(0.42, "#090c13");
+    wood.addColorStop(0.68, "#2c3442");
+    wood.addColorStop(1, "#040609");
     context.fillStyle = wood;
     roundRectPath(context, TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right - TABLE_OUTER.left, TABLE_OUTER.bottom - TABLE_OUTER.top, 32);
     context.fill();
@@ -2441,21 +2634,21 @@
 
     context.save();
     const burl = context.createLinearGradient(TABLE_OUTER.right, TABLE_OUTER.top, TABLE_OUTER.left, TABLE_OUTER.bottom);
-    burl.addColorStop(0, "#713046");
-    burl.addColorStop(0.16, "#30121e");
-    burl.addColorStop(0.5, "#5b2438");
-    burl.addColorStop(0.84, "#250d17");
-    burl.addColorStop(1, "#79334a");
+    burl.addColorStop(0, "#394252");
+    burl.addColorStop(0.16, "#0b1019");
+    burl.addColorStop(0.5, "#222a38");
+    burl.addColorStop(0.84, "#080b12");
+    burl.addColorStop(1, "#465064");
     context.fillStyle = burl;
     roundRectPath(context, TABLE_OUTER.left + 8, TABLE_OUTER.top + 8, TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 25);
     context.fill();
     roundRectPath(context, TABLE_OUTER.left + 10, TABLE_OUTER.top + 10, TABLE_OUTER.right - TABLE_OUTER.left - 20, TABLE_OUTER.bottom - TABLE_OUTER.top - 20, 23);
     context.clip();
     drawMaterialTexture(MATERIAL_TEXTURES.walnut, TABLE_OUTER.left + 8, TABLE_OUTER.top + 8,
-      TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 0.82);
+      TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 0.28);
     context.lineWidth = 0.7;
     for (let y = TABLE_OUTER.top + 14, index = 0; y < TABLE_OUTER.bottom - 10; y += 11, index += 1) {
-      context.strokeStyle = index % 3 === 0 ? "rgba(248, 184, 193, 0.2)" : "rgba(41, 7, 20, 0.26)";
+      context.strokeStyle = index % 3 === 0 ? "rgba(181, 214, 255, 0.12)" : "rgba(0, 0, 0, 0.28)";
       context.beginPath();
       context.moveTo(TABLE_OUTER.left + 8, y);
       context.lineTo(TABLE_OUTER.right - 8, y + Math.sin(index * 1.73) * 4);
@@ -2464,11 +2657,11 @@
     context.restore();
 
     context.save();
-    context.strokeStyle = "rgba(235, 187, 189, 0.36)";
+    context.strokeStyle = "rgba(193, 220, 255, 0.34)";
     context.lineWidth = 1.2;
     roundRectPath(context, TABLE_OUTER.left + 15, TABLE_OUTER.top + 15, TABLE_OUTER.right - TABLE_OUTER.left - 30, TABLE_OUTER.bottom - TABLE_OUTER.top - 30, 20);
     context.stroke();
-    context.strokeStyle = "rgba(24, 12, 10, 0.78)";
+    context.strokeStyle = "rgba(1, 3, 8, 0.88)";
     context.lineWidth = 5;
     roundRectPath(context, TABLE.left - 43, TABLE.top - 43, TABLE.right - TABLE.left + 86, TABLE.bottom - TABLE.top + 86, 23);
     context.stroke();
@@ -2478,10 +2671,10 @@
   function drawWoolCloth() {
     context.save();
     const cloth = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    cloth.addColorStop(0, "#a1516a");
-    cloth.addColorStop(0.38, "#823d56");
-    cloth.addColorStop(0.72, "#692f48");
-    cloth.addColorStop(1, "#4a1e35");
+    cloth.addColorStop(0, "#132b35");
+    cloth.addColorStop(0.38, "#0c2029");
+    cloth.addColorStop(0.72, "#081820");
+    cloth.addColorStop(1, "#050e14");
     context.fillStyle = cloth;
     context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     context.beginPath();
@@ -2496,8 +2689,8 @@
     context.lineWidth = 0.42;
     for (let y = TABLE.top + 2, index = 0; y < TABLE.bottom; y += 5, index += 1) {
       context.strokeStyle = hasClothTexture
-        ? (index % 2 ? "rgba(255, 231, 238, 0.014)" : "rgba(55, 8, 28, 0.026)")
-        : (index % 2 ? "rgba(255, 231, 238, 0.042)" : "rgba(55, 8, 28, 0.092)");
+        ? (index % 2 ? "rgba(205, 241, 255, 0.014)" : "rgba(0, 7, 14, 0.028)")
+        : (index % 2 ? "rgba(205, 241, 255, 0.042)" : "rgba(0, 7, 14, 0.092)");
       context.beginPath();
       context.moveTo(TABLE.left, y);
       context.lineTo(TABLE.right, y + (index % 4 - 1.5) * 0.35);
@@ -2506,16 +2699,15 @@
     context.lineWidth = 0.3;
     for (let x = TABLE.left + 3, index = 0; x < TABLE.right; x += 8, index += 1) {
       context.strokeStyle = hasClothTexture
-        ? (index % 3 === 0 ? "rgba(250, 214, 229, 0.012)" : "rgba(50, 5, 24, 0.02)")
-        : (index % 3 === 0 ? "rgba(250, 214, 229, 0.036)" : "rgba(50, 5, 24, 0.058)");
+        ? (index % 3 === 0 ? "rgba(201, 238, 255, 0.012)" : "rgba(0, 8, 16, 0.02)")
+        : (index % 3 === 0 ? "rgba(201, 238, 255, 0.036)" : "rgba(0, 8, 16, 0.058)");
       context.beginPath();
       context.moveTo(x, TABLE.top);
       context.lineTo(x + Math.sin(index * 2.1) * 1.2, TABLE.bottom);
       context.stroke();
     }
-    const stageWash = ["#c57f9b", "#dda48f", "#dc6f96", "#e0b56f", "#a77ca8", "#936b9c", "#e4ac78"][currentStageNumber() - 1];
     const wash = context.createRadialGradient(WORLD.width * 0.54, WORLD.height * 0.46, 32, WORLD.width * 0.54, WORLD.height * 0.46, 620);
-    wash.addColorStop(0, `${stageWash}22`);
+    wash.addColorStop(0, "rgba(86, 181, 204, 0.11)");
     wash.addColorStop(1, "transparent");
     context.fillStyle = wash;
     context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
@@ -2536,21 +2728,21 @@
         : context.createLinearGradient(-material.width / 2, 0, material.width / 2, 0);
       const reverse = material.id.startsWith("bottom") || material.id.startsWith("right");
       const tones = material.kind === "jaw"
-        ? ["#4a1b30", "#9b4a65", "#562037"]
-        : ["#42172b", "#a8526e", "#622640"];
+        ? ["#111722", "#48566a", "#182130"]
+        : ["#0c121c", "#536277", "#172230"];
       gradient.addColorStop(0, reverse ? tones[2] : tones[0]);
       gradient.addColorStop(0.5, tones[1]);
       gradient.addColorStop(1, reverse ? tones[0] : tones[2]);
       context.fillStyle = gradient;
       roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-      context.strokeStyle = material.kind === "jaw" ? "rgba(221, 133, 164, 0.48)" : "rgba(239, 151, 182, 0.64)";
+      context.strokeStyle = material.kind === "jaw" ? "rgba(168, 204, 234, 0.46)" : "rgba(188, 223, 255, 0.64)";
       context.lineWidth = material.kind === "jaw" ? 1 : 1.35;
       roundRectPath(context, -material.width / 2 + 1, -material.height / 2 + 1, material.width - 2, material.height - 2, material.kind === "jaw" ? 4 : 7);
       context.stroke();
       if (material.kind === "cushion") {
-        context.strokeStyle = "rgba(244, 166, 194, 0.8)";
-        context.shadowColor = "rgba(47, 7, 25, 0.76)";
+        context.strokeStyle = "rgba(199, 230, 255, 0.82)";
+        context.shadowColor = "rgba(0, 5, 12, 0.84)";
         context.shadowBlur = 3;
         context.lineWidth = 1.8;
         context.beginPath();
@@ -2885,7 +3077,7 @@
           const sway = Math.sin(timestamp * 0.002 + line + index) * 7;
           context.beginPath();
           context.moveTo(centerX + offset + line * 7, lowerY - 12);
-          context.bezierCurveTo(centerX + offset - 9, lowerY - 34, centerX + offset + sway, lowerY - 48, centerX + offset + line * 5, lowerY - 67);
+          bezierPath(context, centerX + offset - 9, lowerY - 34, centerX + offset + sway, lowerY - 48, centerX + offset + line * 5, lowerY - 67);
           context.stroke();
         }
       });
@@ -2963,44 +3155,44 @@
 
   function drawScenePortalLightingFrame(timestamp) {
     const active = dateMapState.activeScene;
-    if (!active) return;
-    const mood = stageSceneMood(active.stageNumber);
-    const style = DATE_SCENE_STYLES[active.sceneId] || DATE_SCENE_STYLES["corner-store"];
-    const motifPalette = motifScenePalette(active.motif);
+    const theme = dateMapState.activeTheme;
+    const effect = dateMapState.activeEffect;
+    if (!active || !theme || !effect) return;
     const progress = sceneTransitionProgress(timestamp);
     const pulse = dateMapState.sceneTransition && progress < 1 ? 1 - progress : 0;
     context.save();
-    context.globalAlpha = 0.2 + mood.light * 0.12 + pulse * 0.18;
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = 0.1 + pulse * 0.22 + Math.min(5, dateMapState.activeStreak) * 0.014;
     rails.forEach((railBody, index) => {
       const material = railBody.plugin.heartbeatRail;
       if (!material || material.kind === "guard") return;
       context.save();
       context.translate(railBody.position.x, railBody.position.y);
       context.rotate(railBody.angle);
-      context.fillStyle = index % 3 === 0 ? motifPalette.secondary : motifPalette.primary;
+      context.fillStyle = index % 3 === 0 ? effect.secondary : index % 2 ? theme.primary : theme.secondary;
       roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-      context.globalAlpha = 0.62;
-      context.strokeStyle = style.rail;
+      context.globalAlpha = 0.58;
+      context.strokeStyle = effect.primary;
       context.lineWidth = material.kind === "jaw" ? 0.8 : 1.25;
       context.stroke();
       context.restore();
     });
     context.restore();
     const perimeter = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    perimeter.addColorStop(0, style.primary);
-    perimeter.addColorStop(0.48, motifPalette.primary);
-    perimeter.addColorStop(1, motifPalette.secondary);
+    perimeter.addColorStop(0, effect.primary);
+    perimeter.addColorStop(0.48, theme.primary);
+    perimeter.addColorStop(1, effect.secondary);
     context.save();
     context.globalCompositeOperation = "screen";
     context.strokeStyle = perimeter;
-    context.shadowColor = style.rail;
-    context.shadowBlur = 8 + pulse * 22 + mood.light * 5;
-    context.globalAlpha = 0.14 + mood.light * 0.1 + pulse * 0.38;
+    context.shadowColor = effect.secondary;
+    context.shadowBlur = 7 + pulse * 22;
+    context.globalAlpha = 0.12 + pulse * 0.42;
     context.lineWidth = 3.2 + pulse * 5.8;
     roundRectPath(context, TABLE.left - 15, TABLE.top - 15, TABLE.right - TABLE.left + 30, TABLE.bottom - TABLE.top + 30, 22);
     context.stroke();
-    context.globalAlpha = 0.18 + pulse * 0.55;
+    context.globalAlpha = 0.15 + pulse * 0.55;
     context.lineWidth = 1.4 + pulse * 2.2;
     context.setLineDash([22, 18]);
     context.lineDashOffset = -timestamp * 0.075;
@@ -3009,15 +3201,15 @@
     context.setLineDash([]);
     const waveRadius = 56 + progress * WORLD.height * 0.7;
     const wave = context.createRadialGradient(active.originX, active.originY, Math.max(0, waveRadius - 64), active.originX, active.originY, waveRadius);
-    wave.addColorStop(0, colorWithAlpha(style.primary, 0));
-    wave.addColorStop(0.78, colorWithAlpha(style.rail, 0.02 + pulse * 0.32));
-    wave.addColorStop(1, colorWithAlpha(style.secondary, 0));
+    wave.addColorStop(0, colorWithAlpha(theme.primary, 0));
+    wave.addColorStop(0.78, colorWithAlpha(effect.primary, 0.02 + pulse * 0.34));
+    wave.addColorStop(1, colorWithAlpha(effect.secondary, 0));
     context.fillStyle = wave;
     context.fillRect(TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right - TABLE_OUTER.left, TABLE_OUTER.bottom - TABLE_OUTER.top);
     RELATIONSHIP_SIGHTS.forEach((sight, index) => {
       const shimmer = 0.55 + Math.sin(timestamp * 0.004 + index * 0.72) * 0.45;
-      context.globalAlpha = (0.12 + mood.light * 0.08 + pulse * 0.24) * shimmer;
-      context.fillStyle = index % 3 === 0 ? style.rail : index % 2 ? motifPalette.primary : motifPalette.secondary;
+      context.globalAlpha = (0.09 + pulse * 0.25) * shimmer;
+      context.fillStyle = index % 3 === 0 ? effect.primary : index % 2 ? theme.primary : theme.secondary;
       context.shadowColor = context.fillStyle;
       context.shadowBlur = 5 + pulse * 9;
       context.beginPath();
@@ -3099,7 +3291,7 @@
       const height = Math.max(1, bottom - top);
       context.save();
       context.beginPath();
-      context.ellipse(zone.x, zone.y, radiusX * scale, radiusY * scale, 0, 0, Math.PI * 2);
+      ellipsePath(context, zone.x, zone.y, radiusX * scale, radiusY * scale, 0, 0, Math.PI * 2);
       context.clip();
       context.globalAlpha = reveal * [0.08, 0.18, 0.42][index];
       context.drawImage(dateMapClearCanvas, left, top, width, height, left, top, width, height);
@@ -3139,7 +3331,7 @@
         const sway = Math.sin(timestamp * 0.0025 + index) * 8;
         context.beginPath();
         context.moveTo(zone.x + index * 14, zone.y + 26);
-        context.bezierCurveTo(zone.x + index * 14 - 10, zone.y + 5, zone.x + sway + index * 10, zone.y - 16, zone.x + index * 9, zone.y - 42);
+        bezierPath(context, zone.x + index * 14 - 10, zone.y + 5, zone.x + sway + index * 10, zone.y - 16, zone.x + index * 9, zone.y - 42);
         context.stroke();
       }
     }
@@ -3183,7 +3375,7 @@
       context.globalAlpha = 0.18 + alpha * 0.26;
       context.fillStyle = "#18211f";
       context.beginPath();
-      context.ellipse(zone.x + travel, zone.y + 48, 10, 5, 0, 0, Math.PI * 2);
+      ellipsePath(context, zone.x + travel, zone.y + 48, 10, 5, 0, 0, Math.PI * 2);
       context.arc(zone.x + travel + 9, zone.y + 43, 5, 0, Math.PI * 2);
       context.fill();
       context.strokeStyle = "#18211f";
@@ -3571,10 +3763,506 @@
     drawTinyCouple(WORLD.width / 2, 940, "#fff0c8", timestamp, progress < 0.9);
   }
 
+  function drawChromaThemeField(theme, timestamp, alpha = 1) {
+    const width = TABLE.right - TABLE.left;
+    const height = TABLE.bottom - TABLE.top;
+    const drift = Math.sin(timestamp * 0.00042) * 0.08;
+    context.save();
+    context.globalAlpha = alpha;
+    const field = context.createLinearGradient(
+      TABLE.left + width * (0.08 + drift),
+      TABLE.top,
+      TABLE.right - width * (0.12 - drift),
+      TABLE.bottom
+    );
+    field.addColorStop(0, theme.deep);
+    field.addColorStop(0.28, colorWithAlpha(theme.primary, 0.86));
+    field.addColorStop(0.56, colorWithAlpha(theme.deep, 0.96));
+    field.addColorStop(0.82, colorWithAlpha(theme.secondary, 0.82));
+    field.addColorStop(1, theme.deep);
+    context.fillStyle = field;
+    context.fillRect(TABLE.left, TABLE.top, width, height);
+
+    context.globalCompositeOperation = "screen";
+    [
+      { x: 0.22, y: 0.2, radius: 0.46, color: theme.primary, phase: 0 },
+      { x: 0.78, y: 0.52, radius: 0.5, color: theme.secondary, phase: 2.1 },
+      { x: 0.34, y: 0.84, radius: 0.42, color: theme.accent, phase: 4.2 }
+    ].forEach((source) => {
+      const x = TABLE.left + width * (source.x + Math.sin(timestamp * 0.0003 + source.phase) * 0.04);
+      const y = TABLE.top + height * (source.y + Math.cos(timestamp * 0.00026 + source.phase) * 0.025);
+      const radius = width * source.radius;
+      const glow = context.createRadialGradient(x, y, 0, x, y, radius);
+      glow.addColorStop(0, colorWithAlpha(source.color, 0.21));
+      glow.addColorStop(0.45, colorWithAlpha(source.color, 0.075));
+      glow.addColorStop(1, colorWithAlpha(source.color, 0));
+      context.fillStyle = glow;
+      context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    });
+    context.restore();
+  }
+
+  function drawChromaCloth(timestamp) {
+    const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const transition = dateMapState.themeTransition;
+    const progress = transition
+      ? clamp((timestamp - transition.startedAt) / transition.duration, 0, 1)
+      : 1;
+    if (!transition || progress >= 0.999) {
+      drawChromaThemeField(theme, timestamp, 0.92);
+      return;
+    }
+    drawChromaThemeField(transition.from || BALL_CHROMA_THEMES[0], timestamp, 0.92);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const farthest = Math.max(
+      Math.hypot(transition.originX - TABLE.left, transition.originY - TABLE.top),
+      Math.hypot(transition.originX - TABLE.right, transition.originY - TABLE.top),
+      Math.hypot(transition.originX - TABLE.left, transition.originY - TABLE.bottom),
+      Math.hypot(transition.originX - TABLE.right, transition.originY - TABLE.bottom)
+    );
+    [1.16, 1.02, 0.88].forEach((scale, index) => {
+      context.save();
+      context.beginPath();
+      context.arc(transition.originX, transition.originY, Math.max(4, farthest * eased * scale), 0, Math.PI * 2);
+      context.clip();
+      drawChromaThemeField(theme, timestamp + index * 61, [0.18, 0.42, 0.96][index]);
+      context.restore();
+    });
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.strokeStyle = theme.glow;
+    context.globalAlpha = (1 - progress) * 0.5;
+    context.lineWidth = 2 + (1 - progress) * 8;
+    context.shadowColor = theme.primary;
+    context.shadowBlur = 18;
+    context.beginPath();
+    context.arc(transition.originX, transition.originY, farthest * eased, 0, Math.PI * 2);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawChromaPattern(timestamp) {
+    const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const baseId = theme.id.replace("-stripe", "");
+    const width = TABLE.right - TABLE.left;
+    const height = TABLE.bottom - TABLE.top;
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.strokeStyle = colorWithAlpha(theme.accent, 0.13);
+    context.fillStyle = colorWithAlpha(theme.primary, 0.06);
+    context.lineWidth = 1.4;
+    if (baseId === "solar" || baseId === "molten") {
+      const centerX = TABLE.left + width * 0.46;
+      const centerY = TABLE.top + height * 0.52;
+      for (let index = 0; index < 11; index += 1) {
+        context.globalAlpha = 0.24 + index * 0.025;
+        context.beginPath();
+        ellipsePath(context, centerX, centerY, 70 + index * 38, 120 + index * 58, Math.sin(timestamp * 0.00022) * 0.16, 0, Math.PI * 2);
+        context.stroke();
+      }
+    } else if (baseId === "cobalt" || baseId === "pearl") {
+      for (let row = 0; row < 13; row += 1) {
+        const y = TABLE.top + height * (row + 0.5) / 13;
+        context.beginPath();
+        for (let step = 0; step <= 12; step += 1) {
+          const x = TABLE.left + width * step / 12;
+          const waveY = y + Math.sin(step * 0.8 + row * 0.72 + timestamp * 0.0012) * (9 + row % 3 * 4);
+          if (step === 0) context.moveTo(x, waveY); else context.lineTo(x, waveY);
+        }
+        context.stroke();
+      }
+    } else if (baseId === "crimson" || baseId === "ruby") {
+      for (let index = 0; index < 9; index += 1) {
+        const y = TABLE.top + height * (index + 1) / 10;
+        context.beginPath();
+        context.moveTo(TABLE.left, y);
+        for (let step = 1; step <= 16; step += 1) {
+          const x = TABLE.left + width * step / 16;
+          const spike = step % 4 === 2 ? -22 : step % 4 === 3 ? 16 : 0;
+          context.lineTo(x, y + spike + Math.sin(timestamp * 0.001 + index) * 5);
+        }
+        context.stroke();
+      }
+    } else if (baseId === "nebula") {
+      const centerX = WORLD.width / 2;
+      const centerY = WORLD.height / 2;
+      for (let arm = 0; arm < 4; arm += 1) {
+        context.beginPath();
+        for (let step = 0; step <= 48; step += 1) {
+          const ratio = step / 48;
+          const angle = arm * Math.PI / 2 + ratio * Math.PI * 2.1 + timestamp * 0.00016;
+          const radius = 20 + ratio * 330;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius * 1.75;
+          if (step === 0) context.moveTo(x, y); else context.lineTo(x, y);
+        }
+        context.stroke();
+      }
+    } else if (baseId === "emerald") {
+      for (let index = 0; index < 18; index += 1) {
+        const x = TABLE.left + 35 + (index * 83) % Math.max(1, width - 70);
+        const y = TABLE.top + 70 + (index * 137) % Math.max(1, height - 140);
+        const radius = 18 + index % 4 * 12;
+        context.globalAlpha = 0.32;
+        context.beginPath();
+        context.arc(x, y, radius + Math.sin(timestamp * 0.0015 + index) * 4, 0, Math.PI * 2);
+        context.stroke();
+      }
+    } else if (baseId === "eclipse") {
+      const centerX = WORLD.width / 2;
+      const centerY = WORLD.height / 2;
+      for (let index = 0; index < 8; index += 1) {
+        context.globalAlpha = 0.2 + index * 0.025;
+        context.beginPath();
+        ellipsePath(context, centerX, centerY, 72 + index * 28, 118 + index * 46, timestamp * 0.00006 + index * 0.18, 0, Math.PI * 2);
+        context.stroke();
+      }
+    }
+    if (Number(dateMapState.activeBallNumber) > 8) {
+      context.globalAlpha = 0.12;
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 18;
+      for (let index = -3; index < 7; index += 1) {
+        context.beginPath();
+        context.moveTo(TABLE.left - 120, TABLE.top + index * 210 + (timestamp * 0.008 % 210));
+        context.lineTo(TABLE.right + 120, TABLE.top + index * 210 + 320 + (timestamp * 0.008 % 210));
+        context.stroke();
+      }
+    }
+    context.restore();
+
+    context.save();
+    context.fillStyle = "rgba(1, 6, 12, 0.3)";
+    context.fillRect(TABLE.left, TABLE.top, width, height);
+    const vignette = context.createRadialGradient(WORLD.width / 2, WORLD.height / 2, 90, WORLD.width / 2, WORLD.height / 2, height * 0.58);
+    vignette.addColorStop(0, "rgba(0, 0, 0, 0.02)");
+    vignette.addColorStop(0.62, "rgba(0, 0, 0, 0.08)");
+    vignette.addColorStop(1, "rgba(0, 0, 0, 0.5)");
+    context.fillStyle = vignette;
+    context.fillRect(TABLE.left, TABLE.top, width, height);
+    context.restore();
+  }
+
+  function drawRollingChromaTrails(timestamp) {
+    context.save();
+    context.globalCompositeOperation = "screen";
+    dateMapState.rollingTrails.forEach((trail, index) => {
+      const alpha = clamp(trail.life, 0, 1) ** 1.35;
+      if (alpha < 0.02) return;
+      const dx = trail.x2 - trail.x1;
+      const dy = trail.y2 - trail.y1;
+      const length = Math.max(0.001, Math.hypot(dx, dy));
+      const nx = -dy / length;
+      const ny = dx / length;
+      const wobble = Math.sin(index * 1.83 + trail.bornAt * 0.009) * 4.4;
+      const midX = (trail.x1 + trail.x2) / 2 + nx * wobble;
+      const midY = (trail.y1 + trail.y2) / 2 + ny * wobble;
+      context.globalAlpha = alpha * 0.68;
+      context.lineCap = "round";
+      if (trail.effectId === "ripple") {
+        const radius = 4 + (1 - alpha) * 25;
+        context.strokeStyle = trail.color;
+        context.lineWidth = 1.2 + alpha * 1.4;
+        context.beginPath();
+        ellipsePath(context, trail.x2, trail.y2, radius, radius * 0.46, Math.atan2(dy, dx), 0, Math.PI * 2);
+        context.stroke();
+      } else if (trail.effectId === "comet") {
+        context.strokeStyle = trail.color;
+        context.lineWidth = 1.2 + alpha * 4;
+        context.beginPath();
+        context.moveTo(trail.x1, trail.y1);
+        context.quadraticCurveTo(midX, midY, trail.x2, trail.y2);
+        context.stroke();
+        if (index % 3 === 0) drawDateRouteSparkle(trail.x2 + nx * 5, trail.y2 + ny * 5, 2 + alpha * 3, alpha * 0.82, trail.secondary, true);
+      } else if (trail.effectId === "prism") {
+        [trail.color, trail.secondary, "#70e8ff"].forEach((color, channel) => {
+          const offset = (channel - 1) * 3;
+          context.strokeStyle = color;
+          context.lineWidth = 1.1 + alpha;
+          context.beginPath();
+          context.moveTo(trail.x1 + nx * offset, trail.y1 + ny * offset);
+          context.quadraticCurveTo(midX + nx * offset, midY + ny * offset, trail.x2 + nx * offset, trail.y2 + ny * offset);
+          context.stroke();
+        });
+      } else if (trail.effectId === "pulse") {
+        context.strokeStyle = trail.color;
+        context.lineWidth = 1.3 + alpha * 1.6;
+        context.setLineDash([5, 6]);
+        context.lineDashOffset = -timestamp * 0.03;
+        context.beginPath();
+        context.arc(trail.x2, trail.y2, 5 + (1 - alpha) * 22, 0, Math.PI * 2);
+        context.stroke();
+        context.setLineDash([]);
+      } else if (trail.effectId === "lightning") {
+        context.strokeStyle = index % 2 ? trail.color : trail.secondary;
+        context.lineWidth = 0.9 + alpha * 2.1;
+        context.beginPath();
+        context.moveTo(trail.x1, trail.y1);
+        context.lineTo(midX + nx * 5, midY + ny * 5);
+        context.lineTo(midX - nx * 3 + dx * 0.18, midY - ny * 3 + dy * 0.18);
+        context.lineTo(trail.x2, trail.y2);
+        context.stroke();
+      } else {
+        context.strokeStyle = trail.color;
+        context.lineWidth = 2 + alpha * 3.4;
+        context.beginPath();
+        context.moveTo(trail.x1, trail.y1);
+        bezierPath(context, midX + nx * 12, midY + ny * 12, midX - nx * 12, midY - ny * 12, trail.x2, trail.y2);
+        context.stroke();
+        context.globalAlpha *= 0.52;
+        context.strokeStyle = trail.secondary;
+        context.lineWidth = 1.1;
+        context.stroke();
+      }
+    });
+    context.restore();
+  }
+
+  function drawChromaRailBursts(timestamp) {
+    context.save();
+    context.globalCompositeOperation = "screen";
+    dateMapState.railBursts.forEach((burst, index) => {
+      const life = clamp(burst.life, 0, 1);
+      const tangentX = -burst.normalY;
+      const tangentY = burst.normalX;
+      const radius = 8 + (1 - life) * (36 + burst.intensity * 22);
+      context.globalAlpha = life * (0.34 + burst.intensity * 0.54);
+      context.strokeStyle = burst.color;
+      context.fillStyle = burst.secondary;
+      context.lineWidth = 1 + burst.intensity * 3;
+      if (burst.effectId === "ripple" || burst.effectId === "pulse") {
+        context.setLineDash(burst.effectId === "pulse" ? [5, 5] : []);
+        context.beginPath();
+        ellipsePath(context, burst.x, burst.y, radius, radius * 0.38, Math.atan2(tangentY, tangentX), 0, Math.PI * 2);
+        context.stroke();
+        context.setLineDash([]);
+      } else if (burst.effectId === "comet") {
+        for (let ray = -3; ray <= 3; ray += 1) {
+          context.beginPath();
+          context.moveTo(burst.x, burst.y);
+          context.lineTo(
+            burst.x + tangentX * ray * 6 + burst.normalX * radius,
+            burst.y + tangentY * ray * 6 + burst.normalY * radius
+          );
+          context.stroke();
+        }
+      } else if (burst.effectId === "prism") {
+        [burst.color, burst.secondary, "#75eaff"].forEach((color, channel) => {
+          context.strokeStyle = color;
+          context.beginPath();
+          context.moveTo(burst.x + tangentX * (channel - 1) * 5, burst.y + tangentY * (channel - 1) * 5);
+          context.lineTo(burst.x + burst.normalX * radius + tangentX * (channel - 1) * 15, burst.y + burst.normalY * radius + tangentY * (channel - 1) * 15);
+          context.stroke();
+        });
+      } else if (burst.effectId === "lightning") {
+        context.beginPath();
+        context.moveTo(burst.x - tangentX * 18, burst.y - tangentY * 18);
+        context.lineTo(burst.x + burst.normalX * 7 + tangentX * 3, burst.y + burst.normalY * 7 + tangentY * 3);
+        context.lineTo(burst.x - burst.normalX * 4 - tangentX * 2, burst.y - burst.normalY * 4 - tangentY * 2);
+        context.lineTo(burst.x + tangentX * 20, burst.y + tangentY * 20);
+        context.stroke();
+      } else {
+        context.beginPath();
+        context.moveTo(burst.x - tangentX * 22, burst.y - tangentY * 22);
+        bezierPath(context,
+          burst.x + burst.normalX * radius + tangentX * 12,
+          burst.y + burst.normalY * radius + tangentY * 12,
+          burst.x + burst.normalX * radius - tangentX * 12,
+          burst.y + burst.normalY * radius - tangentY * 12,
+          burst.x + tangentX * 22,
+          burst.y + tangentY * 22
+        );
+        context.stroke();
+      }
+      if (index % 2 === 0 && life > 0.5) drawDateRouteSparkle(burst.x, burst.y, 3 + burst.intensity * 4, life, burst.secondary, true);
+    });
+    context.restore();
+  }
+
+  function drawPocketGlyph(pocket, profile, timestamp, active) {
+    const pulse = active ? 0.74 + Math.sin(timestamp * 0.006) * 0.18 : 0.22 + Math.sin(timestamp * 0.002 + POCKETS.indexOf(pocket)) * 0.05;
+    const radius = POCKET_RADIUS + (active ? 13 : 9);
+    context.save();
+    context.translate(pocket.x, pocket.y);
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = pulse;
+    context.strokeStyle = active ? profile.primary : colorWithAlpha(profile.primary, 0.66);
+    context.fillStyle = profile.secondary;
+    context.lineWidth = active ? 2.4 : 1.15;
+    context.shadowColor = profile.secondary;
+    context.shadowBlur = active ? 16 : 5;
+    if (profile.id === "ripple") {
+      [0.84, 1.08, 1.32].forEach((scale) => {
+        context.beginPath();
+        ellipsePath(context, 0, 0, radius * scale, radius * scale * 0.52, 0, 0, Math.PI * 2);
+        context.stroke();
+      });
+    } else if (profile.id === "comet") {
+      for (let ray = 0; ray < 12; ray += 1) {
+        const angle = ray * Math.PI / 6 + timestamp * 0.00045;
+        context.beginPath();
+        context.moveTo(Math.cos(angle) * radius * 0.8, Math.sin(angle) * radius * 0.8);
+        context.lineTo(Math.cos(angle) * radius * (1.14 + ray % 3 * 0.12), Math.sin(angle) * radius * (1.14 + ray % 3 * 0.12));
+        context.stroke();
+      }
+    } else if (profile.id === "prism") {
+      context.rotate(timestamp * 0.0003);
+      [1, 1.24].forEach((scale) => {
+        context.beginPath();
+        for (let point = 0; point < 3; point += 1) {
+          const angle = -Math.PI / 2 + point * Math.PI * 2 / 3;
+          const x = Math.cos(angle) * radius * scale;
+          const y = Math.sin(angle) * radius * scale;
+          if (point === 0) context.moveTo(x, y); else context.lineTo(x, y);
+        }
+        context.closePath();
+        context.stroke();
+      });
+    } else if (profile.id === "pulse") {
+      context.setLineDash([8, 7]);
+      context.lineDashOffset = -timestamp * 0.04;
+      [0.94, 1.28].forEach((scale) => {
+        context.beginPath();
+        context.arc(0, 0, radius * scale, 0, Math.PI * 2);
+        context.stroke();
+      });
+      context.setLineDash([]);
+    } else if (profile.id === "lightning") {
+      for (let bolt = 0; bolt < 8; bolt += 1) {
+        const angle = bolt * Math.PI / 4;
+        context.save();
+        context.rotate(angle);
+        context.beginPath();
+        context.moveTo(radius * 0.72, 0);
+        context.lineTo(radius * 0.94, -5);
+        context.lineTo(radius * 1.02, 4);
+        context.lineTo(radius * 1.34, 0);
+        context.stroke();
+        context.restore();
+      }
+    } else {
+      for (let ribbon = 0; ribbon < 3; ribbon += 1) {
+        context.rotate(Math.PI * 2 / 3);
+        context.beginPath();
+        context.moveTo(-radius * 0.9, 0);
+        bezierPath(context, -radius * 0.3, -radius * 0.9, radius * 0.3, radius * 0.9, radius * 0.95, 0);
+        context.stroke();
+      }
+    }
+    context.restore();
+  }
+
+  function drawPocketVfx(timestamp) {
+    POCKETS.forEach((pocket) => {
+      const profile = POCKET_VFX_PROFILES[pocket.id];
+      drawPocketGlyph(pocket, profile, timestamp, dateMapState.activeEffect?.pocketId === pocket.id);
+    });
+    context.save();
+    context.globalCompositeOperation = "screen";
+    dateMapState.pocketFlares.forEach((flare) => {
+      const radius = 34 + (1 - flare.life) * 210;
+      const glow = context.createRadialGradient(flare.x, flare.y, 0, flare.x, flare.y, radius);
+      glow.addColorStop(0, colorWithAlpha(flare.color, flare.life * 0.5));
+      glow.addColorStop(0.35, colorWithAlpha(flare.secondary, flare.life * 0.18));
+      glow.addColorStop(1, colorWithAlpha(flare.secondary, 0));
+      context.fillStyle = glow;
+      context.fillRect(flare.x - radius, flare.y - radius, radius * 2, radius * 2);
+    });
+    context.restore();
+  }
+
+  function drawBlackEightBlast(timestamp) {
+    const blast = dateMapState.blackEightBlast;
+    if (!blast) return;
+    const progress = clamp(blast.ageMs / blast.duration, 0, 1);
+    const attack = clamp(progress / 0.12, 0, 1);
+    const release = 1 - clamp((progress - 0.38) / 0.62, 0, 1);
+    const intensity = attack * release;
+    const inward = 1 - Math.pow(1 - clamp(progress / 0.11, 0, 1), 3);
+    const x = blast.originX + (WORLD.width / 2 - blast.originX) * inward;
+    const y = blast.originY + (WORLD.height / 2 - blast.originY) * inward;
+    context.save();
+    const voidRadius = 40 + attack * 520;
+    const voidField = context.createRadialGradient(x, y, 0, x, y, voidRadius);
+    voidField.addColorStop(0, `rgba(0, 0, 0, ${0.96 * intensity})`);
+    voidField.addColorStop(0.36, `rgba(5, 3, 18, ${0.7 * intensity})`);
+    voidField.addColorStop(0.7, `rgba(40, 8, 76, ${0.24 * intensity})`);
+    voidField.addColorStop(1, "rgba(0, 0, 0, 0)");
+    context.fillStyle = voidField;
+    context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+    context.globalCompositeOperation = "screen";
+    const rainbow = ["#63e9ff", "#8d6bff", "#ff5ac8", "#ffbb4d", "#f4ff8c", "#63ffc6"];
+    const coreRadius = 80 + attack * 420;
+    const core = context.createRadialGradient(x, y, 0, x, y, coreRadius);
+    core.addColorStop(0, `rgba(255, 255, 255, ${0.44 * intensity})`);
+    core.addColorStop(0.06, `rgba(255, 230, 149, ${0.28 * intensity})`);
+    core.addColorStop(0.2, `rgba(220, 101, 255, ${0.17 * intensity})`);
+    core.addColorStop(0.54, `rgba(90, 201, 255, ${0.08 * intensity})`);
+    core.addColorStop(1, "rgba(90, 201, 255, 0)");
+    context.fillStyle = core;
+    context.fillRect(x - coreRadius, y - coreRadius, coreRadius * 2, coreRadius * 2);
+    [0.5, 0.76, 1].forEach((scale, index) => {
+      const radius = (70 + attack * 620) * scale;
+      context.globalAlpha = intensity * [0.72, 0.5, 0.32][index];
+      context.strokeStyle = rainbow[(index + 1) % rainbow.length];
+      context.lineWidth = 7 - index * 1.7;
+      context.shadowColor = context.strokeStyle;
+      context.shadowBlur = 8;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.stroke();
+    });
+    context.shadowBlur = 0;
+    rainbow.forEach((color, index) => {
+      const angle = index * Math.PI / 3 + progress * 1.8;
+      const radius = 72 + attack * (210 + index * 24);
+      context.globalAlpha = intensity * 0.82;
+      context.strokeStyle = color;
+      context.lineWidth = 2.4 + (1 - progress) * 5.6;
+      context.shadowColor = color;
+      context.shadowBlur = 16;
+      context.beginPath();
+      ellipsePath(context, x, y, radius, radius * 0.56, angle, 0, Math.PI * 2);
+      context.stroke();
+    });
+    for (let ray = 0; ray < 18; ray += 1) {
+      const angle = ray * Math.PI * 2 / 18 + Math.sin(ray * 2.3) * 0.08;
+      const length = (250 + (ray % 5) * 92) * attack;
+      context.globalAlpha = intensity * (0.36 + ray % 3 * 0.1);
+      context.strokeStyle = rainbow[ray % rainbow.length];
+      context.lineWidth = ray % 4 === 0 ? 3.2 : 1.2;
+      context.beginPath();
+      context.moveTo(x + Math.cos(angle) * 28, y + Math.sin(angle) * 28);
+      context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+      context.stroke();
+    }
+    for (let spark = 0; spark < 30; spark += 1) {
+      const angle = spark * 2.399963 + progress * (spark % 3 ? 0.8 : -0.6);
+      const radius = attack * (90 + (spark * 67) % 480);
+      const size = spark % 7 === 0 ? 3.4 : 1.2 + spark % 3 * 0.6;
+      context.globalAlpha = intensity * (0.28 + spark % 5 * 0.09);
+      context.fillStyle = rainbow[spark % rainbow.length];
+      context.beginPath();
+      context.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius * 1.45, size, 0, Math.PI * 2);
+      context.fill();
+    }
+    POCKETS.forEach((pocket, index) => {
+      context.globalAlpha = intensity * 0.54;
+      context.strokeStyle = rainbow[index];
+      context.lineWidth = 2.8;
+      context.setLineDash([3, 9]);
+      context.lineDashOffset = -timestamp * 0.06;
+      context.beginPath();
+      context.moveTo(x, y);
+      context.quadraticCurveTo(WORLD.width / 2 + (index % 2 ? 120 : -120), WORLD.height / 2 + (index - 2.5) * 36, pocket.x, pocket.y);
+      context.stroke();
+    });
+    context.setLineDash([]);
+    context.restore();
+  }
+
   function drawDateMap(timestamp) {
-    const pendingPots = shotState?.pottedNumbers?.filter((number) => number > 0).length || 0;
-    const litCount = Math.min(15, runState.pottedNumbers.length + pendingPots);
-    const finalBoost = dateMapState.completed ? clamp(dateMapState.finalProgress, 0, 1) : 0;
+    const blackEightActive = Boolean(dateMapState.blackEightBlast);
     context.save();
     context.beginPath();
     context.moveTo(TABLE.left, TABLE.top);
@@ -3583,40 +4271,22 @@
     context.lineTo(TABLE.left, TABLE.bottom);
     context.closePath();
     context.clip();
-    drawDateMapPhotoBase(litCount, finalBoost, timestamp);
-    drawSceneVariantAtmosphere(timestamp);
-    drawDateConnections(timestamp);
-    dateMapState.routes.forEach((route) => drawDateRoute(route, timestamp, finalBoost));
-    if (dateMapState.powerWave > 0.02) {
-      context.save();
-      context.globalCompositeOperation = "screen";
-      const waveRadius = 62 + (1 - dateMapState.powerWave) * 250;
-      const wave = context.createRadialGradient(lastStoryWorldOrigin.x, lastStoryWorldOrigin.y, waveRadius * 0.16, lastStoryWorldOrigin.x, lastStoryWorldOrigin.y, waveRadius);
-      wave.addColorStop(0, "rgba(255, 229, 184, 0)");
-      wave.addColorStop(0.72, `rgba(255, 204, 145, ${dateMapState.powerWave * 0.12})`);
-      wave.addColorStop(1, "rgba(255, 206, 147, 0)");
-      context.fillStyle = wave;
-      context.fillRect(lastStoryWorldOrigin.x - waveRadius, lastStoryWorldOrigin.y - waveRadius, waveRadius * 2, waveRadius * 2);
-      context.restore();
+    if (blackEightActive) {
+      const eclipseBase = context.createRadialGradient(WORLD.width / 2, WORLD.height / 2, 30, WORLD.width / 2, WORLD.height / 2, WORLD.height * 0.58);
+      eclipseBase.addColorStop(0, "#090817");
+      eclipseBase.addColorStop(0.5, "#040611");
+      eclipseBase.addColorStop(1, "#010208");
+      context.fillStyle = eclipseBase;
+      context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+      drawBlackEightBlast(timestamp);
+    } else {
+      drawChromaCloth(timestamp);
+      drawChromaPattern(timestamp);
+      drawRollingChromaTrails(timestamp);
+      drawChromaRailBursts(timestamp);
     }
-    drawCueJourney();
-    if (dateMapState.activeStreak >= 4 && dateMapClearCanvas) {
-      context.save();
-      context.globalCompositeOperation = "screen";
-      context.globalAlpha = 0.045 + dateMapState.activeStreak * 0.012 + Math.sin(timestamp * 0.0025) * 0.012;
-      context.drawImage(dateMapClearCanvas, 0, 0, WORLD.width, WORLD.height);
-      context.restore();
-    }
-    drawFinalDateShape(timestamp);
     context.restore();
-
-    context.save();
-    RELATIONSHIP_SIGHTS.slice(0, litCount).forEach((sight, index) => {
-      context.globalAlpha = index === litCount - 1 && pendingPots > 0 ? 0.92 : 0.36;
-      context.fillStyle = index === litCount - 1 ? "#fff0c6" : "#d3b875";
-      context.beginPath(); context.arc(sight.x, sight.y, index === litCount - 1 ? 4.8 : 3.2, 0, Math.PI * 2); context.fill();
-    });
-    context.restore();
+    if (!blackEightActive) drawPocketVfx(timestamp);
   }
 
   function ensureDateMapFrameCanvas() {
@@ -4054,6 +4724,7 @@
     if (screenFlash > 0.01) {
       context.save();
       context.globalAlpha = screenFlash;
+      const flashTheme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
       const flash = context.createRadialGradient(
         lastStoryWorldOrigin.x,
         lastStoryWorldOrigin.y,
@@ -4062,10 +4733,10 @@
         lastStoryWorldOrigin.y,
         WORLD.height * 0.42
       );
-      flash.addColorStop(0, "rgba(255, 239, 196, 0.98)");
-      flash.addColorStop(0.12, "rgba(255, 224, 164, 0.42)");
-      flash.addColorStop(0.42, "rgba(222, 169, 113, 0.1)");
-      flash.addColorStop(1, "rgba(255, 231, 176, 0)");
+      flash.addColorStop(0, colorWithAlpha(flashTheme.glow, 0.98));
+      flash.addColorStop(0.12, colorWithAlpha(flashTheme.primary, 0.44));
+      flash.addColorStop(0.42, colorWithAlpha(flashTheme.secondary, 0.12));
+      flash.addColorStop(1, colorWithAlpha(flashTheme.secondary, 0));
       context.fillStyle = flash;
       context.fillRect(0, 0, WORLD.width, WORLD.height);
       context.restore();
@@ -4159,6 +4830,7 @@
         recordRailImpact(bodyA, bodyB, collision);
         const impactSpeed = collision?.details?.incidentSpeed ?? bodyA.speed;
         impactBall(bodyA, Math.atan2(-bodyA.velocity.y, -bodyA.velocity.x), impactSpeed);
+        spawnChromaRailBurst(bodyA, bodyB, collision, impactSpeed);
         audio.rail(impactSpeed);
       }
       if (dataB && isRail(bodyA)) {
@@ -4167,6 +4839,7 @@
         recordRailImpact(bodyB, bodyA, collision);
         const impactSpeed = collision?.details?.incidentSpeed ?? bodyB.speed;
         impactBall(bodyB, Math.atan2(-bodyB.velocity.y, -bodyB.velocity.x), impactSpeed);
+        spawnChromaRailBurst(bodyB, bodyA, collision, impactSpeed);
         audio.rail(impactSpeed);
       }
     });
@@ -4348,6 +5021,19 @@
             activeVariantIndex: dateMapState.activeScene?.variantIndex ?? null,
             activeStageNumber: dateMapState.activeScene?.stageNumber ?? null,
             sceneHistory: dateMapState.sceneHistory.length,
+            activeBallNumber: dateMapState.activeBallNumber,
+            activeThemeId: dateMapState.activeTheme?.id || null,
+            activeThemeLabel: dateMapState.activeTheme?.label || null,
+            activeEffectId: dateMapState.activeEffect?.id || null,
+            rollingTrailCount: dateMapState.rollingTrails.length,
+            railBurstCount: dateMapState.railBursts.length,
+            pocketFlareCount: dateMapState.pocketFlares.length,
+            blackEightBlast: Boolean(dateMapState.blackEightBlast),
+            blackEightBlastLife: dateMapState.blackEightBlast?.life ?? 0,
+            blackEightBlastDuration: dateMapState.blackEightBlast?.duration ?? 0,
+            blackEightBlastAge: dateMapState.blackEightBlast
+              ? dateMapState.blackEightBlast.ageMs
+              : null,
             style: Object.freeze({ ...dateMapState.style })
           }),
           microVisible: !elements.micro.hidden,

@@ -313,7 +313,7 @@ test("strikes from either the aiming finger release or a second pointer touch", 
   assert.equal(release.debug.snapshot().moving, true);
 });
 
-test("rotates the camera and event treatment when one stage revisits the same pocket", () => {
+test("keeps one pocket effect while successive ball colors retheme the cloth", () => {
   const debug = bootRuntime();
   const detail = (number) => ({
     number,
@@ -325,10 +325,37 @@ test("rotates the camera and event treatment when one stage revisits the same po
   const first = debug.presentShot({ pottedNumbers: [1], breakShot: true, pottedDetails: [detail(1)] });
   const second = debug.presentShot({ pottedNumbers: [2], pottedDetails: [detail(2)] });
 
-  assert.equal(first.presentation.dateMap.activeSceneId, "corner-store");
-  assert.equal(second.presentation.dateMap.activeSceneId, "corner-store");
-  assert.notEqual(first.presentation.dateMap.activeVariantIndex, second.presentation.dateMap.activeVariantIndex);
+  assert.equal(first.presentation.dateMap.activeSceneId, "ripple");
+  assert.equal(second.presentation.dateMap.activeSceneId, "ripple");
+  assert.equal(first.presentation.dateMap.activeEffectId, "ripple");
+  assert.equal(second.presentation.dateMap.activeEffectId, "ripple");
+  assert.equal(first.presentation.dateMap.activeThemeId, "solar");
+  assert.equal(second.presentation.dateMap.activeThemeId, "cobalt");
+  assert.equal(first.presentation.dateMap.activeBallNumber, 1);
+  assert.equal(second.presentation.dateMap.activeBallNumber, 2);
   assert.equal(second.presentation.dateMap.sceneHistory, 2);
+});
+
+test("uses the active pocket identity for rolling trails and rail impacts", () => {
+  const debug = bootRuntime();
+  debug.presentShot({
+    breakShot: true,
+    pottedNumbers: [2],
+    pottedDetails: [{ number: 2, pocketId: "bottom-left", path: [{ x: 360, y: 720 }, { x: 95, y: 1271 }] }]
+  });
+  assert.equal(debug.isolateBall(0), true);
+  assert.equal(debug.placeBall(0, { x: 620, y: 500 }), true);
+  assert.equal(debug.shoot(0.96, { x: 1, y: 0 }), true);
+
+  let snapshot = debug.step(3);
+  assert.equal(snapshot.presentation.dateMap.activeThemeId, "cobalt");
+  assert.equal(snapshot.presentation.dateMap.activeEffectId, "lightning");
+  assert.ok(snapshot.presentation.dateMap.rollingTrailCount > 0);
+
+  for (let step = 0; step < 80 && snapshot.presentation.dateMap.railBurstCount === 0; step += 1) {
+    snapshot = debug.step(1);
+  }
+  assert.ok(snapshot.presentation.dateMap.railBurstCount > 0, "an active lightning pocket should electrify the next cushion impact");
 });
 
 test("allocates most pull travel to fine control in the useful middle-power range", () => {
@@ -497,6 +524,14 @@ test("keeps pots, misses, and the black eight inside the persistent date map", (
   assert.equal(snapshot.presentation.dateMap.completed, false);
   assert.equal(snapshot.presentation.cinematicActive, false);
   assert.equal(snapshot.presentation.cinematicQueued, 0);
+  assert.equal(snapshot.presentation.dateMap.activeThemeId, "eclipse");
+  assert.equal(snapshot.presentation.dateMap.blackEightBlast, true);
+  assert.equal(snapshot.presentation.dateMap.blackEightBlastDuration, 3200);
+  snapshot = eightDebug.step(120);
+  assert.equal(snapshot.presentation.dateMap.blackEightBlast, true);
+  assert.ok(snapshot.presentation.dateMap.blackEightBlastLife > 0.6);
+  snapshot = eightDebug.step(300);
+  assert.equal(snapshot.presentation.dateMap.blackEightBlast, false);
 });
 
 test("orders same-shot pots by physical pocket entry rather than animation completion", () => {
@@ -681,6 +716,9 @@ test("animates a cue scratch before removing and respotting the white ball", () 
   let snapshot = debug.snapshot();
   for (let step = 0; step < 8 && !findBall(snapshot, 0).pocketing; step += 1) snapshot = debug.step(1);
   assert.ok(findBall(snapshot, 0).pocketing);
+  assert.equal(snapshot.presentation.dateMap.activeBallNumber, 0);
+  assert.equal(snapshot.presentation.dateMap.activeThemeId, "pearl");
+  assert.equal(snapshot.presentation.dateMap.activeEffectId, "pulse");
   snapshot = debug.step(10);
   let cue = findBall(snapshot, 0);
   assert.ok(cue?.pocketing);

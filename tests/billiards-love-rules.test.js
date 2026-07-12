@@ -51,7 +51,7 @@ function perfectOrdinaryRun(count = 14) {
 }
 
 test("defines arbitrary-ball quotas, hidden stage floors, and black eight as the final gate", () => {
-  assert.equal(RULES.title, "心动桌球");
+  assert.equal(RULES.title, "幻彩桌球");
   assert.equal(RULES.interest.initial, 72);
   assert.deepEqual(RULES.criticalNumbers, [8]);
   assert.deepEqual(RULES.breakRespotNumbers, []);

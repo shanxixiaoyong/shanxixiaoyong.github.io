@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-scene-portals-20260712f";
-const styleCacheVersion = "billiards-love-scene-portals-20260712f";
+const runtimeCacheVersion = "billiards-chroma-vfx-20260712j";
+const styleCacheVersion = "billiards-chroma-vfx-20260712j";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -38,9 +38,9 @@ function rule(selector) {
 
 test("publishes the portrait standard-fifteen-ball identity", () => {
   for (const token of [
-    "<title>心动桌球 · 一场约会地图 - 刘勇 / Yong Liu</title>",
+    "<title>幻彩桌球 · 十五球光谱竞技 - 刘勇 / Yong Liu</title>",
     '<body class="heartbeat-billiards-page">',
-    '<main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球：一场约会地图"',
+    '<main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技"',
     '<canvas id="hb-canvas" width="720" height="1440"',
     'id="hb-relationship-track"',
     'id="hb-interest"',
@@ -49,7 +49,7 @@ test("publishes the portrait standard-fifteen-ball identity", () => {
     assert.match(html, new RegExp(escapeRegExp(token)));
   }
   assert.doesNotMatch(html, /横过来|旋转设备|手机横屏/);
-  assert.doesNotMatch(html, /今晚的片段|回忆日志|心动值|剩余回合|桌边物件/);
+  assert.doesNotMatch(html, /今晚的片段|回忆日志|心动值|剩余回合|桌边物件|约会|恋爱|告白|求婚/);
 });
 
 test("opens directly into play without visible opening or pause UI", () => {
@@ -61,10 +61,10 @@ test("opens directly into play without visible opening or pause UI", () => {
     assert.match(topbar, new RegExp(escapeRegExp(token)));
   }
   assert.match(topbar, /class="hb-sr-only" id="hb-stage-targets"/);
-  assert.match(topbar, />夜色</);
-  assert.match(topbar, /id="hb-interest">未醒</);
+  assert.match(topbar, />光效</);
+  assert.match(topbar, /id="hb-interest">待机</);
   assert.doesNotMatch(topbar, /兴趣值\s*\d|id="hb-interest">\d/);
-  assert.match(html, />最终(?:心绪|夜色)</);
+  assert.match(html, />光场强度</);
   assert.doesNotMatch(topbar, /hb-pause/);
 
   for (const id of ["hb-opening", "hb-start", "hb-pause", "hb-pause-sheet", "hb-resume", "hb-restart-pause"]) {
@@ -126,27 +126,14 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
   }
 });
 
-test("uses project-local rose date-map, confession, and proposal art", () => {
-  for (const asset of [
-    "assets/billiards-scenes/date-map-rose-v3.jpg",
-    "assets/billiards-scenes/confession-night.jpg",
-    "assets/billiards-scenes/proposal-dawn.jpg",
-    "assets/billiards-scenes/portal-corner-store-v1.jpg",
-    "assets/billiards-scenes/portal-coffee-window-v1.jpg",
-    "assets/billiards-scenes/portal-late-cinema-v1.jpg",
-    "assets/billiards-scenes/portal-river-walk-v1.jpg",
-    "assets/billiards-scenes/portal-last-train-v1.jpg",
-    "assets/billiards-scenes/portal-walk-home-v1.jpg"
-  ]) {
-    assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
-  }
-  for (const reference of [
-    'url("billiards-scenes/date-map-rose-v3.jpg")',
-    'url("billiards-scenes/confession-night.jpg")',
-    'url("billiards-scenes/proposal-dawn.jpg")'
-  ]) {
-    assert.match(css, new RegExp(escapeRegExp(reference)));
-  }
+test("uses a procedural chromatic field without narrative scene photography", () => {
+  assert.match(game, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
+  assert.match(game, /const POCKET_VFX_PROFILES = Object\.freeze\(\{/);
+  assert.match(game, /function drawChromaThemeField\(/);
+  assert.match(game, /function drawChromaPattern\(/);
+  assert.match(css, /--hb-backdrop-image:\s*none;/);
+  assert.match(css, /radial-gradient\(circle at 72% 18%/);
+  assert.doesNotMatch(html + css + game, /date-map-rose|portal-corner|portal-coffee|portal-late|portal-river|portal-last|portal-walk|proposal-dawn/);
   assert.doesNotMatch(html + css, /https?:\/\//);
 });
 
@@ -258,7 +245,7 @@ test("uses a native portrait canvas without a CSS rotation layout", () => {
   assert.match(canvases, /transform:\s*none !important;/);
   assert.doesNotMatch(canvases, /rotate/);
   assert.doesNotMatch(css, /aspect-ratio:\s*2 \/ 1/);
-  assert.doesNotMatch(css, /@media\s*\([^)]*(?:orientation|aspect-ratio|width|height)[^)]*\)/);
+  assert.doesNotMatch(css, /@media\s*\([^)]*(?:orientation|aspect-ratio)[^)]*\)/);
   assert.match(game, /const WORLD = Object\.freeze\(\{ width: 720, height: 1440 \}\);/);
   assert.match(game, /x:\s*displayX \* WORLD\.width/);
   assert.match(game, /y:\s*displayY \* WORLD\.height/);
@@ -272,7 +259,7 @@ test("keeps all six portrait-table pockets in the native world", () => {
   }
 });
 
-test("keeps the six-scene date map and compact shot status outside the table", () => {
+test("keeps the six-pocket effect track and compact shot status outside the table", () => {
   const track = rule(".hb-relationship-track");
   const trackNodes = rule(".hb-relationship-track ol");
   const bottom = rule(".hb-bottom-bar");
@@ -280,7 +267,7 @@ test("keeps the six-scene date map and compact shot status outside the table", (
 
   assert.match(track, /bottom:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 29px\);/);
   assert.match(trackNodes, /grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\);/);
-  assert.match(html, /<ol id="hb-track-nodes" aria-label="六站约会场景"><\/ol>/);
+  assert.match(html, /<ol id="hb-track-nodes" aria-label="六段光域阶段"><\/ol>/);
   assert.match(game, /DATE_SCENES\.forEach\(\(scene, index\) => \{/);
   assert.match(bottom, /height:\s*22px;/);
   assert.match(bottom, /bottom:\s*max\(4px, var\(--safe-bottom\)\);/);
@@ -305,7 +292,7 @@ test("keeps table moments lightweight and lets misses pause rather than end the 
   assert.doesNotMatch(outcomes, /queueStageMicro\(/);
 });
 
-test("integrates shot telemetry, persistent date-map routes, and pocket slow motion", () => {
+test("integrates shot telemetry, persistent chroma state, and pocket slow motion", () => {
   const tableStory = fragment(html, '<div class="hb-table-story"', "</div>\n        </div>");
   for (const token of ["hb-table-reflection", "hb-pocket-focus"]) {
     assert.match(tableStory, new RegExp(token));
@@ -325,21 +312,31 @@ test("integrates shot telemetry, persistent date-map routes, and pocket slow mot
   assert.match(game, /dateMapState\.routes\.push\(route\)/);
   assert.match(game, /function drawDateMap\(timestamp\)/);
   assert.match(game, /drawDateMap\(timestamp\)/);
-  assert.match(game, /function drawScenePortalPhoto\(timestamp\)/);
+  assert.match(game, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
+  assert.match(game, /const POCKET_VFX_PROFILES = Object\.freeze\(\{/);
+  assert.match(game, /activeTheme: \{ \.\.\.BALL_CHROMA_THEMES\[0\] \}/);
+  assert.match(game, /activeEffect: null/);
+  assert.match(game, /rollingTrails: \[\]/);
+  assert.match(game, /railBursts: \[\]/);
+  assert.match(game, /blackEightBlast: null/);
+  assert.match(game, /function drawChromaCloth\(timestamp\)/);
+  assert.match(game, /function drawChromaPattern\(timestamp\)/);
+  assert.match(game, /function drawRollingChromaTrails\(timestamp\)/);
+  assert.match(game, /function drawChromaRailBursts\(timestamp\)/);
+  assert.match(game, /function drawPocketVfx\(timestamp\)/);
+  assert.match(game, /function drawBlackEightBlast\(timestamp\)/);
   assert.match(game, /function drawScenePortalLighting\(timestamp\)/);
   assert.match(game, /drawScenePortalLighting\(/);
-  assert.match(game, /DATE_SCENE_VARIANTS/);
-  assert.match(game, /STAGE_SCENE_MOODS/);
-  assert.match(game, /sceneVariantFor\(zone, number, motif, options\.archetype\)/);
-  assert.match(css, /background-image:\s*var\(--hb-backdrop-image\)/);
-  assert.match(css, /background-image:\s*var\(--hb-scene-image\)/);
-  assert.match(game, /function drawCueJourney\(/);
-  assert.match(game, /function drawFinalDateShape\(/);
+  assert.match(game, /spawnChromaRailBurst\(bodyA, bodyB, collision, impactSpeed\)/);
+  assert.match(game, /spawnChromaRailBurst\(bodyB, bodyA, collision, impactSpeed\)/);
+  assert.match(game, /rememberDateMoment\(0, \{/);
+  assert.match(css, /--hb-backdrop-image:\s*none;/);
+  assert.match(css, /--hb-scene-image:\s*none;/);
   assert.match(html, /id="hb-scene-lens"/);
   assert.match(css, /\.hb-scene-lens\.is-active/);
   assert.match(css, /@keyframes hb-scene-lens-(?:reveal|dissolve|flash|match-pan|push)/);
   assert.match(game, /sceneLensStartTimer = setTimeout\(\(\) => playSceneLens\(scene, route, pocket\), 110\)/);
-  assert.doesNotMatch(game, /drawSceneArchitecture\(zone, timestamp\);/);
+  assert.doesNotMatch(game, /loadMaterialTexture\("assets\/billiards-scenes/);
 });
 
 test("shows a conic-gradient proportional power arc around the cue ball", () => {
@@ -365,13 +362,13 @@ test("shows a conic-gradient proportional power arc around the cue ball", () => 
 
 test("separates the physical cushion bands from the cloth with a brighter beveled face", () => {
   assert.match(game, /const tones = material\.kind === "jaw"/);
-  assert.match(game, /\["#42172b", "#a8526e", "#622640"\]/);
-  assert.match(game, /context\.strokeStyle = "rgba\(244, 166, 194, 0\.8\)"/);
+  assert.match(game, /\["#0c121c", "#536277", "#172230"\]/);
+  assert.match(game, /context\.strokeStyle = "rgba\(199, 230, 255, 0\.82\)"/);
   assert.match(game, /material\.id === "top"/);
   assert.match(game, /material\.id\.startsWith\("left"\)/);
 });
 
-test("keeps a dormant result cinematic shell without using it for ordinary pots", () => {
+test("keeps a compact result dock and reserves the largest effect for black 8", () => {
   const cinematicHtml = fragment(html, '<section class="hb-cinematic"', "</section>");
   const layerNames = [
     "hb-cinematic-image", "hb-cinematic-light",
@@ -385,50 +382,26 @@ test("keeps a dormant result cinematic shell without using it for ordinary pots"
   }
 
   assert.match(cinematicHtml, /data-kind="stage" aria-live="polite" aria-atomic="true" hidden/);
-  assert.match(cinematicHtml, /id="hb-cinematic-skip"[^>]*aria-label="略过演出"/);
-  assert.match(cinematicHtml, /id="hb-cinematic-title">这一次，心意没有落空</);
-  assert.match(cinematicHtml, /id="hb-cinematic-line">她看了你很久，然后轻轻点了点头。</);
-  assert.match(cinematicHtml, /id="hb-cinematic-action" type="button" hidden>继续清台</);
+  assert.match(cinematicHtml, /id="hb-cinematic-kicker">黑 8 · 终局序列</);
+  assert.match(cinematicHtml, /id="hb-cinematic-title">全谱共振已锁定</);
+  assert.match(cinematicHtml, /id="hb-cinematic-line">最后一束色阶正在汇入球桌。</);
   assert.match(rule(".hb-cinematic"), /z-index:\s*50;/);
   assert.match(rule(".hb-cinematic"), /contain:\s*paint;/);
-  assert.match(css, /\.hb-cinematic-copy\s*\{[^}]*top:\s*50%;[^}]*text-align:\s*center;[^}]*\}/s);
-  assert.match(rule(".hb-cinematic-copy strong"), /font-size:\s*32px;/);
-  assert.match(rule(".hb-cinematic-copy p"), /font-size:\s*13px;/);
-  assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*z-index:\s*8;[^}]*\}/s);
-  assert.match(rule(".hb-cinematic-skip"), /z-index:\s*10;/);
   assert.match(css, /\.hb-result\s*\{[^}]*z-index:\s*60;[^}]*\}/s);
   assert.match(css, /\.hb-result\s*\{[^}]*height:\s*52px;[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
   assert.doesNotMatch(css, /\.hb-result\s*\{[^}]*(?:backdrop-filter|40dvh)/s);
   assert.match(css, /\.hb-result > p,\s*\.hb-result-grid\s*\{\s*display:\s*none;/s);
-  assert.match(html, /id="hb-retry"[^>]*aria-label="再遇一次"/);
-  assert.match(html, /href="index\.html" aria-label="回到个人天地"/);
-  assert.doesNotMatch(rule(".hb-backdrop"), /filter:/);
-  assert.doesNotMatch(rule(".hb-scene-lens"), /filter:/);
-  assert.match(css, /\.hb-cinematic-image,[\s\S]*?\.hb-cinematic-transition\s*\{[\s\S]*?pointer-events:\s*none;/);
-  assert.doesNotMatch(cinematicHtml, /hb-cinematic-particles|hb-cinematic-vignette/);
-  assert.doesNotMatch(rule(".hb-cinematic-image"), /filter:|animation:/);
-  assert.doesNotMatch(rule(".hb-cinematic-light"), /filter:|animation:/);
-  assert.match(rule(".hb-cinematic-particles"), /display:\s*none;/);
-  assert.match(rule(".hb-cinematic-vignette"), /display:\s*none;/);
-  assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*hb-cinematic-pocket-veil 760ms[^}]*\}/s);
-  assert.match(css, /\.hb-cinematic:not\(\[hidden\]\) \.hb-cinematic-image\s*\{[^}]*hb-cinematic-pocket-image 860ms[^}]*\}/s);
-  assert.match(css, /@keyframes hb-cinematic-pocket-image/);
-  assert.match(css, /@keyframes hb-cinematic-pocket-veil/);
-  assert.match(css, /@keyframes hb-cinematic-simple-copy/);
-  for (const kind of ["confession", "proposal", "early-success", "rejection"]) {
-    assert.match(css, new RegExp(`\\.hb-cinematic\\[data-kind="${kind}"\\]`));
-  }
-  assert.match(game, /elements\.cinematic\.hidden = false;/);
-  assert.match(game, /elements\.cinematic\.hidden = true;/);
-  assert.match(game, /--hb-cinematic-origin-x/);
-  assert.match(game, /--hb-cinematic-origin-y/);
-  assert.match(game, /elements\.cinematicSkip\.addEventListener\("click", closeCinematic\);/);
-  assert.match(game, /elements\.cinematicAction\.addEventListener\("click", closeCinematic\);/);
+  assert.match(html, /id="hb-retry"[^>]*aria-label="再开一局"/);
+  assert.match(html, /href="index\.html" aria-label="返回首页"/);
+  assert.match(game, /function beginFinalDateMapReveal\(outcome\)/);
+  assert.match(game, /dateMapState\.blackEightBlast = \{/);
+  assert.match(game, /duration: success \? 4400 : 3200/);
+  assert.match(game, /screenShake = Math\.max\(screenShake, success \? 7\.2 : 4\.2\)/);
+  assert.match(game, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
   const outcomes = fragment(game, "function processOutcomePerformances", "function finalizeShot");
   assert.doesNotMatch(outcomes, /queueCinematic\(/);
   assert.match(outcomes, /beginFinalDateMapReveal\(outcome\)/);
 });
-
 test("presents direct shooting guidance without mandatory selection copy", () => {
   assert.match(html, /在桌面任意位置反向滑动瞄准蓄力，松手或第二指轻触击球/);
   assert.match(html, /向后拖动，松手或第二指轻触出杆/);

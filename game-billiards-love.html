@@ -3,20 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>心动桌球 · 一场约会地图 - 刘勇 / Yong Liu</title>
-  <meta name="description" content="心动桌球：完成一场标准十五球自由清台，让每次进球点亮一场约会地图。">
-  <meta name="theme-color" content="#16080f">
+  <title>幻彩桌球 · 十五球光谱竞技 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="幻彩桌球：完成标准十五球自由清台，以精准击球触发色散、折射与连锁光效。">
+  <meta name="theme-color" content="#05070d">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
-  <link rel="preload" href="assets/billiards-scenes/date-map-rose-v3.jpg" as="image">
-  <link rel="preload" href="assets/billiards-scenes/portal-corner-store-v1.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-scene-portals-20260712f">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-chroma-vfx-20260712j">
 </head>
 <body class="heartbeat-billiards-page">
-  <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球：一场约会地图" data-stage="1" data-state="loading">
+  <main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技" data-stage="1" data-state="loading" data-shell-theme="chromatic">
     <div class="hb-backdrop" aria-hidden="true"></div>
     <div class="hb-stage-light" aria-hidden="true"></div>
     <div class="hb-scene-lens" id="hb-scene-lens" aria-hidden="true"><i></i><b></b></div>
@@ -25,18 +23,18 @@
       <a class="hb-icon-button hb-back" href="index.html" aria-label="返回首页" title="返回首页"><span aria-hidden="true">&larr;</span></a>
 
       <div class="hb-stage-copy" aria-live="polite">
-        <span id="hb-stage-kicker">今晚的瞬间 · 00 / 15</span>
-        <strong id="hb-stage-title">桌布下藏着一场尚未发生的约会</strong>
-        <small class="hb-sr-only" id="hb-stage-targets">任意非黑 8 彩球都能继续显影这场约会</small>
+        <span id="hb-stage-kicker">光谱进度 · 00 / 15</span>
+        <strong id="hb-stage-title">幻彩桌球 · 原色校准</strong>
+        <small class="hb-sr-only" id="hb-stage-targets">任意非黑 8 彩球都能继续推进清台</small>
       </div>
 
-      <div class="hb-interest" id="hb-interest-wrap" aria-label="夜色状态：未醒">
+      <div class="hb-interest" id="hb-interest-wrap" aria-label="光效状态：待机">
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle cx="22" cy="22" r="18"></circle>
           <circle id="hb-interest-ring" cx="22" cy="22" r="18"></circle>
         </svg>
-        <span>夜色</span>
-        <strong id="hb-interest">未醒</strong>
+        <span>光效</span>
+        <strong id="hb-interest">待机</strong>
       </div>
 
       <div class="hb-toolbar" aria-label="游戏设置">
@@ -58,20 +56,20 @@
         </div>
 
         <div class="hb-table-moment" id="hb-table-moment" role="status" aria-live="polite" aria-atomic="true" hidden>
-          <span id="hb-table-moment-scene">约会地图 · 桌边这一站</span>
-          <strong id="hb-table-moment-title">第一声进球，记下新的坐标</strong>
-          <p id="hb-table-moment-line">球桌始终留在眼前，下一杆随时可以继续。</p>
+          <span id="hb-table-moment-scene">光域反馈 · 直线入射</span>
+          <strong id="hb-table-moment-title">精准轨迹已写入光谱</strong>
+          <p id="hb-table-moment-line">色阶响应完成，下一杆继续叠加。</p>
         </div>
 
         <div class="hb-micro" id="hb-micro" aria-live="polite" aria-atomic="true" hidden>
-          <span id="hb-micro-kicker">这一杆</span>
-          <strong id="hb-micro-title">话题暂时停在这里</strong>
-          <p id="hb-micro-line">球没有落袋，对面的目光仍然留在桌边。</p>
+          <span id="hb-micro-kicker">轨迹反馈</span>
+          <strong id="hb-micro-title">本杆未触发光效</strong>
+          <p id="hb-micro-line">重新校准角度与力度。</p>
         </div>
 
         <div class="hb-call" id="hb-call" aria-live="polite">
-          <span id="hb-call-label">约会开场</span>
-          <strong id="hb-call-title">打散今晚的第一束光</strong>
+          <span id="hb-call-label">光谱启动</span>
+          <strong id="hb-call-title">打散第一束原色</strong>
           <small id="hb-call-hint">向后拖动，松手或第二指轻触出杆</small>
         </div>
 
@@ -85,10 +83,10 @@
       </div>
     </section>
 
-    <nav class="hb-relationship-track" id="hb-relationship-track" aria-label="一场约会地图：关系进度">
-      <span class="hb-track-label">约会地图</span>
+    <nav class="hb-relationship-track" id="hb-relationship-track" aria-label="光谱轨迹：六段光域进度">
+      <span class="hb-track-label">光谱轨迹</span>
       <div class="hb-track-line" aria-hidden="true"><i id="hb-track-progress"></i></div>
-      <ol id="hb-track-nodes" aria-label="六站约会场景"></ol>
+      <ol id="hb-track-nodes" aria-label="六段光域阶段"></ol>
     </nav>
 
     <footer class="hb-bottom-bar">
@@ -113,35 +111,35 @@
       <div class="hb-cinematic-transition" aria-hidden="true"></div>
       <button class="hb-cinematic-skip" id="hb-cinematic-skip" type="button" aria-label="略过演出" title="略过">&times;</button>
       <div class="hb-cinematic-copy">
-        <span id="hb-cinematic-kicker">8 · 告白</span>
-        <strong id="hb-cinematic-title">这一次，心意没有落空</strong>
-        <p id="hb-cinematic-line">她看了你很久，然后轻轻点了点头。</p>
+        <span id="hb-cinematic-kicker">黑 8 · 终局序列</span>
+        <strong id="hb-cinematic-title">全谱共振已锁定</strong>
+        <p id="hb-cinematic-line">最后一束色阶正在汇入球桌。</p>
         <button id="hb-cinematic-action" type="button" hidden>继续清台</button>
       </div>
     </section>
 
     <section class="hb-result" id="hb-result" hidden>
-      <span id="hb-result-grade">A · 终于走到一起</span>
-      <strong id="hb-result-title">十五颗球，都有了答案</strong>
-      <p id="hb-result-line">没有每一步都完美，但你们认真走到了最后。</p>
+      <span id="hb-result-grade">A · 光谱评级</span>
+      <strong id="hb-result-title">本局光谱已结算</strong>
+      <p id="hb-result-line">击球数据与连锁表现已归档。</p>
       <div class="hb-result-grid">
         <span><small>总杆数</small><b id="hb-result-shots">0</b></span>
         <span><small>进球率</small><b id="hb-result-accuracy">0%</b></span>
         <span><small>最佳连进</small><b id="hb-result-streak">0</b></span>
-        <span><small>最终心绪</small><b id="hb-result-interest">安稳</b></span>
+        <span><small>光场强度</small><b id="hb-result-interest">稳定</b></span>
       </div>
       <div class="hb-result-actions">
-        <button id="hb-retry" type="button" aria-label="再遇一次" title="再遇一次"><span aria-hidden="true">&#8635;</span><span class="hb-sr-only">再遇一次</span></button>
-        <a href="index.html" aria-label="回到个人天地" title="回到个人天地"><span aria-hidden="true">&#8962;</span><span class="hb-sr-only">回到个人天地</span></a>
+        <button id="hb-retry" type="button" aria-label="再开一局" title="再开一局"><span aria-hidden="true">&#8635;</span><span class="hb-sr-only">再开一局</span></button>
+        <a href="index.html" aria-label="返回首页" title="返回首页"><span aria-hidden="true">&#8962;</span><span class="hb-sr-only">返回首页</span></a>
       </div>
     </section>
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-love-scene-portals-20260712f"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-scene-portals-20260712f"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-scene-portals-20260712f"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-scene-portals-20260712f"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-scene-portals-20260712f"></script>
+  <script src="assets/billiards-physics.js?v=billiards-chroma-vfx-20260712j"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-chroma-vfx-20260712j"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-chroma-vfx-20260712j"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-chroma-vfx-20260712j"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-chroma-vfx-20260712j"></script>
 </body>
 </html>

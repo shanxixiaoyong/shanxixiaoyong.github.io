@@ -37,33 +37,34 @@ const API_KEYS = [
 ];
 
 const EXPECTED_BALL_NAMES = [
-  "雨滴",
-  "咖啡",
-  "电影票",
-  "相机",
-  "路灯",
-  "耳机",
-  "猫",
-  "心意（黑8）",
-  "晚霞",
-  "礼物",
-  "短信",
-  "公交卡",
-  "星星",
-  "雨伞",
-  "归途"
+  "黄金光子",
+  "蓝色电弧",
+  "赤红熔核",
+  "紫晶等离子",
+  "橙色日焰",
+  "翠绿激光",
+  "深红震波",
+  "黑曜奇点",
+  "黄金流体",
+  "蓝色离子",
+  "赤红火花",
+  "紫晶棱镜",
+  "橙色脉冲",
+  "翠绿闪电",
+  "深红极光"
 ];
 
 const EXPECTED_POCKET_SCENES = {
-  "top-left": "街角便利店",
-  "top-right": "咖啡店",
-  "middle-left": "电影院",
-  "middle-right": "河边步道",
-  "bottom-left": "地铁站",
-  "bottom-right": "回家街道"
+  "top-left": "液态涟漪",
+  "top-right": "彗星火花",
+  "middle-left": "棱镜折射",
+  "middle-right": "脉冲声呐",
+  "bottom-left": "闪电",
+  "bottom-right": "极光缎带"
 };
 
 const OFF_TABLE_SCENES = /图书馆|家中|旅行|旅店|酒店|展馆|天台|厨房|列车|CG|场外/;
+const FORBIDDEN_NARRATIVE = /恋爱|爱情|爱你|爱意|约会|关系|伴侣|告白|表白|求婚|未来(?:生活|计划|道路|归途)?|情侣|心意|浪漫|喜欢|love|dating|relationship|partner|confession|proposal|future together/i;
 
 const EXPECTED_STAGE_BALLS = [
   [1, 2, 3],
@@ -100,6 +101,28 @@ function assertDeepFrozen(value, label, seen = new Set()) {
   }
 }
 
+function collectVisibleText(value, field = "") {
+  if (typeof value === "string") return [value];
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value)) return value.flatMap((item) => collectVisibleText(item, field));
+
+  const compatibilityFields = new Set([
+    "id",
+    "stageId",
+    "nextStageId",
+    "pocketId",
+    "sceneId",
+    "motifId",
+    "ballId",
+    "kind",
+    "gesture",
+    "visualMode"
+  ]);
+  return Object.entries(value).flatMap(([key, child]) => (
+    compatibilityFields.has(key) ? [] : collectVisibleText(child, key)
+  ));
+}
+
 function assertStagePerformance(variant, label) {
   for (const field of ["id", "camera", "title", "visual", "line", "impact", "sound", "tone"]) {
     assertText(variant[field], `${label}.${field}`);
@@ -111,7 +134,7 @@ function assertStagePerformance(variant, label) {
   );
 }
 
-test("exports an immutable 15-ball date-map catalog with three table-bound performances each", () => {
+test("exports an immutable 15-ball chromatic catalog with three table-bound performances each", () => {
   assert.deepEqual(Object.keys(Content), API_KEYS);
   assert.equal(Content.BALLS.length, 15);
   assert.equal(Content.BALL_DATE_MOTIFS.length, 15);
@@ -135,6 +158,11 @@ test("exports an immutable 15-ball date-map catalog with three table-bound perfo
     assert.equal(ball.id, motif.id);
     assert.equal(ball.name, motif.name);
     assert.equal(ball.meaning, motif.meaning);
+    assertText(motif.colorCue, `ball ${ball.number}.colorCue`);
+    assertText(motif.tableMark, `ball ${ball.number}.tableMark`);
+    assert.equal(motif.lines.length, 3, `ball ${ball.number} needs three motif lines`);
+    motif.lines.forEach((line, index) => assertText(line, `ball ${ball.number}.lines[${index}]`));
+    assert.match(motif.meaning, new RegExp(ball.number === 8 ? "黑8" : `${ball.number}号`));
     assert.doesNotMatch(JSON.stringify({ ball, motif }), OFF_TABLE_SCENES);
     assert.ok(ball.stage >= 1 && ball.stage <= 7, `ball ${ball.number}.stage`);
     assert.equal(Content.getStage(ball.stage).id, ball.stageId);
@@ -190,6 +218,29 @@ test("exports an immutable 15-ball date-map catalog with three table-bound perfo
   assertDeepFrozen(Content, "Content");
 });
 
+test("keeps all user-facing copy chromatic, arcade-focused, and free of romance narrative", () => {
+  const visibleCatalogs = [
+    Content.SHOT_ARCHETYPE_META,
+    Content.POCKET_DATE_SCENES,
+    Content.POCKET_MOTIF_MOMENTS,
+    Content.STAGE_RELATION_BEATS,
+    Content.BALL_DATE_MOTIFS,
+    Content.BALLS,
+    Content.STAGES,
+    Content.STAGE_TRANSITIONS,
+    Content.STAGE_EVENTS,
+    Content.SPECIAL_EVENTS,
+    Content.ENDINGS
+  ];
+  const visibleCopy = visibleCatalogs.flatMap((catalog) => collectVisibleText(catalog)).join("\n");
+
+  assert.doesNotMatch(visibleCopy, FORBIDDEN_NARRATIVE);
+  assert.match(visibleCopy, /色谱|霓虹|光轨/);
+  for (const identity of Object.values(EXPECTED_POCKET_SCENES)) {
+    assert.match(visibleCopy, new RegExp(identity));
+  }
+});
+
 test("covers all 15 balls exactly once across seven fully described stages", () => {
   assert.equal(Content.STAGES.length, 7);
   assert.deepEqual(Content.STAGES.map((stage) => stage.order), [1, 2, 3, 4, 5, 6, 7]);
@@ -222,7 +273,7 @@ test("covers all 15 balls exactly once across seven fully described stages", () 
   }
 });
 
-test("preserves physical shot telemetry classification for table-map motion", () => {
+test("preserves physical shot telemetry classification for chromatic table motion", () => {
   const cases = [
     ["gentle", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 2, travel: 120, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.24 }],
     ["power", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 8, travel: 180, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.9 }],
@@ -245,7 +296,7 @@ test("preserves physical shot telemetry classification for table-map motion", ()
   }
 });
 
-test("composes deterministic pocket scenes and table-only shot interactions", () => {
+test("composes deterministic pocket effects and table-only shot interactions", () => {
   const momentOptions = {
     ballNumber: 4,
     pocketId: "middle-right",
@@ -255,8 +306,8 @@ test("composes deterministic pocket scenes and table-only shot interactions", ()
   };
   const moment = Content.composeTableMoment(momentOptions);
   assert.deepEqual(moment, Content.composeTableMoment(momentOptions));
-  assert.equal(moment.scene, "河边步道");
-  assert.equal(moment.motif, "相机");
+  assert.equal(moment.scene, "脉冲声呐");
+  assert.equal(moment.motif, "紫晶等离子");
   assert.equal(moment.pocketId, "middle-right");
   assert.equal(moment.archetype, "bank");
   assert.equal(moment.stageId, "growing-familiar");
@@ -298,11 +349,11 @@ test("composes deterministic pocket scenes and table-only shot interactions", ()
   });
 
   assert.equal(early.archetype, "bank");
-  assert.equal(early.technique, "借库入袋 · 绕路抵达");
+  assert.equal(early.technique, "借库入袋 · 折射转向");
   assert.equal(early.gesture, "reach");
-  assert.equal(familiar.title, "河边步道 · 相机");
-  assert.equal(familiar.scene, "河边步道");
-  assert.equal(familiar.motif, "相机");
+  assert.equal(familiar.title, "脉冲声呐 · 紫晶等离子");
+  assert.equal(familiar.scene, "脉冲声呐");
+  assert.equal(familiar.motif, "紫晶等离子");
   assert.equal(familiar.physicalBallNumber, 4);
   assert.equal(Object.hasOwn(familiar, "prop"), false);
   assert.notEqual(early.emotionLine, familiar.emotionLine);
@@ -310,7 +361,7 @@ test("composes deterministic pocket scenes and table-only shot interactions", ()
   assert.equal(Object.isFrozen(familiar), true);
 });
 
-test("provides four richly specified full-screen transitions for every stage", () => {
+test("provides four richly specified chromatic transitions for every stage", () => {
   const expectedNextStageIds = Content.STAGES.map((stage, index) => Content.STAGES[index + 1]?.id || null);
   const transitionIds = [];
 
@@ -348,7 +399,7 @@ test("provides four richly specified full-screen transitions for every stage", (
   assertDeepFrozen(Content.STAGE_TRANSITIONS, "STAGE_TRANSITIONS");
 });
 
-test("covers misses, cue-ball scratches, and setup beats in every relationship stage", () => {
+test("covers misses, cue-ball scratches, and setup beats in every arcade stage", () => {
   const expectedTypes = Object.values(Content.STAGE_EVENT_TYPES);
   const eventIds = [];
   let eventCount = 0;
@@ -390,14 +441,14 @@ test("covers misses, cue-ball scratches, and setup beats in every relationship s
   assertDeepFrozen(Content.STAGE_EVENTS, "STAGE_EVENTS");
 });
 
-test("contains every required relationship branch and restrained S, A, and B endings", () => {
+test("contains every stable special-event branch and chromatic S, A, and B endings", () => {
   const expectedEvents = {
-    confessionSuccess: "告白成功",
-    confessionTooEarly: "告白过早",
-    feelingsExposed: "心意意外暴露",
-    proposalSuccess: "求婚成功",
-    commitmentTooHeavy: "承诺过重",
-    losingContact: "渐渐失去联系"
+    confessionSuccess: "黑8超载",
+    confessionTooEarly: "黑8抢拍",
+    feelingsExposed: "黑8意外触发",
+    proposalSuccess: "终球爆发",
+    commitmentTooHeavy: "终球过载",
+    losingContact: "连锁断频"
   };
   assert.deepEqual(Object.keys(Content.SPECIAL_EVENTS), Object.keys(expectedEvents));
   assert.deepEqual(Content.SPECIAL_EVENTS.confessionSuccess.ballNumbers, [8]);
@@ -426,7 +477,7 @@ test("contains every required relationship branch and restrained S, A, and B end
   assert.deepEqual(Object.keys(Content.ENDINGS), ["S", "A", "B"]);
   assert.deepEqual(
     Object.fromEntries(Object.entries(Content.ENDINGS).map(([grade, ending]) => [grade, ending.title])),
-    { S: "灯火长明", A: "并肩归途", B: "慢慢走完" }
+    { S: "全色制霸", A: "霓虹通关", B: "余辉结算" }
   );
   for (const grade of ["S", "A", "B"]) {
     const ending = Content.ENDINGS[grade];
@@ -440,7 +491,7 @@ test("contains every required relationship branch and restrained S, A, and B end
   }
 });
 
-test("routes confession, proposal, and fading-contact beats from intent and timing", () => {
+test("preserves special-event routing from intent and timing", () => {
   const select = (ballNumber, intent, timing) => Content.selectPerformance({
     ballNumber,
     intent,
@@ -626,7 +677,7 @@ test("publishes the same API as BilliardsLoveContent in a browser UMD context", 
       stage: 7,
       seed: 0
     }).scene,
-    "回家街道"
+    "极光缎带"
   );
   assert.equal(
     browserContent.selectPerformance({ ballNumber: 8, intent: "active", timing: "right", seed: 4 }).eventId,

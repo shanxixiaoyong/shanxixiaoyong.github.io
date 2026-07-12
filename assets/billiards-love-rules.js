@@ -86,7 +86,7 @@
   Object.freeze(BALL_BY_NUMBER);
 
   const RULES = deepFreeze({
-    title: "心动桌球",
+    title: "幻彩桌球",
     version: 1,
     ballCount: 15,
     stageCount: 7,

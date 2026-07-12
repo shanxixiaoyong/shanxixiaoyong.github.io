@@ -27,11 +27,11 @@ test("homepage exposes six distinct full-bleed destinations", () => {
     { href: "knowledge.html", index: 1, asset: "assets/portal/knowledge-archive.webp" },
     { href: "tools.html", index: 2, asset: "assets/portal/tool-workbench.webp" },
     { href: "game-2048.html", index: 3, asset: "assets/portal/heartbeat-2048.png" },
-    { href: "game-billiards-love.html", index: 4, asset: "assets/portal/billiards-night.png" },
+    { href: "game-billiards-love.html", index: 4, asset: "assets/portal/billiards-chroma-v1.jpg" },
     { href: "game-runner-love.html", index: 5, asset: "assets/portal/heartbeat-runner.png" }
   ]);
   assert.equal(html.includes("data-portal-dot"), false, "progress must not ship hidden dead controls");
-  for (const title of ["心动2048", "心动桌球", "心动跑酷"]) {
+  for (const title of ["心动2048", "幻彩桌球", "心动跑酷"]) {
     assert.ok(html.includes(`<strong>${title}</strong>`), `${title} must have a direct homepage entry`);
   }
 
