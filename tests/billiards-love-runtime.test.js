@@ -117,8 +117,8 @@ test("renders layered wood, wool, rubber, metal, leather, and deep pocket materi
   assert.match(source, /drawMaterialTexture\(MATERIAL_TEXTURES\.cloth/);
   assert.doesNotMatch(source, /context\.setLineDash\(\[2, 3\]\)/);
   assert.match(source, /context\.shadowBlur = 12/);
-  assert.match(source, /\["#123a31", "#37866d", "#1b5848"\]/);
-  assert.match(source, /context\.strokeStyle = "rgba\(143, 224, 187, 0\.78\)"/);
+  assert.match(source, /\["#42172b", "#a8526e", "#622640"\]/);
+  assert.match(source, /context\.strokeStyle = "rgba\(244, 166, 194, 0\.8\)"/);
   assert.doesNotMatch(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
   assert.doesNotMatch(source, /context\.scale\(0\.18, 1\)/);
   assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
@@ -276,9 +276,13 @@ test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /function drawDateMapPhotoBase\(/);
   assert.match(source, /function drawPhotographicScene\(/);
   assert.match(source, /function drawMotifAtmosphere\(/);
-  assert.match(source, /date-map-night-v2\.jpg/);
+  assert.match(source, /date-map-rose-v3\.jpg/);
   assert.match(source, /function playSceneLens\(/);
   assert.match(source, /function drawDateConnections\(/);
+  assert.match(source, /function pointAlongDateRoute\(/);
+  assert.match(source, /function drawDateRouteSparkle\(/);
+  assert.doesNotMatch(source, /context\.strokeStyle = "#fff1cf"/);
+  assert.match(source, /scheduleResultAfterTable\(success \? 7800 : 2500\)/);
   assert.match(source, /function drawCueJourney\(/);
   assert.match(source, /function drawFinalDateShape\(/);
   assert.match(source, /function beginFinalDateMapReveal\(outcome\)/);

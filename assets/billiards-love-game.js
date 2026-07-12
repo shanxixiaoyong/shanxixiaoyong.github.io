@@ -133,12 +133,12 @@
     13: "#df7b30", 14: "#358553", 15: "#8e3740"
   });
   const DEFAULT_DATE_SCENES = Object.freeze([
-    { id: "corner-store", pocketId: "top-left", name: "街角便利店", x: 178, y: 238, focusX: 18, focusY: 8, color: "#75c7b2" },
-    { id: "coffee-window", pocketId: "top-right", name: "临窗咖啡店", x: 542, y: 238, focusX: 82, focusY: 8, color: "#e5b56f" },
-    { id: "late-cinema", pocketId: "middle-left", name: "午夜电影院", x: 360, y: 478, focusX: 50, focusY: 28, color: "#d889a2" },
-    { id: "river-walk", pocketId: "middle-right", name: "河边步道", x: 360, y: 716, focusX: 50, focusY: 48, color: "#79b7ce" },
-    { id: "last-train", pocketId: "bottom-left", name: "末班车站", x: 360, y: 968, focusX: 50, focusY: 69, color: "#9aa6d7" },
-    { id: "walk-home", pocketId: "bottom-right", name: "回家的街道", x: 360, y: 1192, focusX: 50, focusY: 90, color: "#e3c273" }
+    { id: "corner-store", pocketId: "top-left", name: "街角便利店", x: 178, y: 238, focusX: 18, focusY: 8, color: "#d991aa" },
+    { id: "coffee-window", pocketId: "top-right", name: "临窗咖啡店", x: 542, y: 238, focusX: 82, focusY: 8, color: "#edbd91" },
+    { id: "late-cinema", pocketId: "middle-left", name: "午夜电影院", x: 360, y: 478, focusX: 50, focusY: 28, color: "#e4759a" },
+    { id: "river-walk", pocketId: "middle-right", name: "河边步道", x: 360, y: 716, focusX: 50, focusY: 48, color: "#bf8db5" },
+    { id: "last-train", pocketId: "bottom-left", name: "末班车站", x: 360, y: 968, focusX: 50, focusY: 69, color: "#b99bc5" },
+    { id: "walk-home", pocketId: "bottom-right", name: "回家的街道", x: 360, y: 1192, focusX: 50, focusY: 90, color: "#efc17f" }
   ]);
   const sourceDateScenes = Array.isArray(content.POCKET_DATE_SCENES)
     ? content.POCKET_DATE_SCENES
@@ -230,7 +230,7 @@
   const MATERIAL_TEXTURES = Object.freeze({
     cloth: loadMaterialTexture("assets/billiards-textures/worsted-cloth.jpg"),
     walnut: loadMaterialTexture("assets/billiards-textures/dark-walnut.jpg"),
-    dateMap: loadMaterialTexture("assets/billiards-scenes/date-map-night-v2.jpg")
+    dateMap: loadMaterialTexture("assets/billiards-scenes/date-map-rose-v3.jpg")
   });
 
   function readStorage(key, fallback) {
@@ -1098,7 +1098,7 @@
     root.dataset.motif = route?.motif || "night";
     root.style.setProperty("--hb-scene-x", `${scene.focusX ?? 50}%`);
     root.style.setProperty("--hb-scene-y", `${scene.focusY ?? 50}%`);
-    root.style.setProperty("--hb-scene-color", route?.color || scene.color || "#8ab5a6");
+    root.style.setProperty("--hb-scene-color", route?.color || scene.color || "#db91aa");
     root.style.setProperty("--hb-scene-opacity", String(opacity));
   }
 
@@ -2014,7 +2014,7 @@
       durationMs: success ? 3000 : 2200
     });
     audio.cue(success ? "proposal" : "warning", success ? 1 : 0.82);
-    scheduleResultAfterTable(success ? 3400 : 2500);
+    scheduleResultAfterTable(success ? 7800 : 2500);
   }
 
   function processOutcomePerformances(outcome, completedShot = {}) {
@@ -2279,11 +2279,11 @@
     context.shadowBlur = 34;
     context.shadowOffsetY = 20;
     const wood = context.createLinearGradient(TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right, TABLE_OUTER.bottom);
-    wood.addColorStop(0, "#160f0d");
-    wood.addColorStop(0.18, "#3b261d");
-    wood.addColorStop(0.42, "#211512");
-    wood.addColorStop(0.68, "#4b3023");
-    wood.addColorStop(1, "#120c0b");
+    wood.addColorStop(0, "#190910");
+    wood.addColorStop(0.18, "#512132");
+    wood.addColorStop(0.42, "#2a101b");
+    wood.addColorStop(0.68, "#64283d");
+    wood.addColorStop(1, "#14070d");
     context.fillStyle = wood;
     roundRectPath(context, TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right - TABLE_OUTER.left, TABLE_OUTER.bottom - TABLE_OUTER.top, 32);
     context.fill();
@@ -2291,11 +2291,11 @@
 
     context.save();
     const burl = context.createLinearGradient(TABLE_OUTER.right, TABLE_OUTER.top, TABLE_OUTER.left, TABLE_OUTER.bottom);
-    burl.addColorStop(0, "#5c3b2a");
-    burl.addColorStop(0.16, "#261713");
-    burl.addColorStop(0.5, "#493024");
-    burl.addColorStop(0.84, "#1d1210");
-    burl.addColorStop(1, "#62402e");
+    burl.addColorStop(0, "#713046");
+    burl.addColorStop(0.16, "#30121e");
+    burl.addColorStop(0.5, "#5b2438");
+    burl.addColorStop(0.84, "#250d17");
+    burl.addColorStop(1, "#79334a");
     context.fillStyle = burl;
     roundRectPath(context, TABLE_OUTER.left + 8, TABLE_OUTER.top + 8, TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 25);
     context.fill();
@@ -2305,7 +2305,7 @@
       TABLE_OUTER.right - TABLE_OUTER.left - 16, TABLE_OUTER.bottom - TABLE_OUTER.top - 16, 0.82);
     context.lineWidth = 0.7;
     for (let y = TABLE_OUTER.top + 14, index = 0; y < TABLE_OUTER.bottom - 10; y += 11, index += 1) {
-      context.strokeStyle = index % 3 === 0 ? "rgba(246, 184, 117, 0.2)" : "rgba(31, 12, 8, 0.24)";
+      context.strokeStyle = index % 3 === 0 ? "rgba(248, 184, 193, 0.2)" : "rgba(41, 7, 20, 0.26)";
       context.beginPath();
       context.moveTo(TABLE_OUTER.left + 8, y);
       context.lineTo(TABLE_OUTER.right - 8, y + Math.sin(index * 1.73) * 4);
@@ -2314,7 +2314,7 @@
     context.restore();
 
     context.save();
-    context.strokeStyle = "rgba(206, 180, 135, 0.34)";
+    context.strokeStyle = "rgba(235, 187, 189, 0.36)";
     context.lineWidth = 1.2;
     roundRectPath(context, TABLE_OUTER.left + 15, TABLE_OUTER.top + 15, TABLE_OUTER.right - TABLE_OUTER.left - 30, TABLE_OUTER.bottom - TABLE_OUTER.top - 30, 20);
     context.stroke();
@@ -2328,10 +2328,10 @@
   function drawWoolCloth() {
     context.save();
     const cloth = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    cloth.addColorStop(0, "#236f58");
-    cloth.addColorStop(0.38, "#195a47");
-    cloth.addColorStop(0.72, "#124a3b");
-    cloth.addColorStop(1, "#0c392e");
+    cloth.addColorStop(0, "#a1516a");
+    cloth.addColorStop(0.38, "#823d56");
+    cloth.addColorStop(0.72, "#692f48");
+    cloth.addColorStop(1, "#4a1e35");
     context.fillStyle = cloth;
     context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     context.beginPath();
@@ -2346,8 +2346,8 @@
     context.lineWidth = 0.42;
     for (let y = TABLE.top + 2, index = 0; y < TABLE.bottom; y += 5, index += 1) {
       context.strokeStyle = hasClothTexture
-        ? (index % 2 ? "rgba(226, 246, 233, 0.012)" : "rgba(2, 25, 19, 0.024)")
-        : (index % 2 ? "rgba(226, 246, 233, 0.038)" : "rgba(2, 25, 19, 0.09)");
+        ? (index % 2 ? "rgba(255, 231, 238, 0.014)" : "rgba(55, 8, 28, 0.026)")
+        : (index % 2 ? "rgba(255, 231, 238, 0.042)" : "rgba(55, 8, 28, 0.092)");
       context.beginPath();
       context.moveTo(TABLE.left, y);
       context.lineTo(TABLE.right, y + (index % 4 - 1.5) * 0.35);
@@ -2356,14 +2356,14 @@
     context.lineWidth = 0.3;
     for (let x = TABLE.left + 3, index = 0; x < TABLE.right; x += 8, index += 1) {
       context.strokeStyle = hasClothTexture
-        ? (index % 3 === 0 ? "rgba(196, 231, 212, 0.01)" : "rgba(0, 28, 21, 0.018)")
-        : (index % 3 === 0 ? "rgba(196, 231, 212, 0.034)" : "rgba(0, 28, 21, 0.055)");
+        ? (index % 3 === 0 ? "rgba(250, 214, 229, 0.012)" : "rgba(50, 5, 24, 0.02)")
+        : (index % 3 === 0 ? "rgba(250, 214, 229, 0.036)" : "rgba(50, 5, 24, 0.058)");
       context.beginPath();
       context.moveTo(x, TABLE.top);
       context.lineTo(x + Math.sin(index * 2.1) * 1.2, TABLE.bottom);
       context.stroke();
     }
-    const stageWash = ["#5d9685", "#c19c62", "#c86e83", "#d9b866", "#8f82b4", "#67a2b4", "#d4ad63"][currentStageNumber() - 1];
+    const stageWash = ["#c57f9b", "#dda48f", "#dc6f96", "#e0b56f", "#a77ca8", "#936b9c", "#e4ac78"][currentStageNumber() - 1];
     const wash = context.createRadialGradient(WORLD.width * 0.54, WORLD.height * 0.46, 32, WORLD.width * 0.54, WORLD.height * 0.46, 620);
     wash.addColorStop(0, `${stageWash}22`);
     wash.addColorStop(1, "transparent");
@@ -2386,21 +2386,21 @@
         : context.createLinearGradient(-material.width / 2, 0, material.width / 2, 0);
       const reverse = material.id.startsWith("bottom") || material.id.startsWith("right");
       const tones = material.kind === "jaw"
-        ? ["#153f34", "#2c735d", "#17483b"]
-        : ["#123a31", "#37866d", "#1b5848"];
+        ? ["#4a1b30", "#9b4a65", "#562037"]
+        : ["#42172b", "#a8526e", "#622640"];
       gradient.addColorStop(0, reverse ? tones[2] : tones[0]);
       gradient.addColorStop(0.5, tones[1]);
       gradient.addColorStop(1, reverse ? tones[0] : tones[2]);
       context.fillStyle = gradient;
       roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-      context.strokeStyle = material.kind === "jaw" ? "rgba(110, 185, 154, 0.46)" : "rgba(127, 207, 172, 0.62)";
+      context.strokeStyle = material.kind === "jaw" ? "rgba(221, 133, 164, 0.48)" : "rgba(239, 151, 182, 0.64)";
       context.lineWidth = material.kind === "jaw" ? 1 : 1.35;
       roundRectPath(context, -material.width / 2 + 1, -material.height / 2 + 1, material.width - 2, material.height - 2, material.kind === "jaw" ? 4 : 7);
       context.stroke();
       if (material.kind === "cushion") {
-        context.strokeStyle = "rgba(143, 224, 187, 0.78)";
-        context.shadowColor = "rgba(4, 24, 19, 0.72)";
+        context.strokeStyle = "rgba(244, 166, 194, 0.8)";
+        context.shadowColor = "rgba(47, 7, 25, 0.76)";
         context.shadowBlur = 3;
         context.lineWidth = 1.8;
         context.beginPath();
@@ -2556,7 +2556,7 @@
     context.drawImage(tableCacheCanvas, 0, 0, WORLD.width, WORLD.height);
   }
 
-  function makeDateMapCache(filter, greenVeil) {
+  function makeDateMapCache(filter, roseVeil) {
     const source = MATERIAL_TEXTURES.dateMap;
     if (!source || !source.complete || !source.naturalWidth) return null;
     const cache = document.createElement("canvas");
@@ -2572,7 +2572,7 @@
     cacheContext.drawImage(source, TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     cacheContext.filter = "none";
     cacheContext.globalCompositeOperation = "source-atop";
-    cacheContext.fillStyle = greenVeil;
+    cacheContext.fillStyle = roseVeil;
     cacheContext.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     cacheContext.restore();
     return cache;
@@ -2580,8 +2580,8 @@
 
   function ensureDateMapCaches() {
     if (dateMapDarkCanvas && dateMapClearCanvas) return true;
-    dateMapDarkCanvas = makeDateMapCache("blur(5px) brightness(0.5) saturate(0.56)", "rgba(5, 56, 42, 0.52)");
-    dateMapClearCanvas = makeDateMapCache("brightness(0.78) saturate(0.88) contrast(1.04)", "rgba(8, 67, 50, 0.24)");
+    dateMapDarkCanvas = makeDateMapCache("blur(5px) brightness(0.52) saturate(0.7)", "rgba(82, 20, 47, 0.46)");
+    dateMapClearCanvas = makeDateMapCache("brightness(0.82) saturate(0.96) contrast(1.04)", "rgba(111, 30, 59, 0.17)");
     return Boolean(dateMapDarkCanvas && dateMapClearCanvas);
   }
 
@@ -2911,40 +2911,89 @@
     return `rgba(${number >> 16 & 255},${number >> 8 & 255},${number & 255},${alpha})`;
   }
 
+  function pointAlongDateRoute(path, ratio) {
+    if (!path?.length) return null;
+    if (path.length === 1) return { ...path[0], dx: 0, dy: -1 };
+    const spans = [];
+    let total = 0;
+    for (let index = 1; index < path.length; index += 1) {
+      const from = path[index - 1];
+      const to = path[index];
+      const length = Math.hypot(to.x - from.x, to.y - from.y);
+      spans.push({ from, to, length });
+      total += length;
+    }
+    if (total <= 0.001) return { ...path[0], dx: 0, dy: -1 };
+    let remaining = clamp(ratio, 0, 1) * total;
+    for (const span of spans) {
+      if (remaining <= span.length || span === spans.at(-1)) {
+        const local = span.length > 0 ? clamp(remaining / span.length, 0, 1) : 0;
+        return {
+          x: span.from.x + (span.to.x - span.from.x) * local,
+          y: span.from.y + (span.to.y - span.from.y) * local,
+          dx: (span.to.x - span.from.x) / Math.max(span.length, 0.001),
+          dy: (span.to.y - span.from.y) / Math.max(span.length, 0.001)
+        };
+      }
+      remaining -= span.length;
+    }
+    return { ...path.at(-1), dx: 0, dy: -1 };
+  }
+
+  function drawDateRouteSparkle(x, y, size, alpha, color, prominent = false) {
+    context.save();
+    context.globalAlpha = alpha;
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = prominent ? 1.15 : 0.72;
+    if (prominent) {
+      context.shadowColor = color;
+      context.shadowBlur = size * 2.4;
+    }
+    context.beginPath();
+    context.moveTo(x - size, y);
+    context.quadraticCurveTo(x, y - size * 0.12, x + size, y);
+    context.moveTo(x, y - size);
+    context.quadraticCurveTo(x + size * 0.12, y, x, y + size);
+    context.stroke();
+    context.beginPath();
+    context.arc(x, y, prominent ? 1.5 : 0.8, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
   function drawDateRoute(route, timestamp, finalBoost = 0) {
     if (!route.path?.length) return;
     const moving = dateMapState.flow > 0 || finalBoost > 0;
     context.save();
     context.globalCompositeOperation = "screen";
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.globalAlpha = 0.045 + route.glow * 0.08 + finalBoost * 0.24;
-    context.strokeStyle = route.color;
-    context.shadowColor = route.color;
-    context.shadowBlur = 12 + route.railHits * 3 + finalBoost * 16;
-    context.lineWidth = route.archetype === "gentle" ? 5 : route.archetype === "power" ? 11 : route.railHits ? 8 : 6.5;
-    tracePoints(route.path);
-    context.stroke();
-    context.globalAlpha = 0.18 + route.glow * 0.14 + finalBoost * 0.34;
-    context.strokeStyle = "#fff1cf";
-    context.shadowBlur = 4;
-    context.lineWidth = route.archetype === "gentle" ? 0.75 : 1.25;
-    context.stroke();
+    const seed = Number(route.number || 1) * 1.73 + Number(route.pocketIndex || 0) * 2.31;
+    const starCount = Math.min(18, 10 + route.path.length * 2 + (route.railHits ? 2 : 0));
+    const baseSize = route.archetype === "power" ? 2.9 : route.archetype === "gentle" ? 1.65 : 2.2;
+    for (let index = 0; index < starCount; index += 1) {
+      const ratio = (index + 0.52) / starCount;
+      const point = pointAlongDateRoute(route.path, ratio);
+      if (!point) continue;
+      const phase = seed + index * 2.399;
+      const sway = Math.sin(phase) * (3.2 + index % 3 * 1.35);
+      const drift = Math.cos(phase * 0.71) * 2.1;
+      const x = point.x - point.dy * sway + point.dx * drift;
+      const y = point.y + point.dx * sway + point.dy * drift;
+      const twinkle = 0.58 + Math.sin(timestamp * 0.0032 + phase) * 0.28;
+      const alpha = (0.16 + route.glow * 0.12 + finalBoost * 0.24) * twinkle;
+      const color = index % 4 === 0 ? "#ffe4b4" : index % 3 === 0 ? "#ffd7e5" : route.color;
+      drawDateRouteSparkle(x, y, baseSize + (index % 5 === 0 ? 1.25 : 0), alpha, color, index % 5 === 0);
+    }
     if (moving) {
-      const segment = route.path.length > 1 ? route.path : [route.path[0], route.path[0]];
       const progress = (timestamp * (0.00022 + dateMapState.activeStreak * 0.000025)) % 1;
-      const scaled = progress * (segment.length - 1);
-      const index = Math.min(segment.length - 2, Math.floor(scaled));
-      const local = scaled - index;
-      const from = segment[index];
-      const to = segment[index + 1];
-      const x = from.x + (to.x - from.x) * local;
-      const y = from.y + (to.y - from.y) * local;
-      const glint = context.createRadialGradient(x, y, 0, x, y, 22);
+      const point = pointAlongDateRoute(route.path, progress);
+      const glint = context.createRadialGradient(point.x, point.y, 0, point.x, point.y, 22);
       glint.addColorStop(0, `rgba(255, 245, 216, ${0.42 + finalBoost * 0.34})`);
-      glint.addColorStop(1, "rgba(255, 236, 196, 0)");
+      glint.addColorStop(0.22, `rgba(255, 210, 226, ${0.18 + finalBoost * 0.18})`);
+      glint.addColorStop(1, "rgba(255, 218, 231, 0)");
       context.fillStyle = glint;
-      context.fillRect(x - 24, y - 24, 48, 48);
+      context.fillRect(point.x - 24, point.y - 24, 48, 48);
+      drawDateRouteSparkle(point.x, point.y, 6.2, 0.72 + finalBoost * 0.2, "#fff0c8", true);
     }
     context.restore();
   }
@@ -2958,12 +3007,13 @@
       const middle = { x: (from.x + to.x) / 2 + (index % 2 ? 28 : -28), y: (from.y + to.y) / 2 };
       context.save();
       context.globalCompositeOperation = "screen";
-      context.globalAlpha = dateMapState.flow ? 0.1 : 0.045;
+      context.globalAlpha = dateMapState.flow ? 0.12 : 0.055;
       context.strokeStyle = link.color;
       context.shadowColor = link.color;
-      context.shadowBlur = 18;
-      context.lineWidth = dateMapState.activeStreak >= 4 ? 8 : 5;
+      context.shadowBlur = 8;
+      context.lineWidth = dateMapState.activeStreak >= 4 ? 2.8 : 1.8;
       context.lineCap = "round";
+      context.setLineDash([1.5, dateMapState.activeStreak >= 4 ? 7 : 10]);
       context.beginPath();
       context.moveTo(from.x, from.y);
       context.quadraticCurveTo(middle.x, middle.y, to.x, to.y);
@@ -3348,7 +3398,7 @@
 
   function drawCuePowerGauge(direction, pullRatio) {
     if (!cueBall) return;
-    const colors = ["#4ed5ad", "#f0bc5b", "#ed6687"];
+    const colors = ["#d899ba", "#efc37f", "#ed6687"];
     const zoneBoundaries = [0, LIGHT_PULL_END, STRONG_PULL_START, 1];
     const center = cueBall.position;
     const radius = BALL_RADIUS + 22;

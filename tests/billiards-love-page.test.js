@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-cinematic-map-20260712b";
-const styleCacheVersion = "billiards-love-cinematic-map-20260712b";
+const runtimeCacheVersion = "billiards-love-rose-starlight-20260712c";
+const styleCacheVersion = "billiards-love-rose-starlight-20260712c";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -126,18 +126,16 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
   }
 });
 
-test("uses project-local lounge, date-map, confession, and proposal art", () => {
+test("uses project-local rose date-map, confession, and proposal art", () => {
   for (const asset of [
-    "assets/billiards-scenes/lounge-night.jpg",
-    "assets/billiards-scenes/date-map-night-v2.jpg",
+    "assets/billiards-scenes/date-map-rose-v3.jpg",
     "assets/billiards-scenes/confession-night.jpg",
     "assets/billiards-scenes/proposal-dawn.jpg"
   ]) {
     assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
   }
   for (const reference of [
-    'url("billiards-scenes/lounge-night.jpg")',
-    'url("billiards-scenes/date-map-night-v2.jpg")',
+    'url("billiards-scenes/date-map-rose-v3.jpg")',
     'url("billiards-scenes/confession-night.jpg")',
     'url("billiards-scenes/proposal-dawn.jpg")'
   ]) {
@@ -336,7 +334,7 @@ test("shows a conic-gradient proportional power arc around the cue ball", () => 
   assert.match(game, /const MAX_PULL = 300;/);
   assert.match(game, /function powerFromPullRatio\(value\)/);
   assert.match(game, /function drawCuePowerGauge\(direction, pullRatio\)/);
-  assert.match(game, /const colors = \["#4ed5ad", "#f0bc5b", "#ed6687"\]/);
+  assert.match(game, /const colors = \["#d899ba", "#efc37f", "#ed6687"\]/);
   assert.match(game, /const zoneBoundaries = \[0, LIGHT_PULL_END, STRONG_PULL_START, 1\]/);
   assert.match(game, /const radius = BALL_RADIUS \+ 22/);
   assert.match(game, /context\.createConicGradient\(arcStart, center\.x, center\.y\)/);
@@ -353,8 +351,8 @@ test("shows a conic-gradient proportional power arc around the cue ball", () => 
 
 test("separates the physical cushion bands from the cloth with a brighter beveled face", () => {
   assert.match(game, /const tones = material\.kind === "jaw"/);
-  assert.match(game, /\["#123a31", "#37866d", "#1b5848"\]/);
-  assert.match(game, /context\.strokeStyle = "rgba\(143, 224, 187, 0\.78\)"/);
+  assert.match(game, /\["#42172b", "#a8526e", "#622640"\]/);
+  assert.match(game, /context\.strokeStyle = "rgba\(244, 166, 194, 0\.8\)"/);
   assert.match(game, /material\.id === "top"/);
   assert.match(game, /material\.id\.startsWith\("left"\)/);
 });
