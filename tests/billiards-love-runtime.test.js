@@ -330,6 +330,35 @@ test("uses a resettable stepped water surface as the active cloth renderer", () 
   );
 });
 
+test("drives six tactile material shaders from the same physical height field", () => {
+  const surfaceSelection = implementationOf(source, "selectSurfaceMaterial");
+  const disturbance = implementationOf(source, "disturbWaterWorld");
+  const simulation = implementationOf(source, "stepWaterSimulation");
+  const renderer = implementationOf(source, "renderWaterSurface");
+
+  for (const id of ["water", "ink", "mercury", "silk", "plasma", "frost"]) {
+    assert.match(source, new RegExp(`id: "${id}"`));
+  }
+  for (const id of ["ink", "mercury", "silk", "plasma", "frost"]) {
+    assert.match(renderer, new RegExp(`surfaceMaterialId === "${id}"`));
+  }
+  assert.match(source, /const SURFACE_MATERIALS = Object\.freeze\(\[/);
+  assert.match(source, /const SURFACE_MATERIAL_BY_ID = Object\.freeze/);
+  assert.match(surfaceSelection, /writeStorage\(SURFACE_KEY, material\.id\)/);
+  assert.match(surfaceSelection, /spawnSurfaceMaterialWave\(material\)/);
+  assert.match(disturbance, /material\.disturbance/);
+  assert.match(disturbance, /material\.radius/);
+  assert.match(simulation, /material\.damping/);
+  assert.match(source, /pigment: new Float32Array/);
+  assert.match(source, /pigmentNext: new Float32Array/);
+  assert.match(renderer, /const inkBody = smoothStep/);
+  assert.match(renderer, /const dryBrush = clamp/);
+  assert.match(renderer, /const environmentBand =/);
+  assert.match(renderer, /const weavePhase =/);
+  assert.match(renderer, /const plasmaCell =/);
+  assert.match(renderer, /const crystal =/);
+});
+
 test("turns rolling balls into water wakes and rail impacts into bidirectional perimeter waves", () => {
   const rollingUpdate = implementationOf(source, "updateRollingState");
   const rollingWake = implementationOf(source, "depositRollingWaterWake");

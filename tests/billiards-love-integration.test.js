@@ -358,6 +358,23 @@ test("uses the active pocket identity for rolling trails and rail impacts", () =
   assert.ok(snapshot.presentation.dateMap.railBurstCount > 0, "an active lightning pocket should electrify the next cushion impact");
 });
 
+test("switches six persistent tactile materials without changing the physical rack", () => {
+  const debug = bootRuntime();
+  const before = debug.snapshot();
+  const numbers = [...before.ballNumbers];
+  const materials = ["water", "ink", "mercury", "silk", "plasma", "frost"];
+
+  for (const material of materials) {
+    assert.equal(debug.setSurfaceMaterial(material), true);
+    const snapshot = debug.snapshot();
+    assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, material);
+    assert.equal(snapshot.presentation.dateMap.surfaceMaterialCount, materials.length);
+    assert.deepEqual([...snapshot.ballNumbers], numbers);
+  }
+  assert.equal(debug.setSurfaceMaterial("flat-gradient"), false);
+  assert.equal(debug.snapshot().presentation.dateMap.surfaceMaterialId, "frost");
+});
+
 test("allocates most pull travel to fine control in the useful middle-power range", () => {
   const debug = bootRuntime();
   const snapshot = debug.snapshot();
