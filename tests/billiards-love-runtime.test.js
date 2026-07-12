@@ -257,45 +257,43 @@ test("evaluates every settled shot exactly through the pure relationship rules e
   }
 });
 
-test("connects shot-driven table stories, technical feedback, stage performances, and black-eight endings", () => {
+test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /content\.selectPerformance\(\{/);
   assert.match(source, /content\.analyzeShot\(\{/);
   assert.match(source, /content\.selectShotStory\(\{/);
-  assert.match(source, /content\.selectStageEvent\(\{/);
-  assert.match(source, /content\.selectStageTransition\(\{/);
   assert.match(source, /beginCompletedPocketStory\(number\)/);
-  assert.match(source, /showShotStory\(story, lastStoryOrigin\)/);
-  assert.match(source, /updateVisibleShotStory\(story\)/);
-  assert.match(source, /queueStageMicro\(/);
-  assert.match(source, /queueCinematic\(copy\)/);
-  assert.match(source, /!cinematicActive && !shotStoryActive && elements\.micro\.hidden && !microQueue\.length/);
-  assert.match(source, /if \(shotStoryActive \|\| !elements\.micro\.hidden \|\| microQueue\.length\) return/);
-  assert.doesNotMatch(source, /copies\[copies\.length - 1\]\.onClose/);
-  assert.match(source, /STAGE_SCENE_ASSETS/);
-  assert.match(source, /MEMORY_MILESTONES/);
-  assert.match(source, /stage\.number === 4 \? "confession" : stage\.number === 7 \? "proposal" : "stage"/);
-  assert.match(source, /autoCloseMs: clamp\(performance\.durationMs \+ 1800, 3400, 4300\)/);
-  assert.match(source, /function earlyEightCopy\(outcome\)/);
-  assert.doesNotMatch(source, /queueBallMicro/);
-  assert.doesNotMatch(source, /title: `\$\{event\.number\}号球/);
-  assert.match(source, /clamp\(item\.durationMs \+ 900, 2200, 2900\)/);
-  assert.match(source, /audio\.cue\(item\.sound \|\| "event"/);
+  assert.match(source, /showTableMoment\(story\)/);
+  assert.match(source, /updateVisibleTableMoment\(story\)/);
+  assert.match(source, /function rememberDateMoment\(/);
+  assert.match(source, /dateMapState\.routes\.push\(route\)/);
+  assert.match(source, /function drawDateMap\(timestamp\)/);
+  assert.match(source, /function drawSceneArchitecture\(/);
+  assert.match(source, /function drawDateConnections\(/);
+  assert.match(source, /function drawCueJourney\(/);
+  assert.match(source, /function drawFinalDateShape\(/);
+  assert.match(source, /function beginFinalDateMapReveal\(outcome\)/);
+  assert.match(source, /beginFinalDateMapReveal\(outcome\)/);
+  assert.doesNotMatch(source, /STAGE_SCENE_ASSETS|MEMORY_MILESTONES|showLiveMemory|setCompanionGesture/);
+  const outcomes = source.slice(source.indexOf("function processOutcomePerformances"), source.indexOf("function finalizeShot"));
+  assert.doesNotMatch(outcomes, /queueCinematic\(|queueStageMicro\(/);
+  assert.match(outcomes, /setDateFlow\(0, true\)/);
   assert.match(source, /content\.getEnding\(grade\)/);
-  assert.doesNotMatch(source, /specialCopy\("confessionTooEarly"/);
 });
 
-test("freezes the covered high-DPR table while full-screen scenes are active", () => {
-  assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
+test("freezes only full-screen cinematics and keeps the completed map alive behind results", () => {
+  assert.match(source, /if \(!cinematicActive\) draw\(timestamp\);/);
+  assert.doesNotMatch(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
 });
 
 test("starts immediately with no start gate or pause state", () => {
-  assert.equal(source.includes("paused"), false);
+  const canInteract = source.slice(source.indexOf("function canInteract"), source.indexOf("function selectTarget"));
   assert.equal(source.includes("togglePause"), false);
   for (const selector of ["#hb-opening", "#hb-start", "#hb-pause", "#hb-pause-sheet", "#hb-resume", "#hb-restart-pause"]) {
     assert.equal(source.includes(selector), false, `legacy gate selector remains: ${selector}`);
   }
   assert.doesNotMatch(source, /elements\.(start|pause|resume|restartPause)\.addEventListener/);
-  assert.match(source, /return !shotState && !pointerAim && !resolvingShot/);
+  assert.match(canInteract, /return !shotState && !pointerAim && !resolvingShot/);
+  assert.doesNotMatch(canInteract, /tableMomentActive|paused/);
   assert.match(source, /root\.dataset\.state = "break"/);
   assert.match(source, /started: true/);
 });
@@ -309,17 +307,21 @@ test("restores the sole animation loop and frame timing after browser lifecycle 
   assert.match(source, /document\.addEventListener\("visibilitychange", resetFrameTiming\)/);
 });
 
-test("loads real recorded billiards and event samples without oscillator synthesis", () => {
+test("loads recorded billiards samples and adds streak-controlled ambient music layers", () => {
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);
   assert.match(source, /const RECORDED_AUDIO_ASSETS = Object\.freeze\(\{/);
   assert.match(source, /window\.fetch\(url, \{ cache: "force-cache" \}\)/);
   assert.match(source, /this\.context\.decodeAudioData\(bytes\.slice\(0\)\)/);
   assert.match(source, /this\.context\.createBufferSource\(\)/);
-  assert.match(source, /mode: "recorded-samples"/);
+  assert.match(source, /mode: "recorded-samples-with-ambient-bed"/);
   assert.match(source, /rail\(speed\)/);
   assert.match(source, /audio\.rail\(impactSpeed\)/);
   assert.match(source, /audio\.collision\(relative\)/);
-  assert.doesNotMatch(source, /createOscillator|function tone\(|function noise\(/);
+  assert.match(source, /startMusicBed\(\)/);
+  assert.match(source, /this\.context\.createOscillator\(\)/);
+  assert.match(source, /setDateFlow\(streak, paused = false\)/);
+  assert.match(source, /this\.dateFlow >= 5/);
+  assert.doesNotMatch(source, /function noise\(|ScriptProcessorNode/);
   for (const file of [
     "cue-strike.ogg", "ball-contact-soft.ogg", "ball-contact-hard.ogg",
     "rail-contact.ogg", "pocket-drop.ogg", "event-soft.ogg", "stage-rise.ogg"

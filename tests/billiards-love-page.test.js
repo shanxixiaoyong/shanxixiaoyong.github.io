@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-story-table-20260712a";
-const styleCacheVersion = "billiards-love-story-table-20260712a";
+const runtimeCacheVersion = "billiards-love-date-map-20260712a";
+const styleCacheVersion = "billiards-love-date-map-20260712a";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -38,9 +38,9 @@ function rule(selector) {
 
 test("publishes the portrait standard-fifteen-ball identity", () => {
   for (const token of [
-    "<title>心动桌球 - 刘勇 / Yong Liu</title>",
+    "<title>心动桌球 · 一场约会地图 - 刘勇 / Yong Liu</title>",
     '<body class="heartbeat-billiards-page">',
-    '<main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球"',
+    '<main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球：一场约会地图"',
     '<canvas id="hb-canvas" width="720" height="1440"',
     'id="hb-relationship-track"',
     'id="hb-interest"',
@@ -49,7 +49,7 @@ test("publishes the portrait standard-fifteen-ball identity", () => {
     assert.match(html, new RegExp(escapeRegExp(token)));
   }
   assert.doesNotMatch(html, /横过来|旋转设备|手机横屏/);
-  assert.doesNotMatch(html, /今晚的片段|回忆日志|心动值|剩余回合/);
+  assert.doesNotMatch(html, /今晚的片段|回忆日志|心动值|剩余回合|桌边物件/);
 });
 
 test("opens directly into play without visible opening or pause UI", () => {
@@ -61,10 +61,10 @@ test("opens directly into play without visible opening or pause UI", () => {
     assert.match(topbar, new RegExp(escapeRegExp(token)));
   }
   assert.match(topbar, /class="hb-sr-only" id="hb-stage-targets"/);
-  assert.match(topbar, />心绪</);
-  assert.match(topbar, /id="hb-interest">安稳</);
+  assert.match(topbar, />夜色</);
+  assert.match(topbar, /id="hb-interest">未醒</);
   assert.doesNotMatch(topbar, /兴趣值\s*\d|id="hb-interest">\d/);
-  assert.match(html, />最终心绪</);
+  assert.match(html, />最终(?:心绪|夜色)</);
   assert.doesNotMatch(topbar, /hb-pause/);
 
   for (const id of ["hb-opening", "hb-start", "hb-pause", "hb-pause-sheet", "hb-resume", "hb-restart-pause"]) {
@@ -167,7 +167,9 @@ test("uses project-local recorded billiards and event audio", () => {
     assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
     assert.match(game, new RegExp(escapeRegExp(asset)));
   }
-  assert.doesNotMatch(game, /createOscillator|createPeriodicWave|ScriptProcessorNode/);
+  assert.match(game, /startMusicBed\(\)/);
+  assert.match(game, /setDateFlow\(streak, paused = false\)/);
+  assert.doesNotMatch(game, /createPeriodicWave|ScriptProcessorNode/);
 });
 
 test("fits the complete table in both 432 by 960 and short 432 by 820 portrait viewports", () => {
@@ -181,7 +183,7 @@ test("fits the complete table in both 432 by 960 and short 432 by 820 portrait v
   assert.match(app, /max-width:\s*1440px;/);
   assert.match(app, /max-height:\s*3200px;/);
   assert.match(app, /--hb-header-space:\s*calc\(max\(6px, var\(--safe-top\)\) \+ 44px\);/);
-  assert.match(app, /--hb-footer-space:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 38px\);/);
+  assert.match(app, /--hb-footer-space:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 52px\);/);
   assert.match(app, /--hb-table-width:\s*min\(\s*96%,\s*calc\(\(100dvh - var\(--hb-header-space\) - var\(--hb-footer-space\) - 16px\) \/ 2\)\s*\);/s);
   assert.match(playfield, /top:\s*var\(--hb-header-space\);/);
   assert.match(playfield, /right:\s*0;/);
@@ -204,7 +206,7 @@ test("fits the complete table in both 432 by 960 and short 432 by 820 portrait v
 
   for (const targetHeight of [960, 820]) {
     const headerSpace = 6 + 44;
-    const footerSpace = 5 + 38;
+    const footerSpace = 5 + 52;
     const playfieldHeight = targetHeight - headerSpace - footerSpace;
     const horizontalPlayfieldPadding = 24;
     const tableSurfaceWidth = Math.min(
@@ -264,14 +266,16 @@ test("keeps all six portrait-table pockets in the native world", () => {
   }
 });
 
-test("keeps bottom information minimal and outside the table", () => {
+test("keeps the six-scene date map and compact shot status outside the table", () => {
   const track = rule(".hb-relationship-track");
   const trackNodes = rule(".hb-relationship-track ol");
   const bottom = rule(".hb-bottom-bar");
   const footer = fragment(html, '<footer class="hb-bottom-bar">', "</footer>");
 
   assert.match(track, /bottom:\s*calc\(max\(5px, var\(--safe-bottom\)\) \+ 29px\);/);
-  assert.match(trackNodes, /display:\s*none;/);
+  assert.match(trackNodes, /grid-template-columns:\s*repeat\(6, minmax\(0, 1fr\)\);/);
+  assert.match(html, /<ol id="hb-track-nodes" aria-label="六站约会场景"><\/ol>/);
+  assert.match(game, /DATE_SCENES\.forEach\(\(scene, index\) => \{/);
   assert.match(bottom, /height:\s*22px;/);
   assert.match(bottom, /bottom:\s*max\(4px, var\(--safe-bottom\)\);/);
   assert.match(footer, />杆数</);
@@ -279,53 +283,31 @@ test("keeps bottom information minimal and outside the table", () => {
   assert.doesNotMatch(footer, /本局|连续进球|第一碰球/);
 });
 
-test("keeps miss and scratch feedback transient and non-interactive", () => {
-  const microHtml = fragment(html, '<div class="hb-micro"', "</div>");
-  const micro = rule(".hb-micro");
-  const microVisible = rule(".hb-micro:not([hidden])");
-  const microTitle = rule(".hb-micro strong");
-  const microLine = rule(".hb-micro p");
-  const queueMicro = fragment(game, "function queueMicro", "function showNextMicro");
+test("keeps table moments lightweight and lets misses pause rather than end the map", () => {
+  const momentHtml = fragment(html, '<div class="hb-table-moment"', "</div>");
+  const canInteract = fragment(game, "function canInteract", "function selectTarget");
+  const outcomes = fragment(game, "function processOutcomePerformances", "function finalizeShot");
 
-  assert.match(microHtml, /aria-live="polite" aria-atomic="true" hidden/);
-  assert.match(microHtml, /id="hb-micro-kicker">这一杆</);
-  assert.match(microHtml, /id="hb-micro-title">话题暂时停在这里</);
-  assert.match(microHtml, /id="hb-micro-line">球没有落袋，对面的目光仍然留在桌边。</);
-  assert.match(micro, /z-index:\s*12;/);
-  assert.match(micro, /top:\s*50%;/);
-  assert.match(micro, /left:\s*50%;/);
-  assert.match(micro, /pointer-events:\s*none;/);
-  assert.match(microVisible, /hb-micro-arrive 2500ms/);
-  assert.match(microTitle, /font-size:\s*24px;/);
-  assert.match(css, /\.hb-micro p\s*\{[^}]*font-size:\s*11px;[^}]*\}/s);
-  assert.match(css, /\.hb-micro::before\s*\{[^}]*radial-gradient[^}]*\}/s);
-  assert.match(css, /\.hb-micro::after\s*\{[^}]*radial-gradient[^}]*\}/s);
-  assert.match(css, /@keyframes hb-micro-halo/);
-  assert.match(css, /@keyframes hb-micro-particles/);
-  assert.match(game, /clamp\(item\.durationMs \+ 900, 2200, 2900\)/);
-  assert.match(queueMicro, /!shotStoryActive/);
+  for (const id of ["hb-table-moment-scene", "hb-table-moment-title", "hb-table-moment-line"]) {
+    assert.match(momentHtml, new RegExp(id));
+  }
+  assert.match(css, /\.hb-table-moment,\s*\.hb-micro\s*\{[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.hb-table-moment:not\(\[hidden\]\),\s*\.hb-micro:not\(\[hidden\]\)\s*\{[^}]*hb-table-moment-enter/s);
+  assert.doesNotMatch(canInteract, /tableMomentActive/);
+  assert.match(outcomes, /setDateFlow\(0, true\)/);
+  assert.match(outcomes, /dateMapState\.flow = 0/);
+  assert.doesNotMatch(outcomes, /queueStageMicro\(/);
 });
 
-test("integrates shot telemetry, table memories, pocket slow motion, and scene reveals", () => {
+test("integrates shot telemetry, persistent date-map routes, and pocket slow motion", () => {
   const tableStory = fragment(html, '<div class="hb-table-story"', "</div>\n        </div>");
-  const shotStory = fragment(html, '<section class="hb-shot-story"', "</section>");
-
-  for (const token of ["hb-table-reflection", "hb-companion", "hb-memory-rail", "hb-pocket-focus"]) {
+  for (const token of ["hb-table-reflection", "hb-pocket-focus"]) {
     assert.match(tableStory, new RegExp(token));
-  }
-  for (const token of ["hb-shot-story-image", "hb-shot-story-light", "hb-shot-story-orbit", "hb-shot-story-technique", "hb-shot-story-title"]) {
-    assert.match(shotStory, new RegExp(token));
   }
   assert.match(rule(".hb-table-story"), /z-index:\s*3;/);
   assert.match(rule(".hb-table-story"), /pointer-events:\s*none;/);
-  assert.match(rule(".hb-shot-story"), /z-index:\s*45;/);
-  assert.match(rule(".hb-shot-story"), /pointer-events:\s*none;/);
-  assert.match(rule(".hb-shot-story-image"), /clip-path:\s*circle\(0 at var\(--hb-story-origin-x\) var\(--hb-story-origin-y\)\);/);
   assert.match(css, /@keyframes hb-pocket-focus-ring/);
-  assert.match(css, /@keyframes hb-shot-story-aperture/);
-  assert.match(css, /@keyframes hb-companion-reach/);
-  assert.match(css, /\.hb-memory-token\[data-prop="phone"\]/);
-  assert.match(css, /\.hb-memory-token\[data-prop="ring"\]/);
+  assert.doesNotMatch(html + css, /hb-companion|hb-memory-rail|hb-memory-token|hb-shot-story/);
   assert.match(game, /const POCKET_STORY_SLOW_MOTION_MS = 460;/);
   assert.match(game, /const POCKET_STORY_TIME_SCALE = 0\.24;/);
   assert.match(game, /shotState\.pottedDetails\.push\(detail\)/);
@@ -333,8 +315,12 @@ test("integrates shot telemetry, table memories, pocket slow motion, and scene r
   assert.match(game, /const storyTimeScale = timestamp < storySlowMotionUntil \? POCKET_STORY_TIME_SCALE : 1/);
   assert.match(game, /content\.analyzeShot\(/);
   assert.match(game, /content\.selectShotStory\(/);
-  assert.match(game, /drawRelationshipTableStory\(timestamp\)/);
-  assert.doesNotMatch(shotStory, /号球/);
+  assert.match(game, /function rememberDateMoment\(/);
+  assert.match(game, /dateMapState\.routes\.push\(route\)/);
+  assert.match(game, /function drawDateMap\(timestamp\)/);
+  assert.match(game, /drawDateMap\(timestamp\)/);
+  assert.match(game, /function drawCueJourney\(/);
+  assert.match(game, /function drawFinalDateShape\(/);
 });
 
 test("shows a conic-gradient proportional power arc around the cue ball", () => {
@@ -366,7 +352,7 @@ test("separates the physical cushion bands from the cloth with a brighter bevele
   assert.match(game, /material\.id\.startsWith\("left"\)/);
 });
 
-test("keeps the full-screen performance lightweight, centered, and dismissible", () => {
+test("keeps a dormant result cinematic shell without using it for ordinary pots", () => {
   const cinematicHtml = fragment(html, '<section class="hb-cinematic"', "</section>");
   const layerNames = [
     "hb-cinematic-image", "hb-cinematic-light",
@@ -400,8 +386,6 @@ test("keeps the full-screen performance lightweight, centered, and dismissible",
   assert.match(rule(".hb-cinematic-vignette"), /display:\s*none;/);
   assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*hb-cinematic-pocket-veil 760ms[^}]*\}/s);
   assert.match(css, /\.hb-cinematic:not\(\[hidden\]\) \.hb-cinematic-image\s*\{[^}]*hb-cinematic-pocket-image 860ms[^}]*\}/s);
-  assert.match(game, /autoCloseMs: clamp\(performance\.durationMs \+ 1800, 3400, 4300\)/);
-  assert.match(game, /autoCloseMs: 4200/);
   assert.match(css, /@keyframes hb-cinematic-pocket-image/);
   assert.match(css, /@keyframes hb-cinematic-pocket-veil/);
   assert.match(css, /@keyframes hb-cinematic-simple-copy/);
@@ -414,6 +398,9 @@ test("keeps the full-screen performance lightweight, centered, and dismissible",
   assert.match(game, /--hb-cinematic-origin-y/);
   assert.match(game, /elements\.cinematicSkip\.addEventListener\("click", closeCinematic\);/);
   assert.match(game, /elements\.cinematicAction\.addEventListener\("click", closeCinematic\);/);
+  const outcomes = fragment(game, "function processOutcomePerformances", "function finalizeShot");
+  assert.doesNotMatch(outcomes, /queueCinematic\(/);
+  assert.match(outcomes, /beginFinalDateMapReveal\(outcome\)/);
 });
 
 test("presents direct shooting guidance without mandatory selection copy", () => {

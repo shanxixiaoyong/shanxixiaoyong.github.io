@@ -43,676 +43,490 @@
   });
 
   const SHOT_ARCHETYPE_META = deepFreeze({
-    direct: { label: "直线命中 · 坦率靠近", gesture: "notice", visualMode: "straight" },
-    gentle: { label: "轻推入袋 · 温柔留白", gesture: "offer", visualMode: "soft" },
-    power: { label: "有力命中 · 勇敢开口", gesture: "surprise", visualMode: "pulse" },
+    direct: { label: "直线命中 · 坐标点亮", gesture: "notice", visualMode: "straight" },
+    gentle: { label: "轻推入袋 · 路线留白", gesture: "offer", visualMode: "soft" },
+    power: { label: "有力命中 · 光路脉冲", gesture: "surprise", visualMode: "pulse" },
     bank: { label: "借库入袋 · 绕路抵达", gesture: "reach", visualMode: "rail" },
-    long: { label: "远台命中 · 跨过距离", gesture: "answer", visualMode: "distance" },
-    combo: { label: "组合入袋 · 回应相接", gesture: "answer", visualMode: "linked" },
-    rattle: { label: "袋口停顿 · 犹豫后靠近", gesture: "hesitate", visualMode: "hesitate" },
-    multi: { label: "一杆多球 · 默契同时发生", gesture: "delight", visualMode: "double" },
-    near: { label: "擦袋停留 · 差一点说出口", gesture: "hesitate", visualMode: "near" },
-    miss: { label: "这一杆落空 · 话题仍在", gesture: "waiting", visualMode: "quiet" },
-    scratch: { label: "白球落袋 · 分寸失衡", gesture: "withdraw", visualMode: "fracture" }
+    long: { label: "远台命中 · 跨桌抵达", gesture: "answer", visualMode: "distance" },
+    combo: { label: "组合入袋 · 路线相接", gesture: "answer", visualMode: "linked" },
+    rattle: { label: "袋口停顿 · 地标闪烁", gesture: "hesitate", visualMode: "hesitate" },
+    multi: { label: "一杆多球 · 双点同亮", gesture: "delight", visualMode: "double" },
+    near: { label: "擦袋停留 · 路标未熄", gesture: "hesitate", visualMode: "near" },
+    miss: { label: "这一杆落空 · 地图仍亮", gesture: "waiting", visualMode: "quiet" },
+    scratch: { label: "白球落袋 · 路线回退", gesture: "withdraw", visualMode: "fracture" }
   });
 
-  const SHOT_STAGE_LINES = deepFreeze({
-    direct: [
-      "你没有再等第二次对视。",
-      "想说的话终于不只停在输入框里。",
-      "邀约被清楚地说出口，也被认真接住。",
-      "这一句喜欢没有再借别的话题绕行。",
-      "确定关系以后，坦率成了日常的底色。",
-      "分歧被放到桌面上，而不是藏进沉默里。",
-      "关于以后，你们给出了同一个方向。"
-    ],
-    gentle: [
-      "分寸让第一次靠近显得自然。",
-      "一句晚安没有催促，却等来了同样温柔的回复。",
-      "你为她留出时间，也留出可以说不的余地。",
-      "回答很轻，却足够让两个人都听清。",
-      "爱进入日常后，照顾常常没有声音。",
-      "你们把语速放慢，终于听见情绪背后的意思。",
-      "承诺没有喧哗，只稳稳落进今后的生活。"
-    ],
-    power: [
-      "短暂迟疑之后，勇气先迈出了那一步。",
-      "热烈的分享没有吓退她，反而换来更明亮的回应。",
-      "临时起意的邀约，让这个周末突然有了期待。",
-      "心跳抢在准备好的台词之前抵达。",
-      "一场说走就走的远行，把快乐推向更近的距离。",
-      "情绪很满，但这一次你选择把真实说清。",
-      "面对很长的以后，你的答案依旧坚定。"
-    ],
-    bank: [
-      "话题绕过天气，最后还是落到了彼此身上。",
-      "从一首歌聊到很晚，原本的绕路反而延长了同行。",
-      "计划临时改变，却意外遇见更合适的约会。",
-      "那些没有直说的在意，终于沿着回应抵达。",
-      "生活走过几个转弯，你们仍会回到同一盏灯下。",
-      "各自坚持的路线绕了一圈，汇成可以同行的新路。",
-      "未来并不笔直，但每一次转弯都有人等你。"
-    ],
-    long: [
-      "隔着整张球桌，她仍然看懂了你的目光。",
-      "忙碌拉开时间，分享却没有因此中断。",
-      "从城市两端赴约，让这次见面显得格外认真。",
-      "跨过长久试探以后，心意终于不再模糊。",
-      "短暂分别让重逢更清楚地说明了想念。",
-      "你们允许彼此走远，也相信对方会回来。",
-      "很远的以后第一次变得可以共同想象。"
-    ],
-    combo: [
-      "一次开口接上一次回望，陌生感被连续推开。",
-      "你的分享刚刚落下，她已经递来了下一句话。",
-      "一个人提出见面，另一个人顺手订好了位置。",
-      "主动与回应在同一秒相遇，答案因此完整。",
-      "两个人的计划互相影响，日常开始真正交叠。",
-      "解释接住道歉，争执终于不再单向延伸。",
-      "各自的选择彼此推动，最后成为共同决定。"
-    ],
-    rattle: [
-      "那句开场白停顿了一下，她却没有移开目光。",
-      "输入状态亮了又暗，最后还是等来一段认真回复。",
-      "邀约险些被收回，她先一步问了时间。",
-      "答案在呼吸之间停了一秒，然后轻轻落下。",
-      "习惯带来迟疑，靠近最终还是胜过了退后。",
-      "谁都差点转身，最后却愿意把话重新说完。",
-      "面对承诺的重量，你们停顿过，也仍然选择彼此。"
-    ],
-    multi: [
-      "两次偶然同时发生，今晚突然有了下一次。",
-      "话题与笑意接连落下，时间在不知不觉中变晚。",
-      "一场约会尚未结束，下一次已经自然被提起。",
-      "不止一句喜欢，在同一刻得到了回应。",
-      "旅行、拥抱和普通日常一起成为共同记忆。",
-      "理解与和好同时抵达，冷下来的灯重新变暖。",
-      "城市、生活与长久承诺终于落在同一张地图上。"
-    ]
-  });
-
-  const SHOT_STORY_PROPS = deepFreeze([
-    "phone", "phone", "phone", "cup", "cup",
-    "cup", "ticket", "ticket", "photo", "photo",
-    "tag", "note", "cup", "keys", "ring"
+  const POCKET_DATE_SCENES = deepFreeze([
+    {
+      id: "corner-store",
+      pocketId: "top-left",
+      name: "街角便利店",
+      tableZone: "左上角袋",
+      light: "冷白冰柜光",
+      detail: "桌沿亮起便利店灯牌和一小格雨棚"
+    },
+    {
+      id: "coffee-window",
+      pocketId: "top-right",
+      name: "咖啡店",
+      tableZone: "右上角袋",
+      light: "琥珀咖啡灯",
+      detail: "桌沿浮出双杯剪影和暖色窗格"
+    },
+    {
+      id: "late-cinema",
+      pocketId: "middle-left",
+      name: "电影院",
+      tableZone: "左侧中袋",
+      light: "暗红银幕光",
+      detail: "中袋边缘点亮并排座位和票根标记"
+    },
+    {
+      id: "river-walk",
+      pocketId: "middle-right",
+      name: "河边步道",
+      tableZone: "右侧中袋",
+      light: "水蓝栏杆光",
+      detail: "中袋边缘铺开一小段波纹和栏杆投影"
+    },
+    {
+      id: "last-train",
+      pocketId: "bottom-left",
+      name: "地铁站",
+      tableZone: "左下角袋",
+      light: "青绿站牌光",
+      detail: "桌沿亮起末班车时刻和入口箭头"
+    },
+    {
+      id: "walk-home",
+      pocketId: "bottom-right",
+      name: "回家街道",
+      tableZone: "右下角袋",
+      light: "暖黄路灯光",
+      detail: "桌沿延伸出并肩影子和归途路标"
+    }
   ]);
+
+  const POCKET_DATE_SCENE_BY_ID = Object.freeze(Object.fromEntries(
+    POCKET_DATE_SCENES.map((scene) => [scene.pocketId, scene])
+  ));
+  const POCKET_DATE_IDS = Object.freeze(POCKET_DATE_SCENES.map((scene) => scene.pocketId));
 
   const STAGES = deepFreeze([
     {
       id: "first-contact",
       order: 1,
-      name: "初次接触",
+      name: "雨夜开场",
       ballNumbers: [1, 2, 3],
-      environment: "雨夜球房刚过九点，临街窗起雾，陌生客人隔着一张球桌来往。",
+      environment: "同一张墨绿球桌化作今夜约会地图，六个袋口固定标记街角便利店、咖啡店、电影院、河边步道、地铁站与回家街道。",
       poses: {
-        player: "扶杆站在球桌短边，目光克制地抬起。",
-        partner: "在对面整理袖口，察觉视线后轻轻回望。"
+        player: "扶杆站在球桌短边，从雨滴标记看向第一处亮起的袋口。",
+        partner: "留在球桌对面，用杆尖轻点咖啡与电影票的路线。"
       },
-      lighting: "冷青窗光压低四周，暖白桌灯只照亮表情和球面。",
-      musicLayers: ["稀疏钢琴", "玻璃雨声", "球房低声交谈"],
-      enterLine: "目光先于语言抵达。",
-      completeLine: "名字和联系方式，都留了下来。"
+      lighting: "雨夜窗光保持不变，桌灯只让台呢路线和袋口微缩路标依次亮起。",
+      musicLayers: ["玻璃雨声", "稀疏钢琴", "清脆碰球声"],
+      enterLine: "这一晚不切换场景，路线从球桌上的雨滴开始。",
+      completeLine: "咖啡与电影票已经在同一张桌面地图上连成第一段路。"
     },
     {
       id: "growing-familiar",
       order: 2,
-      name: "熟悉升温",
+      name: "光影留念",
       ballNumbers: [4, 5],
-      environment: "打烊前的球房安静下来，吧台留着唱片、杂志和两只温热的杯子。",
+      environment: "仍是同一张球桌，相机取景框与路灯光斑沿台呢展开，六处袋口地标保持原位。",
       poses: {
-        player: "倚在桌沿听她说话，偶尔低头回复消息。",
-        partner: "坐在高脚椅上，谈到喜欢的事时眼神明亮。"
+        player: "沿球桌长边俯身找角度，击球后仍看着桌面光线。",
+        partner: "站在对侧库边，以手势替你框出相机与路灯的构图。"
       },
-      lighting: "琥珀吧台灯与墨绿台呢相接，人物面部保持柔和半明。",
-      musicLayers: ["电钢琴和弦", "轻刷鼓", "消息提示音点缀"],
-      enterLine: "话题有了下一句，问候也有了下一天。",
-      completeLine: "你们开始频繁出现在彼此的日常里。"
+      lighting: "暖白桌灯叠加一层取景框光线，人物和球桌都留在雨夜球房内。",
+      musicLayers: ["轻刷鼓", "相机快门点音", "桌边雨声"],
+      enterLine: "地图没有翻页，只在原来的台呢上多出两格光影。",
+      completeLine: "相机留住路灯，下一段路线继续沿同一张球桌延伸。"
     },
     {
       id: "intentional-dates",
       order: 3,
-      name: "线下靠近",
+      name: "并肩听歌",
       ballNumbers: [6, 7],
-      environment: "球房之外，安静餐厅与周末展馆依次亮起，两次见面都被认真安排。",
+      environment: "耳机波形与猫爪印出现在同一张球桌中央，所有约会地点仍由六个袋口表示。",
       poses: {
-        player: "与她隔桌而坐，随后在展厅并肩慢行。",
-        partner: "放下手机专心交谈，离场时自然等你同行。"
+        player: "握杆停在桌侧，等她选定耳机波形通向哪一袋。",
+        partner: "靠着球桌长边轻敲节拍，指向绕过猫爪印的线路。"
       },
-      lighting: "餐桌吊灯温暖收束，约会场景以清透自然光过渡。",
-      musicLayers: ["木吉他泛音", "柔和贝斯", "餐厅与街道环境声"],
-      enterLine: "见面不再偶然，而是被郑重地留出时间。",
-      completeLine: "第二次赴约时，你们都明白这不是顺路。"
+      lighting: "桌灯保持克制暖白，耳机波形用淡金、猫爪印用柔灰点亮。",
+      musicLayers: ["共享耳机节拍", "低声贝斯", "球体滚动声"],
+      enterLine: "音乐和偶遇都只成为桌面路线的一部分。",
+      completeLine: "你们在同一张桌边听完一段歌，也选好了下一处袋口。"
     },
     {
       id: "spoken-heart",
       order: 4,
-      name: "告白",
+      name: "心意落点",
       ballNumbers: [8],
-      environment: "楼顶风很轻，城市的声音被夜色推到很远。",
+      environment: "黑8停在球桌中心，心形光纹连接六个袋口，却不离开这张约会地图。",
       poses: {
-        player: "正面对着她，球杆收在身后。",
-        partner: "手扶栏杆，没有移开视线。"
+        player: "收住球杆站在桌边，正面看向她等待这一杆。",
+        partner: "双手搭在对侧库边，把决定落在哪个袋口留给你。"
       },
-      lighting: "月白轮廓光勾住肩线，脸侧由远处窗灯轻轻补亮。",
-      musicLayers: ["单音钢琴", "微弱弦乐长音", "屋顶风声"],
-      enterLine: "这一句，终于不再绕行。",
-      completeLine: "答案落下时，风恰好停了一秒。"
+      lighting: "四周维持雨夜暗度，桌灯集中照亮黑8与心形光纹。",
+      musicLayers: ["单音钢琴", "低弦长音", "安静呼吸声"],
+      enterLine: "整晚的路线在黑8周围停顿，心意只在桌面上亮明。",
+      completeLine: "黑8落袋，六处地标同时亮了一瞬，回答仍发生在桌边。"
     },
     {
       id: "confirmed-love",
       order: 5,
-      name: "确定关系",
+      name: "晚霞回声",
       ballNumbers: [9, 10, 11],
-      environment: "关系有了名字，街角、站台和远方旅店开始留下两个人的共同片段。",
+      environment: "晚霞、礼物与短信化作三层桌面投影，覆盖台呢但不替换雨夜球房。",
       poses: {
-        player: "走在她身侧，伸手时留有从容的停顿。",
-        partner: "回应你的靠近，在陌生城市里自然与你并肩。"
+        player: "从球桌一侧推杆，让三枚物象依次穿过亮起的路线。",
+        partner: "沿对侧桌边移动，把礼物光标和短信光点接到下一袋。"
       },
-      lighting: "柔暖街灯、清晨车窗光与旅行日照交替，色温明亮但不过分甜腻。",
-      musicLayers: ["原声钢琴", "克制弦乐", "列车与城市环境声"],
-      enterLine: "确认喜欢以后，身体与脚步都靠近了一点。",
-      completeLine: "你们牵手、拥抱，也一起看过陌生的清晨。"
+      lighting: "桌灯叠入低饱和晚霞色，礼物与短信只以桌面图标出现。",
+      musicLayers: ["柔和电钢琴", "纸张轻响", "消息提示点音"],
+      enterLine: "晚霞只是台呢上的颜色，礼物和短信也都留在桌边。",
+      completeLine: "三枚物象在同一晚得到回应，地图开始转向末班路线。"
     },
     {
       id: "learning-together",
       order: 6,
-      name: "磨合",
+      name: "末班星光",
       ballNumbers: [12, 13],
-      environment: "回到日常以后，未完成的计划和冷下来的茶留在同一张桌上。",
+      environment: "公交卡轨迹与星点投影沿同一张球桌交叉，地铁站袋口保持青绿微光。",
       poses: {
-        player: "坐在桌边把语速放慢，手掌离开争执中的纸页。",
-        partner: "从窗边回到对面坐下，愿意把真正的不安说完。"
+        player: "贴着桌边校准公交卡轨迹，给星星球留出通道。",
+        partner: "在对侧观察碰库角度，用杆尾标出末班车方向。"
       },
-      lighting: "分歧时使用克制冷光，沟通深入后由桌边暖灯缓慢补回面部。",
-      musicLayers: ["低音提琴拨奏", "钢琴低音区", "钟表与室内底噪"],
-      enterLine: "亲密让分歧无处隐藏。",
-      completeLine: "话被认真听完以后，你们重新坐回同一边。"
+      lighting: "青绿站牌光与银白星点都收束在台呢范围内，窗外仍是同一场雨。",
+      musicLayers: ["低音提琴拨奏", "站台提示音", "球桌环境声"],
+      enterLine: "路线需要重新校准，但两个人都没有离开球桌。",
+      completeLine: "公交卡与星星在桌面汇合，最后两球通向共伞归途。"
     },
     {
       id: "shared-future",
       order: 7,
-      name: "共同未来",
+      name: "共伞归途",
       ballNumbers: [14, 15],
-      environment: "闭店后的旧球房只留一桌灯光，地图与戒盒安静放在桌边。",
+      environment: "雨伞轮廓覆盖球桌中央，归途光线从最后两球延伸到回家街道袋口。",
       poses: {
-        player: "先与她并肩谈完计划，再放下球杆站到她面前。",
-        partner: "认真确认每个选择，最后带着笑意等你说完。"
+        player: "沿球桌短边完成最后瞄准，把归途路线留在两人之间。",
+        partner: "站在同一盏桌灯下，握住伞形光纹另一侧的杆尖。"
       },
-      lighting: "暖白顶灯集中在两人之间，窗外清晨泛起淡金。",
-      musicLayers: ["完整钢琴主题", "大提琴和声", "清晨风声"],
-      enterLine: "先把未来谈清楚，再问那个很长的问题。",
-      completeLine: "灯光没有变，你们决定继续并肩。"
+      lighting: "暖白桌灯与雨蓝窗光保持整晚一致，右下角袋的路灯标记最亮。",
+      musicLayers: ["完整钢琴主题", "克制弦乐", "渐缓雨声"],
+      enterLine: "地图最后一段仍在这张球桌上，雨伞与归途等待落点。",
+      completeLine: "最后一球抵达回家街道，整晚约会地图在桌灯下完整亮起。"
     }
   ]);
 
-  const BALLS = deepFreeze([
+  const BALL_DATE_MOTIFS = deepFreeze([
     {
+      ballNumber: 1,
       number: 1,
-      id: "eye-contact",
-      name: "对视",
+      id: "raindrop",
+      name: "雨滴",
       stage: 1,
-      stageId: "first-contact",
-      meaning: "第一次对视，让彼此从人群中变得清晰。",
-      variants: [
-        {
-          id: "ball-01-table-glance",
-          durationMs: 820,
-          camera: "对切·球桌两端",
-          visual: "她抬眼看向这一杆，你也正好望过去。",
-          line: "隔着一桌灯光，目光停在了同一秒。"
-        },
-        {
-          id: "ball-01-window-reflection",
-          durationMs: 1040,
-          camera: "侧景·玻璃倒影",
-          visual: "车灯掠过窗面，两道视线在倒影里相遇。",
-          line: "谁都没有立刻移开，也没有刻意停得太久。"
-        },
-        {
-          id: "ball-01-chalk-glance",
-          durationMs: 760,
-          camera: "近景·递出的巧粉",
-          visual: "她拾起巧粉递来，抬头时与你短暂对视。",
-          line: "一句谢谢之前，你们先记住了彼此的眼睛。"
-        }
+      meaning: "雨滴把同一晚的城市声响收进球桌，成为约会地图的起点。",
+      colorCue: "银蓝",
+      tableMark: "细雨纹从球面下方散开",
+      lines: [
+        "雨纹沿台呢铺开，今晚的第一段路线有了起点。",
+        "窗上的雨声落进击球间隙，她把下一杆的位置留给你。",
+        "袋口路标映着水光，你们隔桌选定最近的一站。"
       ]
     },
     {
+      ballNumber: 2,
       number: 2,
-      id: "starting-conversation",
-      name: "主动搭话",
+      id: "coffee",
+      name: "咖啡",
       stage: 1,
-      stageId: "first-contact",
-      meaning: "主动开口，把一次对视变成真正的认识。",
-      variants: [
-        {
-          id: "ball-02-offered-chalk",
-          durationMs: 780,
-          camera: "近景·掌心巧粉",
-          visual: "你把巧粉递过去，顺势问她常来这里吗。",
-          line: "开场很普通，好在语气足够真诚。"
-        },
-        {
-          id: "ball-02-open-table",
-          durationMs: 940,
-          camera: "中景·空着的球桌一侧",
-          visual: "你指了指空位，问她愿不愿意同打一局。",
-          line: "她看了看球桌，说，可以。"
-        },
-        {
-          id: "ball-02-rain-question",
-          durationMs: 1060,
-          camera: "侧跟·窗边雨线",
-          visual: "她望向窗外，你走近问她是否带了伞。",
-          line: "话题从天气开始，没有停在天气。"
-        }
+      meaning: "咖啡是雨夜路线里的暖色停顿，让桌边交谈自然延长。",
+      colorCue: "焦糖棕",
+      tableMark: "杯口热气化作一圈暖光",
+      lines: [
+        "暖色光圈停在台呢上，像一句还没说完的话。",
+        "她用杆尾点了点双杯标记，把选择留给你的下一杆。",
+        "咖啡路标亮起时，两个人都没有急着结束这一局。"
       ]
     },
     {
+      ballNumber: 3,
       number: 3,
-      id: "exchange-contacts",
-      name: "交换联系方式",
+      id: "movie-ticket",
+      name: "电影票",
       stage: 1,
-      stageId: "first-contact",
-      meaning: "在告别之前，为下一次联系留下明确入口。",
-      variants: [
-        {
-          id: "ball-03-contact-card",
-          durationMs: 760,
-          camera: "特写·交换的手机",
-          visual: "你们各自在联系人页面输入名字。",
-          line: "名字有了备注，见面也有了下一次。"
-        },
-        {
-          id: "ball-03-qr-scan",
-          durationMs: 820,
-          camera: "俯拍·相邻的二维码",
-          visual: "扫描完成，她的头像出现在新联系人一栏。",
-          line: "申请很快通过，谁都没有故意等一会儿。"
-        },
-        {
-          id: "ball-03-first-message",
-          durationMs: 980,
-          camera: "过肩·第一条消息",
-          visual: "你把刚才的比分发给她，屏幕很快亮起回复。",
-          line: "联系方式不是句点，是一条刚打开的路。"
-        }
+      meaning: "电影票把共同选择压成一枚桌面坐标，标记今晚的下一站。",
+      colorCue: "暗红",
+      tableMark: "两张票根图标在球后并排滑行",
+      lines: [
+        "票根光标并排停住，银幕袋口在桌沿亮了一格。",
+        "你问她选哪一场，她用球杆指向地图上的同一处。",
+        "散场时间只写在桌面标记里，这一局仍在继续。"
       ]
     },
     {
+      ballNumber: 4,
       number: 4,
-      id: "shared-interest",
-      name: "共同话题",
+      id: "camera",
+      name: "相机",
       stage: 2,
-      stageId: "growing-familiar",
-      meaning: "共同兴趣让谈话自然延长，也显露彼此的分寸。",
-      variants: [
-        {
-          id: "ball-04-shared-record",
-          durationMs: 920,
-          camera: "俯拍·唱片封套",
-          visual: "你们同时认出角落那张旧唱片，话题一下展开。",
-          line: "原来喜欢的旋律，也有重合的部分。"
-        },
-        {
-          id: "ball-04-book-margin",
-          durationMs: 1040,
-          camera: "近景·翻开的书页",
-          visual: "她提起最近读的书，你恰好记得同一段。",
-          line: "观点并不完全相同，谈起来却很舒服。"
-        },
-        {
-          id: "ball-04-milk-tea",
-          durationMs: 1120,
-          camera: "双人中景·递来的奶茶",
-          visual: "她顺手带来你上次提过的口味，吸管旁贴着一句少冰。",
-          line: "随口说过的小偏好被认真记住，聊天也自然多了一程。"
-        }
+      meaning: "相机把这张球桌上的片刻留住，不把叙事切去别处。",
+      colorCue: "雾银",
+      tableMark: "取景框跟随球面缓慢收焦",
+      lines: [
+        "取景框沿桌面收紧，刚好装下两支交错的球杆。",
+        "快门点音落在碰球之后，她笑着示意这一杆可以保留。",
+        "相机光标没有离开台呢，只记下袋口亮起的一秒。"
       ]
     },
     {
+      ballNumber: 5,
       number: 5,
-      id: "frequent-chatting",
-      name: "频繁聊天",
+      id: "streetlamp",
+      name: "路灯",
       stage: 2,
-      stageId: "growing-familiar",
-      meaning: "联系变得频繁，彼此开始分享未经修饰的日常。",
-      variants: [
-        {
-          id: "ball-05-morning-message",
-          durationMs: 720,
-          camera: "特写·清晨锁屏",
-          visual: "她发来一张上班路上的天空，你顺手回了早餐。",
-          line: "问候不再客套，普通一天有了交换。"
-        },
-        {
-          id: "ball-05-typing-dots",
-          durationMs: 900,
-          camera: "定格·反复出现的输入圆点",
-          visual: "三颗圆点消失又出现，最后落成一段真心话。",
-          line: "聊天越过寒暄，也开始容纳不那么体面的情绪。"
-        },
-        {
-          id: "ball-05-midnight-call",
-          durationMs: 1180,
-          camera: "分屏·两端夜灯",
-          visual: "通话时间越过零点，两边都没有急着挂断。",
-          line: "晚安说了两次，电话才真正结束。"
-        }
+      meaning: "路灯为桌面路线提供暖黄节点，让每次绕库都有清楚方向。",
+      colorCue: "暖黄",
+      tableMark: "一排小灯点沿库边依次亮起",
+      lines: [
+        "库边灯点逐盏亮起，把绕行路线照得清楚。",
+        "她站在对侧灯影里，等你决定这一杆从哪里转弯。",
+        "路灯光圈留在球桌边缘，两道影子仍隔桌相接。"
       ]
     },
     {
+      ballNumber: 6,
       number: 6,
-      id: "dinner-for-two",
-      name: "单独吃饭",
+      id: "earphones",
+      name: "耳机",
       stage: 3,
-      stageId: "intentional-dates",
-      meaning: "第一次单独吃饭，把线上熟悉带进真实相处。",
-      variants: [
-        {
-          id: "ball-06-shared-menu",
-          durationMs: 880,
-          camera: "俯拍·摊开的菜单",
-          visual: "两根手指同时停在同一道菜旁，又一起收回。",
-          line: "第一次单独吃饭，沉默也不显得空。"
-        },
-        {
-          id: "ball-06-water-refill",
-          durationMs: 760,
-          camera: "近景·杯沿与手",
-          visual: "你替她添水，她把最后一块甜点推过来。",
-          line: "偏好还没问完，已经被各自记下。"
-        },
-        {
-          id: "ball-06-closing-time",
-          durationMs: 1160,
-          camera: "广角·空下来的餐厅",
-          visual: "服务生收走邻桌，你们面前的茶又续了一壶。",
-          line: "这一顿饭结束很久，话还没有说完。"
-        }
+      meaning: "耳机把共享节拍变成可见波形，引导球沿同一张地图前进。",
+      colorCue: "墨绿",
+      tableMark: "细小声波从球后向两侧展开",
+      lines: [
+        "声波贴着台呢起伏，球速与耳机节拍正好重合。",
+        "她隔桌轻敲两拍，你在第三拍把路线送向袋口。",
+        "耳机图标留在桌面中央，一段副歌陪这一杆走完。"
       ]
     },
     {
+      ballNumber: 7,
       number: 7,
-      id: "official-date",
-      name: "正式约会",
+      id: "cat",
+      name: "猫",
       stage: 3,
-      stageId: "intentional-dates",
-      meaning: "双方明确以约会为目的，认真安排一段只属于彼此的时间。",
-      variants: [
-        {
-          id: "ball-07-calendar-invite",
-          durationMs: 820,
-          camera: "特写·日历邀请",
-          visual: "周六晚上的时间被确认，地点也认真选好。",
-          line: "这次不是顺路，是一场说清楚的约会。"
-        },
-        {
-          id: "ball-07-gallery-walk",
-          durationMs: 1080,
-          camera: "侧跟·展厅长廊",
-          visual: "你们在同一幅画前停下，肩膀保持着舒服的距离。",
-          line: "被安排好的见面，反而从容得像一次散步。"
-        },
-        {
-          id: "ball-07-ticket-stubs",
-          durationMs: 1180,
-          camera: "俯拍·并排的票根",
-          visual: "散场后票根还在桌上，你们已经谈到下一次。",
-          line: "约会没有刻意浪漫，只让彼此更确定了一点。"
-        }
+      meaning: "猫是约会地图里的偶然停顿，为严整线路留下一点松弛。",
+      colorCue: "柔灰",
+      tableMark: "三枚猫爪印绕开目标线",
+      lines: [
+        "猫爪印横在路线旁，你们同时把球杆收慢一点。",
+        "她用杆尖绕过那枚爪印，给你示范一条更轻的线。",
+        "猫形光标伏在库边不动，只看这一球从面前经过。"
       ]
     },
     {
+      ballNumber: 8,
       number: 8,
-      id: "confession",
-      name: "告白",
+      id: "heart-eight",
+      name: "心意（黑8）",
       stage: 4,
-      stageId: "spoken-heart",
-      meaning: "把心意说清，也给对方从容回答的空间。",
-      variants: [
-        {
-          id: "ball-08-cue-rest",
-          durationMs: 960,
-          camera: "特写·落下的球杆",
-          visual: "球杆轻靠桌沿，你终于转身正对着她。",
-          line: "绕了很久的话，开口时只剩一句喜欢。"
-        },
-        {
-          id: "ball-08-rooftop-wind",
-          durationMs: 1240,
-          camera: "双人中景·天台风",
-          visual: "风掀起她的发梢，你把后半句话完整说完。",
-          line: "这一次，你没有把认真藏进玩笑。"
-        },
-        {
-          id: "ball-08-held-gaze",
-          durationMs: 1380,
-          camera: "缓推·停住的目光",
-          visual: "城市灯点逐渐虚化，只留下她安静的眼睛。",
-          line: "答案之前，你先把沉默留给她。"
-        }
+      meaning: "黑8承载这晚最明确的心意，是整张桌面地图的中央落点。",
+      colorCue: "黑金",
+      tableMark: "心形轮廓从黑8下方缓慢亮起",
+      lines: [
+        "心形光纹停在黑8周围，桌边的沉默变得清楚。",
+        "她没有催你出杆，只把视线留在同一个落点。",
+        "黑8靠近袋口时，六处地图灯标同时降低了亮度。"
       ]
     },
     {
+      ballNumber: 9,
       number: 9,
-      id: "holding-hands",
-      name: "牵手",
+      id: "sunset",
+      name: "晚霞",
       stage: 5,
-      stageId: "confirmed-love",
-      meaning: "确认关系后第一次牵手，让亲密得到自然回应。",
-      variants: [
-        {
-          id: "ball-09-sleeve-touch",
-          durationMs: 720,
-          camera: "特写·袖口轻触",
-          visual: "指尖先碰到衣袖，她没有避开。",
-          line: "牵手以前，你们都停了一瞬。"
-        },
-        {
-          id: "ball-09-crosswalk-hold",
-          durationMs: 940,
-          camera: "中景·转角车流",
-          visual: "过街时她握住你的手腕，随后慢慢滑到掌心。",
-          line: "车流过去，手还留在原处。"
-        },
-        {
-          id: "ball-09-palm-warmth",
-          durationMs: 1080,
-          camera: "俯拍·掌心与路灯",
-          visual: "两只手在暖光里扣紧，步伐恢复平常。",
-          line: "没有谁宣布什么，只是都没有松开。"
-        }
+      meaning: "晚霞是投在台呢上的暖色回声，为雨夜约会添上一层想象。",
+      colorCue: "珊瑚橙",
+      tableMark: "低饱和霞光沿球路铺开",
+      lines: [
+        "霞光只铺在台呢上，却让这一杆显得更慢。",
+        "她隔桌看着暖色球路，说这一格颜色应该留到最后。",
+        "晚霞投影掠过袋口，雨夜球房仍保持原来的安静。"
       ]
     },
     {
+      ballNumber: 10,
       number: 10,
-      id: "embrace",
-      name: "拥抱",
+      id: "gift",
+      name: "礼物",
       stage: 5,
-      stageId: "confirmed-love",
-      meaning: "在重逢、安慰与告别时，用拥抱确认彼此的依靠。",
-      variants: [
-        {
-          id: "ball-10-doorway-reunion",
-          durationMs: 920,
-          camera: "中景·门口重逢",
-          visual: "她推门进来，你们相视一笑后自然抱住彼此。",
-          line: "几天没见，拥抱先替问候落了地。"
-        },
-        {
-          id: "ball-10-quiet-comfort",
-          durationMs: 1180,
-          camera: "近景·肩侧暖灯",
-          visual: "她问可以抱你吗，得到点头才轻轻靠近。",
-          line: "难过没有被劝走，只被安静接住。"
-        },
-        {
-          id: "ball-10-platform-goodbye",
-          durationMs: 1060,
-          camera: "侧景·站台将发的车",
-          visual: "提示音响起，她在上车前回身抱了你一下。",
-          line: "拥抱很短，足够把想念留到再见。"
-        }
+      meaning: "礼物不是独立道具，而是桌面地图里被认真选择的一枚光标。",
+      colorCue: "莓红",
+      tableMark: "小小缎带光纹系在球影上",
+      lines: [
+        "缎带光纹随球滚动，心意没有遮住真正的线路。",
+        "她把巧粉推到桌面中央，像交换一份刚好的小礼物。",
+        "礼物图标在袋口展开又收起，只留下一点暖光。"
       ]
     },
     {
+      ballNumber: 11,
       number: 11,
-      id: "traveling-together",
-      name: "共同旅行",
+      id: "message",
+      name: "短信",
       stage: 5,
-      stageId: "confirmed-love",
-      meaning: "第一次共同旅行，在陌生环境中看见更完整的彼此。",
-      variants: [
-        {
-          id: "ball-11-train-window",
-          durationMs: 980,
-          camera: "双人侧景·列车窗边",
-          visual: "城市退到窗后，她靠着你睡过一站。",
-          line: "旅程刚开始，疲惫已经可以放心交给彼此。"
-        },
-        {
-          id: "ball-11-folded-map",
-          durationMs: 1120,
-          camera: "俯拍·被风吹动的地图",
-          visual: "你们在岔路前重新折地图，最后选了都没走过的方向。",
-          line: "偶尔走错也没关系，同行的人还在身边。"
-        },
-        {
-          id: "ball-11-hotel-morning",
-          durationMs: 1260,
-          camera: "广角·旅店清晨",
-          visual: "行李散在椅边，两杯咖啡对着陌生城市醒来。",
-          line: "共同旅行没有滤镜，也因此更像真实生活。"
-        }
+      meaning: "短信把没说完的句子压成桌面光点，让回应紧跟球路抵达。",
+      colorCue: "屏幕蓝",
+      tableMark: "三枚输入光点追在球后闪动",
+      lines: [
+        "输入光点跟着球路亮灭，最后在袋口组成一句收到。",
+        "她隔桌点亮回应标记，让你的下一杆不必等待。",
+        "短信图标始终贴着台呢移动，没有把画面带离球桌。"
       ]
     },
     {
+      ballNumber: 12,
       number: 12,
-      id: "facing-differences",
-      name: "面对分歧",
+      id: "bus-card",
+      name: "公交卡",
       stage: 6,
-      stageId: "learning-together",
-      meaning: "关系中的真实分歧浮现，双方不再用默契代替表达。",
-      variants: [
-        {
-          id: "ball-12-diverging-balls",
-          durationMs: 860,
-          camera: "俯拍·反向滚动",
-          visual: "两颗球擦肩后滚向桌面两端，速度渐慢。",
-          line: "意见落在两边，谁都没有假装无所谓。"
-        },
-        {
-          id: "ball-12-cold-tea",
-          durationMs: 1120,
-          camera: "静物·凉下来的茶",
-          visual: "桌上两杯茶不再冒气，门却始终没有关。",
-          line: "沉默很重，但你们都还在场。"
-        },
-        {
-          id: "ball-12-conflicting-plans",
-          durationMs: 1240,
-          camera: "对切·两份日程",
-          visual: "两张计划表摊在桌上，重要日期没有重合。",
-          line: "分歧不是不爱，只是彼此都有不能略过的生活。"
-        }
+      meaning: "公交卡把末班路线变成清楚轨迹，提醒两个人一起校准时间。",
+      colorCue: "站牌青",
+      tableMark: "刷卡弧线沿库边划过",
+      lines: [
+        "刷卡弧线贴着库边前进，末班方向在袋口亮起。",
+        "你们隔桌核对同一条路线，再把击球角度调小一点。",
+        "公交卡光标停在台呢上，时间提示没有催散这一局。"
       ]
     },
     {
+      ballNumber: 13,
       number: 13,
-      id: "talking-and-reconciling",
-      name: "沟通和好",
+      id: "star",
+      name: "星星",
       stage: 6,
-      stageId: "learning-together",
-      meaning: "把分歧与感受说清，在理解边界后重新靠近。",
-      variants: [
-        {
-          id: "ball-13-returned-seat",
-          durationMs: 1260,
-          camera: "固定中景·重新坐下",
-          visual: "她拉开椅子坐回对面，你先把语速放慢。",
-          line: "后来谈的不是输赢，是彼此哪里受了伤。"
-        },
-        {
-          id: "ball-13-honest-apology",
-          durationMs: 1180,
-          camera: "双人近景·视线重新相接",
-          visual: "你们各自道歉，也各自保留需要坚持的部分。",
-          line: "和好不是略过分歧，而是终于听懂了对方。"
-        },
-        {
-          id: "ball-13-reheated-dinner",
-          durationMs: 1360,
-          camera: "侧景·重新亮起的餐桌灯",
-          visual: "凉掉的晚餐重新加热，两把椅子挪近了一点。",
-          line: "话说完以后，你们仍愿意一起吃完这顿饭。"
-        }
+      meaning: "星星是桌灯下的微小坐标，为末班路线保留从容与亮度。",
+      colorCue: "银白",
+      tableMark: "细碎星点沿目标线依次出现",
+      lines: [
+        "星点在台呢上排成短线，为长台球标出方向。",
+        "她用杆尖接住最后一颗星点，把路线轻轻转向。",
+        "星形光标落在袋口旁，两个人仍站在同一盏桌灯下。"
       ]
     },
     {
+      ballNumber: 14,
       number: 14,
-      id: "discussing-future",
-      name: "谈论未来",
+      id: "umbrella",
+      name: "雨伞",
       stage: 7,
-      stageId: "shared-future",
-      meaning: "把未来拆成可以共同讨论、协商与承担的选择。",
-      variants: [
-        {
-          id: "ball-14-city-map",
-          durationMs: 960,
-          camera: "俯拍·摊开的地图",
-          visual: "两种颜色的笔圈住同一片街区。",
-          line: "你们第一次认真讨论，要在哪座城生活。"
-        },
-        {
-          id: "ball-14-kitchen-budget",
-          durationMs: 1220,
-          camera: "中景·厨房桌面",
-          visual: "计算器停下，她把自己的计划推到你面前。",
-          line: "以后不只是一句话，也包括账单和取舍。"
-        },
-        {
-          id: "ball-14-blank-calendar",
-          durationMs: 1080,
-          camera: "推近·空白日历",
-          visual: "她在来年某天画了小圈，没有写原因。",
-          line: "很长的未来，先从留出一天开始。"
-        }
+      meaning: "雨伞把两人的路线罩进同一轮廓，是归途前的桌面约定。",
+      colorCue: "雨蓝",
+      tableMark: "半透明伞面轮廓覆盖球路",
+      lines: [
+        "伞形光纹在球桌中央撑开，为最后路线留出共同空间。",
+        "她握住对侧杆尖，与你一起校准伞沿指向的袋口。",
+        "雨声仍在窗外，雨伞标记只安静罩住这张桌面地图。"
       ]
     },
     {
+      ballNumber: 15,
       number: 15,
-      id: "proposal",
-      name: "求婚",
+      id: "homeward",
+      name: "归途",
       stage: 7,
-      stageId: "shared-future",
-      meaning: "在共同生活的基础上提出长久承诺。",
-      variants: [
-        {
-          id: "ball-15-quiet-ring",
-          durationMs: 1180,
-          camera: "特写·掌心戒指",
-          visual: "戒指安静躺在掌心，没有花束遮住彼此。",
-          line: "你问的不是今晚，是往后许多普通日子。"
-        },
-        {
-          id: "ball-15-old-table",
-          durationMs: 1420,
-          camera: "环绕·旧球桌灯下",
-          visual: "你放下球杆走近，她已经看懂你的认真。",
-          line: "故事回到起点，问题终于指向一生。"
-        },
-        {
-          id: "ball-15-open-hand",
-          durationMs: 1300,
-          camera: "双人近景·伸出的手",
-          visual: "你没有催促，只把手留在两人之间。",
-          line: "承诺说完以后，答案仍由她亲自给出。"
-        }
+      meaning: "归途汇拢整晚的十五枚物象，让约会地图在最后一袋闭合。",
+      colorCue: "路灯金",
+      tableMark: "两道并肩光线在球后汇成一条",
+      lines: [
+        "两道光线沿台呢合拢，最后一站已经清楚。",
+        "她留在球桌另一端等这一杆，也等地图完整亮起。",
+        "归途球靠近袋口时，前十四枚物象在桌沿依次回亮。"
       ]
     }
   ]);
 
+  const TABLE_VARIANT_CAMERAS = deepFreeze([
+    "俯拍·整张约会地图",
+    "侧跟·同一张球桌长边",
+    "近景·桌面袋口路标"
+  ]);
+
+  const TABLE_VARIANT_MOTIONS = deepFreeze([
+    "沿台呢地图线直行，入袋后让固定路标亮起一格",
+    "擦过库边回到桌面路线，微缩灯牌始终固定在桌沿",
+    "在袋口前短暂停顿，桌面投影随球速收成一个坐标"
+  ]);
+
+  const TABLE_STAGE_INTERACTIONS = deepFreeze([
+    "她在球桌对面抬起杆尖，示意你沿亮起的起点继续。",
+    "你们隔着桌面交换取景角度，光标仍留在台呢范围。",
+    "她沿对侧库边轻敲节拍，把下一处袋口交给你选择。",
+    "两个人都停在桌边，等黑8把中央心形光纹点亮。",
+    "她把礼物与短信光标接到球路末端，回应没有离开桌面。",
+    "你们从球桌两侧校准末班轨迹，让星点重新排成一线。",
+    "她握住伞形光纹另一侧的杆尖，与你一起看归途落袋。"
+  ]);
+
+  const TABLE_MOMENT_MOTIONS = deepFreeze({
+    direct: "沿桌面光线直行，干净抵达袋口",
+    gentle: "贴着台呢缓慢前行，在袋口轻轻收住速度",
+    power: "带动整条桌面路线脉冲发亮，利落落袋",
+    bank: "碰库转向后回到约会地图的发光路线",
+    long: "跨过整张球桌，把远端路标逐格点亮",
+    combo: "依次推动相邻球影，让两段桌面路线接在一起",
+    rattle: "在袋口两侧短暂碰响，随后落进固定地标",
+    multi: "让两枚物象同时点亮桌沿上的相邻坐标",
+    near: "贴着袋口掠过，停在微缩路标旁边",
+    miss: "越过预定线后停在台呢中央，路标仍保持微亮",
+    scratch: "让白球沉入袋口，桌面地图短暂回退一格"
+  });
+
+  const TABLE_MOMENT_DURATIONS = deepFreeze({
+    direct: 1320,
+    gentle: 1460,
+    power: 1280,
+    bank: 1560,
+    long: 1680,
+    combo: 1540,
+    rattle: 1760,
+    multi: 1720,
+    near: 1480,
+    miss: 1380,
+    scratch: 1600
+  });
+
+  const BALLS = deepFreeze(BALL_DATE_MOTIFS.map((motif) => {
+    const stage = STAGES[motif.stage - 1];
+    const variants = motif.lines.map((line, index) => {
+      const pocketId = POCKET_DATE_IDS[(motif.ballNumber - 1 + index * 2) % POCKET_DATE_IDS.length];
+      const scene = POCKET_DATE_SCENE_BY_ID[pocketId];
+      return {
+        id: "ball-" + String(motif.ballNumber).padStart(2, "0") + "-table-map-" + (index + 1),
+        durationMs: [1260, 1440, 1620][index],
+        camera: TABLE_VARIANT_CAMERAS[index],
+        visual: "同一张球桌上，" + motif.tableMark + "；" + motif.ballNumber + "号球滚向"
+          + scene.tableZone + "，只在桌沿点亮" + scene.name + "的微缩路标。",
+        line,
+        pocketId,
+        scene: scene.name,
+        motif: motif.name,
+        motion: TABLE_VARIANT_MOTIONS[index]
+      };
+    });
+
+    return {
+      number: motif.ballNumber,
+      id: motif.id,
+      name: motif.name,
+      stage: motif.stage,
+      stageId: stage.id,
+      meaning: motif.meaning,
+      variants
+    };
+  }));
   const STAGE_TRANSITIONS = deepFreeze([
     {
       stage: 1,
@@ -2138,30 +1952,30 @@
   const ENDINGS = deepFreeze({
     S: {
       grade: "S",
-      id: "ordinary-forever",
-      title: "共度寻常",
-      scene: "清晨照亮旧球房，两支球杆并排留在墙边。",
-      line: "她点头以后，你们先笑了。余生没有定格，只是从这晚继续。",
-      epilogue: "很多年后，那张球桌还在；你们谈的是明天买什么菜。",
+      id: "city-alight",
+      title: "灯火长明",
+      scene: "十五道真实球路同时回亮，六处夜景连成一颗不规则的心。",
+      line: "两个人影沿着你打出的路线，从第一场雨走到了同一盏归途灯下。",
+      epilogue: "街角、雨声与末班车都已安静，清晨替今晚收好最后一盏灯。",
       musicLayers: ["完整钢琴主题", "温暖弦乐和声", "清晨环境声"]
     },
     A: {
       grade: "A",
-      id: "still-approaching",
-      title: "仍在靠近",
-      scene: "戒盒收回口袋，两个人沿着天亮的街慢慢走远。",
-      line: "你们没有赶着给未来定论，只约好把下一段路认真走完。",
-      epilogue: "关系仍有未答的问题，也仍有愿意留下来回答的人。",
+      id: "homeward-together",
+      title: "并肩归途",
+      scene: "桌面路线在几次停顿后重新接起，最后汇入回家街道。",
+      line: "这晚并不完美，却因此有了绕路、等待和重新同行的温度。",
+      epilogue: "球桌记住的不是失误，而是每次停下以后，你们仍愿意继续。",
       musicLayers: ["钢琴主题变奏", "轻刷鼓", "渐近的街声"]
     },
     B: {
       grade: "B",
-      id: "kindly-apart",
-      title: "各自珍重",
-      scene: "球桌恢复安静，窗外两条街灯向不同方向延伸。",
-      line: "后来消息停在一个普通的周二，谁都没有把曾经说成遗憾。",
-      epilogue: "再想起那场雨，你仍记得有人曾认真向你走来。",
-      musicLayers: ["独奏钢琴尾句", "稀薄雨声", "远去的车流"]
+      id: "unhurried-night",
+      title: "慢慢走完",
+      scene: "断续亮起的路线最终也覆盖了整张桌布，两个人影在路口等了彼此几次。",
+      line: "有些球走得远，有些路绕得长，今晚仍然完整抵达了最后一站。",
+      epilogue: "技术决定这幅地图的笔触，不决定这段幻想是否值得发生。",
+      musicLayers: ["钢琴主题慢板", "柔和雨声", "渐近的街灯环境声"]
     }
   });
 
@@ -2489,6 +2303,62 @@
     });
   }
 
+  function composeTableMoment(options = {}) {
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new TypeError("table moment options must be an object");
+    }
+
+    assertBallNumber(options.ballNumber);
+    const ball = getBall(options.ballNumber);
+    const stage = options.stage === undefined ? getStage(ball.stage) : getStage(options.stage);
+    const archetype = options.archetype === undefined ? SHOT_ARCHETYPES.DIRECT : options.archetype;
+    const meta = SHOT_ARCHETYPE_META[archetype];
+    if (!meta) throw new RangeError(`Unknown shot archetype: ${archetype}`);
+
+    const selection = selectionSource({ seed: options.seed === undefined ? 0 : options.seed });
+    const motif = BALL_DATE_MOTIFS[ball.number - 1];
+    const variantIndex = seededIndex(
+      `table-moment:${ball.id}:${stage.id}:${archetype}`,
+      motif.lines.length,
+      selection,
+      ball.number * 7 + stage.order * 17
+    );
+    const pocketId = options.pocketId === undefined
+      ? POCKET_DATE_IDS[(ball.number - 1 + variantIndex * 2) % POCKET_DATE_IDS.length]
+      : options.pocketId;
+    if (typeof pocketId !== "string") throw new TypeError("pocketId must be a string");
+    if (!Object.hasOwn(POCKET_DATE_SCENE_BY_ID, pocketId)) {
+      throw new RangeError(`Unknown pocketId: ${pocketId}`);
+    }
+
+    const scene = POCKET_DATE_SCENE_BY_ID[pocketId];
+    const interaction = TABLE_STAGE_INTERACTIONS[stage.order - 1];
+    const motion = `${ball.name}球${TABLE_MOMENT_MOTIONS[archetype]}；${scene.detail}。`;
+
+    return deepFreeze({
+      id: `table-moment-${ball.id}-${scene.id}-${archetype}-${variantIndex + 1}`,
+      ballNumber: ball.number,
+      ballId: ball.id,
+      stage: stage.order,
+      stageId: stage.id,
+      stageName: stage.name,
+      pocketId,
+      sceneId: scene.id,
+      scene: scene.name,
+      motifId: motif.id,
+      motif: motif.name,
+      archetype,
+      title: `${scene.name} · ${motif.name}`,
+      line: `${motif.lines[variantIndex]} ${interaction}`,
+      motion,
+      interaction,
+      camera: TABLE_VARIANT_CAMERAS[variantIndex],
+      visualMode: meta.visualMode,
+      variantIndex,
+      durationMs: TABLE_MOMENT_DURATIONS[archetype]
+    });
+  }
+
   function selectShotStory(options = {}) {
     if (!options || typeof options !== "object" || Array.isArray(options)) {
       throw new TypeError("shot story options must be an object");
@@ -2506,28 +2376,25 @@
     const performance = options.performance && typeof options.performance === "object"
       ? options.performance
       : null;
-    const stageLines = SHOT_STAGE_LINES[archetype] || SHOT_STAGE_LINES.direct;
-    const emotionLine = stageLines[stage.order - 1];
-    const title = performance?.visual || emotionLine;
-    const line = performance?.line
-      ? `${emotionLine} ${performance.line}`
-      : emotionLine;
+    const pocketId = options.pocketId === undefined ? performance?.pocketId : options.pocketId;
+    const seed = options.seed === undefined
+      ? performance?.id || `${stage.id}:${storyNumber}:${archetype}`
+      : options.seed;
+    const moment = composeTableMoment({
+      ballNumber: storyNumber,
+      pocketId,
+      archetype,
+      stage: stage.id,
+      seed
+    });
 
     return deepFreeze({
+      ...moment,
       id: `shot-story-${stage.id}-${archetype}-${storyNumber}-${performance?.id || "default"}`,
-      stage: stage.order,
-      stageId: stage.id,
-      stageName: stage.name,
-      archetype,
       technique: meta.label,
       gesture: meta.gesture,
-      visualMode: meta.visualMode,
       storyNumber,
-      prop: SHOT_STORY_PROPS[storyNumber - 1],
-      title,
-      line,
-      emotionLine,
-      durationMs: archetype === SHOT_ARCHETYPES.MULTI || archetype === SHOT_ARCHETYPES.RATTLE ? 2940 : 2700
+      emotionLine: moment.interaction
     });
   }
 
@@ -2537,6 +2404,8 @@
     STAGE_EVENT_TYPES,
     SHOT_ARCHETYPES,
     SHOT_ARCHETYPE_META,
+    POCKET_DATE_SCENES,
+    BALL_DATE_MOTIFS,
     BALLS,
     STAGES,
     STAGE_TRANSITIONS,
@@ -2553,6 +2422,7 @@
     selectStageTransition,
     selectStageEvent,
     analyzeShot,
+    composeTableMoment,
     selectShotStory
   });
 });

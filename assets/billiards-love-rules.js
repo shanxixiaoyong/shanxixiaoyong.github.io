@@ -487,15 +487,14 @@
       if (state.endState.ended || state.endState.ending !== null || state.endState.grade !== null) {
         throw new RangeError("a playing end state is inconsistent");
       }
-      if (state.interest <= activeInterestFloor(pottedSet) || pottedSet.size === RULES.ballCount) {
+      if (pottedSet.size === RULES.ballCount) {
         throw new RangeError("a finished run cannot remain in playing status");
       }
     } else if (state.endState.status === "completed") {
       const earlySuccess = state.endState.ending === EARLY_SUCCESS_ENDING;
       if (!state.endState.ended
           || (!earlySuccess && pottedSet.size !== RULES.ballCount)
-          || (earlySuccess && (!pottedSet.has(8) || pottedSet.size >= RULES.ballCount))
-          || state.interest <= activeInterestFloor(pottedSet)) {
+          || (earlySuccess && (!pottedSet.has(8) || pottedSet.size >= RULES.ballCount))) {
         throw new RangeError("a completed end state is inconsistent");
       }
       const expectedGrade = ratingData(state, true).grade;
@@ -838,8 +837,6 @@
       } else {
         baseState.endState = { ended: true, status: "failed", ending: "reckless-rejection", grade: null };
       }
-    } else if (nextInterest <= activeInterestFloor(pottedAfter)) {
-      baseState.endState = { ended: true, status: "failed", ending: "losing-contact", grade: null };
     } else if (sortedPottedNumbers.length === RULES.ballCount) {
       const grade = ratingData(baseState, true).grade;
       baseState.endState = { ended: true, status: "completed", ending: SUCCESS_ENDINGS[grade], grade };

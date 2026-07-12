@@ -12,6 +12,8 @@ const API_KEYS = [
   "STAGE_EVENT_TYPES",
   "SHOT_ARCHETYPES",
   "SHOT_ARCHETYPE_META",
+  "POCKET_DATE_SCENES",
+  "BALL_DATE_MOTIFS",
   "BALLS",
   "STAGES",
   "STAGE_TRANSITIONS",
@@ -28,26 +30,38 @@ const API_KEYS = [
   "selectStageTransition",
   "selectStageEvent",
   "analyzeShot",
+  "composeTableMoment",
   "selectShotStory"
 ];
 
 const EXPECTED_BALL_NAMES = [
-  "对视",
-  "主动搭话",
-  "交换联系方式",
-  "共同话题",
-  "频繁聊天",
-  "单独吃饭",
-  "正式约会",
-  "告白",
-  "牵手",
-  "拥抱",
-  "共同旅行",
-  "面对分歧",
-  "沟通和好",
-  "谈论未来",
-  "求婚"
+  "雨滴",
+  "咖啡",
+  "电影票",
+  "相机",
+  "路灯",
+  "耳机",
+  "猫",
+  "心意（黑8）",
+  "晚霞",
+  "礼物",
+  "短信",
+  "公交卡",
+  "星星",
+  "雨伞",
+  "归途"
 ];
+
+const EXPECTED_POCKET_SCENES = {
+  "top-left": "街角便利店",
+  "top-right": "咖啡店",
+  "middle-left": "电影院",
+  "middle-right": "河边步道",
+  "bottom-left": "地铁站",
+  "bottom-right": "回家街道"
+};
+
+const OFF_TABLE_SCENES = /图书馆|家中|旅行|旅店|酒店|展馆|天台|厨房|列车|CG|场外/;
 
 const EXPECTED_STAGE_BALLS = [
   [1, 2, 3],
@@ -95,22 +109,31 @@ function assertStagePerformance(variant, label) {
   );
 }
 
-test("exports an immutable 15-ball narrative catalog with three distinct micro performances each", () => {
+test("exports an immutable 15-ball date-map catalog with three table-bound performances each", () => {
   assert.deepEqual(Object.keys(Content), API_KEYS);
   assert.equal(Content.BALLS.length, 15);
+  assert.equal(Content.BALL_DATE_MOTIFS.length, 15);
   assert.deepEqual(
     Content.BALLS.map((ball) => ball.number),
     Array.from({ length: 15 }, (_, index) => index + 1)
   );
   assert.deepEqual(Content.BALLS.map((ball) => ball.name), EXPECTED_BALL_NAMES);
+  assert.deepEqual(Content.BALL_DATE_MOTIFS.map((motif) => motif.name), EXPECTED_BALL_NAMES);
+  assert.deepEqual(Content.BALL_DATE_MOTIFS.map((motif) => motif.ballNumber), Content.BALLS.map((ball) => ball.number));
+  assert.deepEqual(Content.BALL_DATE_MOTIFS.map((motif) => motif.number), Content.BALLS.map((ball) => ball.number));
   assert.equal(new Set(Content.BALLS.map((ball) => ball.id)).size, 15);
   assert.equal(new Set(Content.BALLS.map((ball) => ball.name)).size, 15);
 
   const variantIds = [];
-  for (const ball of Content.BALLS) {
+  for (const [ballIndex, ball] of Content.BALLS.entries()) {
+    const motif = Content.BALL_DATE_MOTIFS[ballIndex];
     assertText(ball.id, `ball ${ball.number}.id`);
     assertText(ball.name, `ball ${ball.number}.name`);
     assertText(ball.meaning, `ball ${ball.number}.meaning`);
+    assert.equal(ball.id, motif.id);
+    assert.equal(ball.name, motif.name);
+    assert.equal(ball.meaning, motif.meaning);
+    assert.doesNotMatch(JSON.stringify({ ball, motif }), OFF_TABLE_SCENES);
     assert.ok(ball.stage >= 1 && ball.stage <= 7, `ball ${ball.number}.stage`);
     assert.equal(Content.getStage(ball.stage).id, ball.stageId);
     assert.ok(ball.variants.length >= 3, `ball ${ball.number} needs at least three variants`);
@@ -127,6 +150,13 @@ test("exports an immutable 15-ball narrative catalog with three distinct micro p
 
     ball.variants.forEach((variant, index) => {
       assertMicroPerformance(variant, `ball ${ball.number}.variants[${index}]`);
+      for (const field of ["pocketId", "scene", "motif", "motion"]) {
+        assertText(variant[field], `ball ${ball.number}.variants[${index}].${field}`);
+      }
+      assert.equal(variant.scene, EXPECTED_POCKET_SCENES[variant.pocketId]);
+      assert.equal(variant.motif, ball.name);
+      assert.match(variant.visual, /同一张球桌/);
+      assert.doesNotMatch(`${variant.visual}${variant.line}${variant.motion}`, OFF_TABLE_SCENES);
       variantIds.push(variant.id);
       assert.ok(Object.isFrozen(variant));
     });
@@ -135,6 +165,17 @@ test("exports an immutable 15-ball narrative catalog with three distinct micro p
   }
 
   assert.equal(new Set(variantIds).size, variantIds.length);
+  assert.deepEqual(
+    Object.fromEntries(Content.POCKET_DATE_SCENES.map((scene) => [scene.pocketId, scene.name])),
+    EXPECTED_POCKET_SCENES
+  );
+  assert.equal(Content.POCKET_DATE_SCENES.length, 6);
+  assert.equal(new Set(Content.POCKET_DATE_SCENES.map((scene) => scene.pocketId)).size, 6);
+  for (const scene of Content.POCKET_DATE_SCENES) {
+    for (const field of ["id", "name", "tableZone", "light", "detail"]) {
+      assertText(scene[field], `${scene.pocketId}.${field}`);
+    }
+  }
   assert.ok(Object.isFrozen(Content));
   assert.ok(Object.isFrozen(Content.BALLS));
   assertDeepFrozen(Content, "Content");
@@ -157,6 +198,8 @@ test("covers all 15 balls exactly once across seven fully described stages", () 
     assertText(stage.poses.partner, `stage ${stage.order}.poses.partner`);
     assert.ok(stage.musicLayers.length >= 2, `stage ${stage.order} needs layered music`);
     stage.musicLayers.forEach((layer, index) => assertText(layer, `stage ${stage.order}.musicLayers[${index}]`));
+    assert.match(`${stage.environment}${stage.poses.player}${stage.poses.partner}`, /球桌|桌面|台呢|桌边/);
+    assert.doesNotMatch(JSON.stringify(stage), OFF_TABLE_SCENES);
     assert.strictEqual(Content.getStage(stage.order), stage);
     assert.strictEqual(Content.getStage(stage.id), stage);
     for (const ballNumber of stage.ballNumbers) {
@@ -170,7 +213,7 @@ test("covers all 15 balls exactly once across seven fully described stages", () 
   }
 });
 
-test("classifies physical shot telemetry into distinct relationship gestures", () => {
+test("preserves physical shot telemetry classification for table-map motion", () => {
   const cases = [
     ["gentle", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 2, travel: 120, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.24 }],
     ["power", { pottedNumbers: [1], pottedDetails: [{ entrySpeed: 8, travel: 180, railHits: 0, jawHits: 0, mouthEntries: 1 }], launchPower: 0.9 }],
@@ -193,20 +236,67 @@ test("classifies physical shot telemetry into distinct relationship gestures", (
   }
 });
 
-test("turns the same shot into stage-specific visual stories and persistent table props", () => {
+test("composes deterministic pocket scenes and table-only shot interactions", () => {
+  const momentOptions = {
+    ballNumber: 4,
+    pocketId: "middle-right",
+    archetype: "bank",
+    stage: 2,
+    seed: "same-table"
+  };
+  const moment = Content.composeTableMoment(momentOptions);
+  assert.deepEqual(moment, Content.composeTableMoment(momentOptions));
+  assert.equal(moment.scene, "河边步道");
+  assert.equal(moment.motif, "相机");
+  assert.equal(moment.pocketId, "middle-right");
+  assert.equal(moment.archetype, "bank");
+  assert.equal(moment.stageId, "growing-familiar");
+  for (const field of ["title", "line", "scene", "motif", "motion", "interaction", "camera"]) {
+    assertText(moment[field], `moment.${field}`);
+  }
+  assert.match(`${moment.line}${moment.motion}${moment.interaction}`, /桌面|球桌|台呢|袋口|库边/);
+  assert.doesNotMatch(JSON.stringify(moment), OFF_TABLE_SCENES);
+  assert.ok(moment.durationMs >= 1200 && moment.durationMs <= 1800);
+  assert.equal(Object.hasOwn(moment, "prop"), false);
+  assertDeepFrozen(moment, "moment");
+
+  const seededMoments = [0, 1, 2].map((seed) => Content.composeTableMoment({
+    ...momentOptions,
+    seed
+  }));
+  assert.equal(new Set(seededMoments.map((item) => item.variantIndex)).size, 3);
+  assert.equal(new Set(seededMoments.map((item) => item.line)).size, 3);
+
+  for (const archetype of Object.values(Content.SHOT_ARCHETYPES)) {
+    const item = Content.composeTableMoment({ ...momentOptions, archetype });
+    assert.ok(item.durationMs >= 1200 && item.durationMs <= 1800, `${archetype}.durationMs`);
+  }
+
   const performance = Content.selectPerformance({ ballNumber: 4, seed: 1 });
-  const early = Content.selectShotStory({ stage: 1, storyNumber: 4, archetype: "bank", performance });
-  const familiar = Content.selectShotStory({ stage: 2, storyNumber: 4, archetype: "bank", performance });
-  const future = Content.selectShotStory({ stage: 7, storyNumber: 14, archetype: "bank", performance });
+  const early = Content.selectShotStory({
+    stage: 1,
+    storyNumber: 4,
+    pocketId: "middle-right",
+    archetype: "bank",
+    performance
+  });
+  const familiar = Content.selectShotStory({
+    stage: 2,
+    storyNumber: 4,
+    pocketId: "middle-right",
+    archetype: "bank",
+    performance
+  });
 
   assert.equal(early.archetype, "bank");
   assert.equal(early.technique, "借库入袋 · 绕路抵达");
   assert.equal(early.gesture, "reach");
-  assert.equal(familiar.prop, "cup");
-  assert.equal(future.prop, "keys");
+  assert.equal(familiar.title, "河边步道 · 相机");
+  assert.equal(familiar.scene, "河边步道");
+  assert.equal(familiar.motif, "相机");
+  assert.equal(Object.hasOwn(familiar, "prop"), false);
   assert.notEqual(early.emotionLine, familiar.emotionLine);
-  assert.notEqual(familiar.emotionLine, future.emotionLine);
-  assert.match(familiar.title, /书|话题|喜欢|奶茶/);
+  assert.ok(familiar.durationMs >= 1200 && familiar.durationMs <= 1800);
   assert.equal(Object.isFrozen(familiar), true);
 });
 
@@ -326,7 +416,7 @@ test("contains every required relationship branch and restrained S, A, and B end
   assert.deepEqual(Object.keys(Content.ENDINGS), ["S", "A", "B"]);
   assert.deepEqual(
     Object.fromEntries(Object.entries(Content.ENDINGS).map(([grade, ending]) => [grade, ending.title])),
-    { S: "共度寻常", A: "仍在靠近", B: "各自珍重" }
+    { S: "灯火长明", A: "并肩归途", B: "慢慢走完" }
   );
   for (const grade of ["S", "A", "B"]) {
     const ending = Content.ENDINGS[grade];
@@ -483,9 +573,18 @@ test("validates lookups and selector inputs", () => {
   assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "miss", rng: () => -0.1 }), RangeError);
   assert.throws(() => Content.selectStageEvent({ stage: 1, eventType: "miss", rng: () => Number.NaN }), RangeError);
   assert.throws(() => Content.analyzeShot([]), TypeError);
+  assert.throws(() => Content.composeTableMoment([]), TypeError);
+  assert.throws(() => Content.composeTableMoment({ ballNumber: 0 }), RangeError);
+  assert.throws(() => Content.composeTableMoment({ ballNumber: 1, pocketId: 1 }), TypeError);
+  assert.throws(() => Content.composeTableMoment({ ballNumber: 1, pocketId: "center" }), RangeError);
+  assert.throws(() => Content.composeTableMoment({ ballNumber: 1, archetype: "trick" }), RangeError);
+  assert.throws(() => Content.composeTableMoment({ ballNumber: 1, stage: "missing" }), RangeError);
+  assert.throws(() => Content.composeTableMoment({ ballNumber: 1, seed: Number.NaN }), TypeError);
   assert.throws(() => Content.selectShotStory([]), TypeError);
   assert.throws(() => Content.selectShotStory({ stage: 1, archetype: "trick", storyNumber: 1 }), RangeError);
   assert.throws(() => Content.selectShotStory({ stage: 1, archetype: "bank", storyNumber: 16 }), RangeError);
+  assert.throws(() => Content.selectShotStory({ stage: 1, archetype: "bank", storyNumber: 1, pocketId: "center" }), RangeError);
+  assert.throws(() => Content.selectShotStory({ stage: 1, archetype: "bank", storyNumber: 1, seed: Number.NaN }), TypeError);
 });
 
 test("publishes the same API as BilliardsLoveContent in a browser UMD context", () => {
@@ -498,6 +597,8 @@ test("publishes the same API as BilliardsLoveContent in a browser UMD context", 
   assert.ok(browserContent);
   assert.deepEqual(Object.keys(browserContent), API_KEYS);
   assert.equal(browserContent.BALLS.length, 15);
+  assert.equal(browserContent.BALL_DATE_MOTIFS.length, 15);
+  assert.equal(browserContent.POCKET_DATE_SCENES.length, 6);
   assert.equal(browserContent.STAGES.length, 7);
   assert.equal(browserContent.STAGE_TRANSITIONS.length, 7);
   assert.equal(browserContent.STAGE_EVENTS.length, 7);
@@ -505,7 +606,18 @@ test("publishes the same API as BilliardsLoveContent in a browser UMD context", 
   assert.equal(typeof browserContent.selectStageTransition, "function");
   assert.equal(typeof browserContent.selectStageEvent, "function");
   assert.equal(typeof browserContent.analyzeShot, "function");
+  assert.equal(typeof browserContent.composeTableMoment, "function");
   assert.equal(typeof browserContent.selectShotStory, "function");
+  assert.equal(
+    browserContent.composeTableMoment({
+      ballNumber: 14,
+      pocketId: "bottom-right",
+      archetype: "gentle",
+      stage: 7,
+      seed: 0
+    }).scene,
+    "回家街道"
+  );
   assert.equal(
     browserContent.selectPerformance({ ballNumber: 8, intent: "active", timing: "right", seed: 4 }).eventId,
     "confession-success"

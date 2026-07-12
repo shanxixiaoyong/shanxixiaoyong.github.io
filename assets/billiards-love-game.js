@@ -37,9 +37,11 @@
     callTitle: required("#hb-call-title"),
     callHint: required("#hb-call-hint"),
     tableStory: required("#hb-table-story"),
-    companion: required("#hb-companion"),
-    memoryRail: required("#hb-memory-rail"),
     pocketFocus: required("#hb-pocket-focus"),
+    tableMoment: required("#hb-table-moment"),
+    tableMomentScene: required("#hb-table-moment-scene"),
+    tableMomentTitle: required("#hb-table-moment-title"),
+    tableMomentLine: required("#hb-table-moment-line"),
     micro: required("#hb-micro"),
     microKicker: required("#hb-micro-kicker"),
     microTitle: required("#hb-micro-title"),
@@ -48,11 +50,6 @@
     coach: required("#hb-coach"),
     aimToggle: required("#hb-aim-toggle"),
     sound: required("#hb-sound"),
-    shotStory: required("#hb-shot-story"),
-    shotStoryImage: required("#hb-shot-story-image"),
-    shotStoryTechnique: required("#hb-shot-story-technique"),
-    shotStoryTitle: required("#hb-shot-story-title"),
-    shotStoryLine: required("#hb-shot-story-line"),
     cinematic: required("#hb-cinematic"),
     cinematicImage: required("#hb-cinematic-image"),
     cinematicSkip: required("#hb-cinematic-skip"),
@@ -111,7 +108,7 @@
   const POCKET_MAX_DURATION = 450;
   const POCKET_STORY_SLOW_MOTION_MS = 460;
   const POCKET_STORY_TIME_SCALE = 0.24;
-  const SHOT_STORY_DEFAULT_DURATION = 2700;
+  const TABLE_MOMENT_DEFAULT_DURATION = 1500;
   const MAX_RENDER_WIDTH = 1440;
   const MAX_RENDER_HEIGHT = 2880;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
@@ -128,23 +125,26 @@
     9: "#e9c348", 10: "#2676bf", 11: "#c33f40", 12: "#754493",
     13: "#df7b30", 14: "#358553", 15: "#8e3740"
   });
-  const STAGE_SCENE_ASSETS = Object.freeze({
-    "first-contact": "assets/love-scenes/campus-library.webp",
-    "growing-familiar": "assets/love-scenes/cafe-evening.webp",
-    "intentional-dates": "assets/love-scenes/city-night.webp",
-    "spoken-heart": "assets/billiards-scenes/confession-night.jpg",
-    "confirmed-love": "assets/love-scenes/warm-home.webp",
-    "learning-together": "assets/love-scenes/rain-night.webp",
-    "shared-future": "assets/love-scenes/starlight-vow.webp"
-  });
-  const MEMORY_MILESTONES = Object.freeze([
-    { prop: "phone", x: "5.2%", y: "26%", rotation: "-8deg", image: "assets/love-scenes/campus-library.webp" },
-    { prop: "cup", x: "94.7%", y: "31%", rotation: "9deg", image: "assets/love-scenes/cafe-evening.webp" },
-    { prop: "ticket", x: "5.2%", y: "45%", rotation: "-5deg", image: "assets/love-scenes/city-night.webp" },
-    { prop: "photo", x: "94.7%", y: "51%", rotation: "7deg", image: "assets/billiards-scenes/confession-night.jpg" },
-    { prop: "tag", x: "5.2%", y: "68%", rotation: "-7deg", image: "assets/love-scenes/warm-home.webp" },
-    { prop: "note", x: "94.7%", y: "72%", rotation: "6deg", image: "assets/love-scenes/rain-night.webp" },
-    { prop: "ring", x: "50%", y: "96.3%", rotation: "0deg", image: "assets/love-scenes/starlight-vow.webp" }
+  const DEFAULT_DATE_SCENES = Object.freeze([
+    { id: "corner-store", pocketId: "top-left", name: "街角便利店", x: 154, y: 246, color: "#75c7b2" },
+    { id: "coffee-window", pocketId: "top-right", name: "临窗咖啡店", x: 558, y: 250, color: "#e5b56f" },
+    { id: "late-cinema", pocketId: "middle-left", name: "午夜电影院", x: 164, y: 655, color: "#d889a2" },
+    { id: "river-walk", pocketId: "middle-right", name: "河边步道", x: 554, y: 786, color: "#79b7ce" },
+    { id: "last-train", pocketId: "bottom-left", name: "末班车站", x: 166, y: 1138, color: "#9aa6d7" },
+    { id: "walk-home", pocketId: "bottom-right", name: "回家的街道", x: 552, y: 1142, color: "#e3c273" }
+  ]);
+  const sourceDateScenes = Array.isArray(content.POCKET_DATE_SCENES)
+    ? content.POCKET_DATE_SCENES
+    : Object.values(content.POCKET_DATE_SCENES || {});
+  const DATE_SCENES = Object.freeze(DEFAULT_DATE_SCENES.map((fallback) => Object.freeze({
+    ...fallback,
+    ...(sourceDateScenes.find((scene) => scene.pocketId === fallback.pocketId) || {}),
+    drawType: fallback.id
+  })));
+  const DATE_SCENE_BY_POCKET = new Map(DATE_SCENES.map((scene) => [scene.pocketId, scene]));
+  const FALLBACK_MOTIFS = Object.freeze([
+    "rain", "coffee", "ticket", "camera", "lamp", "earphones", "cat", "heart",
+    "sunset", "gift", "message", "transit", "star", "umbrella", "home"
   ]);
   const DIAGONAL = Math.SQRT1_2;
 
@@ -356,6 +356,10 @@
       this.pendingStarts = new Set();
       this.lastCollisionAt = 0;
       this.lastRailAt = 0;
+      this.stage = 1;
+      this.dateFlow = 0;
+      this.dateFlowPaused = false;
+      this.musicLayers = [];
       this.prepareSamples();
     }
 
@@ -384,6 +388,7 @@
       this.master = this.context.createGain();
       this.master.gain.value = this.volume;
       this.master.connect(this.context.destination);
+      this.startMusicBed();
       this.decodeAllSamples();
     }
 
@@ -433,7 +438,47 @@
       return false;
     }
 
-    setStage() {}
+    startMusicBed() {
+      if (!this.context || this.musicLayers.length || typeof this.context.createOscillator !== "function") return;
+      const frequencies = [110, 164.81, 220, 329.63];
+      frequencies.forEach((frequency, index) => {
+        const oscillator = this.context.createOscillator();
+        const gain = this.context.createGain();
+        oscillator.type = index < 2 ? "sine" : "triangle";
+        oscillator.frequency.value = frequency;
+        gain.gain.value = 0.0001;
+        oscillator.connect(gain).connect(this.master);
+        oscillator.start();
+        this.musicLayers.push({ oscillator, gain });
+      });
+      this.applyDateFlow();
+    }
+
+    applyDateFlow() {
+      if (!this.context || !this.musicLayers.length) return;
+      const levels = this.dateFlowPaused
+        ? [0.0022, 0.0001, 0.0001, 0.0001]
+        : [0.0036, this.dateFlow >= 2 ? 0.003 : 0.0001, this.dateFlow >= 4 ? 0.002 : 0.0001, this.dateFlow >= 5 ? 0.0012 : 0.0001];
+      this.musicLayers.forEach((layer, index) => {
+        const target = this.enabled ? levels[index] : 0.0001;
+        layer.gain.gain.setTargetAtTime?.(target, this.context.currentTime, 0.42);
+      });
+    }
+
+    setStage(stage) {
+      this.stage = clamp(Number(stage) || 1, 1, 7);
+      const transpose = 1 + (this.stage - 1) * 0.012;
+      this.musicLayers.forEach((layer, index) => {
+        const base = [110, 164.81, 220, 329.63][index];
+        layer.oscillator.frequency.setTargetAtTime?.(base * transpose, this.context.currentTime, 0.8);
+      });
+    }
+
+    setDateFlow(streak, paused = false) {
+      this.dateFlow = clamp(Math.trunc(streak || 0), 0, 8);
+      this.dateFlowPaused = Boolean(paused);
+      this.applyDateFlow();
+    }
 
     cue(name, intensity = 1) {
       if (name === "strike") {
@@ -474,11 +519,13 @@
 
     snapshot() {
       return Object.freeze({
-        mode: "recorded-samples",
+        mode: "recorded-samples-with-ambient-bed",
         enabled: this.enabled,
         contextState: this.context?.state || "uninitialized",
         loadedSamples: Object.freeze([...this.sampleBuffers.keys()].sort()),
-        expectedSamples: Object.keys(RECORDED_AUDIO_ASSETS).length
+        expectedSamples: Object.keys(RECORDED_AUDIO_ASSETS).length,
+        dateFlow: this.dateFlow,
+        musicLayers: this.musicLayers.length
       });
     }
 
@@ -490,6 +537,7 @@
       if (this.master && this.context) {
         this.master.gain.setTargetAtTime(this.enabled ? this.volume : 0.0001, this.context.currentTime, 0.04);
       }
+      this.applyDateFlow();
       return this.enabled;
     }
   }
@@ -529,15 +577,15 @@
   let cinematicQueue = [];
   let cinematicCurrent = null;
   let cinematicTimer = 0;
-  let shotStoryActive = false;
-  let shotStoryCurrent = null;
-  let shotStoryTimer = 0;
+  let tableMomentActive = false;
+  let tableMomentCurrent = null;
+  let tableMomentTimer = 0;
   let storySlowMotionUntil = 0;
   let lastStoryOrigin = { x: 50, y: 50 };
   let lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
-  let companionTimer = 0;
-  let memoryNodes = [];
-  let liveMemoryNode = null;
+  let dateMapState = createDateMapState();
+  let finalRevealActive = false;
+  let finalRevealTimer = 0;
   let trackNodeMap = new Map();
   let screenFlash = 0;
   let screenShake = 0;
@@ -548,6 +596,127 @@
   let ballRenderer = null;
   let ballRendererCanvas = null;
   let ballRendererFailed = false;
+
+  function motifForBall(number) {
+    const source = content.BALL_DATE_MOTIFS;
+    const entry = Array.isArray(source)
+      ? source.find((item) => Number(item?.number) === number) ?? source[number - 1]
+      : source?.[number];
+    if (typeof entry === "string") return entry;
+    return entry?.id || entry?.motif || entry?.key || FALLBACK_MOTIFS[number - 1] || "star";
+  }
+
+  function createDateMapState() {
+    return {
+      zones: new Map(DATE_SCENES.map((scene) => [scene.pocketId, {
+        ...scene,
+        reveal: 0,
+        pulse: 0,
+        visits: 0,
+        motifs: []
+      }])),
+      routes: [],
+      links: [],
+      cueStops: [],
+      lastPocketId: null,
+      activeStreak: 0,
+      bestStreak: 0,
+      flow: 0,
+      stagePulse: 0,
+      powerWave: 0,
+      completed: false,
+      finalProgress: 0,
+      ending: null,
+      style: { precise: 0, bold: 0, adventurous: 0, playful: 0 }
+    };
+  }
+
+  function rememberDateMoment(number, detail = {}, options = {}) {
+    if (!Number.isInteger(number) || number < 1 || number > 15 || number === 8 && options.ignoreEight) return null;
+    if (detail.dateRouteId) {
+      return dateMapState.routes.find((route) => route.id === detail.dateRouteId) || null;
+    }
+    const pocket = POCKETS.find((item) => item.id === detail.pocketId)
+      || POCKETS[(number * 5 + runState.shots) % POCKETS.length];
+    const scene = DATE_SCENE_BY_POCKET.get(pocket.id) || DATE_SCENES[0];
+    const zone = dateMapState.zones.get(scene.pocketId);
+    const fallbackStart = dateMapState.cueStops.at(-1) || CUE_SPOT;
+    const path = Array.isArray(detail.path) && detail.path.length > 1
+      ? detail.path.map((point) => ({ x: point.x, y: point.y }))
+      : [
+          { x: fallbackStart.x, y: fallbackStart.y },
+          { x: (fallbackStart.x + pocket.captureX) / 2, y: (fallbackStart.y + pocket.captureY) / 2 },
+          { x: pocket.captureX, y: pocket.captureY }
+        ];
+    const motif = motifForBall(number);
+    const route = {
+      id: `date-route-${runState.shots + 1}-${number}-${dateMapState.routes.length}`,
+      number,
+      physicalNumber: number,
+      storyNumber: null,
+      motif,
+      pocketId: pocket.id,
+      sceneId: scene.id,
+      color: BALL_COLORS[number] || scene.color,
+      path,
+      railHits: Number(detail.railHits) || 0,
+      jawHits: Number(detail.jawHits) || 0,
+      travel: Number(detail.travel) || 0,
+      archetype: options.archetype || "direct",
+      bornAt: performance.now(),
+      glow: 1
+    };
+    if (detail && typeof detail === "object" && Object.isExtensible(detail)) detail.dateRouteId = route.id;
+    dateMapState.routes.push(route);
+    if (dateMapState.routes.length > 15) dateMapState.routes.shift();
+    if (zone) {
+      zone.reveal = clamp(zone.reveal + (zone.visits ? 0.18 : 0.34), 0, 1);
+      zone.pulse = 1;
+      zone.visits += 1;
+      if (!zone.motifs.includes(motif)) zone.motifs.push(motif);
+    }
+    if (dateMapState.lastPocketId && dateMapState.lastPocketId !== pocket.id) {
+      dateMapState.links.push({
+        from: dateMapState.lastPocketId,
+        to: pocket.id,
+        color: scene.color,
+        bornAt: performance.now()
+      });
+      if (dateMapState.links.length > 14) dateMapState.links.shift();
+    }
+    dateMapState.lastPocketId = pocket.id;
+    dateMapState.flow = 1;
+    return route;
+  }
+
+  function recordCueStop(completedShot, outcome) {
+    const point = completedShot?.cueEnd;
+    if (!point || completedShot.cueScratch) return;
+    dateMapState.cueStops.push({
+      x: point.x,
+      y: point.y,
+      power: completedShot.launchPower || 0,
+      successful: Boolean(outcome?.pottedNumbers?.length),
+      bornAt: performance.now()
+    });
+    if (dateMapState.cueStops.length > 20) dateMapState.cueStops.shift();
+  }
+
+  function applyShotStyle(analysis) {
+    if (!analysis) return;
+    if (["direct", "gentle", "long"].includes(analysis.id)) dateMapState.style.precise += 1;
+    if (["power", "multi"].includes(analysis.id)) dateMapState.style.bold += 1;
+    if (["bank", "combo"].includes(analysis.id)) dateMapState.style.adventurous += 1;
+    if (["rattle", "near"].includes(analysis.id)) dateMapState.style.playful += 1;
+    dateMapState.powerWave = analysis.id === "power" ? 1 : dateMapState.powerWave;
+  }
+
+  function setDateFlow(streak, paused = false) {
+    dateMapState.activeStreak = paused ? 0 : Math.max(0, streak || 0);
+    dateMapState.bestStreak = Math.max(dateMapState.bestStreak, streak || 0);
+    dateMapState.flow = paused ? 0 : Math.max(dateMapState.flow, streak > 0 ? 1 : 0.28);
+    audio.setDateFlow?.(dateMapState.activeStreak, paused);
+  }
 
   function bodyData(body) {
     return body?.plugin?.heartbeatPool || null;
@@ -835,25 +1004,26 @@
     microQueue = [];
     cinematicQueue = [];
     cinematicCurrent = null;
-    shotStoryActive = false;
-    shotStoryCurrent = null;
+    tableMomentActive = false;
+    tableMomentCurrent = null;
     storySlowMotionUntil = 0;
     lastStoryOrigin = { x: 50, y: 50 };
     lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
+    dateMapState = createDateMapState();
+    finalRevealActive = false;
     clearTimeout(microTimer);
     clearTimeout(judgementTimer);
     clearTimeout(cinematicTimer);
-    clearTimeout(shotStoryTimer);
-    clearTimeout(companionTimer);
+    clearTimeout(tableMomentTimer);
+    clearTimeout(finalRevealTimer);
     screenFlash = 0;
     screenShake = 0;
     elements.result.hidden = true;
     elements.cinematic.hidden = true;
-    elements.shotStory.hidden = true;
+    elements.tableMoment.hidden = true;
     elements.pocketFocus.hidden = true;
     elements.micro.hidden = true;
-    elements.companion.dataset.gesture = "waiting";
-    if (liveMemoryNode) liveMemoryNode.hidden = true;
+    setDateFlow(0, true);
     rackBalls();
     syncUI();
     root.dataset.state = "break";
@@ -862,85 +1032,26 @@
   function buildTimeline() {
     const fragment = document.createDocumentFragment();
     trackNodeMap = new Map();
-    content.BALLS.forEach((ball) => {
+    DATE_SCENES.forEach((scene, index) => {
       const item = document.createElement("li");
       item.className = "hb-track-node";
-      item.dataset.ball = String(ball.number);
+      item.dataset.scene = scene.id;
       const number = document.createElement("i");
-      number.textContent = String(ball.number);
+      number.textContent = String(index + 1).padStart(2, "0");
       const label = document.createElement("span");
-      label.textContent = ball.name;
+      label.textContent = scene.name;
       item.append(number, label);
-      trackNodeMap.set(ball.number, item);
+      trackNodeMap.set(scene.pocketId, item);
       fragment.append(item);
     });
     elements.trackNodes.replaceChildren(fragment);
   }
 
-  function configureMemoryNode(node, memory) {
-    node.dataset.prop = memory.prop;
-    node.style.setProperty("--memory-x", memory.x);
-    node.style.setProperty("--memory-y", memory.y);
-    node.style.setProperty("--memory-rotation", memory.rotation);
-    node.style.setProperty("--memory-image", `url("${memory.image}")`);
-  }
-
-  function buildTableStory() {
-    const fragment = document.createDocumentFragment();
-    memoryNodes = MEMORY_MILESTONES.map((memory, index) => {
-      const node = document.createElement("i");
-      node.className = "hb-memory-token";
-      node.dataset.stage = String(index + 1);
-      configureMemoryNode(node, memory);
-      node.hidden = true;
-      fragment.append(node);
-      return node;
-    });
-    liveMemoryNode = document.createElement("i");
-    liveMemoryNode.className = "hb-memory-token hb-memory-token-live";
-    configureMemoryNode(liveMemoryNode, {
-      prop: "phone",
-      x: "34%",
-      y: "4.6%",
-      rotation: "-4deg",
-      image: STAGE_SCENE_ASSETS["first-contact"]
-    });
-    liveMemoryNode.hidden = true;
-    fragment.append(liveMemoryNode);
-    elements.memoryRail.replaceChildren(fragment);
-  }
-
   function syncTableStory() {
-    const stage = rules.currentStage(runState);
-    const completedStages = stage ? Math.max(0, stage.number - 1) : MEMORY_MILESTONES.length;
-    memoryNodes.forEach((node, index) => {
-      node.hidden = index >= completedStages;
-    });
-    elements.tableStory.dataset.completed = String(completedStages);
-  }
-
-  function setCompanionGesture(gesture, duration = 1500) {
-    clearTimeout(companionTimer);
-    elements.companion.dataset.gesture = "waiting";
-    void elements.companion.offsetWidth;
-    elements.companion.dataset.gesture = gesture || "waiting";
-    companionTimer = setTimeout(() => {
-      elements.companion.dataset.gesture = "waiting";
-    }, duration);
-  }
-
-  function showLiveMemory(prop, image) {
-    if (!liveMemoryNode) return;
-    configureMemoryNode(liveMemoryNode, {
-      prop: prop || "phone",
-      x: "34%",
-      y: "4.6%",
-      rotation: prop === "ticket" ? "-8deg" : prop === "keys" ? "7deg" : "-4deg",
-      image: image || STAGE_SCENE_ASSETS[content.getStage(currentStageNumber()).id]
-    });
-    liveMemoryNode.hidden = true;
-    void liveMemoryNode.offsetWidth;
-    liveMemoryNode.hidden = false;
+    const litScenes = [...dateMapState.zones.values()].filter((zone) => zone.visits > 0).length;
+    elements.tableStory.dataset.litScenes = String(litScenes);
+    elements.tableStory.dataset.flow = String(Math.min(5, dateMapState.activeStreak));
+    elements.tableStory.dataset.completed = String(dateMapState.completed);
   }
 
   function storyOriginForPocket(pocket) {
@@ -968,41 +1079,35 @@
     }, 1080);
   }
 
-  function hideShotStory() {
-    if (!shotStoryActive) return;
-    clearTimeout(shotStoryTimer);
-    elements.shotStory.hidden = true;
-    shotStoryActive = false;
-    shotStoryCurrent = null;
-    if (liveMemoryNode) liveMemoryNode.hidden = true;
+  function hideTableMoment() {
+    if (!tableMomentActive) return;
+    clearTimeout(tableMomentTimer);
+    elements.tableMoment.hidden = true;
+    tableMomentActive = false;
+    tableMomentCurrent = null;
     if (microQueue.length && elements.micro.hidden) showNextMicro();
     else if (cinematicQueue.length && !cinematicActive && elements.micro.hidden) showNextCinematic();
-    else if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
-    else if (!shotState && !resolvingShot) root.dataset.state = "aiming";
+    else if (runState.endState.ended && !cinematicActive && !resultVisible && !finalRevealActive) showResult();
+    else if (!shotState && !resolvingShot && !runState.endState.ended) root.dataset.state = "aiming";
   }
 
-  function showShotStory(story, origin = lastStoryOrigin) {
+  function showTableMoment(story) {
     if (!story) return;
-    clearTimeout(shotStoryTimer);
-    shotStoryCurrent = story;
-    shotStoryActive = true;
-    root.dataset.state = "story";
-    elements.shotStory.dataset.archetype = story.archetype;
-    elements.shotStory.dataset.stage = String(story.stage);
-    elements.shotStory.style.setProperty("--hb-story-origin-x", `${origin.x}%`);
-    elements.shotStory.style.setProperty("--hb-story-origin-y", `${origin.y}%`);
-    elements.shotStory.style.setProperty("--hb-story-duration", `${story.durationMs || SHOT_STORY_DEFAULT_DURATION}ms`);
-    elements.shotStoryImage.style.backgroundImage = `url("${STAGE_SCENE_ASSETS[story.stageId]}")`;
-    elements.shotStoryTechnique.textContent = story.technique;
-    elements.shotStoryTitle.textContent = story.title;
-    elements.shotStoryLine.textContent = story.line;
-    elements.shotStory.hidden = true;
-    void elements.shotStory.offsetWidth;
-    elements.shotStory.hidden = false;
-    setCompanionGesture(story.gesture, Math.min(story.durationMs, 1600));
-    showLiveMemory(story.prop, STAGE_SCENE_ASSETS[story.stageId]);
+    clearTimeout(tableMomentTimer);
+    tableMomentCurrent = story;
+    tableMomentActive = true;
+    elements.tableMoment.dataset.archetype = story.archetype || "direct";
+    elements.tableMoment.dataset.motion = story.visualMode || story.archetype || "straight";
+    elements.tableMoment.dataset.scene = story.sceneId || story.stageId || "date-map";
+    elements.tableMoment.style.setProperty("--hb-moment-duration", `${story.durationMs || TABLE_MOMENT_DEFAULT_DURATION}ms`);
+    elements.tableMomentScene.textContent = story.sceneName || story.scene || story.technique || "约会地图";
+    elements.tableMomentTitle.textContent = story.title;
+    elements.tableMomentLine.textContent = story.line;
+    elements.tableMoment.hidden = true;
+    void elements.tableMoment.offsetWidth;
+    elements.tableMoment.hidden = false;
     audio.cue(story.archetype === content.SHOT_ARCHETYPES.MULTI ? "streak" : "event", 0.9);
-    shotStoryTimer = setTimeout(hideShotStory, story.durationMs || SHOT_STORY_DEFAULT_DURATION);
+    tableMomentTimer = setTimeout(hideTableMoment, story.durationMs || TABLE_MOMENT_DEFAULT_DURATION);
   }
 
   function currentStageNumber() {
@@ -1014,65 +1119,59 @@
     const progress = rules.stageProgress(runState);
     const interestSignal = rules.interestStatus(runState);
     const stageNumber = stage?.number || 7;
-    const narrativeStage = content.getStage(stageNumber);
     const targets = rules.availableTargets(runState);
+    const litScenes = [...dateMapState.zones.values()].filter((zone) => zone.visits > 0).length;
+    const lastScene = DATE_SCENE_BY_POCKET.get(dateMapState.lastPocketId);
     cachedStageNumber = stageNumber;
     cachedAvailableTargets = new Set(targets);
     root.dataset.stage = String(stageNumber);
-    elements.stageKicker.textContent = stage
-      ? `STAGE ${String(stage.number).padStart(2, "0")} · ${stage.name}`
-      : "COMPLETE · 共同未来";
-    elements.stageTitle.textContent = narrativeStage.enterLine;
+    elements.stageKicker.textContent = runState.endState.ended
+      ? "DATE MAP · 今晚完整显影"
+      : `DATE MAP · ${String(runState.pottedNumbers.length).padStart(2, "0")} / 15 笔`;
+    elements.stageTitle.textContent = progress?.target === "eight"
+      ? "整座夜城，只等最后一笔"
+      : lastScene ? `${lastScene.name}正在亮起` : "桌布下藏着一场尚未发生的约会";
     elements.stageTargets.textContent = progress
       ? progress.target === "eight"
-        ? "本阶段目标：打进黑 8，完成告白"
-        : `任意非黑 8 彩球均可，再进 ${progress.remaining} 颗进入下一阶段`
-      : "今晚已经走到最后";
-    const interestLabels = {
-      devoted: "炽热",
-      warm: "升温",
-      steady: "安稳",
-      uncertain: "摇摆",
-      danger: "疏远",
-      lost: "熄灭"
-    };
-    const interestLevels = { devoted: 1, warm: 0.84, steady: 0.66, uncertain: 0.44, danger: 0.2, lost: 0 };
-    elements.interest.textContent = interestLabels[interestSignal.band] || "安稳";
-    elements.interestWrap.setAttribute("aria-label", `心绪状态：${interestSignal.label}`);
+        ? "黑 8 将连接整晚留下的全部路线"
+        : `任意非黑 8 彩球都能继续显影，还剩 ${15 - runState.pottedNumbers.length} 颗`
+      : "所有路线已经回到同一盏灯下";
+    const flowLabels = dateMapState.activeStreak >= 5
+      ? ["流动", 1]
+      : dateMapState.activeStreak >= 3 ? ["鲜活", 0.84]
+        : dateMapState.activeStreak >= 1 ? ["亮起", 0.68]
+          : runState.consecutiveMisses > 0 ? ["驻足", 0.46] : ["未醒", 0.32];
+    elements.interest.textContent = flowLabels[0];
+    elements.interestWrap.setAttribute("aria-label", `夜色状态：${flowLabels[0]}`);
     elements.interestWrap.dataset.signal = interestSignal.band;
-    elements.interestWrap.classList.toggle("is-low", ["danger", "lost"].includes(interestSignal.band));
-    elements.interestRing.style.strokeDashoffset = String(113.1 * (1 - interestLevels[interestSignal.band]));
+    elements.interestWrap.classList.toggle("is-low", false);
+    elements.interestRing.style.strokeDashoffset = String(113.1 * (1 - flowLabels[1]));
     elements.shots.textContent = String(runState.shots);
     elements.streak.textContent = String(runState.potStreak);
     elements.trackProgress.style.width = `${runState.pottedNumbers.length / 15 * 100}%`;
-    const completedStoryCount = runState.pottedNumbers.length;
-    const recommended = new Set(stage && progress
-      ? stage.ballNumbers.slice(progress.completed)
-      : []);
-    trackNodeMap.forEach((node, number) => {
-      node.classList.toggle("is-complete", number <= completedStoryCount);
-      node.classList.toggle("is-current", recommended.has(number));
-      node.classList.toggle("is-danger", progress?.target === "eight" && number === 15);
+    trackNodeMap.forEach((node, pocketId) => {
+      const zone = dateMapState.zones.get(pocketId);
+      node.classList.toggle("is-complete", Boolean(zone?.visits));
+      node.classList.toggle("is-current", pocketId === dateMapState.lastPocketId);
+      node.classList.toggle("is-danger", false);
     });
     if (!runState.breakCompleted) {
       elements.selectedBall.textContent = "—";
-      elements.selectedName.textContent = "开球无需声明";
+      elements.selectedName.textContent = "今晚尚未落笔";
       elements.callLabel.textContent = "开球";
-      elements.callTitle.textContent = "打散今晚的第一束光";
+      elements.callTitle.textContent = "第一杆会唤醒整张地图";
       elements.callHint.textContent = "桌面任意位置向后滑动，松开完成开球";
-    } else if (selectedBallNumber !== null) {
-      selectedBallNumber = null;
-      elements.selectedBall.textContent = String(progress?.remaining || 0);
-      elements.selectedName.textContent = progress?.target === "eight" ? "等待黑 8 · 告白" : `${narrativeStage.name} · 还差`;
-      elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
-      elements.callTitle.textContent = progress?.target === "eight" ? "这一杆，只等黑 8" : "任意彩球都能推进关系";
-      elements.callHint.textContent = progress?.target === "eight" ? "打进黑 8，进入相恋阶段" : `再进 ${progress?.remaining || 0} 颗，进入下一章`;
     } else {
-      elements.selectedBall.textContent = String(progress?.remaining || 0);
-      elements.selectedName.textContent = progress?.target === "eight" ? "等待黑 8 · 告白" : `${narrativeStage.name} · 还差`;
-      elements.callLabel.textContent = `STAGE ${String(stageNumber).padStart(2, "0")}`;
-      elements.callTitle.textContent = progress?.target === "eight" ? "这一杆，只等黑 8" : "任意彩球都能推进关系";
-      elements.callHint.textContent = progress?.target === "eight" ? "打进黑 8，进入相恋阶段" : `再进 ${progress?.remaining || 0} 颗，进入下一章`;
+      selectedBallNumber = null;
+      elements.selectedBall.textContent = progress?.target === "eight" ? "8" : String(Math.max(0, 15 - runState.pottedNumbers.length));
+      elements.selectedName.textContent = progress?.target === "eight" ? "最后一笔 · 黑 8" : `${litScenes} / 6 处夜景已亮`;
+      elements.callLabel.textContent = dateMapState.activeStreak > 0 ? `夜色流动 · ${dateMapState.activeStreak}` : "夜色未停";
+      elements.callTitle.textContent = progress?.target === "eight"
+        ? "整晚的灯光正在等最后一笔"
+        : lastScene ? `${lastScene.name}的灯还亮着` : "这场夜游才刚刚开始";
+      elements.callHint.textContent = dateMapState.activeStreak >= 3
+        ? "两个人影沿着连起的灯光继续向前"
+        : lastScene ? "短暂驻足后，他们又看向下一段路" : "第一盏灯正藏在桌布下面";
     }
     elements.aimToggle.setAttribute("aria-pressed", String(aimAssist));
     elements.aimToggle.setAttribute("aria-label", aimAssist ? "关闭瞄准辅助" : "开启瞄准辅助");
@@ -1115,7 +1214,6 @@
   function canInteract() {
     return !shotState && !pointerAim && !resolvingShot
       && !cinematicActive && !cinematicQueue.length
-      && !shotStoryActive
       && !resultVisible && !runState.endState.ended && cueBall;
   }
 
@@ -1205,6 +1303,7 @@
       launchDirection: { ...direction },
       storyFocusNumber: null,
       storyShown: false,
+      dateRouteIds: [],
       startedAt: simulationTime
     };
     Body.strike(cueBall, { x: direction.x * speed, y: direction.y * speed });
@@ -1356,6 +1455,7 @@
       path.push({ x: pocket.captureX, y: pocket.captureY });
       const detail = {
         number: data.number,
+        enteredOrder: shotState.pottedDetails.length,
         pocketId: pocket.id,
         pocketX: pocket.x,
         pocketY: pocket.y,
@@ -1367,6 +1467,8 @@
         path
       };
       shotState.pottedDetails.push(detail);
+      const dateRoute = rememberDateMoment(data.number, detail);
+      if (dateRoute) shotState.dateRouteIds.push(dateRoute.id);
       storyTrails.push({
         number: data.number,
         path,
@@ -1627,10 +1729,11 @@
       ?? null;
     if (physicalNumber === null || physicalNumber === 8) return null;
     const matchingEvent = pottedEvents.find((event) => event.number === physicalNumber);
-    const storyNumber = matchingEvent?.storyNumber || storyNumberForUpcomingPot(physicalNumber);
+    const storyNumber = physicalNumber;
     const stageNumber = matchingEvent?.stageIndex !== undefined
       ? matchingEvent.stageIndex + 1
       : currentStageNumber();
+    const physicalDetail = completedShot?.pottedDetails?.find((detail) => detail.number === physicalNumber) || null;
     const performance = content.selectPerformance({
       ballNumber: storyNumber,
       intent: content.INTENTS.ACTIVE,
@@ -1638,24 +1741,31 @@
       seed: (runState.shots + 1) * 31 + physicalNumber * 7 + Math.round((completedShot?.launchPower || 0.5) * 100)
     });
     const analysis = analyzeCompletedShot(completedShot, outcome);
+    const route = physicalDetail?.dateRouteId
+      ? dateMapState.routes.find((item) => item.id === physicalDetail.dateRouteId)
+      : null;
+    if (route) route.archetype = analysis.id;
     return content.selectShotStory({
       stage: stageNumber,
       storyNumber,
+      ballNumber: physicalNumber,
+      pocketId: physicalDetail?.pocketId,
       archetype: analysis.id,
       analysis,
-      performance
+      performance,
+      seed: (runState.shots + 1) * 31 + physicalNumber * 7
     });
   }
 
-  function updateVisibleShotStory(story) {
-    if (!shotStoryActive || !story) return;
-    shotStoryCurrent = story;
-    elements.shotStory.dataset.archetype = story.archetype;
-    elements.shotStoryTechnique.textContent = story.technique;
-    elements.shotStoryTitle.textContent = story.title;
-    elements.shotStoryLine.textContent = story.line;
-    setCompanionGesture(story.gesture, Math.min(story.durationMs, 1600));
-    showLiveMemory(story.prop, STAGE_SCENE_ASSETS[story.stageId]);
+  function updateVisibleTableMoment(story) {
+    if (!tableMomentActive || !story) return;
+    tableMomentCurrent = story;
+    elements.tableMoment.dataset.archetype = story.archetype;
+    elements.tableMoment.dataset.motion = story.visualMode || story.archetype || "straight";
+    elements.tableMoment.dataset.scene = story.sceneId || story.stageId || "date-map";
+    elements.tableMomentScene.textContent = story.sceneName || story.scene || story.technique;
+    elements.tableMomentTitle.textContent = story.title;
+    elements.tableMomentLine.textContent = story.line;
   }
 
   function beginCompletedPocketStory(number) {
@@ -1664,19 +1774,18 @@
     if (!story) return;
     shotState.storyShown = true;
     shotState.story = story;
-    showShotStory(story, lastStoryOrigin);
+    showTableMoment(story);
   }
 
   function queueMicro(item) {
     microQueue.push(item);
-    if (elements.micro.hidden && !shotStoryActive) showNextMicro();
+    if (elements.micro.hidden) showNextMicro();
   }
 
   function showNextMicro() {
-    if (shotStoryActive) return;
     if (!microQueue.length) {
       elements.micro.hidden = true;
-      if (cinematicQueue.length && !cinematicActive && !shotStoryActive) showNextCinematic();
+      if (cinematicQueue.length && !cinematicActive) showNextCinematic();
       else if (runState.endState.ended && !cinematicActive && !resultVisible) showResult();
       return;
     }
@@ -1714,11 +1823,11 @@
 
   function queueCinematic(item) {
     cinematicQueue.push(item);
-    if (!cinematicActive && !shotStoryActive && elements.micro.hidden && !microQueue.length) showNextCinematic();
+    if (!cinematicActive && elements.micro.hidden && !microQueue.length) showNextCinematic();
   }
 
   function showNextCinematic() {
-    if (shotStoryActive || !elements.micro.hidden || microQueue.length) return;
+    if (!elements.micro.hidden || microQueue.length) return;
     if (!cinematicQueue.length) {
       cinematicActive = false;
       cinematicCurrent = null;
@@ -1759,117 +1868,130 @@
     cinematicCurrent = null;
     completed?.onClose?.();
     if (cinematicQueue.length) setTimeout(showNextCinematic, 70);
-    else if (runState.endState.ended && elements.micro.hidden && !microQueue.length && !resultVisible) showResult();
+    else if (runState.endState.ended && elements.micro.hidden && !microQueue.length && !resultVisible && !finalRevealActive) showResult();
     else root.dataset.state = "aiming";
   }
 
-  function stageCopy(stageId, seed) {
-    const stage = rules.STAGES.find((entry) => entry.id === stageId);
-    if (!stage) return null;
-    const performance = content.selectStageTransition({ stage: stage.number, seed });
-    return {
-      ...performance,
-      kind: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
-      image: STAGE_SCENE_ASSETS[stage.id],
-      sound: stage.number === 4 ? "confession" : stage.number === 7 ? "proposal" : "stage",
-      autoCloseMs: clamp(performance.durationMs + 1800, 3400, 4300),
-      actionLabel: null
-    };
+  function scheduleResultAfterTable(delayMs) {
+    finalRevealActive = true;
+    clearTimeout(finalRevealTimer);
+    finalRevealTimer = setTimeout(() => {
+      finalRevealActive = false;
+      hideTableMoment();
+      if (!resultVisible) showResult();
+    }, delayMs);
   }
 
-  function earlyEightCopy(outcome) {
-    const success = outcome.earlyEight.success;
-    return {
-      id: `black-eight-${success ? "mutual" : "rejected"}-${outcome.state.shots}`,
-      kind: success ? "early-success" : "rejection",
-      stageId: success ? "spoken-heart" : "learning-together",
-      image: success
-        ? "assets/billiards-scenes/confession-night.jpg"
-        : "assets/love-scenes/rain-night.webp",
-      kicker: success ? "黑 8 · 稀有结局" : "黑 8 · 越过时机",
-      title: success ? "冒险提前命中了答案" : "这份承诺来得太快",
+  function beginFinalDateMapReveal(outcome) {
+    const early = Boolean(outcome.earlyEight);
+    const success = outcome.state.endState.status === "completed";
+    dateMapState.completed = success;
+    dateMapState.ending = success ? "complete" : "reckless";
+    dateMapState.finalProgress = 0.001;
+    dateMapState.stagePulse = 1;
+    setDateFlow(success ? Math.max(5, outcome.state.bestPotStreak) : 0, !success);
+    root.dataset.state = "map-finale";
+    screenFlash = Math.max(screenFlash, success ? 0.46 : 0.16);
+    showTableMoment({
+      id: `date-map-${success ? "complete" : "interrupted"}-${outcome.state.shots}`,
+      archetype: success ? "multi" : "near",
+      motion: success ? "city-unite" : "city-pause",
+      sceneId: success ? "whole-night" : "crossroads",
+      sceneName: success ? "整张约会地图" : "夜路提前转弯",
+      title: success
+        ? early ? "这条意外的近路，也被她接住了" : "今晚所有走过的路，终于连在一起"
+        : "最后的答案来得太早",
       line: success
-        ? "此前每一次靠近都得到了回应。黑 8 提前落袋时，她没有后退，而是伸手接住了答案。"
-        : "关系还没有走到最后，你却先击中了最重的承诺。她认真听完，然后温柔而明确地拒绝。",
-      sound: success ? "proposal" : "scratch",
-      autoCloseMs: 4200,
-      actionLabel: null
-    };
+        ? "六处灯光沿着你的真实球路依次亮起，两个人影从街角走到了同一条归途。"
+        : "城市没有熄灭，只是两个人在这个路口选择了不同方向。",
+      durationMs: success ? 3000 : 2200
+    });
+    audio.cue(success ? "proposal" : "warning", success ? 1 : 0.82);
+    scheduleResultAfterTable(success ? 3400 : 2500);
   }
 
   function processOutcomePerformances(outcome, completedShot = {}) {
     const stageTransitions = outcome.newlyCompletedStageIds || outcome.completedStageIds || [];
-    const queuePocketPerformances = () => {
+    const presentPocketMoments = () => {
       outcome.pocketEvents?.forEach((event) => {
         const color = BALL_COLORS[event.number] || "#e4c178";
         const burst = [...pocketBursts].reverse().find((item) => item.number === event.number);
         spawnParticles(burst?.x || WORLD.width / 2, burst?.y || WORLD.height / 2, color, 18);
+        const detail = completedShot.pottedDetails?.find((item) => item.number === event.number) || {};
+        const route = rememberDateMoment(event.number, detail);
+        if (route) route.storyNumber = event.storyNumber;
       });
       const story = createShotStory(completedShot, outcome);
       if (!story) return;
-      if (completedShot.storyShown) updateVisibleShotStory(story);
+      if (completedShot.storyShown) updateVisibleTableMoment(story);
       else {
         completedShot.storyShown = true;
         completedShot.story = story;
-        showShotStory(story, lastStoryOrigin);
+        showTableMoment(story);
       }
     };
-    const queueTechnicalPerformance = () => {
-      if (outcome.cueScratch) {
-        queueStageMicro(
-          outcome.stageBefore?.number || currentStageNumber(),
-          content.STAGE_EVENT_TYPES.SCRATCH,
-          outcome.state.shots * 41,
-          outcome.interestTrend
-        );
-      } else if (outcome.miss && !outcome.shot.breakShot) {
-        const eventType = outcome.state.consecutiveMisses <= 1
-          ? content.STAGE_EVENT_TYPES.SETUP
-          : content.STAGE_EVENT_TYPES.MISS;
-        queueStageMicro(
-          outcome.stageBefore?.number || currentStageNumber(),
-          eventType,
-          outcome.state.shots * 43,
-          outcome.interestTrend
-        );
-      }
-    };
+    const analysis = analyzeCompletedShot(completedShot, outcome);
+    applyShotStyle(analysis);
+    recordCueStop(completedShot, outcome);
 
     if (outcome.earlyEight) {
-      queuePocketPerformances();
-      queueTechnicalPerformance();
-      queueCinematic(earlyEightCopy(outcome));
+      presentPocketMoments();
+      beginFinalDateMapReveal(outcome);
       return;
     }
 
-    if (!stageTransitions.length) {
-      queuePocketPerformances();
-      queueTechnicalPerformance();
-      return;
+    presentPocketMoments();
+    if (outcome.miss && !outcome.shot.breakShot) {
+      setDateFlow(0, true);
+      dateMapState.flow = 0;
+    } else if (outcome.cueScratch) {
+      setDateFlow(0, true);
+      dateMapState.flow = 0.16;
+      dateMapState.stagePulse = 0.26;
+    } else {
+      setDateFlow(outcome.state.potStreak, false);
     }
 
-    queuePocketPerformances();
-    queueTechnicalPerformance();
-    const copies = stageTransitions.map((stageId, index) => {
-      const copy = stageCopy(stageId, outcome.state.shots * 47 + index);
-      return copy;
-    }).filter(Boolean);
-    copies.forEach((copy) => {
-      screenFlash = Math.max(screenFlash, 0.34);
-      queueCinematic(copy);
-    });
+    if (stageTransitions.length) {
+      dateMapState.stagePulse = 1;
+      DATE_SCENES.forEach((scene, index) => {
+        const zone = dateMapState.zones.get(scene.pocketId);
+        if (zone && index < Math.ceil(outcome.state.pottedNumbers.length / 3)) {
+          zone.reveal = Math.max(zone.reveal, 0.18);
+        }
+      });
+      audio.cue("stage", 0.58);
+    }
+
+    if (outcome.state.endState.ended) {
+      beginFinalDateMapReveal(outcome);
+      return;
+    }
+    syncTableStory();
+  }
+
+  function orderedPottedNumbers(completedShot) {
+    const completed = [...(completedShot?.pottedNumbers || [])];
+    const entryOrder = [...(completedShot?.pottedDetails || [])]
+      .filter((detail) => completed.includes(detail.number))
+      .sort((left, right) => (left.enteredOrder ?? Number.MAX_SAFE_INTEGER) - (right.enteredOrder ?? Number.MAX_SAFE_INTEGER))
+      .map((detail) => detail.number);
+    return [...entryOrder, ...completed.filter((number) => !entryOrder.includes(number))];
   }
 
   function finalizeShot() {
     if (!shotState || resolvingShot) return;
     resolvingShot = true;
     const completedShot = shotState;
+    completedShot.cueEnd = cueBall && !completedShot.cueScratch
+      ? { x: cueBall.position.x, y: cueBall.position.y }
+      : null;
     shotState = null;
     stableSteps = 0;
     let outcome;
     try {
       outcome = rules.evaluateShot(runState, {
-        pottedNumbers: [...completedShot.pottedNumbers],
+        pottedNumbers: orderedPottedNumbers(completedShot),
         cueScratch: completedShot.cueScratch,
         breakShot: completedShot.breakShot,
         bankedNumbers: [...new Set(completedShot.bankedNumbers)]
@@ -1888,10 +2010,10 @@
     selectedBallNumber = null;
     elements.call.classList.remove("is-quiet");
     resolvingShot = false;
-    syncUI();
     processOutcomePerformances(outcome, completedShot);
-    root.dataset.state = runState.endState.ended ? "ending" : shotStoryActive ? "story" : "aiming";
-    if (runState.endState.ended && !cinematicQueue.length && !cinematicActive && !shotStoryActive && elements.micro.hidden) showResult();
+    syncUI();
+    root.dataset.state = runState.endState.ended ? "map-finale" : "aiming";
+    if (runState.endState.ended && !cinematicQueue.length && !cinematicActive && !finalRevealActive && elements.micro.hidden) showResult();
   }
 
   function showResult() {
@@ -1978,6 +2100,13 @@
     pocketBursts = pocketBursts.filter((burst) => burst.life > 0);
     storyTrails.forEach((trail) => { trail.life -= 0.012; });
     storyTrails = storyTrails.filter((trail) => trail.life > 0);
+    dateMapState.zones.forEach((zone) => { zone.pulse *= 0.955; });
+    dateMapState.routes.forEach((route) => { route.glow = Math.max(0.46, route.glow * 0.994); });
+    dateMapState.stagePulse *= 0.958;
+    dateMapState.powerWave *= 0.94;
+    if (dateMapState.completed && dateMapState.finalProgress < 1) {
+      dateMapState.finalProgress = Math.min(1, dateMapState.finalProgress + 0.009);
+    }
     collisionFeedbacks.forEach((feedback) => {
       feedback.life -= 0.115;
       feedback.radius += feedback.speed;
@@ -2320,49 +2449,357 @@
     context.drawImage(tableCacheCanvas, 0, 0, WORLD.width, WORLD.height);
   }
 
-  function drawRelationshipTableStory(timestamp) {
-    const pendingPots = shotState?.pottedNumbers?.filter((number) => number > 0).length || 0;
-    const litCount = Math.min(15, runState.pottedNumbers.length + pendingPots);
-    const accentByStage = ["#7fcbbb", "#d9b975", "#dc8c9d", "#e6bd70", "#b8a7d0", "#84b8c7", "#edc575"];
-    const accent = accentByStage[currentStageNumber() - 1] || accentByStage[0];
-    const pulse = 0.82 + Math.sin(timestamp * 0.004) * 0.12;
-
-    context.save();
-    RELATIONSHIP_SIGHTS.slice(0, litCount).forEach((sight, index) => {
-      const fresh = index === litCount - 1 && pendingPots > 0;
-      context.globalAlpha = fresh ? pulse : 0.54;
-      context.fillStyle = fresh ? "#fff0c6" : accent;
-      context.shadowColor = accent;
-      context.shadowBlur = fresh ? 13 : 7;
-      context.beginPath();
-      context.arc(sight.x, sight.y, fresh ? 5.2 : 3.6, 0, Math.PI * 2);
-      context.fill();
+  function tracePoints(points) {
+    if (!points?.length) return;
+    context.beginPath();
+    points.forEach((point, index) => {
+      if (index === 0) context.moveTo(point.x, point.y);
+      else context.lineTo(point.x, point.y);
     });
-    context.restore();
+  }
 
-    storyTrails.forEach((trail) => {
-      if (!trail.path || trail.path.length < 2) return;
+  function drawMotifGlyph(motif, x, y, size, alpha = 1) {
+    const key = String(motif || "star").toLowerCase();
+    const s = size;
+    context.save();
+    context.translate(x, y);
+    context.globalAlpha *= alpha;
+    context.lineWidth = Math.max(1, s * 0.09);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#fff1c9";
+    context.fillStyle = "rgba(255, 239, 199, 0.16)";
+    context.beginPath();
+    if (key.includes("rain") || key.includes("drop")) {
+      context.moveTo(0, -s * 0.58); context.lineTo(-s * 0.38, s * 0.12); context.arc(0, s * 0.12, s * 0.38, Math.PI, 0); context.closePath();
+    } else if (key.includes("coffee") || key.includes("cup")) {
+      context.moveTo(-s * 0.5, -s * 0.22); context.lineTo(-s * 0.38, s * 0.38); context.lineTo(s * 0.3, s * 0.38); context.lineTo(s * 0.42, -s * 0.22); context.closePath();
+      context.moveTo(s * 0.42, -s * 0.08); context.arc(s * 0.49, s * 0.08, s * 0.2, -Math.PI / 2, Math.PI / 2);
+    } else if (key.includes("ticket") || key.includes("transit") || key.includes("card")) {
+      context.moveTo(-s * 0.58, -s * 0.32); context.lineTo(s * 0.58, -s * 0.32); context.lineTo(s * 0.58, s * 0.32); context.lineTo(-s * 0.58, s * 0.32); context.closePath();
+      context.moveTo(-s * 0.08, -s * 0.28); context.lineTo(-s * 0.08, s * 0.28);
+    } else if (key.includes("camera") || key.includes("photo")) {
+      context.moveTo(-s * 0.58, -s * 0.28); context.lineTo(-s * 0.18, -s * 0.28); context.lineTo(-s * 0.08, -s * 0.44); context.lineTo(s * 0.28, -s * 0.44); context.lineTo(s * 0.38, -s * 0.28); context.lineTo(s * 0.58, -s * 0.28); context.lineTo(s * 0.58, s * 0.4); context.lineTo(-s * 0.58, s * 0.4); context.closePath();
+      context.moveTo(s * 0.22, 0); context.arc(0, 0, s * 0.25, 0, Math.PI * 2);
+    } else if (key.includes("lamp") || key.includes("light")) {
+      context.moveTo(0, s * 0.58); context.lineTo(0, -s * 0.28); context.arc(s * 0.18, -s * 0.28, s * 0.18, Math.PI, 0); context.moveTo(-s * 0.28, s * 0.58); context.lineTo(s * 0.28, s * 0.58);
+    } else if (key.includes("ear") || key.includes("music")) {
+      context.arc(0, 0, s * 0.48, Math.PI * 1.04, Math.PI * 1.96); context.moveTo(-s * 0.48, 0); context.lineTo(-s * 0.48, s * 0.35); context.moveTo(s * 0.48, 0); context.lineTo(s * 0.48, s * 0.35);
+    } else if (key.includes("cat")) {
+      context.moveTo(-s * 0.46, -s * 0.12); context.lineTo(-s * 0.42, -s * 0.52); context.lineTo(-s * 0.12, -s * 0.3); context.lineTo(s * 0.16, -s * 0.3); context.lineTo(s * 0.44, -s * 0.52); context.lineTo(s * 0.46, -s * 0.08); context.arc(0, 0, s * 0.46, 0, Math.PI); context.closePath();
+    } else if (key.includes("heart") || key.includes("message")) {
+      context.moveTo(0, s * 0.52); context.lineTo(-s * 0.5, 0); context.arc(-s * 0.25, -s * 0.18, s * 0.25, Math.PI, 0); context.arc(s * 0.25, -s * 0.18, s * 0.25, Math.PI, 0); context.closePath();
+    } else if (key.includes("sun")) {
+      context.arc(0, 0, s * 0.28, 0, Math.PI * 2); for (let i = 0; i < 8; i += 1) { const a = i * Math.PI / 4; context.moveTo(Math.cos(a) * s * 0.42, Math.sin(a) * s * 0.42); context.lineTo(Math.cos(a) * s * 0.62, Math.sin(a) * s * 0.62); }
+    } else if (key.includes("gift")) {
+      context.moveTo(-s * 0.5, -s * 0.18); context.lineTo(s * 0.5, -s * 0.18); context.lineTo(s * 0.42, s * 0.48); context.lineTo(-s * 0.42, s * 0.48); context.closePath(); context.moveTo(0, -s * 0.48); context.lineTo(0, s * 0.48); context.moveTo(-s * 0.5, 0); context.lineTo(s * 0.5, 0);
+    } else if (key.includes("umbrella")) {
+      context.arc(0, 0, s * 0.56, Math.PI, 0); context.moveTo(0, 0); context.lineTo(0, s * 0.48); context.arc(s * 0.14, s * 0.48, s * 0.14, Math.PI, 0);
+    } else if (key.includes("home") || key.includes("key")) {
+      context.moveTo(-s * 0.52, -s * 0.02); context.lineTo(0, -s * 0.5); context.lineTo(s * 0.52, -s * 0.02); context.lineTo(s * 0.38, -s * 0.02); context.lineTo(s * 0.38, s * 0.5); context.lineTo(-s * 0.38, s * 0.5); context.lineTo(-s * 0.38, -s * 0.02); context.closePath();
+    } else {
+      for (let i = 0; i < 10; i += 1) { const a = -Math.PI / 2 + i * Math.PI / 5; const r = i % 2 ? s * 0.22 : s * 0.54; const px = Math.cos(a) * r; const py = Math.sin(a) * r; if (i === 0) context.moveTo(px, py); else context.lineTo(px, py); } context.closePath();
+    }
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
+  function drawTinyCouple(x, y, color, timestamp, walking = false) {
+    const step = walking ? Math.sin(timestamp * 0.008) * 2.2 : 0;
+    context.save();
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = 2.2;
+    context.shadowColor = color;
+    context.shadowBlur = 6;
+    [[-7, step], [7, -step]].forEach(([offset, leg]) => {
+      context.beginPath(); context.arc(x + offset, y - 13, 3.4, 0, Math.PI * 2); context.fill();
+      context.beginPath(); context.moveTo(x + offset, y - 9); context.lineTo(x + offset, y + 4); context.lineTo(x + offset - 3, y + 12 + leg); context.moveTo(x + offset, y + 4); context.lineTo(x + offset + 3, y + 12 - leg); context.stroke();
+    });
+    context.beginPath(); context.moveTo(x - 3, y - 4); context.lineTo(x + 3, y - 4); context.stroke();
+    context.restore();
+  }
+
+  function drawSceneArchitecture(zone, timestamp) {
+    const x = zone.x;
+    const y = zone.y;
+    const glow = 0.34 + zone.reveal * 0.66;
+    context.save();
+    context.globalAlpha = glow;
+    context.strokeStyle = zone.color;
+    context.fillStyle = colorWithAlpha(zone.color, 0.12 + zone.reveal * 0.1);
+    context.lineWidth = 2;
+    context.shadowColor = zone.color;
+    context.shadowBlur = zone.pulse > 0.04 ? zone.pulse * 18 : 0;
+    if (zone.drawType === "corner-store") {
+      context.fillRect(x - 62, y - 42, 124, 78); context.strokeRect?.(x - 62, y - 42, 124, 78);
+      for (let i = 0; i < 5; i += 1) context.fillRect(x - 58 + i * 24, y - 54, 14, 10);
+      context.fillStyle = colorWithAlpha("#f6d99b", 0.18 + zone.reveal * 0.3); context.fillRect(x - 48, y - 25, 42, 48); context.fillRect(x + 9, y - 25, 39, 25);
+    } else if (zone.drawType === "coffee-window") {
+      context.fillRect(x - 58, y - 45, 116, 84); context.strokeRect?.(x - 58, y - 45, 116, 84);
+      context.beginPath(); context.moveTo(x, y - 45); context.lineTo(x, y + 39); context.moveTo(x - 58, y - 5); context.lineTo(x + 58, y - 5); context.stroke();
+      drawMotifGlyph("coffee", x - 20, y + 12, 18, 0.84); drawMotifGlyph("coffee", x + 22, y + 12, 18, 0.84);
+    } else if (zone.drawType === "late-cinema") {
+      context.fillRect(x - 62, y - 38, 124, 72); context.strokeRect?.(x - 62, y - 38, 124, 72);
+      context.fillStyle = colorWithAlpha("#f4e6c6", 0.14 + zone.reveal * 0.24); context.fillRect(x - 48, y - 24, 96, 32);
+      for (let i = 0; i < 6; i += 1) { context.beginPath(); context.arc(x - 45 + i * 18, y + 23, 2.2, 0, Math.PI * 2); context.fill(); }
+    } else if (zone.drawType === "river-walk") {
+      for (let row = 0; row < 3; row += 1) { context.beginPath(); for (let i = 0; i < 7; i += 1) { const px = x - 62 + i * 21; const py = y + 11 + row * 11 + Math.sin(timestamp * 0.002 + i) * 3; if (i === 0) context.moveTo(px, py); else context.lineTo(px, py); } context.stroke(); }
+      context.beginPath(); context.moveTo(x - 38, y - 5); context.lineTo(x + 38, y - 5); context.moveTo(x - 28, y - 5); context.lineTo(x - 34, y + 13); context.moveTo(x + 28, y - 5); context.lineTo(x + 34, y + 13); context.stroke();
+    } else if (zone.drawType === "last-train") {
+      context.beginPath(); context.moveTo(x - 67, y - 37); context.lineTo(x + 67, y - 37); context.lineTo(x + 51, y - 18); context.lineTo(x - 51, y - 18); context.closePath(); context.fill(); context.stroke();
+      context.fillRect(x - 61, y - 10, 122, 38); context.strokeRect?.(x - 61, y - 10, 122, 38);
+      const trainLight = ((timestamp * 0.05) % 90) - 45; context.fillStyle = colorWithAlpha("#f5dfa8", 0.5); context.fillRect(x + trainLight, y - 2, 20, 13);
+    } else {
+      context.beginPath(); context.moveTo(x - 68, y + 35); context.lineTo(x + 68, y + 35); context.stroke();
+      [-45, 42].forEach((offset) => { context.fillRect(x + offset - 18, y - 28, 36, 62); context.strokeRect?.(x + offset - 18, y - 28, 36, 62); context.fillStyle = colorWithAlpha("#f6dc9a", 0.18 + zone.reveal * 0.34); context.fillRect(x + offset - 10, y - 16, 9, 13); context.fillRect(x + offset + 5, y + 3, 9, 13); });
+      drawMotifGlyph("lamp", x, y - 3, 27, 0.82);
+    }
+    if (zone.motifs.some((motif) => String(motif).includes("rain"))) {
       context.save();
-      context.lineCap = "round";
-      context.lineJoin = "round";
-      context.globalAlpha = Math.min(0.72, trail.life * 0.78);
-      context.strokeStyle = trail.color;
-      context.shadowColor = trail.color;
-      context.shadowBlur = trail.railHits > 0 ? 12 : 8;
-      context.lineWidth = trail.railHits > 0 ? 3.2 : 2.4;
-      context.beginPath();
-      trail.path.forEach((point, index) => {
-        if (index === 0) context.moveTo(point.x, point.y);
-        else context.lineTo(point.x, point.y);
-      });
+      context.globalAlpha = 0.24 + zone.reveal * 0.28;
+      context.strokeStyle = "#bde3e5";
+      context.lineWidth = 1;
+      for (let index = 0; index < 8; index += 1) {
+        const offset = (index * 23 + timestamp * 0.018) % 150 - 75;
+        context.beginPath(); context.moveTo(x + offset, y - 66); context.lineTo(x + offset - 8, y - 43); context.stroke();
+      }
+      context.restore();
+    }
+    if (zone.motifs.some((motif) => String(motif).includes("camera"))) {
+      context.save();
+      context.globalAlpha = 0.14 + (Math.sin(timestamp * 0.006) + 1) * 0.08;
+      context.fillStyle = "#fff8df";
+      context.beginPath(); context.arc(x, y, 34, 0, Math.PI * 2); context.fill();
+      context.restore();
+    }
+    if (zone.motifs.some((motif) => String(motif).includes("cat"))) {
+      const catX = x - 42 + (timestamp * 0.018 + zone.visits * 17) % 84;
+      drawMotifGlyph("cat", catX, y + 40, 10, 0.46 + zone.reveal * 0.28);
+    }
+    if (zone.motifs.some((motif) => String(motif).includes("sunset"))) {
+      context.save();
+      context.globalAlpha = 0.1 + zone.reveal * 0.12;
+      context.fillStyle = "#ef9b7f";
+      context.beginPath(); context.arc(x, y - 22, 58, Math.PI, Math.PI * 2); context.fill();
+      context.restore();
+    }
+    zone.motifs.slice(-3).forEach((motif, index) => {
+      drawMotifGlyph(motif, x - 28 + index * 28, y + 58, 12, 0.5 + zone.reveal * 0.42);
+    });
+    if (dateMapState.bestStreak >= 3 && zone.visits) drawTinyCouple(x, y - 66, "#ffe6b2", timestamp, dateMapState.activeStreak >= 3);
+    context.restore();
+  }
+
+  function colorWithAlpha(color, alpha) {
+    if (!color?.startsWith("#")) return color || `rgba(255,255,255,${alpha})`;
+    const hex = color.slice(1);
+    const expanded = hex.length === 3 ? hex.split("").map((value) => value + value).join("") : hex;
+    const number = Number.parseInt(expanded, 16);
+    return `rgba(${number >> 16 & 255},${number >> 8 & 255},${number & 255},${alpha})`;
+  }
+
+  function drawDateRoute(route, timestamp, finalBoost = 0) {
+    if (!route.path?.length) return;
+    const moving = dateMapState.flow > 0 || finalBoost > 0;
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.globalAlpha = 0.16 + route.glow * 0.18 + finalBoost * 0.48;
+    context.strokeStyle = route.color;
+    context.shadowColor = route.color;
+    context.shadowBlur = route.glow > 0.62 || finalBoost
+      ? 6 + route.railHits * 2 + finalBoost * 14
+      : 0;
+    context.lineWidth = route.archetype === "gentle" ? 1.8 : route.archetype === "power" ? 4.2 : route.railHits ? 3.2 : 2.5;
+    tracePoints(route.path);
+    context.stroke();
+    if (moving) {
+      context.globalAlpha = 0.34 + finalBoost * 0.5;
+      context.strokeStyle = "#fff4d4";
+      context.shadowBlur = 3;
+      context.lineWidth = 0.9;
+      context.setLineDash([4, 15]);
+      context.lineDashOffset = -timestamp * (0.018 + dateMapState.activeStreak * 0.004);
       context.stroke();
-      context.globalAlpha *= 0.72;
-      context.strokeStyle = "#fff5d8";
-      context.shadowBlur = 0;
-      context.lineWidth = 0.8;
+    }
+    context.restore();
+    if (["combo", "multi", "rattle"].includes(route.archetype)) {
+      const point = route.path[Math.floor(route.path.length * 0.56)] || route.path.at(-1);
+      drawMotifGlyph(route.archetype === "rattle" ? "cat" : route.motif, point.x, point.y, route.archetype === "multi" ? 17 : 13, 0.34 + finalBoost * 0.5);
+    }
+  }
+
+  function drawDateConnections(timestamp) {
+    if (dateMapState.bestStreak < 2 && !dateMapState.completed) return;
+    dateMapState.links.forEach((link, index) => {
+      const from = dateMapState.zones.get(link.from);
+      const to = dateMapState.zones.get(link.to);
+      if (!from || !to) return;
+      const middle = { x: (from.x + to.x) / 2 + (index % 2 ? 28 : -28), y: (from.y + to.y) / 2 };
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.globalAlpha = dateMapState.flow ? 0.28 : 0.13;
+      context.strokeStyle = link.color;
+      context.lineWidth = 1.7;
+      context.setLineDash([5, 13]);
+      context.lineDashOffset = -timestamp * 0.016;
+      tracePoints([from, middle, to]);
       context.stroke();
       context.restore();
     });
+  }
+
+  function drawCueJourney() {
+    if (dateMapState.cueStops.length < 2) return;
+    context.save();
+    context.globalAlpha = 0.22;
+    context.strokeStyle = "#edf7ed";
+    context.lineWidth = 1.2;
+    context.setLineDash([2, 10]);
+    tracePoints(dateMapState.cueStops);
+    context.stroke();
+    dateMapState.cueStops.forEach((point) => {
+      context.globalAlpha = point.successful ? 0.42 : 0.2;
+      context.fillStyle = point.successful ? "#fff0bd" : "#b9cbc4";
+      context.beginPath(); context.arc(point.x, point.y, point.successful ? 2.8 : 2, 0, Math.PI * 2); context.fill();
+    });
+    context.restore();
+  }
+
+  function drawFinalDateShape(timestamp) {
+    if (!dateMapState.ending || dateMapState.finalProgress <= 0) return;
+    const progress = clamp(dateMapState.finalProgress, 0, 1);
+    if (!dateMapState.completed) {
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.globalAlpha = 0.14 + progress * 0.34;
+      context.strokeStyle = "#94b4c4";
+      context.shadowColor = "#6f96aa";
+      context.shadowBlur = 10;
+      context.lineWidth = 2.4;
+      tracePoints([
+        { x: WORLD.width / 2, y: 700 },
+        { x: WORLD.width / 2 - 38, y: 820 },
+        { x: WORLD.width / 2 - 150, y: 1000 },
+        { x: TABLE.left + 34, y: TABLE.bottom - 40 }
+      ]);
+      context.stroke();
+      tracePoints([
+        { x: WORLD.width / 2, y: 700 },
+        { x: WORLD.width / 2 + 38, y: 820 },
+        { x: WORLD.width / 2 + 150, y: 1000 },
+        { x: TABLE.right - 34, y: TABLE.bottom - 40 }
+      ]);
+      context.stroke();
+      context.restore();
+      return;
+    }
+    const points = [];
+    for (let index = 0; index <= 80; index += 1) {
+      const t = index / 80 * Math.PI * 2;
+      points.push({
+        x: WORLD.width / 2 + Math.sin(t) ** 3 * 150,
+        y: 760 - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * 15
+      });
+    }
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = 0.1 + progress * 0.68;
+    context.strokeStyle = "#f3c891";
+    context.shadowColor = "#ef9aa9";
+    context.shadowBlur = 12 + progress * 22;
+    context.lineWidth = 2.2 + progress * 2.4;
+    context.setLineDash([Math.max(1, progress * 1150), 1150]);
+    context.lineDashOffset = 0;
+    tracePoints(points);
+    context.stroke();
+    context.restore();
+    drawTinyCouple(WORLD.width / 2, 940, "#fff0c8", timestamp, progress < 0.9);
+  }
+
+  function drawDateMap(timestamp) {
+    const pendingPots = shotState?.pottedNumbers?.filter((number) => number > 0).length || 0;
+    const litCount = Math.min(15, runState.pottedNumbers.length + pendingPots);
+    const finalBoost = dateMapState.completed ? clamp(dateMapState.finalProgress, 0, 1) : 0;
+    const dominantStyle = Object.entries(dateMapState.style)
+      .sort((left, right) => right[1] - left[1])[0]?.[0] || "precise";
+    const mapInk = {
+      precise: "#aed9c8",
+      bold: "#efb083",
+      adventurous: "#b5b8e2",
+      playful: "#d9a5c8"
+    }[dominantStyle];
+    context.save();
+    context.beginPath();
+    context.moveTo(TABLE.left, TABLE.top);
+    context.lineTo(TABLE.right, TABLE.top);
+    context.lineTo(TABLE.right, TABLE.bottom);
+    context.lineTo(TABLE.left, TABLE.bottom);
+    context.closePath();
+    context.clip();
+
+    context.save();
+    context.globalAlpha = 0.035 + Math.min(0.08, litCount * 0.004) + finalBoost * 0.08;
+    context.strokeStyle = mapInk;
+    context.lineWidth = 1;
+    for (let x = TABLE.left + 68; x < TABLE.right; x += 92) {
+      context.beginPath(); context.moveTo(x, TABLE.top); context.lineTo(x + 34, TABLE.bottom); context.stroke();
+    }
+    for (let y = TABLE.top + 72; y < TABLE.bottom; y += 112) {
+      context.beginPath(); context.moveTo(TABLE.left, y); context.lineTo(TABLE.right, y + 24); context.stroke();
+    }
+    context.restore();
+
+    drawDateConnections(timestamp);
+    dateMapState.routes.forEach((route) => drawDateRoute(route, timestamp, finalBoost));
+    if (dateMapState.powerWave > 0.02) {
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.globalAlpha = dateMapState.powerWave * 0.35;
+      context.strokeStyle = "#ffd5a3";
+      context.lineWidth = 2.2;
+      context.beginPath();
+      context.arc(lastStoryWorldOrigin.x, lastStoryWorldOrigin.y, 42 + (1 - dateMapState.powerWave) * 210, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+    }
+    drawCueJourney();
+    dateMapState.zones.forEach((zone) => {
+      if (!zone.visits && !finalBoost) return;
+      context.save();
+      const halo = context.createRadialGradient(zone.x, zone.y, 0, zone.x, zone.y, 105);
+      halo.addColorStop(0, colorWithAlpha(zone.color, 0.12 + zone.reveal * 0.18 + zone.pulse * 0.12));
+      halo.addColorStop(1, colorWithAlpha(zone.color, 0));
+      context.fillStyle = halo;
+      context.fillRect(zone.x - 108, zone.y - 108, 216, 216);
+      context.restore();
+      drawSceneArchitecture(zone, timestamp);
+    });
+    if (dateMapState.activeStreak >= 4) {
+      context.save();
+      context.globalCompositeOperation = "screen";
+      context.globalAlpha = 0.12 + Math.sin(timestamp * 0.003) * 0.03;
+      context.fillStyle = "#f8d597";
+      for (let index = 0; index < 18; index += 1) {
+        const x = TABLE.left + 36 + (index * 83) % (TABLE.right - TABLE.left - 72);
+        const y = TABLE.top + 48 + (index * 137) % (TABLE.bottom - TABLE.top - 96);
+        context.fillRect(x, y, 3 + index % 3, 3 + index % 2);
+      }
+      context.restore();
+    }
+    drawFinalDateShape(timestamp);
+    context.restore();
+
+    context.save();
+    RELATIONSHIP_SIGHTS.slice(0, litCount).forEach((sight, index) => {
+      context.globalAlpha = index === litCount - 1 && pendingPots > 0 ? 0.92 : 0.36;
+      context.fillStyle = index === litCount - 1 ? "#fff0c6" : "#d3b875";
+      context.beginPath(); context.arc(sight.x, sight.y, index === litCount - 1 ? 4.8 : 3.2, 0, Math.PI * 2); context.fill();
+    });
+    context.restore();
   }
 
   function drawBall(ball, timestamp) {
@@ -2416,6 +2853,7 @@
       shade.addColorStop(1, "rgba(0,0,0,0.46)");
       context.fillStyle = shade;
       context.fillRect(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
+      drawMotifGlyph(motifForBall(number), 0, BALL_RADIUS * 0.62, 3.8, 0.72);
       context.fillStyle = "#f7f2e7";
       context.beginPath();
       context.arc(0, 0, 6.6, 0, Math.PI * 2);
@@ -2740,7 +3178,7 @@
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
     drawTableLayer();
-    drawRelationshipTableStory(timestamp);
+    drawDateMap(timestamp);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
@@ -2798,9 +3236,9 @@
       accumulator = 0;
       updateEffects();
     }
-    // The full-screen scene completely covers both table canvases. Keeping the
-    // high-DPR table frozen here leaves the compositor free for the scene.
-    if (!cinematicActive && !resultVisible) draw(timestamp);
+    // Cinematics cover the table; the result sheet does not. Keep the completed
+    // map alive behind the result so the ending remains on the cloth.
+    if (!cinematicActive) draw(timestamp);
     frameHandle = requestAnimationFrame(frame);
   }
 
@@ -2959,7 +3397,6 @@
   initializeBallRenderer();
   buildRails();
   buildTimeline();
-  buildTableStory();
   rackBalls();
   if (coachSeen) elements.coach.classList.add("is-gone");
   syncUI();
@@ -2975,6 +3412,9 @@
     },
     classifyShot(shot) {
       return content.analyzeShot(shot || {});
+    },
+    orderPots(shot) {
+      return Object.freeze(orderedPottedNumbers(shot || {}));
     },
     visibilityChange() {
       resetFrameTiming();
@@ -3017,14 +3457,22 @@
           maxShotSpeed: MAX_SHOT_SPEED
         }),
         presentation: Object.freeze({
-          shotStoryActive,
-          shotStoryArchetype: shotStoryCurrent?.archetype || null,
-          shotStoryTechnique: elements.shotStoryTechnique.textContent || null,
-          shotStoryTitle: elements.shotStoryTitle.textContent || null,
-          shotStoryImage: elements.shotStoryImage.style.backgroundImage || null,
+          tableMomentActive,
+          tableMomentArchetype: tableMomentCurrent?.archetype || null,
+          tableMomentScene: elements.tableMomentScene.textContent || null,
+          tableMomentTitle: elements.tableMomentTitle.textContent || null,
           storyTrailCount: storyTrails.length,
-          companionGesture: elements.companion.dataset.gesture || null,
-          completedMemoryCount: memoryNodes.filter((node) => !node.hidden).length,
+          dateMap: Object.freeze({
+            litScenes: [...dateMapState.zones.values()].filter((zone) => zone.visits > 0).length,
+            routes: dateMapState.routes.length,
+            links: dateMapState.links.length,
+            cueStops: dateMapState.cueStops.length,
+            activeStreak: dateMapState.activeStreak,
+            completed: dateMapState.completed,
+            finalProgress: dateMapState.finalProgress,
+            lastPocketId: dateMapState.lastPocketId,
+            style: Object.freeze({ ...dateMapState.style })
+          }),
           microVisible: !elements.micro.hidden,
           microQueued: microQueue.length,
           microType: elements.micro.dataset.type || null,
@@ -3192,22 +3640,24 @@
         objectContacts: Number(shot?.objectContacts) || 0,
         closestPocketDistance: Number.isFinite(shot?.closestPocketDistance) ? shot.closestPocketDistance : Infinity,
         launchPower: Number.isFinite(shot?.launchPower) ? shot.launchPower : 0.52,
+        cueEnd: shot?.cueEnd ? { x: shot.cueEnd.x, y: shot.cueEnd.y } : null,
+        dateRouteIds: [],
         storyShown: false
       };
       const outcome = rules.evaluateShot(runState, {
-        pottedNumbers: completedShot.pottedNumbers,
+        pottedNumbers: orderedPottedNumbers(completedShot),
         cueScratch: completedShot.cueScratch,
         breakShot: completedShot.breakShot,
         bankedNumbers: completedShot.bankedNumbers
       });
       runState = outcome.state;
-      syncUI();
       processOutcomePerformances(outcome, completedShot);
+      syncUI();
       return this.snapshot();
     },
     advancePresentation() {
-      if (shotStoryActive) {
-        hideShotStory();
+      if (tableMomentActive) {
+        hideTableMoment();
       } else if (!elements.micro.hidden) {
         clearTimeout(microTimer);
         elements.micro.hidden = true;

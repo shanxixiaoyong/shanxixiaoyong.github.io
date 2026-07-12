@@ -409,54 +409,59 @@ test("settles a normal shot directly without selecting a relationship target", (
   assertFiniteTable(snapshot);
 });
 
-test("routes physical pots through table stories before stage cinematics", () => {
+test("keeps pots, misses, and the black eight inside the persistent date map", () => {
   const debug = bootRuntime();
   debug.presentShot({ breakShot: true });
 
   let snapshot = debug.presentShot({ pottedNumbers: [1], launchPower: 0.55 });
-  assert.equal(snapshot.presentation.shotStoryActive, true);
-  assert.equal(snapshot.presentation.shotStoryArchetype, "direct");
-  assert.match(snapshot.presentation.shotStoryTechnique, /直线命中/);
-  assert.doesNotMatch(snapshot.presentation.shotStoryTitle, /^1号球/);
-  assert.match(snapshot.presentation.shotStoryImage, /campus-library\.webp/);
-  assert.equal(snapshot.presentation.companionGesture, "notice");
+  assert.equal(snapshot.presentation.tableMomentActive, true);
+  assert.equal(snapshot.presentation.tableMomentArchetype, "direct");
+  assert.match(snapshot.presentation.tableMomentTitle, /·/);
+  assert.equal(snapshot.presentation.dateMap.routes, 1);
+  assert.equal(snapshot.presentation.dateMap.litScenes, 1);
   assert.equal(snapshot.presentation.microVisible, false);
   assert.equal(snapshot.presentation.cinematicActive, false);
+  assert.equal(snapshot.presentation.cinematicQueued, 0);
   debug.advancePresentation();
 
   debug.presentShot({ pottedNumbers: [2] });
   debug.advancePresentation();
   snapshot = debug.presentShot({ pottedNumbers: [3] });
-  assert.equal(snapshot.presentation.shotStoryActive, true, "the pocket story must bridge into the stage performance");
+  assert.equal(snapshot.presentation.tableMomentActive, true);
+  assert.equal(snapshot.presentation.dateMap.routes, 3);
   assert.equal(snapshot.presentation.cinematicActive, false);
-  assert.equal(snapshot.presentation.cinematicQueued, 1);
-  assert.equal(snapshot.presentation.nextCinematicStageId, "first-contact");
-  assert.equal(snapshot.presentation.completedMemoryCount, 1);
-  snapshot = debug.advancePresentation();
-  assert.equal(snapshot.presentation.cinematicActive, true);
   assert.equal(snapshot.presentation.cinematicQueued, 0);
-  assert.equal(snapshot.presentation.cinematicStageId, "first-contact");
-  assert.match(snapshot.presentation.cinematicImage, /campus-library\.webp/);
 
   const missDebug = bootRuntime();
   missDebug.presentShot({ breakShot: true });
   snapshot = missDebug.presentShot({});
-  assert.equal(snapshot.presentation.microVisible, true);
-  assert.equal(snapshot.presentation.microType, "setup");
+  assert.equal(snapshot.presentation.microVisible, false);
+  assert.equal(snapshot.presentation.tableMomentActive, false);
+  assert.equal(snapshot.presentation.dateMap.activeStreak, 0);
 
   const scratchDebug = bootRuntime();
   scratchDebug.presentShot({ breakShot: true });
   snapshot = scratchDebug.presentShot({ cueScratch: true });
-  assert.equal(snapshot.presentation.microVisible, true);
-  assert.equal(snapshot.presentation.microType, "scratch");
+  assert.equal(snapshot.presentation.microVisible, false);
+  assert.equal(snapshot.presentation.dateMap.activeStreak, 0);
 
   const eightDebug = bootRuntime();
   snapshot = eightDebug.presentShot({ pottedNumbers: [8], breakShot: true });
   assert.equal(snapshot.runState.endState.ending, "reckless-rejection");
-  assert.equal(snapshot.presentation.shotStoryActive, false);
-  assert.equal(snapshot.presentation.cinematicActive, true);
+  assert.equal(snapshot.presentation.tableMomentActive, true);
+  assert.equal(snapshot.presentation.dateMap.completed, false);
+  assert.equal(snapshot.presentation.cinematicActive, false);
   assert.equal(snapshot.presentation.cinematicQueued, 0);
-  assert.equal(snapshot.presentation.cinematicStageId, "learning-together");
+});
+
+test("orders same-shot pots by physical pocket entry rather than animation completion", () => {
+  const debug = bootRuntime();
+  const details = [
+    { number: 15, enteredOrder: 0 },
+    { number: 8, enteredOrder: 1 }
+  ];
+  assert.deepEqual([...debug.orderPots({ pottedNumbers: [8, 15], pottedDetails: details })], [15, 8]);
+  assert.deepEqual([...debug.orderPots({ pottedNumbers: [15, 8], pottedDetails: details })], [15, 8]);
 });
 
 test("requires mouth entry plus visible drop-line crossing and lets a jaw collision reject a pocket graze", () => {

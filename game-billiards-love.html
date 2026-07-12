@@ -3,26 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>心动桌球 - 刘勇 / Yong Liu</title>
-  <meta name="description" content="心动桌球：完成一场标准十五球自由清台，让每次进球推进一段关系。">
+  <title>心动桌球 · 一场约会地图 - 刘勇 / Yong Liu</title>
+  <meta name="description" content="心动桌球：完成一场标准十五球自由清台，让每次进球点亮一场约会地图。">
   <meta name="theme-color" content="#07100d">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=yl-20260630">
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-scenes/lounge-night.jpg" as="image">
-  <link rel="preload" href="assets/love-scenes/campus-library.webp" as="image">
-  <link rel="preload" href="assets/love-scenes/cafe-evening.webp" as="image">
-  <link rel="preload" href="assets/love-scenes/city-night.webp" as="image">
   <link rel="preload" href="assets/billiards-scenes/confession-night.jpg" as="image">
-  <link rel="preload" href="assets/love-scenes/warm-home.webp" as="image">
-  <link rel="preload" href="assets/love-scenes/rain-night.webp" as="image">
-  <link rel="preload" href="assets/love-scenes/starlight-vow.webp" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-story-table-20260712a">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-date-map-20260712a">
 </head>
 <body class="heartbeat-billiards-page">
-  <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球" data-stage="1" data-state="loading">
+  <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球：一场约会地图" data-stage="1" data-state="loading">
     <div class="hb-backdrop" aria-hidden="true"></div>
     <div class="hb-stage-light" aria-hidden="true"></div>
 
@@ -30,18 +24,18 @@
       <a class="hb-icon-button hb-back" href="index.html" aria-label="返回首页" title="返回首页"><span aria-hidden="true">&larr;</span></a>
 
       <div class="hb-stage-copy" aria-live="polite">
-        <span id="hb-stage-kicker">阶段 01 · 初次接触</span>
-        <strong id="hb-stage-title">刚刚注意到彼此</strong>
-        <small class="hb-sr-only" id="hb-stage-targets">任意非黑 8 彩球均可，再进 3 颗进入下一阶段</small>
+        <span id="hb-stage-kicker">约会地图 · 00 / 15 笔</span>
+        <strong id="hb-stage-title">桌布下藏着一场尚未发生的约会</strong>
+        <small class="hb-sr-only" id="hb-stage-targets">任意非黑 8 彩球都能继续显影这场约会</small>
       </div>
 
-      <div class="hb-interest" id="hb-interest-wrap" aria-label="心绪状态：自然靠近">
+      <div class="hb-interest" id="hb-interest-wrap" aria-label="夜色状态：未醒">
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle cx="22" cy="22" r="18"></circle>
           <circle id="hb-interest-ring" cx="22" cy="22" r="18"></circle>
         </svg>
-        <span>心绪</span>
-        <strong id="hb-interest">安稳</strong>
+        <span>夜色</span>
+        <strong id="hb-interest">未醒</strong>
       </div>
 
       <div class="hb-toolbar" aria-label="游戏设置">
@@ -57,26 +51,27 @@
 
         <div class="hb-table-story" id="hb-table-story" aria-hidden="true">
           <div class="hb-table-reflection"></div>
-          <div class="hb-companion" id="hb-companion" data-gesture="waiting">
-            <i class="hb-companion-sleeve"></i>
-            <i class="hb-companion-hand"></i>
-          </div>
-          <div class="hb-memory-rail" id="hb-memory-rail"></div>
           <div class="hb-pocket-focus" id="hb-pocket-focus" hidden>
             <i></i><b></b><span></span>
           </div>
         </div>
 
-        <div class="hb-call" id="hb-call" aria-live="polite">
-          <span id="hb-call-label">开球</span>
-          <strong id="hb-call-title">打散今晚的第一束光</strong>
-          <small id="hb-call-hint">桌面任意位置向后滑动，松开完成开球</small>
+        <div class="hb-table-moment" id="hb-table-moment" role="status" aria-live="polite" aria-atomic="true" hidden>
+          <span id="hb-table-moment-scene">约会地图 · 桌边这一站</span>
+          <strong id="hb-table-moment-title">第一声进球，记下新的坐标</strong>
+          <p id="hb-table-moment-line">球桌始终留在眼前，下一杆随时可以继续。</p>
         </div>
 
         <div class="hb-micro" id="hb-micro" aria-live="polite" aria-atomic="true" hidden>
           <span id="hb-micro-kicker">这一杆</span>
           <strong id="hb-micro-title">话题暂时停在这里</strong>
           <p id="hb-micro-line">球没有落袋，对面的目光仍然留在桌边。</p>
+        </div>
+
+        <div class="hb-call" id="hb-call" aria-live="polite">
+          <span id="hb-call-label">约会开场</span>
+          <strong id="hb-call-title">打散今晚的第一束光</strong>
+          <small id="hb-call-hint">桌面任意位置向后滑动，松开完成开球</small>
         </div>
 
         <div class="hb-judgement" id="hb-judgement" role="status" aria-live="polite"></div>
@@ -89,9 +84,10 @@
       </div>
     </section>
 
-    <nav class="hb-relationship-track" id="hb-relationship-track" aria-label="关系进度">
+    <nav class="hb-relationship-track" id="hb-relationship-track" aria-label="一场约会地图：关系进度">
+      <span class="hb-track-label">约会地图</span>
       <div class="hb-track-line" aria-hidden="true"><i id="hb-track-progress"></i></div>
-      <ol id="hb-track-nodes"></ol>
+      <ol id="hb-track-nodes" aria-label="六站约会场景"></ol>
     </nav>
 
     <footer class="hb-bottom-bar">
@@ -108,17 +104,6 @@
         <strong id="hb-streak">0</strong>
       </div>
     </footer>
-
-    <section class="hb-shot-story" id="hb-shot-story" data-phase="focus" data-archetype="direct" aria-live="polite" aria-atomic="true" hidden>
-      <div class="hb-shot-story-image" id="hb-shot-story-image" aria-hidden="true"></div>
-      <div class="hb-shot-story-light" aria-hidden="true"></div>
-      <div class="hb-shot-story-orbit" aria-hidden="true"><i></i><b></b></div>
-      <div class="hb-shot-story-copy">
-        <span id="hb-shot-story-technique">直线命中 · 坦率靠近</span>
-        <strong id="hb-shot-story-title">这一句没有再绕开</strong>
-        <p id="hb-shot-story-line">球落袋的声音很轻，她却认真听见了你的意思。</p>
-      </div>
-    </section>
 
     <section class="hb-cinematic" id="hb-cinematic" data-kind="stage" aria-live="polite" aria-atomic="true" hidden>
       <div class="hb-cinematic-image" id="hb-cinematic-image" aria-hidden="true"></div>
@@ -152,10 +137,10 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-love-story-table-20260712a"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-story-table-20260712a"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-story-table-20260712a"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-story-table-20260712a"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-story-table-20260712a"></script>
+  <script src="assets/billiards-physics.js?v=billiards-love-date-map-20260712a"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-date-map-20260712a"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-date-map-20260712a"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-date-map-20260712a"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-date-map-20260712a"></script>
 </body>
 </html>

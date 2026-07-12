@@ -127,7 +127,7 @@ test("billiards pins the independent physics and ball renderer before the game r
     "assets/billiards-ball-renderer.js",
     "assets/billiards-love-game.js"
   ]);
-  assert.equal(billiards.cacheVersion, "billiards-love-story-table-20260712a");
+  assert.equal(billiards.cacheVersion, "billiards-love-date-map-20260712a");
   assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js"]);
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-ball-renderer.js"));
   assert.equal(gameContract.ACTIVE_PUBLIC_JS_FILES.includes("assets/billiards-ball-renderer.js"), false);
@@ -227,8 +227,8 @@ test("site contract rejects hidden portal doors and retired lobby copy", () => {
 });
 
 test("site contract rejects reordered billiards layers and stale renderer cache versions", () => {
-  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-love-story-table-20260712a"></script>';
-  const game = '  <script src="assets/billiards-love-game.js?v=billiards-love-story-table-20260712a"></script>';
+  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-love-date-map-20260712a"></script>';
+  const game = '  <script src="assets/billiards-love-game.js?v=billiards-love-date-map-20260712a"></script>';
 
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     `${renderer}\n${game}`,

@@ -9,6 +9,11 @@ const bundlePath = path.join(root, "assets/billiards-ball-renderer.js");
 const licensePath = path.join(root, "assets/vendor/three-0.185.1.LICENSE.txt");
 const source = fs.readFileSync(bundlePath, "utf8");
 const license = fs.readFileSync(licensePath, "utf8");
+const expectedMotifKeys = [
+  "raindrop", "coffee", "ticket", "camera", "streetlamp",
+  "earphones", "cat", "heart", "sunset", "gift",
+  "message", "transit", "star", "umbrella", "homeward"
+];
 
 test("ships a minified official Three r185 runtime without an external Three dependency", () => {
   assert.ok(source.startsWith("/*! BilliardsBallRenderer | Three.js r185 |"));
@@ -50,9 +55,9 @@ test("builds equirectangular numbered textures, physically lit sphere materials,
 test("exposes the frame-driven API with an orthographic transparent WebGL2 renderer", () => {
   assert.ok(source.includes('getContext("webgl2"'));
   assert.ok(source.includes("this.renderer.setClearColor(0,0)"));
-  assert.ok(/window\.BilliardsBallRenderer=Object\.freeze\(\{create:[\w$]+\}\)/.test(source));
+  assert.ok(/window\.BilliardsBallRenderer=Object\.freeze\(\{create:[\w$]+,motifs:BBR_MOTIF_DEFINITIONS\}\)/.test(source));
   const layerSource = source.slice(source.indexOf("A 2D canvas is required for billiards ball textures"));
-  for (const method of ["resize", "sync", "render", "dispose"]) {
+  for (const method of ["resize", "sync", "setMotifs", "render", "dispose"]) {
     assert.ok(new RegExp(`${method}\\(`).test(layerSource), `missing ${method} instance method`);
   }
   assert.ok(!/setAnimationLoop|requestAnimationFrame/.test(layerSource), "the layer must remain frame-driven");
@@ -69,6 +74,55 @@ function loadApi() {
   }, { filename: "billiards-ball-renderer.js" });
   return window.BilliardsBallRenderer;
 }
+
+test("defines and code-draws a distinct restrained motif for each object ball", () => {
+  const api = loadApi();
+  const definitions = Array.from(api.motifs, ({ number, key }) => ({ number, key }));
+  assert.deepEqual(definitions, expectedMotifKeys.map((key, index) => ({ number: index + 1, key })));
+  assert.ok(Object.isFrozen(api.motifs));
+  assert.ok(api.motifs.every(Object.isFrozen));
+
+  const shapeStart = source.indexOf("function bbrDrawMotifShape(");
+  const shapeEnd = source.indexOf("function bbrDrawMotif(", shapeStart);
+  assert.ok(shapeStart > 0 && shapeEnd > shapeStart, "missing motif path renderer");
+  const shapeSource = source.slice(shapeStart, shapeEnd);
+  assert.doesNotMatch(shapeSource, /drawImage|Image\(|createImageBitmap/, "motifs must not use external images");
+
+  const sandbox = {};
+  vm.runInNewContext(`${shapeSource};this.drawMotifShape=bbrDrawMotifShape;`, sandbox);
+  const signatures = new Set();
+  for (const key of expectedMotifKeys) {
+    const calls = [];
+    const context = new Proxy({}, {
+      get(target, property) {
+        target[property] ||= (...args) => calls.push([property, ...args]);
+        return target[property];
+      }
+    });
+    assert.equal(sandbox.drawMotifShape(context, key), true, `missing ${key} motif`);
+    assert.ok(calls.some(([operation]) => operation === "stroke" || operation === "fill"), `${key} is not painted`);
+    signatures.add(JSON.stringify(calls));
+  }
+  assert.equal(signatures.size, 15, "each ball must have a visually distinct path definition");
+  assert.equal(sandbox.drawMotifShape(new Proxy({}, { get: () => () => {} }), "unknown"), false);
+});
+
+test("keeps the number spot larger, painted last, and visually primary", () => {
+  const textureStart = source.indexOf("function Cm(");
+  const textureEnd = source.indexOf("function Rm(", textureStart);
+  const textureSource = source.slice(textureStart, textureEnd);
+  const motifCall = textureSource.indexOf("bbrDrawMotif(");
+  const numberCall = textureSource.indexOf("Yc(", motifCall);
+
+  assert.ok(motifCall > 0 && numberCall > motifCall, "number spots must be painted over and after motifs");
+  assert.equal((textureSource.match(/Yc\(a,/g) || []).length, 2, "both hemispheres need a readable number");
+  assert.match(textureSource, /bbrDrawMotif\(a,zi\*g,Yn\*\.658,h,s\)/, "motifs must live in the rotating texture map");
+  assert.match(source, /font="700 "\+\(s>9\?27:31\)\+"px Arial, sans-serif"/);
+
+  const maximumMotifBackdropRadius = 7.4 * 1.15 * 1.18;
+  const numberSpotRadius = 256 * 0.096;
+  assert.ok(maximumMotifBackdropRadius < numberSpotRadius / 2, "motifs must stay subordinate to the number spot");
+});
 
 test("returns a complete non-throwing fallback when WebGL2 is unavailable", () => {
   const api = loadApi();
@@ -92,6 +146,7 @@ test("returns a complete non-throwing fallback when WebGL2 is unavailable", () =
   assert.equal(fallback.supported, false);
   assert.doesNotThrow(() => fallback.resize(360, 720, 3));
   assert.doesNotThrow(() => fallback.sync([{ number: 1, x: 10, y: 20 }]));
+  assert.equal(fallback.setMotifs({ enabled: false }), fallback);
   assert.equal(fallback.render(), false);
   assert.doesNotThrow(() => fallback.dispose());
 });
@@ -109,6 +164,7 @@ test("contains creation failures and still returns the fallback API", () => {
   assert.equal(fallback.supported, false);
   assert.equal(typeof fallback.resize, "function");
   assert.equal(typeof fallback.sync, "function");
+  assert.equal(typeof fallback.setMotifs, "function");
   assert.equal(typeof fallback.render, "function");
   assert.equal(typeof fallback.dispose, "function");
 });

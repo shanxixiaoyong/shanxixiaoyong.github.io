@@ -225,21 +225,22 @@ test("raises hidden interest for consecutive pots and emits qualitative trend si
   assert.equal(stageClear.interestSignal.band, "devoted");
 });
 
-test("applies escalating miss losses and fails at the active stage's hidden floor", () => {
+test("applies escalating miss losses without ending the date map", () => {
   let state = open().state;
   const losses = [];
   let result;
-  while (!state.endState.ended) {
+  for (let index = 0; index < 10; index += 1) {
     result = play(state, []);
     losses.push(result.interestDelta);
     state = result.state;
   }
-  assert.deepEqual(losses, [-1, -3, -6, -6, -6, -6, -6]);
-  assert.equal(state.interest, 38);
+  assert.deepEqual(losses.slice(0, 7), [-1, -3, -6, -6, -6, -6, -6]);
+  assert.equal(state.interest, 20);
   assert.equal(STAGES[0].interestFloor, 38);
   assert.equal(result.interestSignal.band, "lost");
   assert.equal(result.interestTrend.direction, "down");
-  assert.equal(state.endState.ending, "losing-contact");
+  assert.equal(state.endState.ended, false);
+  assert.equal(state.endState.ending, null);
 });
 
 test("combines scratch and miss feedback while preserving exact technical statistics", () => {
