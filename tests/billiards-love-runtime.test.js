@@ -288,6 +288,9 @@ test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /function drawMotifAtmosphere\(/);
   assert.match(source, /date-map-rose-v3\.jpg/);
   assert.match(source, /function playSceneLens\(/);
+  assert.match(source, /function cssSceneImage\(asset\)/);
+  assert.match(source, /return `url\(\\"\/\$\{String\(asset \|\| ""\)\.replace/);
+  assert.doesNotMatch(source, /setProperty\("--hb-(?:scene|backdrop)-image", `url\(\\"\$\{asset\}/);
   assert.match(source, /originX: pocket\.captureX/);
   assert.match(source, /originY: pocket\.captureY/);
   assert.match(source, /sceneTransition = \{/);

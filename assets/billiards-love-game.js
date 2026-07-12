@@ -1200,8 +1200,8 @@
     root.style.setProperty("--hb-scene-y", "18%");
     root.style.setProperty("--hb-scene-opacity", "0.12");
     root.style.setProperty("--hb-scene-scale", "1.04");
-    root.style.setProperty("--hb-backdrop-image", "url(\"assets/billiards-scenes/date-map-rose-v3.jpg\")");
-    root.style.setProperty("--hb-scene-image", "url(\"assets/billiards-scenes/date-map-rose-v3.jpg\")");
+    root.style.setProperty("--hb-backdrop-image", "url(\"/assets/billiards-scenes/date-map-rose-v3.jpg\")");
+    root.style.setProperty("--hb-scene-image", "url(\"/assets/billiards-scenes/date-map-rose-v3.jpg\")");
     setDateFlow(0, true);
     rackBalls();
     syncUI();
@@ -1244,6 +1244,10 @@
     };
   }
 
+  function cssSceneImage(asset) {
+    return `url(\"/${String(asset || "").replace(/^\/+/, "")}\")`;
+  }
+
   function focusBackdropScene(scene, route, options = {}) {
     if (!scene) return;
     const style = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
@@ -1257,7 +1261,7 @@
     root.dataset.motif = route?.motif || "night";
     root.dataset.sceneVariant = String(route?.variantIndex ?? 0);
     root.dataset.sceneMood = mood.id;
-    root.style.setProperty("--hb-scene-image", `url(\"${asset}\")`);
+    root.style.setProperty("--hb-scene-image", cssSceneImage(asset));
     root.style.setProperty("--hb-scene-x", `${route?.backdropX ?? variant.backdropX ?? scene.focusX ?? 50}%`);
     root.style.setProperty("--hb-scene-y", `${route?.backdropY ?? variant.backdropY ?? scene.focusY ?? 50}%`);
     root.style.setProperty("--hb-scene-scale", String(clamp(route?.zoom ?? variant.zoom ?? 1, 1, 1.28)));
@@ -1266,7 +1270,7 @@
     root.style.setProperty("--hb-stage-scene-primary", mood.primary);
     root.style.setProperty("--hb-stage-scene-secondary", mood.secondary);
     root.style.setProperty("--hb-scene-opacity", String(opacity));
-    if (options.commit !== false) root.style.setProperty("--hb-backdrop-image", `url(\"${asset}\")`);
+    if (options.commit !== false) root.style.setProperty("--hb-backdrop-image", cssSceneImage(asset));
   }
 
   function playSceneLens(scene, route, pocket) {
@@ -1283,7 +1287,7 @@
     elements.sceneLens.classList.add("is-active");
     backdropCommitTimer = setTimeout(() => {
       const style = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
-      root.style.setProperty("--hb-backdrop-image", `url(\"${route?.sceneAsset || style.asset}\")`);
+      root.style.setProperty("--hb-backdrop-image", cssSceneImage(route?.sceneAsset || style.asset));
     }, 650);
     sceneLensTimer = setTimeout(() => elements.sceneLens.classList.remove("is-active"), SCENE_PORTAL_DURATION_MS + 120);
   }

@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-scene-portals-20260712e";
-const styleCacheVersion = "billiards-love-scene-portals-20260712e";
+const runtimeCacheVersion = "billiards-love-scene-portals-20260712f";
+const styleCacheVersion = "billiards-love-scene-portals-20260712f";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
