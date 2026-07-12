@@ -176,7 +176,7 @@ test("overrides the legacy rotated canvas and caps high-DPR rendering work", () 
   assert.match(source, /window\.addEventListener\("resize", resizeCanvas\)/);
 });
 
-test("supports direct pull-direction-and-power touch aiming without target selection", () => {
+test("supports direct pull-direction-and-power touch aiming with a stable release lock", () => {
   for (const event of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
     assert.ok(source.includes(`"${event}"`), `missing ${event}`);
   }
@@ -193,6 +193,12 @@ test("supports direct pull-direction-and-power touch aiming without target selec
   assert.match(source, /const STRONG_PULL_START = 0\.82/);
   assert.match(source, /const LIGHT_POWER_MAX = 0\.30/);
   assert.match(source, /const STRONG_POWER_MIN = 0\.76/);
+  assert.match(source, /const AIM_LOCK_DELAY_MS = 500/);
+  assert.match(source, /const AIM_LOCK_BREAK_ANGLE = 0\.055/);
+  assert.match(source, /function refreshAimLock\(now = performance\.now\(\)\)/);
+  assert.match(source, /pointerAim\.lockedDirection = \{ \.\.\.pointerAim\.directionAnchor \}/);
+  assert.match(source, /if \(!refreshAimLock\(\)\) updateAim\(pointerToWorld\(event\), \{ release: true \}\)/);
+  assert.match(source, /pointerAim\.lockedDirection \|\| pointerAim\.direction/);
   assert.match(source, /const MAX_SHOT_SPEED = 42/);
   assert.doesNotMatch(source, /distance\(point, cueBall\.position\) > 54/);
   assert.match(source, /function drawCuePowerGauge\(direction, pullRatio\)/);
@@ -267,7 +273,11 @@ test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /function rememberDateMoment\(/);
   assert.match(source, /dateMapState\.routes\.push\(route\)/);
   assert.match(source, /function drawDateMap\(timestamp\)/);
-  assert.match(source, /function drawSceneArchitecture\(/);
+  assert.match(source, /function drawDateMapPhotoBase\(/);
+  assert.match(source, /function drawPhotographicScene\(/);
+  assert.match(source, /function drawMotifAtmosphere\(/);
+  assert.match(source, /date-map-night-v2\.jpg/);
+  assert.match(source, /function playSceneLens\(/);
   assert.match(source, /function drawDateConnections\(/);
   assert.match(source, /function drawCueJourney\(/);
   assert.match(source, /function drawFinalDateShape\(/);

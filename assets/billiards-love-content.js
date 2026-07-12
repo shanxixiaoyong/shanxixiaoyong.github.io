@@ -112,6 +112,149 @@
   ));
   const POCKET_DATE_IDS = Object.freeze(POCKET_DATE_SCENES.map((scene) => scene.pocketId));
 
+  const POCKET_MOTIF_MOMENTS = deepFreeze({
+    "top-left": {
+      raindrop: "便利店玻璃门刚合上，屋檐接住了忽然变密的雨。",
+      coffee: "她从热柜拿出两罐咖啡，把更暖的那罐递给你。",
+      "movie-ticket": "两张电影票被小心压在收银小票下面，没有沾到雨。",
+      camera: "冰柜门映出并肩的倒影，她抬手留下了第一张合照。",
+      streetlamp: "雨棚的冷白灯落下来，两个人的影子第一次靠得很近。",
+      earphones: "店里的老歌正好响起，她把另一只耳机递了过来。",
+      cat: "一只避雨的猫蹲在门边，你们同时为它停下脚步。",
+      "heart-eight": "隔着起雾的玻璃，她没有躲开你停留太久的目光。",
+      sunset: "傍晚最后一点暖色留在玻璃上，把雨夜照得柔和。",
+      gift: "她把藏在购物袋里的小礼物推到你面前，装作只是顺手。",
+      message: "等待结账时手机同时亮起，你们发出了几乎一样的话。",
+      "bus-card": "她在充值机前等了半步，把回程路线也替你看好。",
+      star: "门檐水珠映着远处灯点，像一小片落低的星光。",
+      umbrella: "只剩一把伞，你们没有讨论便自然站到了同一边。",
+      homeward: "离开前她又拿了一杯热饮，说回去的路还长。"
+    },
+    "top-right": {
+      raindrop: "雨水在临窗玻璃上缓慢汇拢，你们把座位挪得更近。",
+      coffee: "两只杯子在桌面轻轻碰响，话题从天色聊到了彼此。",
+      "movie-ticket": "票根压在杯碟下面，散场后的下一站被默契留白。",
+      camera: "她借玻璃里的倒影按下快门，没有让你来得及摆好姿势。",
+      streetlamp: "窗外路灯一盏盏亮起，桌边的谈话仍没有结束。",
+      earphones: "同一段旋律在两只耳机里响起，沉默也变得舒服。",
+      cat: "窗台外的猫踩过雨水，她笑着把那一瞬指给你看。",
+      "heart-eight": "咖啡已经微凉，她仍认真等着你把那句话说完。",
+      sunset: "晚霞穿过玻璃落在她侧脸，时间像被轻轻放慢。",
+      gift: "礼物藏在菜单后面，她发现时先看向了你的眼睛。",
+      message: "面对面坐着，手机里的未发送文字终于被当面说出。",
+      "bus-card": "末班车时间跳到屏幕上，你们却又续了一杯。",
+      star: "窗外灯海逐渐清晰，她说今晚的城市比平时好看。",
+      umbrella: "离店时雨还没停，她自然地把伞向你这边偏了一点。",
+      homeward: "店员开始收拾空桌，你们才发现已经聊到很晚。"
+    },
+    "middle-left": {
+      raindrop: "散场推门时正好落雨，你们在影院门厅多留了一会儿。",
+      coffee: "她把没喝完的咖啡递来，杯壁还留着掌心温度。",
+      "movie-ticket": "两张相邻座位的票根亮在掌心，故事像有了续集。",
+      camera: "海报灯箱前的合影有些模糊，却比摆好的照片更自然。",
+      streetlamp: "银幕暗下以后，门外街灯替这段夜晚接上了光。",
+      earphones: "片尾曲还在耳边，她轻声问你最喜欢哪一段。",
+      cat: "影院后巷的猫从脚边穿过，把欲言又止变成一起笑出声。",
+      "heart-eight": "片尾字幕结束很久，你们仍坐在黑暗里没有先起身。",
+      sunset: "开场前的余晖从走廊尽头退去，座位旁只剩彼此。",
+      gift: "她在周边柜挑了一个很小的纪念物，后来放进你的手心。",
+      message: "黑暗里手机亮了一瞬，是她发来的下一场电影链接。",
+      "bus-card": "散场人群涌向车站，她拉住你避开了相反方向。",
+      star: "影院顶灯像一排低低的星，你们并肩从光下走过。",
+      umbrella: "电影里的雨延续到门外，一把伞把结局带进现实。",
+      homeward: "最后一场电影结束，回家的路线因此多绕了一段。"
+    },
+    "middle-right": {
+      raindrop: "河面接住细雨，栏杆边的两个人没有急着找地方躲。",
+      coffee: "自动售货机的热咖啡暖着手，夜风也没那么冷了。",
+      "movie-ticket": "她把票根折好收进口袋，说这晚值得认真留住。",
+      camera: "快门把河面灯影和没站稳的两个人一起收了进去。",
+      streetlamp: "步道灯沿水岸延伸，影子在转弯处悄悄重叠。",
+      earphones: "耳机里的节拍和脚步渐渐一致，你们走得比计划更远。",
+      cat: "一只猫沿栏杆慢慢跟随，像临时加入了这场散步。",
+      "heart-eight": "河风吹散了准备好的话，她却先握住了你的手。",
+      sunset: "晚霞沉进河面，两个人同时停下来等最后一束光。",
+      gift: "礼物在长椅上被打开，包装纸映着水面的碎光。",
+      message: "她把刚拍的河景发给你，画面边缘也留下了你的肩膀。",
+      "bus-card": "末班车提醒响起，你们开始往回走却都放慢了速度。",
+      star: "云层短暂散开，河面把星光复制成另一条路。",
+      umbrella: "伞面被河风吹得轻晃，两只手同时握住了伞柄。",
+      homeward: "沿河走到熟悉路口，她仍陪你多走了一个街区。"
+    },
+    "bottom-left": {
+      raindrop: "雨夜站台映出两道身影，末班车还没有进站。",
+      coffee: "她从自动售货机买来热饮，陪你等过屏幕上的延误。",
+      "movie-ticket": "票根和车票叠在掌心，今晚的时间被完整保存。",
+      camera: "列车灯掠过时快门恰好落下，照片里全是流动的光。",
+      streetlamp: "站台尽头的灯依次亮起，把等待照成一条清楚的路。",
+      earphones: "广播间隙只剩共享的旋律，两个人安静站在同一侧。",
+      cat: "站外的猫从闸机旁溜过，你们为它错过了一班车。",
+      "heart-eight": "列车即将到站，她仍没有松开刚刚牵住的手。",
+      sunset: "傍晚的最后一班光穿过车窗，落在相邻的两个座位。",
+      gift: "她在上车前才递出礼物，车门提示音替你们催促告别。",
+      message: "列车分开两条路线后，第一句到家告诉我已经发出。",
+      "bus-card": "两张交通卡同时贴近闸机，清脆提示音一前一后。",
+      star: "站台顶灯退向远处，像被列车带走的一串星点。",
+      umbrella: "你替她收起湿伞，她替你留住即将关闭的车门。",
+      homeward: "末班车把夜色拉长，下一次见面的日期已在消息里。"
+    },
+    "bottom-right": {
+      raindrop: "回家路上的雨渐渐变小，伞下的距离却没有拉开。",
+      coffee: "最后一口热咖啡被分着喝完，街角只剩安静灯光。",
+      "movie-ticket": "票根被夹进手机壳，像替今晚留下一个不会丢的书签。",
+      camera: "门前的最后一张照片没有看镜头，只拍到并肩的背影。",
+      streetlamp: "暖黄路灯把两道影子送到门口，又让它们停留片刻。",
+      earphones: "一首歌刚好在门前结束，她摘下耳机却没有马上告别。",
+      cat: "熟悉的猫从院墙跳下，像早已见过你们一起回来。",
+      "heart-eight": "门灯亮起时，她回身给出了这晚最清楚的回应。",
+      sunset: "天色从晚霞走到深蓝，你们终于把整条路慢慢走完。",
+      gift: "她把礼物抱在怀里，开门前又认真说了一次喜欢。",
+      message: "门刚合上，手机便亮起一句比晚安更长的消息。",
+      "bus-card": "交通卡被收进口袋，接下来的路已经不需要换乘。",
+      star: "屋檐上方露出几颗星，告别因此又迟了几分钟。",
+      umbrella: "伞在门边收拢，两个人仍站在同一圈暖光里。",
+      homeward: "她把钥匙握在掌心，问你下一次还愿不愿意一起回来。"
+    }
+  });
+
+  const STAGE_RELATION_BEATS = deepFreeze([
+    [
+      "她第一次放慢脚步，等你走到身边。",
+      "这场偶遇终于不再只是擦肩而过。",
+      "你们记住了彼此，也记住了这一刻。"
+    ],
+    [
+      "你们已经能自然接住对方没说完的半句话。",
+      "熟悉让沉默也有了舒服的温度。",
+      "她开始主动把生活里的小事讲给你听。"
+    ],
+    [
+      "那点没有说破的偏爱，在这一秒变得明显。",
+      "你们都听懂了试探，却谁也没有先移开目光。",
+      "靠近不再需要借口，只差一句正式的邀请。"
+    ],
+    [
+      "她没有躲开你的认真，答案已不再含糊。",
+      "这一次，心意终于被另一份心意接住。",
+      "关系从猜测走向确认，夜色也因此亮了一层。"
+    ],
+    [
+      "这件小事被你们顺手写进了共同的日常。",
+      "亲密不只发生在高光里，也落进普通时刻。",
+      "她开始自然地把你放进下一次计划。"
+    ],
+    [
+      "绕过一点不顺以后，你们仍站回了同一边。",
+      "真正听懂彼此以后，沉默不再用来逃避。",
+      "分歧没有消失，却终于有了可以一起面对的位置。"
+    ],
+    [
+      "她把下一次、下一个季节，也放进了这条路。",
+      "未来不再是远处的想象，而是并肩做出的选择。",
+      "这晚走到尽头时，你们已经开始谈论更远的归途。"
+    ]
+  ]);
+
   const STAGES = deepFreeze([
     {
       id: "first-contact",
@@ -2333,6 +2476,8 @@
 
     const scene = POCKET_DATE_SCENE_BY_ID[pocketId];
     const interaction = TABLE_STAGE_INTERACTIONS[stage.order - 1];
+    const sceneMoment = POCKET_MOTIF_MOMENTS[pocketId]?.[motif.id] || motif.lines[variantIndex];
+    const relationshipBeat = STAGE_RELATION_BEATS[stage.order - 1][variantIndex % STAGE_RELATION_BEATS[stage.order - 1].length];
     const motion = `${ball.name}球${TABLE_MOMENT_MOTIONS[archetype]}；${scene.detail}。`;
 
     return deepFreeze({
@@ -2349,9 +2494,10 @@
       motif: motif.name,
       archetype,
       title: `${scene.name} · ${motif.name}`,
-      line: `${motif.lines[variantIndex]} ${interaction}`,
+      line: `${sceneMoment}${relationshipBeat}`,
       motion,
       interaction,
+      relationshipBeat,
       camera: TABLE_VARIANT_CAMERAS[variantIndex],
       visualMode: meta.visualMode,
       variantIndex,
@@ -2373,6 +2519,10 @@
       ? options.storyNumber
       : stage.ballNumbers[0];
     assertBallNumber(storyNumber);
+    const physicalBallNumber = Number.isInteger(options.ballNumber)
+      ? options.ballNumber
+      : storyNumber;
+    assertBallNumber(physicalBallNumber);
     const performance = options.performance && typeof options.performance === "object"
       ? options.performance
       : null;
@@ -2381,7 +2531,7 @@
       ? performance?.id || `${stage.id}:${storyNumber}:${archetype}`
       : options.seed;
     const moment = composeTableMoment({
-      ballNumber: storyNumber,
+      ballNumber: physicalBallNumber,
       pocketId,
       archetype,
       stage: stage.id,
@@ -2394,6 +2544,7 @@
       technique: meta.label,
       gesture: meta.gesture,
       storyNumber,
+      physicalBallNumber,
       emotionLine: moment.interaction
     });
   }
@@ -2405,6 +2556,8 @@
     SHOT_ARCHETYPES,
     SHOT_ARCHETYPE_META,
     POCKET_DATE_SCENES,
+    POCKET_MOTIF_MOMENTS,
+    STAGE_RELATION_BEATS,
     BALL_DATE_MOTIFS,
     BALLS,
     STAGES,

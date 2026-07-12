@@ -13,6 +13,8 @@ const API_KEYS = [
   "SHOT_ARCHETYPES",
   "SHOT_ARCHETYPE_META",
   "POCKET_DATE_SCENES",
+  "POCKET_MOTIF_MOMENTS",
+  "STAGE_RELATION_BEATS",
   "BALL_DATE_MOTIFS",
   "BALLS",
   "STAGES",
@@ -176,6 +178,13 @@ test("exports an immutable 15-ball date-map catalog with three table-bound perfo
       assertText(scene[field], `${scene.pocketId}.${field}`);
     }
   }
+  assert.deepEqual(Object.keys(Content.POCKET_MOTIF_MOMENTS).sort(), Object.keys(EXPECTED_POCKET_SCENES).sort());
+  for (const moments of Object.values(Content.POCKET_MOTIF_MOMENTS)) {
+    assert.equal(Object.keys(moments).length, 15);
+    Object.values(moments).forEach((line) => assertText(line, "pocket motif moment"));
+  }
+  assert.equal(Content.STAGE_RELATION_BEATS.length, 7);
+  Content.STAGE_RELATION_BEATS.forEach((beats) => assert.equal(beats.length, 3));
   assert.ok(Object.isFrozen(Content));
   assert.ok(Object.isFrozen(Content.BALLS));
   assertDeepFrozen(Content, "Content");
@@ -294,6 +303,7 @@ test("composes deterministic pocket scenes and table-only shot interactions", ()
   assert.equal(familiar.title, "河边步道 · 相机");
   assert.equal(familiar.scene, "河边步道");
   assert.equal(familiar.motif, "相机");
+  assert.equal(familiar.physicalBallNumber, 4);
   assert.equal(Object.hasOwn(familiar, "prop"), false);
   assert.notEqual(early.emotionLine, familiar.emotionLine);
   assert.ok(familiar.durationMs >= 1200 && familiar.durationMs <= 1800);

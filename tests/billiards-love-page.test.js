@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-date-map-20260712a";
-const styleCacheVersion = "billiards-love-date-map-20260712a";
+const runtimeCacheVersion = "billiards-love-cinematic-map-20260712b";
+const styleCacheVersion = "billiards-love-cinematic-map-20260712b";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -126,9 +126,10 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
   }
 });
 
-test("uses project-local lounge, confession, and proposal art", () => {
+test("uses project-local lounge, date-map, confession, and proposal art", () => {
   for (const asset of [
     "assets/billiards-scenes/lounge-night.jpg",
+    "assets/billiards-scenes/date-map-night-v2.jpg",
     "assets/billiards-scenes/confession-night.jpg",
     "assets/billiards-scenes/proposal-dawn.jpg"
   ]) {
@@ -136,6 +137,7 @@ test("uses project-local lounge, confession, and proposal art", () => {
   }
   for (const reference of [
     'url("billiards-scenes/lounge-night.jpg")',
+    'url("billiards-scenes/date-map-night-v2.jpg")',
     'url("billiards-scenes/confession-night.jpg")',
     'url("billiards-scenes/proposal-dawn.jpg")'
   ]) {
@@ -321,6 +323,11 @@ test("integrates shot telemetry, persistent date-map routes, and pocket slow mot
   assert.match(game, /drawDateMap\(timestamp\)/);
   assert.match(game, /function drawCueJourney\(/);
   assert.match(game, /function drawFinalDateShape\(/);
+  assert.match(html, /id="hb-scene-lens"/);
+  assert.match(css, /\.hb-scene-lens\.is-active/);
+  assert.match(css, /@keyframes hb-scene-lens-(?:reveal|dissolve|flash|match-pan|push)/);
+  assert.match(game, /sceneLensStartTimer = setTimeout\(\(\) => playSceneLens\(scene, route, pocket\), 110\)/);
+  assert.doesNotMatch(game, /drawSceneArchitecture\(zone, timestamp\);/);
 });
 
 test("shows a conic-gradient proportional power arc around the cue ball", () => {
