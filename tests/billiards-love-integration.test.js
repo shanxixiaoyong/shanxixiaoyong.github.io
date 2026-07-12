@@ -55,11 +55,12 @@ function createDrawingContext(calls = []) {
   const methods = new Set([
     "save", "restore", "clearRect", "fillRect", "beginPath", "moveTo", "lineTo", "arcTo",
     "closePath", "fill", "stroke", "arc", "clip", "translate", "rotate", "scale", "setTransform",
-    "setLineDash", "fillText", "drawImage"
+    "setLineDash", "fillText", "drawImage", "quadraticCurveTo", "bezierCurveTo", "ellipse",
+    "strokeRect"
   ]);
   return new Proxy({}, {
     get(target, property) {
-      if (property === "createLinearGradient" || property === "createRadialGradient") {
+      if (property === "createLinearGradient" || property === "createRadialGradient" || property === "createConicGradient") {
         return (...args) => {
           calls.push({ method: property, args });
           return gradient();
@@ -358,11 +359,11 @@ test("uses the active pocket identity for rolling trails and rail impacts", () =
   assert.ok(snapshot.presentation.dateMap.railBurstCount > 0, "an active lightning pocket should electrify the next cushion impact");
 });
 
-test("switches six persistent tactile materials without changing the physical rack", () => {
+test("switches five persistent cinematic materials without changing the physical rack", () => {
   const debug = bootRuntime();
   const before = debug.snapshot();
   const numbers = [...before.ballNumbers];
-  const materials = ["water", "ink", "mercury", "silk", "plasma", "frost"];
+  const materials = ["lava", "galaxy", "circuit", "ice", "ink"];
 
   for (const material of materials) {
     assert.equal(debug.setSurfaceMaterial(material), true);
@@ -372,7 +373,7 @@ test("switches six persistent tactile materials without changing the physical ra
     assert.deepEqual([...snapshot.ballNumbers], numbers);
   }
   assert.equal(debug.setSurfaceMaterial("flat-gradient"), false);
-  assert.equal(debug.snapshot().presentation.dateMap.surfaceMaterialId, "frost");
+  assert.equal(debug.snapshot().presentation.dateMap.surfaceMaterialId, "ink");
 });
 
 test("allocates most pull travel to fine control in the useful middle-power range", () => {

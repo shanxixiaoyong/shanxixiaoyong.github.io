@@ -82,12 +82,11 @@
     retry: required("#hb-retry")
   };
   const surfaceOptionNodes = Object.freeze([
-    required("#hb-surface-water"),
-    required("#hb-surface-ink"),
-    required("#hb-surface-mercury"),
-    required("#hb-surface-silk"),
-    required("#hb-surface-plasma"),
-    required("#hb-surface-frost")
+    required("#hb-surface-lava"),
+    required("#hb-surface-galaxy"),
+    required("#hb-surface-circuit"),
+    required("#hb-surface-ice"),
+    required("#hb-surface-ink")
   ]);
 
   const WORLD = Object.freeze({ width: 720, height: 1440 });
@@ -150,7 +149,7 @@
   const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
   const SETTINGS_KEY = "yl-heartbeat-billiards-settings-v2";
-  const SURFACE_KEY = "yl-chroma-surface-material-v1";
+  const SURFACE_KEY = "yl-chroma-surface-material-v2";
   const RECORD_KEY = "yl-heartbeat-billiards-record-v2";
   const VIEWED_KEY = "yl-heartbeat-billiards-viewed-v2";
   const BALL_COLORS = Object.freeze({
@@ -186,16 +185,22 @@
     "bottom-right": Object.freeze({ id: "aurora", label: "极光绸带", glyph: "ribbons", primary: "#68ffc8", secondary: "#d967ff" })
   });
   const SURFACE_MATERIALS = Object.freeze([
-    Object.freeze({ id: "water", label: "深水镜", icon: "≈", rail: "#7eefff", damping: 0.986, disturbance: 1, radius: 1, wake: 1, tail: 1, railSpeed: 1, railWidth: 1, railGain: 1 }),
-    Object.freeze({ id: "ink", label: "黑白墨韵", icon: "墨", rail: "#f2f2ec", damping: 0.971, disturbance: 0.62, radius: 1.72, wake: 0.68, tail: 1.64, railSpeed: 0.78, railWidth: 1.42, railGain: 0.92 }),
-    Object.freeze({ id: "mercury", label: "液态金属", icon: "◉", rail: "#d8f8ff", damping: 0.993, disturbance: 0.78, radius: 0.72, wake: 0.82, tail: 0.72, railSpeed: 1.22, railWidth: 0.66, railGain: 1.2 }),
-    Object.freeze({ id: "silk", label: "极光绸", icon: "〰", rail: "#ef8fff", damping: 0.964, disturbance: 0.52, radius: 1.58, wake: 0.58, tail: 1.45, railSpeed: 0.72, railWidth: 1.58, railGain: 0.84 }),
-    Object.freeze({ id: "plasma", label: "离子流体", icon: "✦", rail: "#8d72ff", damping: 0.979, disturbance: 1.24, radius: 0.86, wake: 1.28, tail: 1.18, railSpeed: 1.48, railWidth: 0.8, railGain: 1.28 }),
-    Object.freeze({ id: "frost", label: "晶霜", icon: "❄", rail: "#d8f9ff", damping: 0.996, disturbance: 0.9, radius: 0.6, wake: 0.88, tail: 0.62, railSpeed: 1.05, railWidth: 0.54, railGain: 1.12 })
+    Object.freeze({ id: "lava", label: "熔岩裂境", icon: "焰", rail: "#ff7a18", damping: 0.979, disturbance: 1.18, radius: 0.86, wake: 1.22, tail: 1.38, railSpeed: 0.84, railWidth: 1.32, railGain: 1.3, traceDecay: 0.972, traceDiffuse: 0.024, traceDeposit: 0.34, trailLife: 2700 }),
+    Object.freeze({ id: "galaxy", label: "星河引力", icon: "星", rail: "#78cfff", damping: 0.988, disturbance: 0.86, radius: 1.14, wake: 0.92, tail: 1.72, railSpeed: 0.7, railWidth: 1.48, railGain: 1.08, traceDecay: 0.965, traceDiffuse: 0.032, traceDeposit: 0.22, trailLife: 3200 }),
+    Object.freeze({ id: "circuit", label: "霓虹矩阵", icon: "脉", rail: "#39edff", damping: 0.974, disturbance: 0.78, radius: 0.72, wake: 1.04, tail: 0.92, railSpeed: 1.52, railWidth: 0.7, railGain: 1.3, traceDecay: 0.986, traceDiffuse: 0.01, traceDeposit: 0.28, trailLife: 2400 }),
+    Object.freeze({ id: "ice", label: "极寒冰域", icon: "冰", rail: "#c9f7ff", damping: 0.994, disturbance: 0.94, radius: 0.64, wake: 0.88, tail: 0.72, railSpeed: 1.08, railWidth: 0.58, railGain: 1.18, traceDecay: 0.989, traceDiffuse: 0.006, traceDeposit: 0.16, trailLife: 3600 }),
+    Object.freeze({ id: "ink", label: "水墨山河", icon: "墨", rail: "#f0f0e8", damping: 0.971, disturbance: 0.54, radius: 1.28, wake: 0.56, tail: 1.34, railSpeed: 0.76, railWidth: 1.46, railGain: 0.94, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0, trailLife: 3300 })
   ]);
   const SURFACE_MATERIAL_BY_ID = Object.freeze(Object.fromEntries(
     SURFACE_MATERIALS.map((material) => [material.id, material])
   ));
+  const SURFACE_TEXTURE_SOURCES = Object.freeze({
+    lava: "assets/billiards-surfaces/lava.jpg",
+    galaxy: "assets/billiards-surfaces/galaxy.jpg",
+    circuit: "assets/billiards-surfaces/circuit.jpg",
+    ice: "assets/billiards-surfaces/ice.jpg",
+    ink: "assets/billiards-surfaces/ink.jpg"
+  });
   const CHROMA_TRANSITION_MS = 1180;
   const ROLL_TRAIL_LIFETIME_MS = 980;
   const RAIL_BURST_LIFETIME_MS = 780;
@@ -759,12 +764,14 @@
   let storySlowMotionUntil = 0;
   let lastStoryOrigin = { x: 50, y: 50 };
   let lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
-  let surfaceMaterialId = SURFACE_MATERIAL_BY_ID[readStorage(SURFACE_KEY, "water")]
-    ? readStorage(SURFACE_KEY, "water")
-    : "water";
+  let surfaceMaterialId = SURFACE_MATERIAL_BY_ID[readStorage(SURFACE_KEY, "lava")]
+    ? readStorage(SURFACE_KEY, "lava")
+    : "lava";
   let surfaceMenuOpen = false;
   let dateMapState = createDateMapState();
   let waterSurface = createWaterSurface();
+  const surfaceArtworkCache = new Map();
+  const surfaceTextureCache = new Map();
   let finalRevealActive = false;
   let finalRevealTimer = 0;
   let trackNodeMap = new Map();
@@ -850,7 +857,7 @@
   }
 
   function activeSurfaceMaterial() {
-    return SURFACE_MATERIAL_BY_ID[surfaceMaterialId] || SURFACE_MATERIAL_BY_ID.water;
+    return SURFACE_MATERIAL_BY_ID[surfaceMaterialId] || SURFACE_MATERIAL_BY_ID.lava;
   }
 
   function setSurfaceMenuOpen(open) {
@@ -886,7 +893,7 @@
       rgb: colorChannels(material.rail),
       speed: RAIL_WAVE_SPEED * material.railSpeed,
       width: 190 * material.railWidth,
-      duration: RAIL_WAVE_LIFETIME_MS * (material.id === "frost" ? 1.38 : material.id === "plasma" ? 0.82 : 1.08),
+      duration: RAIL_WAVE_LIFETIME_MS * (material.id === "ice" ? 1.38 : material.id === "circuit" ? 0.82 : 1.08),
       ageMs: 0,
       bornAt: performance.now(),
       life: 1
@@ -909,22 +916,24 @@
       startedAt: performance.now(),
       duration: 720
     };
-    if (material.id === "ink" && previous !== material.id && waterSurface) {
+    if (previous !== material.id && waterSurface) {
       waterSurface.pigment.fill(0);
       waterSurface.pigmentNext.fill(0);
+      dateMapState.rollingTrails = [];
     }
     if (options.persist !== false) writeStorage(SURFACE_KEY, material.id);
+    ensureSurfaceTexture(material.id);
     syncSurfaceMaterialUI();
     setSurfaceMenuOpen(false);
     if (options.animate !== false && previous !== material.id) {
       const centerX = (TABLE.left + TABLE.right) / 2;
       const centerY = (TABLE.top + TABLE.bottom) / 2;
-      disturbWaterWorld(centerX, centerY, material.id === "ink" ? -1.3 : 1.2, 112);
+      disturbWaterWorld(centerX, centerY, material.id === "ink" ? -1.3 : material.id === "lava" ? 1.65 : 1.2, 112);
       disturbWaterWorld(TABLE.left + 90, TABLE.top + 220, 0.58, 70);
       disturbWaterWorld(TABLE.right - 92, TABLE.bottom - 250, -0.52, 76);
       spawnSurfaceMaterialWave(material);
       lastStoryWorldOrigin = { x: centerX, y: centerY };
-      screenFlash = Math.max(screenFlash, material.id === "plasma" ? 0.12 : 0.075);
+      screenFlash = Math.max(screenFlash, material.id === "lava" || material.id === "circuit" ? 0.12 : 0.075);
       dateMapFrameDirty = true;
       sceneLightingFrameDirty = true;
     }
@@ -1161,9 +1170,7 @@
     };
     const profile = waveProfiles[effect.id] || { speed: RAIL_WAVE_SPEED, width: 150, duration: RAIL_WAVE_LIFETIME_MS };
     const surface = activeSurfaceMaterial();
-    const railColor = surface.id === "ink" || surface.id === "mercury" || surface.id === "frost"
-      ? surface.rail
-      : theme.primary;
+    const railColor = surface.rail;
     dateMapState.railBursts.push({
       x: contact.x,
       y: contact.y,
@@ -1195,9 +1202,7 @@
   function spawnPocketRailWave(pocket, theme, effect, intensity = 0.75) {
     if (!pocket || !theme || !effect) return;
     const surface = activeSurfaceMaterial();
-    const railColor = surface.id === "ink" || surface.id === "mercury" || surface.id === "frost"
-      ? surface.rail
-      : theme.primary;
+    const railColor = surface.rail;
     dateMapState.railBursts.push({
       x: pocket.x,
       y: pocket.y,
@@ -2129,9 +2134,13 @@
         if (simulationTime - lastSampleAt >= WATER_STEP_MS) {
           const theme = BALL_CHROMA_THEMES[data.number] || BALL_CHROMA_THEMES[0];
           depositRollingWaterWake(ball, data, dx, dy, travel);
+          const previousTrailPoint = data.lastChromaTrailPoint || {
+            x: ball.position.x - dx,
+            y: ball.position.y - dy
+          };
           dateMapState.rollingTrails.push({
-            x1: ball.position.x - dx,
-            y1: ball.position.y - dy,
+            x1: previousTrailPoint.x,
+            y1: previousTrailPoint.y,
             x2: ball.position.x,
             y2: ball.position.y,
             speed: ball.speed,
@@ -2143,9 +2152,10 @@
             bornAt: performance.now(),
             life: 1
           });
+          data.lastChromaTrailPoint = { x: ball.position.x, y: ball.position.y };
           data.lastChromaTrailAt = simulationTime;
-          if (dateMapState.rollingTrails.length > 96) {
-            dateMapState.rollingTrails.splice(0, dateMapState.rollingTrails.length - 96);
+          if (dateMapState.rollingTrails.length > 180) {
+            dateMapState.rollingTrails.splice(0, dateMapState.rollingTrails.length - 180);
           }
           dateMapFrameDirty = true;
         }
@@ -2725,7 +2735,8 @@
     dateMapState.routes.forEach((route) => { route.glow = Math.max(0.46, route.glow * 0.994); });
     dateMapState.stagePulse *= 0.958;
     dateMapState.powerWave *= 0.94;
-    dateMapState.rollingTrails.forEach((trail) => { trail.life -= FIXED_STEP / ROLL_TRAIL_LIFETIME_MS; });
+    const trailLifetime = activeSurfaceMaterial().trailLife || ROLL_TRAIL_LIFETIME_MS;
+    dateMapState.rollingTrails.forEach((trail) => { trail.life -= FIXED_STEP / trailLifetime; });
     dateMapState.rollingTrails = dateMapState.rollingTrails.filter((trail) => trail.life > 0);
     dateMapState.railBursts.forEach((burst) => {
       burst.ageMs = (burst.ageMs || 0) + FIXED_STEP;
@@ -2744,9 +2755,9 @@
       dateMapState.finalProgress = Math.min(1, dateMapState.finalProgress + 0.009);
     }
     collisionFeedbacks.forEach((feedback) => {
-      feedback.life -= 0.115;
+      feedback.life -= FIXED_STEP / 520;
       feedback.radius += feedback.speed;
-      feedback.speed *= 0.82;
+      feedback.speed *= 0.9;
     });
     collisionFeedbacks = collisionFeedbacks.filter((feedback) => feedback.life > 0);
     balls.forEach((ball) => {
@@ -3785,6 +3796,584 @@
     return ratio * ratio * (3 - 2 * ratio);
   }
 
+  function seededSurfaceRandom(seed) {
+    let state = seed >>> 0;
+    return () => {
+      state += 0x6d2b79f5;
+      let value = state;
+      value = Math.imul(value ^ value >>> 15, value | 1);
+      value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+      return ((value ^ value >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function strokeSurfacePolyline(target, points) {
+    if (!points.length) return;
+    target.beginPath();
+    target.moveTo(points[0].x, points[0].y);
+    for (let index = 1; index < points.length; index += 1) target.lineTo(points[index].x, points[index].y);
+    target.stroke();
+  }
+
+  function surfaceCrackPoints(random, startX, startY, angle, length, segments, bend = 0.34) {
+    const points = [{ x: startX, y: startY }];
+    let heading = angle;
+    let x = startX;
+    let y = startY;
+    for (let index = 1; index <= segments; index += 1) {
+      heading += (random() - 0.5) * bend;
+      const step = length / segments * (0.72 + random() * 0.56);
+      x += Math.cos(heading) * step;
+      y += Math.sin(heading) * step;
+      points.push({ x, y });
+    }
+    return points;
+  }
+
+  function paintLavaArtwork(target, width, height, random) {
+    const base = target.createRadialGradient(width * 0.52, height * 0.42, 12, width * 0.5, height * 0.5, height * 0.72);
+    base.addColorStop(0, "#28100a");
+    base.addColorStop(0.48, "#100706");
+    base.addColorStop(1, "#020202");
+    target.fillStyle = base;
+    target.fillRect(0, 0, width, height);
+
+    for (let cell = 0; cell < 92; cell += 1) {
+      const cx = random() * width;
+      const cy = random() * height;
+      const radius = 18 + random() * 64;
+      const vertices = 6 + Math.floor(random() * 4);
+      target.beginPath();
+      for (let point = 0; point < vertices; point += 1) {
+        const angle = point / vertices * Math.PI * 2;
+        const edge = radius * (0.58 + random() * 0.58);
+        const x = cx + Math.cos(angle) * edge;
+        const y = cy + Math.sin(angle) * edge * (0.62 + random() * 0.35);
+        if (point === 0) target.moveTo(x, y); else target.lineTo(x, y);
+      }
+      target.closePath();
+      target.fillStyle = `rgba(${10 + Math.floor(random() * 24)}, ${7 + Math.floor(random() * 13)}, ${5 + Math.floor(random() * 9)}, ${0.24 + random() * 0.34})`;
+      target.fill();
+      target.strokeStyle = `rgba(154, 55, 21, ${0.05 + random() * 0.1})`;
+      target.lineWidth = 0.6 + random() * 1.5;
+      target.stroke();
+    }
+
+    target.save();
+    target.globalCompositeOperation = "screen";
+    for (let crack = 0; crack < 26; crack += 1) {
+      const edge = crack % 4;
+      const internal = crack > 11;
+      const startX = internal ? random() * width : edge === 0 ? 0 : edge === 1 ? width : random() * width;
+      const startY = internal ? random() * height : edge === 2 ? 0 : edge === 3 ? height : random() * height;
+      const angle = internal ? random() * Math.PI * 2
+        : edge === 0 ? random() * 1.1 - 0.55
+          : edge === 1 ? Math.PI + random() * 1.1 - 0.55
+            : edge === 2 ? Math.PI / 2 + random() * 1.1 - 0.55
+              : -Math.PI / 2 + random() * 1.1 - 0.55;
+      const points = surfaceCrackPoints(random, startX, startY, angle, 95 + random() * 270, 9 + Math.floor(random() * 9), 0.82);
+      target.shadowColor = "#ff3109";
+      target.shadowBlur = 15 + random() * 16;
+      target.strokeStyle = `rgba(255, 45, 5, ${0.32 + random() * 0.34})`;
+      target.lineWidth = 3 + random() * 6;
+      strokeSurfacePolyline(target, points);
+      target.shadowBlur = 7;
+      target.strokeStyle = `rgba(255, 126, 18, ${0.62 + random() * 0.28})`;
+      target.lineWidth = 1.1 + random() * 2.4;
+      strokeSurfacePolyline(target, points);
+      target.shadowBlur = 2;
+      target.strokeStyle = "rgba(255, 235, 153, 0.82)";
+      target.lineWidth = 0.42 + random() * 0.72;
+      strokeSurfacePolyline(target, points);
+      if (crack % 3 === 0) {
+        const branchAt = points[3 + crack % Math.max(1, points.length - 5)];
+        const branch = surfaceCrackPoints(random, branchAt.x, branchAt.y, angle + (crack % 2 ? 1 : -1) * (0.55 + random() * 0.5), 45 + random() * 95, 5 + crack % 4, 0.9);
+        target.strokeStyle = "rgba(255, 92, 12, 0.62)";
+        target.lineWidth = 1 + random() * 1.6;
+        strokeSurfacePolyline(target, branch);
+      }
+    }
+    target.shadowBlur = 0;
+    for (let ember = 0; ember < 150; ember += 1) {
+      const x = random() * width;
+      const y = random() * height;
+      const radius = 0.3 + random() * 1.6;
+      target.globalAlpha = 0.18 + random() * 0.5;
+      target.fillStyle = random() > 0.72 ? "#ffd36c" : "#f0440b";
+      target.beginPath();
+      target.arc(x, y, radius, 0, Math.PI * 2);
+      target.fill();
+    }
+    target.restore();
+  }
+
+  function paintGalaxyArtwork(target, width, height, random) {
+    const base = target.createRadialGradient(width * 0.48, height * 0.47, 12, width * 0.5, height * 0.5, height * 0.68);
+    base.addColorStop(0, "#101c52");
+    base.addColorStop(0.46, "#080d31");
+    base.addColorStop(1, "#01030f");
+    target.fillStyle = base;
+    target.fillRect(0, 0, width, height);
+
+    target.save();
+    target.globalCompositeOperation = "screen";
+    const nebulaColors = ["#3bbdff", "#7b5cff", "#ee63df", "#ffbe64"];
+    for (let cloud = 0; cloud < 16; cloud += 1) {
+      const x = random() * width;
+      const y = random() * height;
+      const radius = 70 + random() * 210;
+      const glow = target.createRadialGradient(x, y, 0, x, y, radius);
+      glow.addColorStop(0, colorWithAlpha(nebulaColors[cloud % nebulaColors.length], 0.13 + random() * 0.09));
+      glow.addColorStop(0.42, colorWithAlpha(nebulaColors[(cloud + 1) % nebulaColors.length], 0.05));
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      target.fillStyle = glow;
+      target.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+
+    const centerX = width * 0.5;
+    const centerY = height * 0.52;
+    for (let arm = 0; arm < 4; arm += 1) {
+      const points = [];
+      for (let step = 0; step < 105; step += 1) {
+        const ratio = step / 104;
+        const turbulence = Math.sin(ratio * 24 + arm * 1.7) * 14 + Math.sin(ratio * 53 + arm) * 5;
+        const angle = arm * Math.PI / 2 + ratio * Math.PI * 2.32 + Math.sin(ratio * 9 + arm) * 0.16;
+        const radius = 16 + ratio * height * 0.55;
+        points.push({
+          x: centerX + Math.cos(angle) * radius * 0.56 + Math.cos(angle + Math.PI / 2) * turbulence,
+          y: centerY + Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * turbulence
+        });
+      }
+      target.strokeStyle = colorWithAlpha(nebulaColors[arm], 0.075);
+      target.shadowColor = nebulaColors[arm];
+      target.shadowBlur = 30;
+      target.lineWidth = 22 - arm * 2;
+      strokeSurfacePolyline(target, points);
+      target.shadowBlur = 14;
+      target.strokeStyle = colorWithAlpha(nebulaColors[(arm + 1) % nebulaColors.length], 0.22);
+      target.lineWidth = 3.4;
+      strokeSurfacePolyline(target, points);
+      target.shadowBlur = 3;
+      target.strokeStyle = colorWithAlpha("#f7fbff", 0.3);
+      target.lineWidth = 0.55;
+      strokeSurfacePolyline(target, points);
+    }
+    target.shadowBlur = 0;
+    for (let star = 0; star < 640; star += 1) {
+      const x = random() * width;
+      const y = random() * height;
+      const rare = random() > 0.965;
+      const radius = rare ? 1.7 + random() * 2.4 : 0.25 + random() * 1.05;
+      target.globalAlpha = rare ? 0.72 + random() * 0.28 : 0.22 + random() * 0.58;
+      target.fillStyle = rare ? nebulaColors[star % nebulaColors.length] : "#d9edff";
+      target.beginPath();
+      target.arc(x, y, radius, 0, Math.PI * 2);
+      target.fill();
+      if (rare) {
+        target.strokeStyle = target.fillStyle;
+        target.lineWidth = 0.6;
+        target.beginPath();
+        target.moveTo(x - radius * 3, y);
+        target.lineTo(x + radius * 3, y);
+        target.moveTo(x, y - radius * 3);
+        target.lineTo(x, y + radius * 3);
+        target.stroke();
+      }
+    }
+    target.restore();
+  }
+
+  function paintCircuitArtwork(target, width, height, random) {
+    const base = target.createLinearGradient(0, 0, width, height);
+    base.addColorStop(0, "#02091d");
+    base.addColorStop(0.52, "#07143b");
+    base.addColorStop(1, "#020516");
+    target.fillStyle = base;
+    target.fillRect(0, 0, width, height);
+
+    target.save();
+    target.globalCompositeOperation = "screen";
+    target.lineWidth = 0.55;
+    for (let x = 0; x <= width; x += 24) {
+      target.strokeStyle = `rgba(38, 149, 214, ${x % 96 === 0 ? 0.17 : 0.075})`;
+      target.beginPath();
+      target.moveTo(x, 0);
+      target.lineTo(x, height);
+      target.stroke();
+    }
+    for (let y = 0; y <= height; y += 24) {
+      target.strokeStyle = `rgba(55, 119, 210, ${y % 96 === 0 ? 0.16 : 0.07})`;
+      target.beginPath();
+      target.moveTo(0, y);
+      target.lineTo(width, y);
+      target.stroke();
+    }
+
+    const colors = ["#2eeaff", "#685cff", "#f14dff"];
+    for (let route = 0; route < 82; route += 1) {
+      const startX = Math.round(random() * width / 12) * 12;
+      const startY = Math.round(random() * height / 12) * 12;
+      const endX = Math.round(random() * width / 12) * 12;
+      const endY = Math.round(random() * height / 12) * 12;
+      const turnY = Math.round((startY + (endY - startY) * (0.25 + random() * 0.5)) / 12) * 12;
+      const color = colors[route % colors.length];
+      const points = [{ x: startX, y: startY }, { x: startX, y: turnY }, { x: endX, y: turnY }, { x: endX, y: endY }];
+      target.shadowColor = color;
+      target.shadowBlur = 10;
+      target.strokeStyle = colorWithAlpha(color, 0.19 + random() * 0.2);
+      target.lineWidth = 2.2 + random() * 1.8;
+      strokeSurfacePolyline(target, points);
+      target.shadowBlur = 2;
+      target.strokeStyle = colorWithAlpha("#dffeff", 0.38 + random() * 0.3);
+      target.lineWidth = 0.55;
+      strokeSurfacePolyline(target, points);
+      target.fillStyle = colorWithAlpha(color, 0.54);
+      [points[0], points.at(-1)].forEach((point) => {
+        target.beginPath();
+        target.arc(point.x, point.y, 2.2 + random() * 2.6, 0, Math.PI * 2);
+        target.fill();
+      });
+    }
+
+    for (let hud = 0; hud < 20; hud += 1) {
+      const x = 40 + random() * (width - 80);
+      const y = 60 + random() * (height - 120);
+      const radius = 12 + random() * 28;
+      const color = colors[hud % colors.length];
+      target.strokeStyle = colorWithAlpha(color, 0.22 + random() * 0.2);
+      target.lineWidth = 0.8;
+      target.setLineDash([3 + random() * 5, 3 + random() * 5]);
+      target.beginPath();
+      target.arc(x, y, radius, 0, Math.PI * 2);
+      target.stroke();
+      target.setLineDash([]);
+      target.beginPath();
+      target.arc(x, y, radius * 0.42, 0, Math.PI * 2);
+      target.stroke();
+    }
+    target.restore();
+  }
+
+  function paintIceArtwork(target, width, height, random) {
+    const base = target.createRadialGradient(width * 0.54, height * 0.42, 20, width * 0.5, height * 0.5, height * 0.7);
+    base.addColorStop(0, "#0c5c8e");
+    base.addColorStop(0.44, "#043b68");
+    base.addColorStop(1, "#010d20");
+    target.fillStyle = base;
+    target.fillRect(0, 0, width, height);
+
+    for (let shard = 0; shard < 140; shard += 1) {
+      const cx = random() * width;
+      const cy = random() * height;
+      const radius = 20 + random() * 78;
+      const angle = random() * Math.PI * 2;
+      target.beginPath();
+      target.moveTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+      target.lineTo(cx + Math.cos(angle + 2.2) * radius * (0.45 + random() * 0.45), cy + Math.sin(angle + 2.2) * radius * (0.45 + random() * 0.45));
+      target.lineTo(cx + Math.cos(angle + 4.3) * radius * (0.5 + random() * 0.6), cy + Math.sin(angle + 4.3) * radius * (0.5 + random() * 0.6));
+      target.closePath();
+      target.fillStyle = `rgba(${112 + Math.floor(random() * 78)}, ${190 + Math.floor(random() * 55)}, 255, ${0.04 + random() * 0.1})`;
+      target.fill();
+      target.strokeStyle = `rgba(189, 242, 255, ${0.06 + random() * 0.15})`;
+      target.lineWidth = 0.5 + random() * 0.8;
+      target.stroke();
+    }
+
+    target.save();
+    target.globalCompositeOperation = "screen";
+    for (let fracture = 0; fracture < 11; fracture += 1) {
+      const cx = random() * width;
+      const cy = random() * height;
+      for (let ray = 0; ray < 7 + fracture % 5; ray += 1) {
+        const points = surfaceCrackPoints(random, cx, cy, ray / (7 + fracture % 5) * Math.PI * 2, 75 + random() * 230, 6 + Math.floor(random() * 7), 0.58);
+        target.shadowColor = "#6be7ff";
+        target.shadowBlur = 9;
+        target.strokeStyle = `rgba(104, 229, 255, ${0.16 + random() * 0.25})`;
+        target.lineWidth = 2 + random() * 2.8;
+        strokeSurfacePolyline(target, points);
+        target.shadowBlur = 1.5;
+        target.strokeStyle = `rgba(237, 254, 255, ${0.46 + random() * 0.38})`;
+        target.lineWidth = 0.42 + random() * 0.65;
+        strokeSurfacePolyline(target, points);
+      }
+      const core = target.createRadialGradient(cx, cy, 0, cx, cy, 24 + random() * 34);
+      core.addColorStop(0, "rgba(235,255,255,0.52)");
+      core.addColorStop(1, "rgba(88,215,255,0)");
+      target.fillStyle = core;
+      target.fillRect(cx - 60, cy - 60, 120, 120);
+    }
+    target.restore();
+  }
+
+  function paintInkArtwork(target, width, height, random) {
+    const paper = target.createLinearGradient(0, 0, width, height);
+    paper.addColorStop(0, "#d8ded3");
+    paper.addColorStop(0.48, "#bfcfc7");
+    paper.addColorStop(1, "#91aba2");
+    target.fillStyle = paper;
+    target.fillRect(0, 0, width, height);
+
+    target.save();
+    for (let fiber = 0; fiber < 360; fiber += 1) {
+      target.globalAlpha = 0.025 + random() * 0.055;
+      target.strokeStyle = random() > 0.5 ? "#f7f4e8" : "#3c554e";
+      target.lineWidth = 0.35 + random() * 0.55;
+      const y = random() * height;
+      target.beginPath();
+      target.moveTo(0, y);
+      target.lineTo(width, y + (random() - 0.5) * 7);
+      target.stroke();
+    }
+
+    target.globalAlpha = 1;
+    const mountainLayers = [
+      { baseline: 0.34, color: "rgba(30,55,49,0.2)", peaks: 6, amplitude: 86 },
+      { baseline: 0.59, color: "rgba(16,39,34,0.36)", peaks: 7, amplitude: 124 },
+      { baseline: 0.84, color: "rgba(7,25,22,0.58)", peaks: 8, amplitude: 168 }
+    ];
+    mountainLayers.forEach((layer, layerIndex) => {
+      const peakFields = Array.from({ length: layer.peaks }, (_, peakIndex) => ({
+        center: width * ((peakIndex + 0.35 + random() * 0.3) / layer.peaks),
+        spread: width * (0.055 + random() * 0.065),
+        height: layer.amplitude * (0.5 + random() * 0.68)
+      }));
+      const ridge = [];
+      for (let step = 0; step <= 112; step += 1) {
+        const x = step / 112 * width;
+        let rise = 5;
+        peakFields.forEach((peak) => {
+          const distance = (x - peak.center) / peak.spread;
+          rise = Math.max(rise, peak.height * Math.exp(-Math.abs(distance) * 1.38));
+        });
+        const erosionGain = 0.45 + rise / layer.amplitude * 0.55;
+        const erosion = (Math.sin(x * 0.071 + layerIndex * 2.1) * 8
+          + Math.sin(x * 0.19 + layerIndex * 0.7) * 4.5
+          + Math.sin(x * 0.47 + layerIndex * 1.4) * 2.2) * erosionGain;
+        ridge.push({ x, y: height * layer.baseline - rise + erosion });
+      }
+      target.beginPath();
+      target.moveTo(ridge[0].x, ridge[0].y);
+      ridge.slice(1).forEach((point) => target.lineTo(point.x, point.y));
+      target.lineTo(width, height);
+      target.lineTo(0, height);
+      target.closePath();
+      target.fillStyle = layer.color;
+      target.fill();
+      target.strokeStyle = `rgba(5, 24, 20, ${0.22 + layerIndex * 0.1})`;
+      target.lineWidth = 1.1 + layerIndex * 0.65;
+      strokeSurfacePolyline(target, ridge);
+
+      target.save();
+      target.globalCompositeOperation = "multiply";
+      peakFields.forEach((peak, peakIndex) => {
+        for (let wash = 0; wash < 5; wash += 1) {
+          const startX = peak.center + (wash - 2) * peak.spread * 0.12;
+          const startY = height * layer.baseline - peak.height * (0.72 + wash * 0.045);
+          target.globalAlpha = 0.07 + layerIndex * 0.035;
+          target.strokeStyle = peakIndex % 2 ? "#203b34" : "#0f2a24";
+          target.lineWidth = 1 + wash * 0.8;
+          target.beginPath();
+          target.moveTo(startX, startY);
+          target.quadraticCurveTo(startX + (wash - 2) * 7, startY + peak.height * 0.42, startX + (wash - 2) * 13, height * layer.baseline + 45);
+          target.stroke();
+        }
+      });
+      target.restore();
+    });
+
+    target.globalCompositeOperation = "source-over";
+    [0.45, 0.7].forEach((ratio, index) => {
+      const fog = target.createLinearGradient(0, height * ratio - 55, 0, height * ratio + 65);
+      fog.addColorStop(0, "rgba(224,232,224,0)");
+      fog.addColorStop(0.48, `rgba(224,232,224,${0.2 - index * 0.035})`);
+      fog.addColorStop(1, "rgba(224,232,224,0)");
+      target.fillStyle = fog;
+      target.fillRect(0, height * ratio - 55, width, 120);
+    });
+
+    target.globalCompositeOperation = "multiply";
+    target.lineCap = "round";
+    const river = target.createLinearGradient(width * 0.7, 0, width * 0.28, height);
+    river.addColorStop(0, "rgba(15,31,29,0.28)");
+    river.addColorStop(0.52, "rgba(5,18,17,0.68)");
+    river.addColorStop(1, "rgba(22,39,35,0.34)");
+    for (let stroke = 0; stroke < 12; stroke += 1) {
+      const offset = (stroke - 5.5) * 4.2;
+      target.strokeStyle = river;
+      target.globalAlpha = 0.12 + (1 - Math.abs(stroke - 5.5) / 6) * 0.12;
+      target.lineWidth = 4 + (stroke % 4) * 2.4;
+      target.beginPath();
+      target.moveTo(width * 0.66 + offset, -20);
+      target.bezierCurveTo(width * 0.2 + offset, height * 0.22, width * 0.84 - offset, height * 0.46, width * 0.35 + offset, height * 0.67);
+      target.bezierCurveTo(width * 0.08 + offset, height * 0.8, width * 0.68 - offset, height * 0.91, width * 0.43 + offset, height + 20);
+      target.stroke();
+    }
+
+    target.globalCompositeOperation = "source-over";
+    for (let pine = 0; pine < 54; pine += 1) {
+      const x = random() * width;
+      const y = height * (0.24 + random() * 0.62);
+      const size = 5 + random() * 12;
+      target.globalAlpha = 0.28 + random() * 0.42;
+      target.strokeStyle = "#0b2520";
+      target.lineWidth = 0.75;
+      target.beginPath();
+      target.moveTo(x, y + size);
+      target.lineTo(x, y - size);
+      for (let branch = 0; branch < 5; branch += 1) {
+        const branchY = y - size + branch * size * 0.35;
+        const spread = size * (0.28 + branch * 0.12);
+        target.moveTo(x, branchY);
+        target.lineTo(x - spread, branchY + size * 0.28);
+        target.moveTo(x, branchY);
+        target.lineTo(x + spread, branchY + size * 0.28);
+      }
+      target.stroke();
+    }
+
+    target.strokeStyle = "rgba(9,31,27,0.58)";
+    target.lineWidth = 1;
+    for (let bird = 0; bird < 9; bird += 1) {
+      const x = width * 0.12 + random() * width * 0.76;
+      const y = height * 0.12 + random() * height * 0.18;
+      target.beginPath();
+      target.arc(x - 3, y, 3.5, Math.PI * 1.05, Math.PI * 1.86);
+      target.arc(x + 3, y, 3.5, Math.PI * 1.14, Math.PI * 1.95);
+      target.stroke();
+    }
+    target.globalAlpha = 0.72;
+    target.fillStyle = "#8f2c23";
+    target.fillRect(width * 0.08, height * 0.16, 15, 15);
+    target.strokeStyle = "rgba(247,225,193,0.72)";
+    target.lineWidth = 1;
+    target.strokeRect(width * 0.08 + 2, height * 0.16 + 2, 11, 11);
+    target.restore();
+  }
+
+  function createSurfaceArtwork(materialId) {
+    const artwork = document.createElement("canvas");
+    if (typeof artwork.getContext !== "function") return null;
+    const target = artwork.getContext("2d", { alpha: false });
+    if (!target) return null;
+    const width = TABLE.right - TABLE.left;
+    const height = TABLE.bottom - TABLE.top;
+    const scale = 1.25;
+    artwork.width = Math.round(width * scale);
+    artwork.height = Math.round(height * scale);
+    target.setTransform(scale, 0, 0, scale, 0, 0);
+    const texture = ensureSurfaceTexture(materialId);
+    if (texture?.ready && texture.image.naturalWidth && texture.image.naturalHeight) {
+      drawSurfaceTexture(target, texture.image, width, height, materialId);
+      return artwork;
+    }
+    const seed = [...materialId].reduce((total, character) => Math.imul(total ^ character.charCodeAt(0), 16777619), 2166136261);
+    const random = seededSurfaceRandom(seed);
+    if (materialId === "lava") paintLavaArtwork(target, width, height, random);
+    else if (materialId === "galaxy") paintGalaxyArtwork(target, width, height, random);
+    else if (materialId === "circuit") paintCircuitArtwork(target, width, height, random);
+    else if (materialId === "ice") paintIceArtwork(target, width, height, random);
+    else paintInkArtwork(target, width, height, random);
+    return artwork;
+  }
+
+  function ensureSurfaceTexture(materialId) {
+    if (surfaceTextureCache.has(materialId)) return surfaceTextureCache.get(materialId);
+    const source = SURFACE_TEXTURE_SOURCES[materialId];
+    const ImageConstructor = window.Image;
+    if (!source || typeof ImageConstructor !== "function") return null;
+    const image = new ImageConstructor();
+    const record = { image, source, ready: false, failed: false };
+    surfaceTextureCache.set(materialId, record);
+    image.decoding = "async";
+    image.onload = () => {
+      record.ready = Boolean(image.naturalWidth && image.naturalHeight);
+      record.failed = !record.ready;
+      surfaceArtworkCache.delete(materialId);
+      dateMapFrameDirty = true;
+      sceneLightingFrameDirty = true;
+    };
+    image.onerror = () => {
+      record.failed = true;
+      surfaceArtworkCache.delete(materialId);
+      dateMapFrameDirty = true;
+    };
+    image.src = source;
+    if (image.complete && image.naturalWidth && image.naturalHeight) record.ready = true;
+    return record;
+  }
+
+  function drawSurfaceTexture(target, image, width, height, materialId) {
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    const sourceRatio = sourceWidth / sourceHeight;
+    const targetRatio = width / height;
+    let sourceX = 0;
+    let sourceY = 0;
+    let cropWidth = sourceWidth;
+    let cropHeight = sourceHeight;
+    if (sourceRatio > targetRatio) {
+      cropWidth = sourceHeight * targetRatio;
+      sourceX = (sourceWidth - cropWidth) / 2;
+    } else if (sourceRatio < targetRatio) {
+      cropHeight = sourceWidth / targetRatio;
+      sourceY = (sourceHeight - cropHeight) / 2;
+    }
+    target.save();
+    target.imageSmoothingEnabled = true;
+    target.imageSmoothingQuality = "high";
+    target.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, 0, 0, width, height);
+
+    const readability = target.createLinearGradient(0, 0, width, height);
+    if (materialId === "lava") {
+      readability.addColorStop(0, "rgba(8,0,0,0.02)");
+      readability.addColorStop(0.48, "rgba(0,0,0,0.08)");
+      readability.addColorStop(1, "rgba(15,0,0,0.16)");
+    } else if (materialId === "galaxy") {
+      readability.addColorStop(0, "rgba(0,4,18,0.03)");
+      readability.addColorStop(0.5, "rgba(0,0,8,0.09)");
+      readability.addColorStop(1, "rgba(1,0,16,0.16)");
+    } else if (materialId === "circuit") {
+      readability.addColorStop(0, "rgba(0,7,22,0.05)");
+      readability.addColorStop(0.5, "rgba(0,2,12,0.12)");
+      readability.addColorStop(1, "rgba(0,0,9,0.18)");
+    } else if (materialId === "ice") {
+      readability.addColorStop(0, "rgba(0,18,41,0.08)");
+      readability.addColorStop(0.5, "rgba(0,13,35,0.13)");
+      readability.addColorStop(1, "rgba(0,9,27,0.2)");
+    } else {
+      readability.addColorStop(0, "rgba(13,31,27,0.02)");
+      readability.addColorStop(0.54, "rgba(9,25,22,0.07)");
+      readability.addColorStop(1, "rgba(2,14,12,0.14)");
+    }
+    target.fillStyle = readability;
+    target.fillRect(0, 0, width, height);
+
+    const vignette = target.createRadialGradient(width / 2, height / 2, width * 0.12, width / 2, height / 2, height * 0.56);
+    vignette.addColorStop(0, "rgba(0,0,0,0)");
+    vignette.addColorStop(0.7, "rgba(0,0,0,0.015)");
+    vignette.addColorStop(1, materialId === "ink" ? "rgba(5,18,15,0.22)" : "rgba(0,0,0,0.3)");
+    target.fillStyle = vignette;
+    target.fillRect(0, 0, width, height);
+    target.restore();
+  }
+
+  function drawSurfaceArtwork(materialId) {
+    if (!surfaceArtworkCache.has(materialId)) {
+      surfaceArtworkCache.set(materialId, createSurfaceArtwork(materialId));
+    }
+    const artwork = surfaceArtworkCache.get(materialId);
+    if (!artwork) return;
+    const textureReady = Boolean(surfaceTextureCache.get(materialId)?.ready);
+    const opacity = textureReady
+      ? materialId === "circuit" ? 0.97 : materialId === "ink" ? 0.96 : 0.95
+      : materialId === "ink" ? 0.92 : materialId === "circuit" ? 0.88 : 0.84;
+    context.save();
+    context.globalAlpha = opacity;
+    context.globalCompositeOperation = "source-over";
+    context.drawImage(artwork, TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+    context.restore();
+  }
+
   function createWaterSurface() {
     const surfaceCanvas = document.createElement("canvas");
     surfaceCanvas.width = WATER_GRID_WIDTH;
@@ -3872,9 +4461,9 @@
           -WATER_MAX_HEIGHT,
           WATER_MAX_HEIGHT
         );
-        if (material.id === "ink") {
+        if (material.traceDeposit > 0) {
           waterSurface.pigment[index] = clamp(
-            waterSurface.pigment[index] + Math.abs(materialAmplitude) * falloff * 0.9,
+            waterSurface.pigment[index] + Math.abs(materialAmplitude) * falloff * material.traceDeposit,
             0,
             1
           );
@@ -3929,11 +4518,13 @@
           + current[index - width] + current[index + width]) * 0.5;
         const value = clamp((neighborAverage - previous[index]) * damping, -WATER_MAX_HEIGHT, WATER_MAX_HEIGHT);
         next[index] = value;
-        if (material.id === "ink") {
-          const pigmentAverage = (pigment[index - 1] + pigment[index + 1]
-            + pigment[index - width] + pigment[index + width]) * 0.25;
-          pigmentNext[index] = clamp(pigment[index] * 0.942 + pigmentAverage * 0.055, 0, 1);
-        }
+        const pigmentAverage = (pigment[index - 1] + pigment[index + 1]
+          + pigment[index - width] + pigment[index + width]) * 0.25;
+        pigmentNext[index] = clamp(
+          pigment[index] * material.traceDecay + pigmentAverage * material.traceDiffuse,
+          0,
+          1
+        );
         energy += Math.abs(value);
       }
     }
@@ -3941,11 +4532,9 @@
     waterSurface.current = next;
     waterSurface.next = previous;
     waterSurface.next.fill(0);
-    if (material.id === "ink") {
-      waterSurface.pigment = pigmentNext;
-      waterSurface.pigmentNext = pigment;
-      waterSurface.pigmentNext.fill(0);
-    }
+    waterSurface.pigment = pigmentNext;
+    waterSurface.pigmentNext = pigment;
+    waterSurface.pigmentNext.fill(0);
     waterSurface.stepCount += 1;
     waterSurface.energy = clamp(energy / (width * height * 0.34), 0, 1);
     dateMapState.waterEnergy = waterSurface.energy;
@@ -4076,67 +4665,63 @@
         let green;
         let blue;
 
-        if (surfaceMaterialId === "ink") {
+        const traceValue = pigment[index];
+        if (surfaceMaterialId === "lava") {
+          const fissureField = Math.abs(flowA * 0.48 + flowB * 0.34 + flowC * 0.18);
+          const fissure = Math.pow(clamp(fissureField + surfaceHeight * 0.035, 0, 1), 8.5);
+          const heat = clamp(traceValue * 0.96 + slope * 0.4 + Math.abs(surfaceHeight) * 0.12 + fissure * 0.34, 0, 1);
+          const moltenCore = Math.pow(heat, 2.2);
+          red = 8 + diffuse * 7 + heat * 190 + moltenCore * 82 + specular * 34;
+          green = 4 + diffuse * 3 + heat * 45 + moltenCore * 112 + specular * 14;
+          blue = 3 + heat * 6 + moltenCore * 18;
+        } else if (surfaceMaterialId === "galaxy") {
+          const nebula = clamp(0.5 + flowA * 0.22 + flowB * 0.18 + flowC * 0.14, 0, 1);
+          const wake = clamp(traceValue * 0.9 + slope * 0.34 + Math.abs(surfaceHeight) * 0.08, 0, 1);
+          red = 3 + nebula * 17 + primaryR * wake * 0.43 + secondaryR * wake * 0.22;
+          green = 7 + nebula * 23 + primaryG * wake * 0.42 + secondaryG * wake * 0.18;
+          blue = 24 + nebula * 46 + primaryB * wake * 0.55 + secondaryB * wake * 0.3;
+        } else if (surfaceMaterialId === "circuit") {
+          const gridX = Math.pow(clamp(1 - Math.abs(x % 12 - 6) / 6, 0, 1), 18);
+          const gridY = Math.pow(clamp(1 - Math.abs(y % 12 - 6) / 6, 0, 1), 18);
+          const grid = Math.max(gridX, gridY);
+          const charge = clamp(traceValue + slope * 0.48 + Math.abs(surfaceHeight) * 0.09, 0, 1);
+          const pulse = 0.64 + Math.sin(time * 5.2 + x * 0.16 + y * 0.07) * 0.36;
+          red = 2 + grid * 8 + secondaryR * charge * 0.45 + specular * 22;
+          green = 8 + grid * 24 + primaryG * charge * (0.54 + pulse * 0.26) + specular * 45;
+          blue = 24 + grid * 48 + primaryB * charge * 0.72 + secondaryB * charge * 0.24 + specular * 68;
+        } else if (surfaceMaterialId === "ice") {
+          const crystal = Math.abs(flowA * 0.5 + flowB * 0.31 + flowC * 0.19 + surfaceHeight * 0.05);
+          const facet = Math.pow(clamp(crystal, 0, 1), 7.4);
+          const iceEdge = clamp(slope * 0.9 + Math.abs(surfaceHeight) * 0.09 + traceValue * 0.56, 0, 1);
+          red = 8 + diffuse * 20 + facet * 46 + iceEdge * 76 + specular * 108;
+          green = 33 + diffuse * 32 + facet * 67 + iceEdge * 104 + specular * 132;
+          blue = 65 + diffuse * 42 + facet * 92 + iceEdge * 138 + specular * 155;
+        } else {
           const paperFiber = Math.sin(x * 1.31 + y * 0.17) * 1.8 + Math.sin(y * 0.83 - x * 0.09) * 1.1;
-          const pigmentValue = pigment[index];
+          const pigmentValue = traceValue;
           const pigmentGradient = Math.abs(pigment[index + 1] - pigment[index - 1])
             + Math.abs(pigment[index + waterSurface.width] - pigment[index - waterSurface.width]);
           const inkFlow = clamp(pigmentValue * (0.88 + flowC * 0.08)
             + Math.abs(surfaceHeight) * 0.022, 0, 1);
-          const inkBody = smoothStep(0.012, 0.5, inkFlow);
+          const inkBody = smoothStep(0.075, 0.58, inkFlow);
           const dryBrush = clamp(pigmentGradient * 2.8 + slope * pigmentValue * 0.24, 0, 1);
-          const paper = 218 + paperFiber;
+          const paper = 205 + paperFiber;
           const inkTone = paper - inkBody * 198 - dryBrush * 34;
           const wetEdge = specular * (8 + inkBody * 18) + pigmentGradient * 32;
           red = inkTone + wetEdge;
-          green = inkTone - 2 + wetEdge;
-          blue = inkTone - 6 + wetEdge * 0.82;
-        } else if (surfaceMaterialId === "mercury") {
-          const environmentBand = 0.5 + Math.sin(v * 4.2 + flowA * 2.1 + flowB * 1.35
-            + flowC * 0.72 + surfaceHeight * 1.45 + time * 0.28) * 0.5;
-          const chrome = Math.pow(Math.abs(environmentBand - 0.5) * 2, 3.2);
-          const metal = 12 + diffuse * 24 + specular * 174 + chrome * 82 + caustic * 25;
-          red = metal + primaryR * 0.055 + secondaryR * 0.025;
-          green = metal * 1.04 + primaryG * 0.065 + secondaryG * 0.03;
-          blue = metal * 1.1 + primaryB * 0.08 + secondaryB * 0.04;
-        } else if (surfaceMaterialId === "silk") {
-          const weavePhase = y * 0.017 + Math.sin(x * 0.019 + time * 0.18) * 1.15
-            + flowA * 0.24 + flowB * 0.13 - time * 0.13;
-          const anisotropic = clamp(0.5 - waterGradientY * 0.72 - waterGradientX * 0.2
-            + Math.sin(weavePhase) * 0.16, 0, 1);
-          const sheen = smoothStep(0.56, 0.91, anisotropic);
-          const reverseSheen = smoothStep(0.61, 0.94, 1 - anisotropic);
-          const pearlR = 10 + Math.sin(weavePhase) * 8;
-          const pearlG = 10 + Math.sin(weavePhase + 2.094) * 8;
-          const pearlB = 10 + Math.sin(weavePhase + 4.188) * 8;
-          red = themedRed * 0.9 + primaryR * sheen * 0.3 + secondaryR * reverseSheen * 0.13 + pearlR + specular * 38;
-          green = themedGreen * 0.9 + primaryG * sheen * 0.3 + secondaryG * reverseSheen * 0.13 + pearlG + specular * 42;
-          blue = themedBlue * 0.94 + primaryB * sheen * 0.34 + secondaryB * reverseSheen * 0.16 + pearlB + specular * 52;
-        } else if (surfaceMaterialId === "plasma") {
-          const plasmaCell = clamp(0.5 + flowA * 0.24 + flowB * 0.16 + flowC * 0.1 + surfaceHeight * 0.075, 0, 1);
-          const charge = clamp(Math.pow(plasmaCell, 2.6) + slope * 0.52 + Math.abs(surfaceHeight) * 0.055, 0, 1);
-          const hotCore = Math.pow(clamp(charge, 0, 1), 3.2) * 104;
-          red = themedRed * 0.7 + primaryR * charge * 0.52 + secondaryR * (1 - plasmaCell) * 0.19 + hotCore;
-          green = themedGreen * 0.67 + primaryG * charge * 0.48 + secondaryG * (1 - plasmaCell) * 0.17 + hotCore * 1.08;
-          blue = themedBlue * 0.82 + primaryB * charge * 0.62 + secondaryB * (1 - plasmaCell) * 0.24 + hotCore * 1.22;
-        } else if (surfaceMaterialId === "frost") {
-          const crystal = Math.abs(flowA * 0.5 + flowB * 0.31 + flowC * 0.19 + surfaceHeight * 0.05);
-          const facet = Math.pow(clamp(crystal, 0, 1), 7.4);
-          const iceEdge = clamp(slope * 0.86 + Math.abs(surfaceHeight) * 0.085, 0, 1);
-          red = 19 + themedRed * 0.28 + diffuse * 26 + facet * 52 + iceEdge * 75 + specular * 112;
-          green = 31 + themedGreen * 0.3 + diffuse * 31 + facet * 62 + iceEdge * 88 + specular * 128;
-          blue = 46 + themedBlue * 0.34 + diffuse * 38 + facet * 78 + iceEdge * 108 + specular * 148;
-        } else {
-          red = themedRed + specular * specularGain + caustic * 48;
-          green = themedGreen + specular * (specularGain + 10) + caustic * 54;
-          blue = themedBlue + specular * (specularGain + 22) + caustic * 64;
+          green = inkTone + 5 + wetEdge;
+          blue = inkTone + 1 + wetEdge * 0.82;
         }
 
-        const materialSpectralStrength = surfaceMaterialId === "ink" ? 0 : spectralStrength;
-        const monochromeBlast = surfaceMaterialId === "ink" ? spectralStrength * 34 : 0;
-        pixels[offset] = clamp(red * eclipse + materialSpectralStrength * (22 + Math.sin(spectralPhase) * 18) + monochromeBlast, 0, 255);
-        pixels[offset + 1] = clamp(green * eclipse + materialSpectralStrength * (22 + Math.sin(spectralPhase + 2.094) * 18) + monochromeBlast, 0, 255);
-        pixels[offset + 2] = clamp(blue * eclipse + materialSpectralStrength * (22 + Math.sin(spectralPhase + 4.188) * 18) + monochromeBlast, 0, 255);
+        const blastWave = 0.58 + Math.sin(spectralPhase) * 0.42;
+        const blastTint = surfaceMaterialId === "lava" ? [76, 26, 3]
+          : surfaceMaterialId === "galaxy" ? [34 + blastWave * 20, 38 + (1 - blastWave) * 26, 84]
+            : surfaceMaterialId === "circuit" ? [34 + (1 - blastWave) * 52, 78, 82 + blastWave * 28]
+              : surfaceMaterialId === "ice" ? [54, 82, 98]
+                : [42, 42, 38];
+        pixels[offset] = clamp(red * eclipse + spectralStrength * blastTint[0], 0, 255);
+        pixels[offset + 1] = clamp(green * eclipse + spectralStrength * blastTint[1], 0, 255);
+        pixels[offset + 2] = clamp(blue * eclipse + spectralStrength * blastTint[2], 0, 255);
         pixels[offset + 3] = 255;
       }
     }
@@ -4145,37 +4730,33 @@
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
     context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
+    drawSurfaceArtwork(surfaceMaterialId);
     const reflectedLight = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    if (surfaceMaterialId === "ink") {
+    if (surfaceMaterialId === "lava") {
+      reflectedLight.addColorStop(0, "rgba(255,111,24,0.1)");
+      reflectedLight.addColorStop(0.3, "rgba(255,72,8,0)");
+      reflectedLight.addColorStop(0.74, "rgba(35,2,0,0.08)");
+      reflectedLight.addColorStop(1, "rgba(0,0,0,0.34)");
+    } else if (surfaceMaterialId === "galaxy") {
+      reflectedLight.addColorStop(0, "rgba(122,194,255,0.1)");
+      reflectedLight.addColorStop(0.3, "rgba(122,194,255,0)");
+      reflectedLight.addColorStop(0.72, "rgba(229,98,255,0.055)");
+      reflectedLight.addColorStop(1, "rgba(0,0,15,0.3)");
+    } else if (surfaceMaterialId === "circuit") {
+      reflectedLight.addColorStop(0, "rgba(70,240,255,0.08)");
+      reflectedLight.addColorStop(0.28, "rgba(70,240,255,0)");
+      reflectedLight.addColorStop(0.7, "rgba(234,63,255,0.07)");
+      reflectedLight.addColorStop(1, "rgba(0,0,12,0.32)");
+    } else if (surfaceMaterialId === "ice") {
+      reflectedLight.addColorStop(0, "rgba(245,255,255,0.19)");
+      reflectedLight.addColorStop(0.24, "rgba(205,245,255,0.025)");
+      reflectedLight.addColorStop(0.76, "rgba(126,205,232,0.07)");
+      reflectedLight.addColorStop(1, "rgba(3,20,31,0.29)");
+    } else {
       reflectedLight.addColorStop(0, "rgba(255,255,248,0.16)");
       reflectedLight.addColorStop(0.28, "rgba(255,255,248,0)");
       reflectedLight.addColorStop(0.74, "rgba(0,0,0,0.035)");
       reflectedLight.addColorStop(1, "rgba(0,0,0,0.17)");
-    } else if (surfaceMaterialId === "mercury") {
-      reflectedLight.addColorStop(0, "rgba(255,255,255,0.18)");
-      reflectedLight.addColorStop(0.16, "rgba(255,255,255,0.015)");
-      reflectedLight.addColorStop(0.52, "rgba(190,230,240,0.07)");
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.38)");
-    } else if (surfaceMaterialId === "silk") {
-      reflectedLight.addColorStop(0, colorWithAlpha(theme.accent, 0.13));
-      reflectedLight.addColorStop(0.34, "rgba(255,255,255,0.025)");
-      reflectedLight.addColorStop(0.72, colorWithAlpha(theme.secondary, 0.09));
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.26)");
-    } else if (surfaceMaterialId === "plasma") {
-      reflectedLight.addColorStop(0, colorWithAlpha(theme.glow, 0.1));
-      reflectedLight.addColorStop(0.26, colorWithAlpha(theme.primary, 0.035));
-      reflectedLight.addColorStop(0.7, colorWithAlpha(theme.secondary, 0.12));
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.3)");
-    } else if (surfaceMaterialId === "frost") {
-      reflectedLight.addColorStop(0, "rgba(245,255,255,0.18)");
-      reflectedLight.addColorStop(0.22, "rgba(205,245,255,0.025)");
-      reflectedLight.addColorStop(0.76, "rgba(126,205,232,0.07)");
-      reflectedLight.addColorStop(1, "rgba(3,20,31,0.28)");
-    } else {
-      reflectedLight.addColorStop(0, "rgba(255,255,255,0.08)");
-      reflectedLight.addColorStop(0.18, "rgba(255,255,255,0)");
-      reflectedLight.addColorStop(0.7, colorWithAlpha(theme.secondary, 0.055));
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.24)");
     }
     context.fillStyle = reflectedLight;
     context.fillRect(TABLE.left, TABLE.top, width, height);
@@ -4233,12 +4814,8 @@
   function drawRailLightStrip(timestamp) {
     const perimeter = railPerimeterLength();
     const segmentLength = perimeter / RAIL_LED_SEGMENTS;
-    const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
-    const effect = dateMapState.activeEffect || POCKET_VFX_PROFILES["top-left"];
     const surface = activeSurfaceMaterial();
-    const monochromeSurface = surface.id === "ink" || surface.id === "mercury" || surface.id === "frost";
-    const baseColor = colorChannels(monochromeSurface ? surface.rail : theme.primary);
-    const secondaryColor = colorChannels(effect.secondary);
+    const baseColor = colorChannels(surface.rail);
     const blast = dateMapState.blackEightBlast;
     const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
     let peak = 0;
@@ -4256,9 +4833,13 @@
       let red = baseColor[0];
       let green = baseColor[1];
       let blue = baseColor[2];
-      if (surface.id === "plasma") {
+      if (surface.id === "lava") {
+        brightness += Math.max(0, Math.sin(timestamp * 0.006 + index * 0.79)) * 0.022;
+      } else if (surface.id === "galaxy") {
+        brightness += Math.max(0, Math.sin(timestamp * 0.0032 + index * 1.37)) * 0.018;
+      } else if (surface.id === "circuit") {
         brightness += Math.max(0, Math.sin(timestamp * 0.012 + index * 1.71)) * 0.026;
-      } else if (surface.id === "frost") {
+      } else if (surface.id === "ice") {
         brightness += Math.max(0, Math.sin(timestamp * 0.0022 + index * 0.43)) * 0.014;
       }
       dateMapState.railBursts.forEach((wave) => {
@@ -4294,16 +4875,17 @@
         const climax = smoothStep(0.68, 0.82, blastProgress) * (1 - smoothStep(0.9, 1, blastProgress));
         brightness += pocketIgnition * 0.16 + chaseWave * 1.18 + climax * 0.88;
         const spectral = centerDistance / perimeter * Math.PI * 2 + blastProgress * 15 + pocketIndex * 0.2;
-        if (surface.id === "ink") {
-          const inkFlash = 154 + Math.sin(spectral * 1.7) * 96;
-          red = inkFlash;
-          green = inkFlash;
-          blue = inkFlash - 5;
-        } else {
-          red = 132 + Math.sin(spectral) * 110;
-          green = 132 + Math.sin(spectral + 2.094) * 110;
-          blue = 132 + Math.sin(spectral + 4.188) * 110;
-        }
+        const blastPalette = surface.id === "lava" ? ["#ffeb91", "#ff3d08"]
+          : surface.id === "galaxy" ? ["#71d9ff", "#ef66df"]
+            : surface.id === "circuit" ? ["#38edff", "#f052ff"]
+              : surface.id === "ice" ? ["#ffffff", "#58d8ff"]
+                : ["#f4f4ed", "#535b57"];
+        const first = colorChannels(blastPalette[0]);
+        const second = colorChannels(blastPalette[1]);
+        const blend = 0.5 + Math.sin(spectral * (surface.id === "circuit" ? 2.6 : 1.2)) * 0.5;
+        red = first[0] + (second[0] - first[0]) * blend;
+        green = first[1] + (second[1] - first[1]) * blend;
+        blue = first[2] + (second[2] - first[2]) * blend;
       }
       brightness = clamp(brightness, 0, 1);
       peak = Math.max(peak, brightness);
@@ -4344,11 +4926,11 @@
       const flare = dateMapState.pocketFlares.reduce((peak, item) => item.pocketId === pocket.id ? Math.max(peak, item.life) : peak, 0);
       const level = clamp(0.12 + (active ? 0.22 : 0) + flare * 0.66 + ignition * 0.8, 0, 1);
       const radius = POCKET_RADIUS + 5.5;
-      const channels = surface.id === "ink"
-        ? ["#fafaf3", "#777a78", "#d9d9d2"]
-        : surface.id === "mercury" || surface.id === "frost"
-          ? [surface.rail, "#7d98a2", "#ffffff"]
-          : [profile.primary, profile.secondary, dateMapState.activeTheme?.primary || "#ffffff"];
+      const channels = surface.id === "lava" ? ["#ffec91", "#ff6a12", "#a61405"]
+        : surface.id === "galaxy" ? ["#7cdcff", "#a66bff", "#ffc66a"]
+          : surface.id === "circuit" ? ["#4ff4ff", "#ef5bff", "#eefeff"]
+            : surface.id === "ice" ? ["#efffff", "#6edfff", "#377fba"]
+              : ["#fafaf3", "#777a78", "#d9d9d2"];
       for (let segment = 0; segment < 18; segment += 1) {
         const start = segment / 18 * Math.PI * 2 + timestamp * (active ? 0.00016 : 0.00004);
         const end = start + Math.PI * 2 / 18 * 0.72;
@@ -4360,11 +4942,56 @@
         context.arc(pocket.x, pocket.y, radius, start, end);
         context.stroke();
       }
+      if (surface.id === "lava") {
+        context.globalAlpha = level * 0.58;
+        context.strokeStyle = "#ff9a22";
+        for (let tongue = 0; tongue < 8; tongue += 1) {
+          const angle = tongue / 8 * Math.PI * 2 + timestamp * 0.00018;
+          const reach = radius + 7 + Math.sin(timestamp * 0.005 + tongue) * 5;
+          context.beginPath();
+          context.moveTo(pocket.x + Math.cos(angle) * radius * 0.78, pocket.y + Math.sin(angle) * radius * 0.78);
+          context.lineTo(pocket.x + Math.cos(angle) * reach, pocket.y + Math.sin(angle) * reach);
+          context.stroke();
+        }
+      } else if (surface.id === "galaxy") {
+        context.globalAlpha = level * 0.5;
+        context.strokeStyle = "#b17bff";
+        context.lineWidth = 1.25;
+        context.beginPath();
+        ellipsePath(context, pocket.x, pocket.y, radius * 1.34, radius * 0.52, timestamp * 0.00022 + pocketIndex, 0, Math.PI * 2);
+        context.stroke();
+      } else if (surface.id === "circuit") {
+        context.globalAlpha = level * 0.62;
+        context.strokeStyle = pocketIndex % 2 ? "#ef55ff" : "#4cf3ff";
+        context.lineWidth = 1.2;
+        roundRectPath(context, pocket.x - radius * 0.8, pocket.y - radius * 0.8, radius * 1.6, radius * 1.6, 3);
+        context.stroke();
+      } else if (surface.id === "ice") {
+        context.globalAlpha = level * 0.54;
+        context.strokeStyle = "#eaffff";
+        context.lineWidth = 1.1;
+        for (let shard = 0; shard < 10; shard += 1) {
+          const angle = shard / 10 * Math.PI * 2;
+          context.beginPath();
+          context.moveTo(pocket.x + Math.cos(angle) * radius * 0.82, pocket.y + Math.sin(angle) * radius * 0.82);
+          context.lineTo(pocket.x + Math.cos(angle) * radius * 1.28, pocket.y + Math.sin(angle) * radius * 1.28);
+          context.stroke();
+        }
+      } else {
+        context.globalCompositeOperation = "source-over";
+        context.globalAlpha = level * 0.34;
+        context.strokeStyle = "#18231f";
+        context.lineWidth = 5.5;
+        context.beginPath();
+        context.arc(pocket.x, pocket.y, radius * 1.08, -0.2 + pocketIndex * 0.1, Math.PI * 1.6 + pocketIndex * 0.1);
+        context.stroke();
+        context.globalCompositeOperation = "screen";
+      }
       if (flare > 0.02) {
         const glowRadius = 48 + (1 - flare) * 92;
         const glow = context.createRadialGradient(pocket.x, pocket.y, POCKET_RADIUS * 0.45, pocket.x, pocket.y, glowRadius);
-        const flarePrimary = surface.id === "ink" ? "#f7f7ef" : surface.id === "mercury" || surface.id === "frost" ? surface.rail : profile.primary;
-        const flareSecondary = surface.id === "ink" ? "#6f706e" : surface.id === "mercury" || surface.id === "frost" ? "#7897a5" : profile.secondary;
+        const flarePrimary = channels[0];
+        const flareSecondary = channels[1];
         glow.addColorStop(0, colorWithAlpha(flarePrimary, flare * 0.34));
         glow.addColorStop(0.42, colorWithAlpha(flareSecondary, flare * 0.12));
         glow.addColorStop(1, colorWithAlpha(flareSecondary, 0));
@@ -4373,6 +5000,37 @@
         context.fillRect(pocket.x - glowRadius, pocket.y - glowRadius, glowRadius * 2, glowRadius * 2);
       }
     });
+    context.restore();
+  }
+
+  function drawMaterialFrameFinish() {
+    const surface = activeSurfaceMaterial();
+    const palettes = {
+      lava: ["#160503", "#a93a0b", "#ff9c2c"],
+      galaxy: ["#03081c", "#194e91", "#72ccff"],
+      circuit: ["#020718", "#0b7893", "#45efff"],
+      ice: ["#031425", "#286b92", "#c8f7ff"],
+      ink: ["#101916", "#3d655b", "#d8e4dc"]
+    };
+    const palette = palettes[surface.id] || palettes.lava;
+    const finish = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
+    finish.addColorStop(0, palette[2]);
+    finish.addColorStop(0.22, palette[0]);
+    finish.addColorStop(0.74, palette[1]);
+    finish.addColorStop(1, palette[2]);
+    context.save();
+    context.globalCompositeOperation = surface.id === "ink" ? "multiply" : "screen";
+    context.globalAlpha = surface.id === "lava" ? 0.2 : 0.15;
+    context.strokeStyle = finish;
+    context.lineWidth = 20;
+    roundRectPath(context, TABLE.left - 22, TABLE.top - 22, TABLE.right - TABLE.left + 44, TABLE.bottom - TABLE.top + 44, 17);
+    context.stroke();
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = 0.38;
+    context.strokeStyle = palette[2];
+    context.lineWidth = 1.2;
+    roundRectPath(context, TABLE.left - 16, TABLE.top - 16, TABLE.right - TABLE.left + 32, TABLE.bottom - TABLE.top + 32, 11);
+    context.stroke();
     context.restore();
   }
 
@@ -4732,81 +5390,267 @@
     context.restore();
   }
 
-  function drawRollingChromaTrails(timestamp) {
+  function drawMaterialMotionTrails(timestamp) {
+    const materialId = activeSurfaceMaterial().id;
+    const groupedTrails = new Map();
+    dateMapState.rollingTrails.forEach((trail) => {
+      if (trail.life < 0.025) return;
+      if (!groupedTrails.has(trail.ballNumber)) groupedTrails.set(trail.ballNumber, []);
+      groupedTrails.get(trail.ballNumber).push(trail);
+    });
+
+    const influenceNodes = (trails, ballNumber) => {
+      const recent = trails.slice(-42);
+      if (!recent.length) return [];
+      const indices = recent.length > 12
+        ? [Math.floor(recent.length * 0.48), recent.length - 1]
+        : [recent.length - 1];
+      return [...new Set(indices)].map((index, nodeIndex) => {
+        const trail = recent[index];
+        const dx = trail.x2 - trail.x1;
+        const dy = trail.y2 - trail.y1;
+        const length = Math.max(0.001, Math.hypot(dx, dy));
+        const directionX = dx / length;
+        const directionY = dy / length;
+        const normalX = -directionY;
+        const normalY = directionX;
+        const seed = ballNumber * 1.713 + index * 0.619 + trail.bornAt * 0.00037;
+        const side = Math.sin(seed * 3.1 + nodeIndex) * (10 + ballNumber % 4 * 3);
+        return {
+          x: trail.x2 + normalX * side,
+          y: trail.y2 + normalY * side,
+          directionX,
+          directionY,
+          normalX,
+          normalY,
+          angle: Math.atan2(directionY, directionX),
+          alpha: clamp(trail.life, 0, 1) ** 1.22,
+          seed,
+          color: trail.color,
+          secondary: trail.secondary,
+          ballNumber
+        };
+      });
+    };
+
     context.save();
-    context.globalCompositeOperation = "screen";
-    dateMapState.rollingTrails.forEach((trail, index) => {
-      const alpha = clamp(trail.life, 0, 1) ** 1.35;
-      if (alpha < 0.02) return;
-      const dx = trail.x2 - trail.x1;
-      const dy = trail.y2 - trail.y1;
-      const length = Math.max(0.001, Math.hypot(dx, dy));
-      const nx = -dy / length;
-      const ny = dx / length;
-      const wobble = Math.sin(index * 1.83 + trail.bornAt * 0.009) * 4.4;
-      const midX = (trail.x1 + trail.x2) / 2 + nx * wobble;
-      const midY = (trail.y1 + trail.y2) / 2 + ny * wobble;
-      context.globalAlpha = alpha * 0.68;
-      context.lineCap = "round";
-      if (trail.effectId === "ripple") {
-        const radius = 4 + (1 - alpha) * 25;
-        context.strokeStyle = trail.color;
-        context.lineWidth = 1.2 + alpha * 1.4;
-        context.beginPath();
-        ellipsePath(context, trail.x2, trail.y2, radius, radius * 0.46, Math.atan2(dy, dx), 0, Math.PI * 2);
-        context.stroke();
-      } else if (trail.effectId === "comet") {
-        context.strokeStyle = trail.color;
-        context.lineWidth = 1.2 + alpha * 4;
-        context.beginPath();
-        context.moveTo(trail.x1, trail.y1);
-        context.quadraticCurveTo(midX, midY, trail.x2, trail.y2);
-        context.stroke();
-        if (index % 3 === 0) drawDateRouteSparkle(trail.x2 + nx * 5, trail.y2 + ny * 5, 2 + alpha * 3, alpha * 0.82, trail.secondary, true);
-      } else if (trail.effectId === "prism") {
-        [trail.color, trail.secondary, "#70e8ff"].forEach((color, channel) => {
-          const offset = (channel - 1) * 3;
-          context.strokeStyle = color;
-          context.lineWidth = 1.1 + alpha;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    [...groupedTrails.entries()].forEach(([ballNumber, trails], groupIndex) => {
+      influenceNodes(trails, ballNumber).forEach((node, nodeIndex) => {
+        const phase = node.seed + timestamp * 0.00012;
+        if (materialId === "lava") {
+          const centerX = node.x + node.normalX * Math.sin(phase * 1.7) * 10;
+          const centerY = node.y + node.normalY * Math.sin(phase * 1.7) * 10;
+          context.globalCompositeOperation = "screen";
+          context.globalAlpha = node.alpha * 0.62;
           context.beginPath();
-          context.moveTo(trail.x1 + nx * offset, trail.y1 + ny * offset);
-          context.quadraticCurveTo(midX + nx * offset, midY + ny * offset, trail.x2 + nx * offset, trail.y2 + ny * offset);
+          for (let branch = 0; branch < 3; branch += 1) {
+            let x = centerX;
+            let y = centerY;
+            const heading = node.angle + (branch - 1) * 0.92 + Math.sin(node.seed + branch * 2.4) * 0.42;
+            context.moveTo(x, y);
+            for (let step = 1; step <= 5; step += 1) {
+              const angle = heading + Math.sin(node.seed * 2.3 + step * 1.91 + branch) * 0.48;
+              const distance = 7 + step * 2.5 + node.ballNumber % 3;
+              x += Math.cos(angle) * distance;
+              y += Math.sin(angle) * distance;
+              context.lineTo(x, y);
+            }
+          }
+          context.shadowColor = "#ff3908";
+          context.shadowBlur = 4;
+          context.strokeStyle = "#ff4b09";
+          context.lineWidth = 4.5 + node.alpha * 3.5;
           context.stroke();
-        });
-      } else if (trail.effectId === "pulse") {
-        context.strokeStyle = trail.color;
-        context.lineWidth = 1.3 + alpha * 1.6;
-        context.setLineDash([5, 6]);
-        context.lineDashOffset = -timestamp * 0.03;
-        context.beginPath();
-        context.arc(trail.x2, trail.y2, 5 + (1 - alpha) * 22, 0, Math.PI * 2);
-        context.stroke();
-        context.setLineDash([]);
-      } else if (trail.effectId === "lightning") {
-        context.strokeStyle = index % 2 ? trail.color : trail.secondary;
-        context.lineWidth = 0.9 + alpha * 2.1;
-        context.beginPath();
-        context.moveTo(trail.x1, trail.y1);
-        context.lineTo(midX + nx * 5, midY + ny * 5);
-        context.lineTo(midX - nx * 3 + dx * 0.18, midY - ny * 3 + dy * 0.18);
-        context.lineTo(trail.x2, trail.y2);
-        context.stroke();
-      } else {
-        context.strokeStyle = trail.color;
-        context.lineWidth = 2 + alpha * 3.4;
-        context.beginPath();
-        context.moveTo(trail.x1, trail.y1);
-        bezierPath(context, midX + nx * 12, midY + ny * 12, midX - nx * 12, midY - ny * 12, trail.x2, trail.y2);
-        context.stroke();
-        context.globalAlpha *= 0.52;
-        context.strokeStyle = trail.secondary;
-        context.lineWidth = 1.1;
-        context.stroke();
-      }
+          context.shadowBlur = 0;
+          context.globalAlpha = node.alpha * 0.86;
+          context.strokeStyle = groupIndex % 4 === 0 ? "#fff0a2" : "#ffad2e";
+          context.lineWidth = 0.8 + node.alpha * 1.5;
+          context.stroke();
+        } else if (materialId === "galaxy") {
+          const centerX = node.x + node.normalX * (18 + Math.sin(phase) * 8);
+          const centerY = node.y + node.normalY * (18 + Math.sin(phase) * 8);
+          context.globalCompositeOperation = "screen";
+          [node.color, node.secondary, "#d9f5ff"].forEach((color, orbit) => {
+            const radius = 13 + orbit * 8 + (node.ballNumber % 4) * 2;
+            context.globalAlpha = node.alpha * [0.48, 0.36, 0.62][orbit];
+            context.strokeStyle = color;
+            context.lineWidth = [3.6, 2.1, 0.7][orbit];
+            context.beginPath();
+            ellipsePath(
+              context,
+              centerX,
+              centerY,
+              radius * 1.7,
+              radius * (0.54 + orbit * 0.08),
+              node.angle + phase * (orbit % 2 ? -0.22 : 0.18),
+              -Math.PI * 0.2,
+              Math.PI * (1.18 + orbit * 0.16)
+            );
+            context.stroke();
+          });
+          drawDateRouteSparkle(
+            centerX + Math.cos(phase) * 24,
+            centerY + Math.sin(phase) * 15,
+            1.6 + node.alpha * 2.5,
+            node.alpha * 0.78,
+            nodeIndex ? "#ffca76" : "#cceeff",
+            true
+          );
+        } else if (materialId === "circuit") {
+          const grid = 24;
+          const centerX = Math.round((node.x + node.normalX * 13) / grid) * grid;
+          const centerY = Math.round((node.y + node.normalY * 13) / grid) * grid;
+          context.globalCompositeOperation = "screen";
+          context.beginPath();
+          for (let branch = 0; branch < 4; branch += 1) {
+            const horizontal = (branch + node.ballNumber) % 2 === 0;
+            const sign = branch < 2 ? -1 : 1;
+            const first = grid * (1 + (branch + node.ballNumber) % 3);
+            const second = grid * (1 + (branch * 2 + node.ballNumber) % 2);
+            context.moveTo(centerX, centerY);
+            context.lineTo(centerX + (horizontal ? sign * first : 0), centerY + (horizontal ? 0 : sign * first));
+            context.lineTo(centerX + (horizontal ? sign * first : sign * second), centerY + (horizontal ? sign * second : sign * first));
+          }
+          context.globalAlpha = node.alpha * 0.66;
+          context.shadowColor = groupIndex % 2 ? "#f052ff" : "#39edff";
+          context.shadowBlur = 3;
+          context.strokeStyle = context.shadowColor;
+          context.lineWidth = 3.2;
+          context.stroke();
+          context.shadowBlur = 0;
+          context.globalAlpha = node.alpha * 0.9;
+          context.strokeStyle = "#ddfdff";
+          context.lineWidth = 0.62;
+          context.stroke();
+          const pulse = 5 + (timestamp * 0.016 + groupIndex * 3 + nodeIndex * 5) % 14;
+          context.globalAlpha = node.alpha * 0.46;
+          context.strokeStyle = groupIndex % 2 ? "#f66dff" : "#6cf7ff";
+          context.beginPath();
+          context.arc(centerX, centerY, pulse, 0, Math.PI * 2);
+          context.stroke();
+        } else if (materialId === "ice") {
+          const centerX = node.x + node.normalX * Math.sin(node.seed * 2.7) * 12;
+          const centerY = node.y + node.normalY * Math.sin(node.seed * 2.7) * 12;
+          context.globalCompositeOperation = "screen";
+          context.beginPath();
+          const fractureAngles = [-2.18, -1.04, -0.22, 0.72, 1.61, 2.54];
+          fractureAngles.forEach((offset, ray) => {
+            const heading = node.angle + offset + Math.sin(node.seed * 1.9 + ray * 1.37) * 0.43;
+            let x = centerX;
+            let y = centerY;
+            context.moveTo(x, y);
+            const segments = 2 + (ray + node.ballNumber) % 4;
+            for (let step = 1; step <= segments; step += 1) {
+              const jitter = Math.sin(node.seed * 4.1 + ray * 2.2 + step * 1.7) * 0.36;
+              const reach = 7 + ray % 3 * 4 + step * 2.2 + Math.abs(Math.sin(node.seed + ray)) * 8;
+              const nextX = x + Math.cos(heading + jitter) * reach;
+              const nextY = y + Math.sin(heading + jitter) * reach;
+              const bow = Math.sin(node.seed + ray * 3.1 + step) * 5;
+              context.quadraticCurveTo(
+                (x + nextX) / 2 + Math.cos(heading + Math.PI / 2) * bow,
+                (y + nextY) / 2 + Math.sin(heading + Math.PI / 2) * bow,
+                nextX,
+                nextY
+              );
+              x = nextX;
+              y = nextY;
+              if ((step + ray) % 3 === 1) {
+                const branchHeading = heading + (ray % 2 ? -1 : 1) * (0.52 + Math.abs(jitter));
+                const branchReach = 8 + step * 3 + ray % 2 * 5;
+                context.moveTo(x, y);
+                context.quadraticCurveTo(
+                  x + Math.cos(branchHeading) * branchReach * 0.46 + node.normalX * 3,
+                  y + Math.sin(branchHeading) * branchReach * 0.46 + node.normalY * 3,
+                  x + Math.cos(branchHeading) * branchReach,
+                  y + Math.sin(branchHeading) * branchReach
+                );
+                context.moveTo(x, y);
+              }
+            }
+          });
+          context.globalAlpha = node.alpha * 0.42;
+          context.shadowColor = "#6de6ff";
+          context.shadowBlur = 4;
+          context.strokeStyle = "#78e8ff";
+          context.lineWidth = 2.6;
+          context.stroke();
+          context.shadowBlur = 0;
+          context.globalAlpha = node.alpha * 0.72;
+          context.strokeStyle = "#f0feff";
+          context.lineWidth = 0.58;
+          context.stroke();
+          context.globalAlpha = node.alpha * 0.09;
+          context.fillStyle = "#c7f7ff";
+          for (let shard = 0; shard < 4; shard += 1) {
+            const heading = node.seed + shard * 1.71;
+            const radius = 12 + shard * 7;
+            context.beginPath();
+            context.moveTo(centerX + Math.cos(heading) * 4, centerY + Math.sin(heading) * 4);
+            context.lineTo(centerX + Math.cos(heading - 0.25) * radius, centerY + Math.sin(heading - 0.25) * radius);
+            context.lineTo(centerX + Math.cos(heading + 0.39) * radius * 1.25, centerY + Math.sin(heading + 0.39) * radius * 1.25);
+            context.closePath();
+            context.fill();
+          }
+        } else {
+          const centerX = node.x + node.normalX * (16 + Math.sin(node.seed) * 10);
+          const centerY = node.y + node.normalY * (16 + Math.sin(node.seed) * 10);
+          context.globalCompositeOperation = "multiply";
+          const wash = context.createRadialGradient(centerX, centerY, 2, centerX, centerY, 44 + node.ballNumber % 4 * 5);
+          wash.addColorStop(0, `rgba(2,12,10,${node.alpha * 0.24})`);
+          wash.addColorStop(0.46, `rgba(6,23,19,${node.alpha * 0.11})`);
+          wash.addColorStop(1, "rgba(9,30,25,0)");
+          context.fillStyle = wash;
+          context.fillRect(centerX - 64, centerY - 64, 128, 128);
+          context.globalAlpha = node.alpha * (node.ballNumber === 0 ? 0.28 : 0.34);
+          context.strokeStyle = node.ballNumber === 0 ? "#1f342f" : "#07110f";
+          context.lineCap = "round";
+          for (let stroke = 0; stroke < 4; stroke += 1) {
+            const direction = stroke - 1.5;
+            const curl = (stroke % 2 ? -1 : 1) * (20 + stroke * 7);
+            const startX = centerX - node.directionX * (11 + stroke * 5) + node.normalX * direction * 5;
+            const startY = centerY - node.directionY * (11 + stroke * 5) + node.normalY * direction * 5;
+            const endX = centerX + node.directionX * (24 + stroke * 7) + node.normalX * curl;
+            const endY = centerY + node.directionY * (24 + stroke * 7) + node.normalY * curl;
+            context.globalAlpha = node.alpha * (0.16 + stroke * 0.035);
+            context.lineWidth = 3.5 + stroke * 2.25 + node.alpha * 3;
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.bezierCurveTo(
+              centerX + node.normalX * curl * 0.36 - node.directionX * 8,
+              centerY + node.normalY * curl * 0.36 - node.directionY * 8,
+              centerX + node.normalX * curl * 0.86 + node.directionX * 12,
+              centerY + node.normalY * curl * 0.86 + node.directionY * 12,
+              endX,
+              endY
+            );
+            context.stroke();
+          }
+          if (node.ballNumber === 0) {
+            context.globalCompositeOperation = "screen";
+            context.globalAlpha = node.alpha * 0.16;
+            context.strokeStyle = "#f8faf1";
+            context.lineWidth = 0.72;
+            context.beginPath();
+            context.arc(centerX, centerY, 18 + Math.sin(phase) * 4, -0.4, Math.PI * 1.45);
+            context.stroke();
+          }
+          context.globalCompositeOperation = "multiply";
+          context.globalAlpha = node.alpha * 0.3;
+          context.fillStyle = "#07110f";
+          for (let drop = 0; drop < 3; drop += 1) {
+            const angle = node.seed + drop * 2.399;
+            const radius = 7 + drop * 5;
+            context.beginPath();
+            context.arc(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius, 1.5 + drop * 0.8, 0, Math.PI * 2);
+            context.fill();
+          }
+        }
+      });
     });
     context.restore();
   }
-
   function drawChromaRailBursts(timestamp) {
     context.save();
     context.globalCompositeOperation = "screen";
@@ -4970,76 +5814,141 @@
     const inward = 1 - Math.pow(1 - clamp(progress / 0.11, 0, 1), 3);
     const x = blast.originX + (WORLD.width / 2 - blast.originX) * inward;
     const y = blast.originY + (WORLD.height / 2 - blast.originY) * inward;
+    const materialId = activeSurfaceMaterial().id;
+    const profiles = {
+      lava: { colors: ["#fff0a3", "#ff9b20", "#ff3d08", "#8b0903"], void: "rgba(18,1,0,0.84)" },
+      galaxy: { colors: ["#f5fbff", "#75d9ff", "#8a65ff", "#f36bdc"], void: "rgba(0,0,12,0.9)" },
+      circuit: { colors: ["#e9ffff", "#34edff", "#755cff", "#f052ff"], void: "rgba(0,2,16,0.88)" },
+      ice: { colors: ["#ffffff", "#b8f6ff", "#58d8ff", "#187ec4"], void: "rgba(0,13,34,0.8)" },
+      ink: { colors: ["#f7f6ec", "#aab9b1", "#344841", "#070d0b"], void: "rgba(5,12,10,0.76)" }
+    };
+    const profile = profiles[materialId] || profiles.lava;
     context.save();
     const voidRadius = 40 + attack * 520;
     const voidField = context.createRadialGradient(x, y, 0, x, y, voidRadius);
-    voidField.addColorStop(0, `rgba(0, 0, 0, ${0.96 * intensity})`);
-    voidField.addColorStop(0.36, `rgba(5, 3, 18, ${0.7 * intensity})`);
-    voidField.addColorStop(0.7, `rgba(40, 8, 76, ${0.24 * intensity})`);
-    voidField.addColorStop(1, "rgba(0, 0, 0, 0)");
+    voidField.addColorStop(0, profile.void);
+    voidField.addColorStop(0.42, colorWithAlpha(profile.colors[3], 0.36 * intensity));
+    voidField.addColorStop(1, colorWithAlpha(profile.colors[3], 0));
+    context.globalAlpha = intensity;
     context.fillStyle = voidField;
     context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
-    context.globalCompositeOperation = "screen";
-    const rainbow = ["#63e9ff", "#8d6bff", "#ff5ac8", "#ffbb4d", "#f4ff8c", "#63ffc6"];
-    const coreRadius = 80 + attack * 420;
-    const core = context.createRadialGradient(x, y, 0, x, y, coreRadius);
-    core.addColorStop(0, `rgba(255, 255, 255, ${0.44 * intensity})`);
-    core.addColorStop(0.06, `rgba(255, 230, 149, ${0.28 * intensity})`);
-    core.addColorStop(0.2, `rgba(220, 101, 255, ${0.17 * intensity})`);
-    core.addColorStop(0.54, `rgba(90, 201, 255, ${0.08 * intensity})`);
-    core.addColorStop(1, "rgba(90, 201, 255, 0)");
-    context.fillStyle = core;
-    context.fillRect(x - coreRadius, y - coreRadius, coreRadius * 2, coreRadius * 2);
-    [0.5, 0.76, 1].forEach((scale, index) => {
-      const radius = (70 + attack * 620) * scale;
-      context.globalAlpha = intensity * [0.72, 0.5, 0.32][index];
-      context.strokeStyle = rainbow[(index + 1) % rainbow.length];
-      context.lineWidth = 7 - index * 1.7;
-      context.shadowColor = context.strokeStyle;
-      context.shadowBlur = 8;
-      context.beginPath();
-      context.arc(x, y, radius, 0, Math.PI * 2);
-      context.stroke();
-    });
+    context.globalCompositeOperation = materialId === "ink" ? "source-over" : "screen";
+
+    if (materialId === "lava") {
+      const coreRadius = 46 + attack * 350;
+      const core = context.createRadialGradient(x, y, 0, x, y, coreRadius);
+      core.addColorStop(0, colorWithAlpha("#ffffff", 0.9 * intensity));
+      core.addColorStop(0.08, colorWithAlpha("#fff0a3", 0.78 * intensity));
+      core.addColorStop(0.3, colorWithAlpha("#ff4b08", 0.48 * intensity));
+      core.addColorStop(1, "rgba(255,38,0,0)");
+      context.fillStyle = core;
+      context.fillRect(x - coreRadius, y - coreRadius, coreRadius * 2, coreRadius * 2);
+      for (let ray = 0; ray < 24; ray += 1) {
+        const angle = ray / 24 * Math.PI * 2 + Math.sin(ray * 2.7) * 0.11;
+        const points = surfaceCrackPoints(seededSurfaceRandom(ray * 971 + 17), x, y, angle, attack * (220 + ray % 7 * 62), 6 + ray % 5, 0.48);
+        context.globalAlpha = intensity * (0.48 + ray % 3 * 0.13);
+        context.shadowColor = "#ff3208";
+        context.shadowBlur = 15;
+        context.strokeStyle = ray % 4 ? "#ff5b0c" : "#ffe98f";
+        context.lineWidth = ray % 4 ? 4.2 : 7.5;
+        strokeSurfacePolyline(context, points);
+      }
+    } else if (materialId === "galaxy") {
+      const core = context.createRadialGradient(x, y, 0, x, y, 110 + attack * 360);
+      core.addColorStop(0, "rgba(0,0,0,0.98)");
+      core.addColorStop(0.11, colorWithAlpha("#ffffff", 0.82 * intensity));
+      core.addColorStop(0.18, colorWithAlpha("#6fdcff", 0.52 * intensity));
+      core.addColorStop(0.5, colorWithAlpha("#9c63ff", 0.2 * intensity));
+      core.addColorStop(1, "rgba(0,0,0,0)");
+      context.fillStyle = core;
+      context.fillRect(x - 500, y - 500, 1000, 1000);
+      for (let orbit = 0; orbit < 9; orbit += 1) {
+        context.globalAlpha = intensity * (0.72 - orbit * 0.055);
+        context.strokeStyle = profile.colors[orbit % profile.colors.length];
+        context.lineWidth = 7 - orbit * 0.55;
+        context.shadowColor = context.strokeStyle;
+        context.shadowBlur = 16;
+        context.beginPath();
+        ellipsePath(context, x, y, 70 + attack * (100 + orbit * 45), 38 + attack * (55 + orbit * 24), progress * 2.4 + orbit * 0.43, 0, Math.PI * 2);
+        context.stroke();
+      }
+    } else if (materialId === "circuit") {
+      for (let ring = 0; ring < 8; ring += 1) {
+        const radius = 38 + attack * (70 + ring * 56);
+        context.globalAlpha = intensity * (0.72 - ring * 0.06);
+        context.strokeStyle = profile.colors[ring % profile.colors.length];
+        context.lineWidth = ring % 2 ? 1.2 : 3.2;
+        context.setLineDash(ring % 2 ? [6, 9] : [18, 5]);
+        context.lineDashOffset = -timestamp * (ring % 2 ? 0.05 : -0.035);
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.stroke();
+      }
+      context.setLineDash([]);
+      for (let ray = 0; ray < 18; ray += 1) {
+        const angle = ray / 18 * Math.PI * 2;
+        const length = attack * (240 + ray % 5 * 74);
+        const endX = x + Math.cos(angle) * length;
+        const endY = y + Math.sin(angle) * length;
+        context.globalAlpha = intensity * 0.58;
+        context.strokeStyle = profile.colors[ray % profile.colors.length];
+        context.lineWidth = 2.2;
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(endX, y);
+        context.lineTo(endX, endY);
+        context.stroke();
+      }
+    } else if (materialId === "ice") {
+      const core = context.createRadialGradient(x, y, 0, x, y, 70 + attack * 330);
+      core.addColorStop(0, colorWithAlpha("#ffffff", 0.82 * intensity));
+      core.addColorStop(0.26, colorWithAlpha("#75e6ff", 0.42 * intensity));
+      core.addColorStop(1, "rgba(50,194,255,0)");
+      context.fillStyle = core;
+      context.fillRect(x - 430, y - 430, 860, 860);
+      for (let shard = 0; shard < 30; shard += 1) {
+        const angle = shard / 30 * Math.PI * 2 + Math.sin(shard * 1.9) * 0.09;
+        const near = 24 + attack * 45;
+        const far = near + attack * (150 + shard % 8 * 42);
+        const spread = 0.018 + shard % 4 * 0.008;
+        context.globalAlpha = intensity * (0.28 + shard % 5 * 0.08);
+        context.fillStyle = shard % 3 ? "rgba(119,226,255,0.28)" : "rgba(244,255,255,0.64)";
+        context.beginPath();
+        context.moveTo(x + Math.cos(angle - spread) * near, y + Math.sin(angle - spread) * near);
+        context.lineTo(x + Math.cos(angle) * far, y + Math.sin(angle) * far);
+        context.lineTo(x + Math.cos(angle + spread) * near, y + Math.sin(angle + spread) * near);
+        context.closePath();
+        context.fill();
+      }
+    } else {
+      const bloomRadius = 55 + attack * 420;
+      const bloom = context.createRadialGradient(x, y, 0, x, y, bloomRadius);
+      bloom.addColorStop(0, `rgba(0, 0, 0, ${0.92 * intensity})`);
+      bloom.addColorStop(0.24, `rgba(7, 17, 14, ${0.68 * intensity})`);
+      bloom.addColorStop(0.62, `rgba(31, 49, 43, ${0.18 * intensity})`);
+      bloom.addColorStop(1, "rgba(0,0,0,0)");
+      context.fillStyle = bloom;
+      context.fillRect(x - bloomRadius, y - bloomRadius, bloomRadius * 2, bloomRadius * 2);
+      context.globalCompositeOperation = "multiply";
+      for (let stroke = 0; stroke < 17; stroke += 1) {
+        const angle = stroke / 17 * Math.PI * 2 + Math.sin(stroke * 2.1) * 0.18;
+        const reach = attack * (180 + stroke % 6 * 76);
+        context.globalAlpha = intensity * (0.18 + stroke % 4 * 0.07);
+        context.strokeStyle = stroke % 5 ? "#07110e" : "#4d625a";
+        context.lineWidth = 4 + stroke % 5 * 4.5;
+        context.beginPath();
+        context.moveTo(x, y);
+        context.quadraticCurveTo(x + Math.cos(angle + 0.42) * reach * 0.55, y + Math.sin(angle + 0.42) * reach * 0.55, x + Math.cos(angle) * reach, y + Math.sin(angle) * reach);
+        context.stroke();
+      }
+    }
     context.shadowBlur = 0;
-    rainbow.forEach((color, index) => {
-      const angle = index * Math.PI / 3 + progress * 1.8;
-      const radius = 72 + attack * (210 + index * 24);
-      context.globalAlpha = intensity * 0.82;
-      context.strokeStyle = color;
-      context.lineWidth = 2.4 + (1 - progress) * 5.6;
-      context.shadowColor = color;
-      context.shadowBlur = 16;
-      context.beginPath();
-      ellipsePath(context, x, y, radius, radius * 0.56, angle, 0, Math.PI * 2);
-      context.stroke();
-    });
-    for (let ray = 0; ray < 18; ray += 1) {
-      const angle = ray * Math.PI * 2 / 18 + Math.sin(ray * 2.3) * 0.08;
-      const length = (250 + (ray % 5) * 92) * attack;
-      context.globalAlpha = intensity * (0.36 + ray % 3 * 0.1);
-      context.strokeStyle = rainbow[ray % rainbow.length];
-      context.lineWidth = ray % 4 === 0 ? 3.2 : 1.2;
-      context.beginPath();
-      context.moveTo(x + Math.cos(angle) * 28, y + Math.sin(angle) * 28);
-      context.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
-      context.stroke();
-    }
-    for (let spark = 0; spark < 30; spark += 1) {
-      const angle = spark * 2.399963 + progress * (spark % 3 ? 0.8 : -0.6);
-      const radius = attack * (90 + (spark * 67) % 480);
-      const size = spark % 7 === 0 ? 3.4 : 1.2 + spark % 3 * 0.6;
-      context.globalAlpha = intensity * (0.28 + spark % 5 * 0.09);
-      context.fillStyle = rainbow[spark % rainbow.length];
-      context.beginPath();
-      context.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius * 1.45, size, 0, Math.PI * 2);
-      context.fill();
-    }
     POCKETS.forEach((pocket, index) => {
-      context.globalAlpha = intensity * 0.54;
-      context.strokeStyle = rainbow[index];
-      context.lineWidth = 2.8;
-      context.setLineDash([3, 9]);
+      context.globalCompositeOperation = materialId === "ink" ? "source-over" : "screen";
+      context.globalAlpha = intensity * 0.42;
+      context.strokeStyle = profile.colors[index % profile.colors.length];
+      context.lineWidth = materialId === "ink" ? 5.5 : 2.6;
+      context.setLineDash(materialId === "circuit" ? [8, 7] : materialId === "ink" ? [] : [3, 9]);
       context.lineDashOffset = -timestamp * 0.06;
       context.beginPath();
       context.moveTo(x, y);
@@ -5066,7 +5975,10 @@
     context.closePath();
     context.clip();
     renderWaterSurface(timestamp);
+    drawMaterialMotionTrails(timestamp);
+    if (blackEightActive) drawBlackEightBlast(timestamp);
     context.restore();
+    drawMaterialFrameFinish();
     if (blackEightActive) drawBlackEightLedChoreography(timestamp);
     else {
       drawRailLightStrip(timestamp);
@@ -5484,9 +6396,41 @@
       context.globalAlpha = feedback.life * feedback.intensity;
       context.strokeStyle = feedback.color;
       context.lineWidth = 1.2 + feedback.life * 2.2;
-      context.beginPath();
-      context.arc(feedback.x, feedback.y, feedback.radius, 0, Math.PI * 2);
-      context.stroke();
+      if (feedback.materialId === "circuit") {
+        context.strokeRect(feedback.x - feedback.radius, feedback.y - feedback.radius, feedback.radius * 2, feedback.radius * 2);
+        context.beginPath();
+        context.arc(feedback.x, feedback.y, feedback.radius * 0.58, 0, Math.PI * 2);
+        context.stroke();
+      } else if (feedback.materialId === "ice") {
+        for (let shard = 0; shard < 8; shard += 1) {
+          const angle = shard / 8 * Math.PI * 2 + feedback.radius * 0.02;
+          context.beginPath();
+          context.moveTo(feedback.x + Math.cos(angle) * feedback.radius * 0.24, feedback.y + Math.sin(angle) * feedback.radius * 0.24);
+          context.lineTo(feedback.x + Math.cos(angle) * feedback.radius, feedback.y + Math.sin(angle) * feedback.radius);
+          context.stroke();
+        }
+      } else if (feedback.materialId === "ink") {
+        context.globalCompositeOperation = "multiply";
+        context.fillStyle = "rgba(5, 16, 13, 0.18)";
+        context.beginPath();
+        context.arc(feedback.x, feedback.y, feedback.radius * 0.78, 0, Math.PI * 2);
+        context.fill();
+        context.globalCompositeOperation = "source-over";
+      } else {
+        context.beginPath();
+        context.arc(feedback.x, feedback.y, feedback.radius, 0, Math.PI * 2);
+        context.stroke();
+        if (feedback.materialId === "lava") {
+          context.globalAlpha *= 0.7;
+          for (let ray = 0; ray < 6; ray += 1) {
+            const angle = ray / 6 * Math.PI * 2;
+            context.beginPath();
+            context.moveTo(feedback.x + Math.cos(angle) * feedback.radius * 0.56, feedback.y + Math.sin(angle) * feedback.radius * 0.56);
+            context.lineTo(feedback.x + Math.cos(angle) * feedback.radius * 1.24, feedback.y + Math.sin(angle) * feedback.radius * 1.24);
+            context.stroke();
+          }
+        }
+      }
     });
     context.restore();
   }
@@ -5602,7 +6546,8 @@
           speed: 2.4 + Math.min(3.6, relative * 0.08),
           life: 1,
           intensity: clamp(relative / 16, 0.3, 1),
-          color: "#e8fff7"
+          color: activeSurfaceMaterial().rail,
+          materialId: activeSurfaceMaterial().id
         });
         if (collisionFeedbacks.length > 24) collisionFeedbacks.splice(0, collisionFeedbacks.length - 24);
         disturbWaterWorld(contact.x, contact.y, clamp(relative / 13, 0.28, 1.4), 18 + clamp(relative, 0, 24));
@@ -5837,6 +6782,9 @@
             surfaceMaterialId,
             surfaceMaterialLabel: activeSurfaceMaterial().label,
             surfaceMaterialCount: SURFACE_MATERIALS.length,
+            surfaceTextureSource: SURFACE_TEXTURE_SOURCES[surfaceMaterialId],
+            surfaceTextureReady: Boolean(surfaceTextureCache.get(surfaceMaterialId)?.ready),
+            surfaceTextureReadyCount: [...surfaceTextureCache.values()].filter((record) => record.ready).length,
             surfaceTransitionTo: dateMapState.surfaceTransition?.to || null,
             blackEightBlast: Boolean(dateMapState.blackEightBlast),
             blackEightBlastLife: dateMapState.blackEightBlast?.life ?? 0,

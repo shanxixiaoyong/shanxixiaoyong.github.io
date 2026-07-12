@@ -330,43 +330,56 @@ test("uses a resettable stepped water surface as the active cloth renderer", () 
   );
 });
 
-test("drives six tactile material shaders from the same physical height field", () => {
+test("drives five reference-matched materials from the same physical height field", () => {
   const surfaceSelection = implementationOf(source, "selectSurfaceMaterial");
   const disturbance = implementationOf(source, "disturbWaterWorld");
   const simulation = implementationOf(source, "stepWaterSimulation");
   const renderer = implementationOf(source, "renderWaterSurface");
 
-  for (const id of ["water", "ink", "mercury", "silk", "plasma", "frost"]) {
+  for (const id of ["lava", "galaxy", "circuit", "ice", "ink"]) {
     assert.match(source, new RegExp(`id: "${id}"`));
   }
-  for (const id of ["ink", "mercury", "silk", "plasma", "frost"]) {
+  for (const id of ["lava", "galaxy", "circuit", "ice"]) {
     assert.match(renderer, new RegExp(`surfaceMaterialId === "${id}"`));
   }
   assert.match(source, /const SURFACE_MATERIALS = Object\.freeze\(\[/);
   assert.match(source, /const SURFACE_MATERIAL_BY_ID = Object\.freeze/);
+  assert.match(source, /const SURFACE_TEXTURE_SOURCES = Object\.freeze/);
   assert.match(surfaceSelection, /writeStorage\(SURFACE_KEY, material\.id\)/);
+  assert.match(surfaceSelection, /ensureSurfaceTexture\(material\.id\)/);
   assert.match(surfaceSelection, /spawnSurfaceMaterialWave\(material\)/);
   assert.match(disturbance, /material\.disturbance/);
   assert.match(disturbance, /material\.radius/);
+  assert.match(disturbance, /material\.traceDeposit/);
   assert.match(simulation, /material\.damping/);
+  assert.match(simulation, /material\.traceDecay/);
+  assert.match(simulation, /material\.traceDiffuse/);
   assert.match(source, /pigment: new Float32Array/);
   assert.match(source, /pigmentNext: new Float32Array/);
+  assert.match(source, /function createSurfaceArtwork\(/);
+  assert.match(source, /function drawSurfaceArtwork\(/);
+  assert.match(source, /function drawSurfaceTexture\(/);
+  for (const painter of ["paintLavaArtwork", "paintGalaxyArtwork", "paintCircuitArtwork", "paintIceArtwork", "paintInkArtwork"]) {
+    assert.match(source, new RegExp(`function ${painter}\\(`));
+  }
   assert.match(renderer, /const inkBody = smoothStep/);
   assert.match(renderer, /const dryBrush = clamp/);
-  assert.match(renderer, /const environmentBand =/);
-  assert.match(renderer, /const weavePhase =/);
-  assert.match(renderer, /const plasmaCell =/);
+  assert.match(renderer, /const fissureField =/);
+  assert.match(renderer, /const nebula =/);
+  assert.match(renderer, /const gridX =/);
   assert.match(renderer, /const crystal =/);
 });
 
 test("turns rolling balls into water wakes and rail impacts into bidirectional perimeter waves", () => {
   const rollingUpdate = implementationOf(source, "updateRollingState");
   const rollingWake = implementationOf(source, "depositRollingWaterWake");
+  const materialInfluence = implementationOf(source, "drawMaterialMotionTrails");
   const railBurst = implementationOf(source, "spawnChromaRailBurst");
   const railLightStrip = implementationOf(source, "drawRailLightStrip");
   const activeRendering = `${implementationOf(source, "drawDateMap")}\n${implementationOf(source, "draw")}`;
 
   assert.match(rollingUpdate, /\bdepositRollingWaterWake\(ball, data, dx, dy, travel\)/);
+  assert.match(rollingUpdate, /lastChromaTrailPoint/);
   assert.match(rollingUpdate, /\btravel\b/);
   assert.match(rollingUpdate, /ball\.speed/);
   assert.match(rollingWake, /\bdisturbWaterWorld\(/);
@@ -381,6 +394,13 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
   assert.match(railLightStrip, /wave\.originS - front/, "each rail wave should also travel counterclockwise");
   assert.match(railLightStrip, /\brailPositionFromDistance\(/);
   assert.match(activeRendering, /\bdrawRailLightStrip\(timestamp/);
+  assert.match(activeRendering, /\bdrawMaterialMotionTrails\(timestamp\)/);
+  assert.match(materialInfluence, /const influenceNodes =/);
+  assert.match(materialInfluence, /materialId === "lava"/);
+  assert.match(materialInfluence, /materialId === "galaxy"/);
+  assert.match(materialInfluence, /materialId === "circuit"/);
+  assert.match(materialInfluence, /materialId === "ice"/);
+  assert.doesNotMatch(materialInfluence, /moveTo\(trail\.x1|lineTo\(trail\.x2|traceGroupedPath/);
 });
 
 test("choreographs the black-eight finale through the perimeter light strip", () => {

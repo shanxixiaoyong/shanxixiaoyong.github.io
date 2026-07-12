@@ -11,10 +11,11 @@
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-tactile-surfaces-20260712l">
+  <link rel="preload" href="assets/billiards-surfaces/lava.jpg" as="image" fetchpriority="high">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-reference-surfaces-20260712n">
 </head>
 <body class="heartbeat-billiards-page">
-  <main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技" data-stage="1" data-state="loading" data-shell-theme="chromatic" data-surface-material="water">
+  <main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技" data-stage="1" data-state="loading" data-shell-theme="chromatic" data-surface-material="lava">
     <div class="hb-backdrop" aria-hidden="true"></div>
     <div class="hb-stage-light" aria-hidden="true"></div>
     <div class="hb-scene-lens" id="hb-scene-lens" aria-hidden="true"><i></i><b></b></div>
@@ -39,14 +40,13 @@
 
       <div class="hb-toolbar" aria-label="游戏设置">
         <div class="hb-surface-control">
-          <button class="hb-icon-button" id="hb-surface-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="切换桌面材质，当前为深水镜" title="桌面材质"><span id="hb-surface-icon" aria-hidden="true">&#8776;</span></button>
+          <button class="hb-icon-button" id="hb-surface-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="切换桌面材质，当前为熔岩裂境" title="桌面材质"><span id="hb-surface-icon" aria-hidden="true">焰</span></button>
           <div class="hb-surface-menu" id="hb-surface-menu" role="menu" aria-label="桌面触感材质" hidden>
-            <button id="hb-surface-water" type="button" role="menuitemradio" aria-checked="true" data-surface-material="water" title="深水镜"><i aria-hidden="true"></i><span>深水镜</span></button>
-            <button id="hb-surface-ink" type="button" role="menuitemradio" aria-checked="false" data-surface-material="ink" title="黑白墨韵"><i aria-hidden="true"></i><span>黑白墨韵</span></button>
-            <button id="hb-surface-mercury" type="button" role="menuitemradio" aria-checked="false" data-surface-material="mercury" title="液态金属"><i aria-hidden="true"></i><span>液态金属</span></button>
-            <button id="hb-surface-silk" type="button" role="menuitemradio" aria-checked="false" data-surface-material="silk" title="极光绸"><i aria-hidden="true"></i><span>极光绸</span></button>
-            <button id="hb-surface-plasma" type="button" role="menuitemradio" aria-checked="false" data-surface-material="plasma" title="离子流体"><i aria-hidden="true"></i><span>离子流体</span></button>
-            <button id="hb-surface-frost" type="button" role="menuitemradio" aria-checked="false" data-surface-material="frost" title="晶霜"><i aria-hidden="true"></i><span>晶霜</span></button>
+            <button id="hb-surface-lava" type="button" role="menuitemradio" aria-checked="true" data-surface-material="lava" title="熔岩裂境"><i aria-hidden="true"></i><span>熔岩裂境</span></button>
+            <button id="hb-surface-galaxy" type="button" role="menuitemradio" aria-checked="false" data-surface-material="galaxy" title="星河引力"><i aria-hidden="true"></i><span>星河引力</span></button>
+            <button id="hb-surface-circuit" type="button" role="menuitemradio" aria-checked="false" data-surface-material="circuit" title="霓虹矩阵"><i aria-hidden="true"></i><span>霓虹矩阵</span></button>
+            <button id="hb-surface-ice" type="button" role="menuitemradio" aria-checked="false" data-surface-material="ice" title="极寒冰域"><i aria-hidden="true"></i><span>极寒冰域</span></button>
+            <button id="hb-surface-ink" type="button" role="menuitemradio" aria-checked="false" data-surface-material="ink" title="水墨山河"><i aria-hidden="true"></i><span>水墨山河</span></button>
           </div>
         </div>
         <button class="hb-icon-button" id="hb-sound" type="button" aria-pressed="true" aria-label="关闭声音" title="声音"><span aria-hidden="true">&#9834;</span></button>
@@ -147,10 +147,10 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-tactile-surfaces-20260712l"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-tactile-surfaces-20260712l"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-tactile-surfaces-20260712l"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-tactile-surfaces-20260712l"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-tactile-surfaces-20260712l"></script>
+  <script src="assets/billiards-physics.js?v=billiards-reference-surfaces-20260712n"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-reference-surfaces-20260712n"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-reference-surfaces-20260712n"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-reference-surfaces-20260712n"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-reference-surfaces-20260712n"></script>
 </body>
 </html>

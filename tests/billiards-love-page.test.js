@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-tactile-surfaces-20260712l";
-const styleCacheVersion = "billiards-tactile-surfaces-20260712l";
+const runtimeCacheVersion = "billiards-reference-surfaces-20260712n";
+const styleCacheVersion = "billiards-reference-surfaces-20260712n";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -65,8 +65,8 @@ test("opens directly into play without visible opening or pause UI", () => {
   const topbarButtonIds = [...topbar.matchAll(/<button\b[^>]*\bid="([^"]+)"/g)].map((match) => match[1]);
 
   assert.deepEqual(topbarButtonIds, [
-    "hb-surface-toggle", "hb-surface-water", "hb-surface-ink", "hb-surface-mercury",
-    "hb-surface-silk", "hb-surface-plasma", "hb-surface-frost", "hb-sound", "hb-aim-toggle"
+    "hb-surface-toggle", "hb-surface-lava", "hb-surface-galaxy", "hb-surface-circuit",
+    "hb-surface-ice", "hb-surface-ink", "hb-sound", "hb-aim-toggle"
   ]);
   for (const token of ["hb-back", "hb-stage-kicker", "hb-stage-title", "hb-interest-wrap", "hb-surface-toggle", "hb-sound", "hb-aim-toggle"]) {
     assert.match(topbar, new RegExp(escapeRegExp(token)));
@@ -160,26 +160,41 @@ test("uses a simulated water field without narrative scene photography", () => {
   assert.doesNotMatch(html + css, /https?:\/\//);
 });
 
-test("offers six genuinely different persisted tactile surface materials", () => {
+test("offers five reference-matched persisted cinematic surface materials", () => {
   const expected = [
-    ["water", "深水镜"],
-    ["ink", "黑白墨韵"],
-    ["mercury", "液态金属"],
-    ["silk", "极光绸"],
-    ["plasma", "离子流体"],
-    ["frost", "晶霜"]
+    ["lava", "熔岩裂境"],
+    ["galaxy", "星河引力"],
+    ["circuit", "霓虹矩阵"],
+    ["ice", "极寒冰域"],
+    ["ink", "水墨山河"]
   ];
-  assert.match(html, /data-surface-material="water"/);
+  assert.match(html, /data-surface-material="lava"/);
   assert.match(html, /id="hb-surface-menu"[^>]*role="menu"/);
   for (const [id, label] of expected) {
+    const texture = `assets/billiards-surfaces/${id}.jpg`;
     assert.match(html, new RegExp(`id="hb-surface-${id}"[\\s\\S]*?data-surface-material="${id}"[\\s\\S]*?>${label}<`));
     assert.match(game, new RegExp(`id: "${id}", label: "${label}"`));
+    assert.match(game, new RegExp(`${id}: "${escapeRegExp(texture)}"`));
     assert.match(css, new RegExp(`data-surface-material="${id}"`));
+    assert.match(css, new RegExp(escapeRegExp(`url("billiards-surfaces/${id}.jpg")`)));
+    assert.equal(fs.existsSync(path.join(root, texture)), true, `${texture} should exist`);
+    assert.ok(fs.statSync(path.join(root, texture)).size > 500 * 1024, `${texture} should retain high-detail raster data`);
   }
-  assert.match(game, /const SURFACE_KEY = "yl-chroma-surface-material-v1"/);
+  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/lava\.jpg" as="image" fetchpriority="high">/);
+  assert.match(game, /const SURFACE_KEY = "yl-chroma-surface-material-v2"/);
+  assert.match(game, /const SURFACE_TEXTURE_SOURCES = Object\.freeze\(\{/);
   assert.match(game, /function selectSurfaceMaterial\(/);
   assert.match(game, /writeStorage\(SURFACE_KEY, material\.id\)/);
-  assert.match(game, /surfaceMaterialId === "ink"/);
+  assert.match(game, /materialId === "ink"/);
+  assert.match(game, /function ensureSurfaceTexture\(/);
+  assert.match(game, /function drawSurfaceTexture\(/);
+  assert.match(game, /function createSurfaceArtwork\(/);
+  assert.match(game, /function drawMaterialMotionTrails\(/);
+  assert.match(game, /paintLavaArtwork/);
+  assert.match(game, /paintGalaxyArtwork/);
+  assert.match(game, /paintCircuitArtwork/);
+  assert.match(game, /paintIceArtwork/);
+  assert.match(game, /paintInkArtwork/);
   assert.match(game, /waterSurface\.pigment/);
   assert.match(css, /\.hb-surface-menu\[hidden\]/);
   assert.doesNotMatch(css, /\.hb-surface-menu[\s\S]*?backdrop-filter/);
