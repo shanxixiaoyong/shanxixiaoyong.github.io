@@ -88,7 +88,13 @@ button {
   --hb-scene-origin-x: 50%;
   --hb-scene-origin-y: 50%;
   --hb-scene-color: #db91aa;
+  --hb-scene-secondary: #efbd91;
+  --hb-stage-scene-primary: #d991aa;
+  --hb-stage-scene-secondary: #8dcfd5;
   --hb-scene-opacity: 0.12;
+  --hb-scene-scale: 1.04;
+  --hb-backdrop-image: url("billiards-scenes/date-map-rose-v3.jpg");
+  --hb-scene-image: url("billiards-scenes/date-map-rose-v3.jpg");
 }
 
 .hb-app[data-stage="2"] {
@@ -140,9 +146,12 @@ button {
   content: "";
   position: absolute;
   inset: -8%;
-  background: url("billiards-scenes/date-map-rose-v3.jpg") var(--hb-scene-x) var(--hb-scene-y) / 168% auto no-repeat;
+  background-image: var(--hb-backdrop-image);
+  background-position: var(--hb-scene-x) var(--hb-scene-y);
+  background-size: cover;
+  background-repeat: no-repeat;
   opacity: var(--hb-scene-opacity);
-  transform: scale(1.05);
+  transform: scale(var(--hb-scene-scale));
   transform-origin: var(--hb-scene-x) var(--hb-scene-y);
   transition: opacity 900ms ease, background-position 1050ms cubic-bezier(0.22, 0.72, 0.2, 1), transform 1050ms cubic-bezier(0.22, 0.72, 0.2, 1);
 }
@@ -159,9 +168,11 @@ button {
 .hb-stage-light {
   z-index: -2;
   opacity: 0.76;
-  background: var(--stage-wash);
+  background:
+    radial-gradient(circle at var(--hb-scene-origin-x) var(--hb-scene-origin-y), color-mix(in srgb, var(--hb-stage-scene-primary) 36%, transparent), transparent 48%),
+    linear-gradient(155deg, color-mix(in srgb, var(--hb-stage-scene-secondary) 18%, transparent), transparent 44% 68%, var(--stage-wash));
   mix-blend-mode: screen;
-  transition: background 500ms ease;
+  transition: background 720ms ease, opacity 720ms ease;
 }
 
 .hb-scene-lens {
@@ -169,7 +180,10 @@ button {
   z-index: 16;
   inset: 0;
   overflow: hidden;
-  background: url("billiards-scenes/date-map-rose-v3.jpg") var(--hb-scene-x) var(--hb-scene-y) / 168% auto no-repeat;
+  background-image: var(--hb-scene-image);
+  background-position: var(--hb-scene-x) var(--hb-scene-y);
+  background-size: cover;
+  background-repeat: no-repeat;
   opacity: 0;
   clip-path: circle(0 at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
   pointer-events: none;
@@ -196,30 +210,30 @@ button {
 }
 
 .hb-scene-lens.is-active {
-  animation: hb-scene-lens-reveal 760ms cubic-bezier(0.18, 0.72, 0.22, 1) both;
+  animation: hb-scene-lens-reveal 1120ms cubic-bezier(0.18, 0.72, 0.22, 1) both;
 }
 
 .hb-scene-lens.is-active[data-camera="gentle"],
 .hb-scene-lens.is-active[data-camera="rattle"] {
   animation-name: hb-scene-lens-dissolve;
-  animation-duration: 900ms;
+  animation-duration: 1180ms;
 }
 
 .hb-scene-lens.is-active[data-camera="power"],
 .hb-scene-lens.is-active[data-camera="multi"] {
   animation-name: hb-scene-lens-flash;
-  animation-duration: 640ms;
+  animation-duration: 960ms;
 }
 
 .hb-scene-lens.is-active[data-camera="bank"],
 .hb-scene-lens.is-active[data-camera="combo"] {
   animation-name: hb-scene-lens-match-pan;
-  animation-duration: 820ms;
+  animation-duration: 1080ms;
 }
 
 .hb-scene-lens.is-active[data-camera="long"] {
   animation-name: hb-scene-lens-push;
-  animation-duration: 860ms;
+  animation-duration: 1120ms;
 }
 
 .hb-topbar {

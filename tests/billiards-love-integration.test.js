@@ -123,7 +123,9 @@ function bootRuntime(options = {}) {
     clearTimeout() {}
   };
   vm.runInNewContext(source, sandbox, { filename: "billiards-love-game.js" });
-  return window.__heartbeatBilliardsDebug;
+  return options.withInputHarness
+    ? { debug: window.__heartbeatBilliardsDebug, canvas }
+    : window.__heartbeatBilliardsDebug;
 }
 
 function pocketApproach(pocket, inwardDistance = 14, speed = 8) {
@@ -284,6 +286,49 @@ test("maps touch points directly into the portrait world", () => {
   assert.deepEqual({ ...debug.mapClientPoint(25, 140, portrait) }, { x: 0, y: 0 });
   assert.deepEqual({ ...debug.mapClientPoint(385, 860, portrait) }, { x: 720, y: 1440 });
   assert.deepEqual({ ...debug.mapClientPoint(385, 140, portrait) }, { x: 720, y: 0 });
+});
+
+test("strikes from either the aiming finger release or a second pointer touch", () => {
+  const pointer = (pointerId, clientX, clientY, isPrimary) => ({
+    pointerId,
+    pointerType: "touch",
+    clientX,
+    clientY,
+    isPrimary,
+    preventDefault() {}
+  });
+  const first = bootRuntime({ withInputHarness: true });
+  first.canvas.listeners.get("pointerdown")(pointer(1, 180, 330, true));
+  first.canvas.listeners.get("pointermove")(pointer(1, 180, 540, true));
+  assert.ok(first.debug.snapshot().aim?.power > 0.5);
+  first.canvas.listeners.get("pointerdown")(pointer(2, 280, 500, false));
+  assert.equal(first.debug.snapshot().aim, null);
+  assert.equal(first.debug.snapshot().moving, true);
+
+  const release = bootRuntime({ withInputHarness: true });
+  release.canvas.listeners.get("pointerdown")(pointer(3, 180, 330, true));
+  release.canvas.listeners.get("pointermove")(pointer(3, 180, 540, true));
+  release.canvas.listeners.get("pointerup")(pointer(3, 180, 540, true));
+  assert.equal(release.debug.snapshot().aim, null);
+  assert.equal(release.debug.snapshot().moving, true);
+});
+
+test("rotates the camera and event treatment when one stage revisits the same pocket", () => {
+  const debug = bootRuntime();
+  const detail = (number) => ({
+    number,
+    pocketId: "top-left",
+    railHits: number - 1,
+    travel: 640 + number * 20,
+    path: [{ x: 360, y: 1080 }, { x: 230, y: 640 }, { x: 70, y: 130 }]
+  });
+  const first = debug.presentShot({ pottedNumbers: [1], breakShot: true, pottedDetails: [detail(1)] });
+  const second = debug.presentShot({ pottedNumbers: [2], pottedDetails: [detail(2)] });
+
+  assert.equal(first.presentation.dateMap.activeSceneId, "corner-store");
+  assert.equal(second.presentation.dateMap.activeSceneId, "corner-store");
+  assert.notEqual(first.presentation.dateMap.activeVariantIndex, second.presentation.dateMap.activeVariantIndex);
+  assert.equal(second.presentation.dateMap.sceneHistory, 2);
 });
 
 test("allocates most pull travel to fine control in the useful middle-power range", () => {

@@ -24,6 +24,10 @@
   let dateMapFrameContext = null;
   let dateMapFrameUpdatedAt = -Infinity;
   let dateMapFrameDirty = true;
+  let sceneLightingFrameCanvas = null;
+  let sceneLightingFrameContext = null;
+  let sceneLightingFrameUpdatedAt = -Infinity;
+  let sceneLightingFrameDirty = true;
   const tableWrap = required("#hb-table-wrap");
   const elements = {
     stageKicker: required("#hb-stage-kicker"),
@@ -107,10 +111,6 @@
   const STRONG_PULL_START = 0.82;
   const LIGHT_POWER_MAX = 0.30;
   const STRONG_POWER_MIN = 0.76;
-  const AIM_LOCK_DELAY_MS = 500;
-  const AIM_LOCK_MIN_PULL_RATIO = 0.035;
-  const AIM_LOCK_DIRECTION_EPSILON = 0.012;
-  const AIM_LOCK_BREAK_ANGLE = AIM_LOCK_DIRECTION_EPSILON;
   const MIN_SHOT_SPEED = 2.6;
   const MAX_SHOT_SPEED = 42;
   const STOP_SPEED = Physics.CONFIG.stopSpeed;
@@ -125,6 +125,7 @@
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
   const MAX_BALL_RENDER_SCALE = 3.5;
   const DATE_MAP_REFRESH_MS = 1000 / 30;
+  const SCENE_PORTAL_DURATION_MS = 1120;
   const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
   const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
@@ -136,6 +137,78 @@
     5: "#df7b30", 6: "#358553", 7: "#8e3740", 8: "#181b1d",
     9: "#e9c348", 10: "#2676bf", 11: "#c33f40", 12: "#754493",
     13: "#df7b30", 14: "#358553", 15: "#8e3740"
+  });
+  const DATE_SCENE_STYLES = Object.freeze({
+    "corner-store": Object.freeze({
+      asset: "assets/billiards-scenes/portal-corner-store-v1.jpg",
+      primary: "#82d9e4",
+      secondary: "#f48eaf",
+      rail: "#c7f4f1"
+    }),
+    "coffee-window": Object.freeze({
+      asset: "assets/billiards-scenes/portal-coffee-window-v1.jpg",
+      primary: "#f0ae67",
+      secondary: "#c85f73",
+      rail: "#ffe1a9"
+    }),
+    "late-cinema": Object.freeze({
+      asset: "assets/billiards-scenes/portal-late-cinema-v1.jpg",
+      primary: "#d34061",
+      secondary: "#d6a85d",
+      rail: "#ffd9a3"
+    }),
+    "river-walk": Object.freeze({
+      asset: "assets/billiards-scenes/portal-river-walk-v1.jpg",
+      primary: "#8068dc",
+      secondary: "#9fc9ef",
+      rail: "#d4c8ff"
+    }),
+    "last-train": Object.freeze({
+      asset: "assets/billiards-scenes/portal-last-train-v1.jpg",
+      primary: "#43c5c9",
+      secondary: "#ba83df",
+      rail: "#d2fbef"
+    }),
+    "walk-home": Object.freeze({
+      asset: "assets/billiards-scenes/portal-walk-home-v1.jpg",
+      primary: "#f28d72",
+      secondary: "#f3c374",
+      rail: "#fff0bb"
+    })
+  });
+  const STAGE_SCENE_MOODS = Object.freeze([
+    Object.freeze({ id: "first-glance", label: "初遇微光", primary: "#8edbe5", secondary: "#f4a7bc", tint: "#547d94", imageAlpha: 0.72, light: 0.44 }),
+    Object.freeze({ id: "getting-close", label: "熟悉暖光", primary: "#f0b06d", secondary: "#ef8c8d", tint: "#b76b61", imageAlpha: 0.75, light: 0.52 }),
+    Object.freeze({ id: "almost-love", label: "暧昧霓虹", primary: "#e7659a", secondary: "#9d72df", tint: "#a64378", imageAlpha: 0.78, light: 0.61 }),
+    Object.freeze({ id: "spoken-heart", label: "心意盛放", primary: "#f0c069", secondary: "#d84368", tint: "#bc6756", imageAlpha: 0.82, light: 0.72 }),
+    Object.freeze({ id: "together", label: "相恋长夜", primary: "#ed72a1", secondary: "#f0c880", tint: "#bb4f7a", imageAlpha: 0.84, light: 0.79 }),
+    Object.freeze({ id: "through-rain", label: "雨后靠近", primary: "#8073d9", secondary: "#e780a9", tint: "#594f93", imageAlpha: 0.82, light: 0.72 }),
+    Object.freeze({ id: "shared-dawn", label: "共同黎明", primary: "#f39478", secondary: "#f4d17f", tint: "#d27772", imageAlpha: 0.9, light: 0.94 })
+  ]);
+  const DATE_SCENE_VARIANTS = Object.freeze([
+    Object.freeze({ name: "全景", zoom: 1, focusX: 0.5, focusY: 0.5, backdropX: 50, backdropY: 50 }),
+    Object.freeze({ name: "靠窗", zoom: 1.13, focusX: 0.34, focusY: 0.42, backdropX: 38, backdropY: 43 }),
+    Object.freeze({ name: "并肩", zoom: 1.19, focusX: 0.64, focusY: 0.57, backdropX: 64, backdropY: 57 }),
+    Object.freeze({ name: "灯下", zoom: 1.25, focusX: 0.5, focusY: 0.3, backdropX: 50, backdropY: 34 }),
+    Object.freeze({ name: "归途", zoom: 1.09, focusX: 0.48, focusY: 0.72, backdropX: 48, backdropY: 70 })
+  ]);
+  const MOTIF_SCENE_PALETTES = Object.freeze({
+    raindrop: Object.freeze({ primary: "#83cfe3", secondary: "#9e8fe5", tint: "#4b718d" }),
+    coffee: Object.freeze({ primary: "#f1ae66", secondary: "#d67272", tint: "#a85f45" }),
+    "movie-ticket": Object.freeze({ primary: "#d84063", secondary: "#d9ad61", tint: "#8f304d" }),
+    camera: Object.freeze({ primary: "#f4e7d4", secondary: "#b8cde7", tint: "#69798f" }),
+    streetlamp: Object.freeze({ primary: "#f0c46f", secondary: "#eb8a75", tint: "#a66e41" }),
+    earphones: Object.freeze({ primary: "#5fc5b8", secondary: "#b78be3", tint: "#417f7c" }),
+    cat: Object.freeze({ primary: "#e0a777", secondary: "#8978b0", tint: "#685064" }),
+    "heart-eight": Object.freeze({ primary: "#ed5d84", secondary: "#f0c477", tint: "#9d345a" }),
+    sunset: Object.freeze({ primary: "#f17e66", secondary: "#f2c16d", tint: "#ba604f" }),
+    gift: Object.freeze({ primary: "#e95678", secondary: "#d7a369", tint: "#9c3958" }),
+    message: Object.freeze({ primary: "#74c8e7", secondary: "#d680c4", tint: "#4b7fa6" }),
+    "bus-card": Object.freeze({ primary: "#42c2c5", secondary: "#8f8ddd", tint: "#357e88" }),
+    star: Object.freeze({ primary: "#d2c6ff", secondary: "#80b9ec", tint: "#6963a1" }),
+    umbrella: Object.freeze({ primary: "#72aee5", secondary: "#e283ad", tint: "#576f9d" }),
+    homeward: Object.freeze({ primary: "#f29b79", secondary: "#f1d07c", tint: "#b76f5d" }),
+    night: Object.freeze({ primary: "#d991aa", secondary: "#8dcfd5", tint: "#704058" })
   });
   const DEFAULT_DATE_SCENES = Object.freeze([
     { id: "corner-store", pocketId: "top-left", name: "街角便利店", x: 178, y: 238, focusX: 18, focusY: 8, color: "#d991aa" },
@@ -228,6 +301,7 @@
     image.addEventListener("load", () => {
       tableCacheDirty = true;
       dateMapFrameDirty = true;
+      sceneLightingFrameDirty = true;
     }, { once: true });
     image.src = source;
     return image;
@@ -238,6 +312,9 @@
     walnut: loadMaterialTexture("assets/billiards-textures/dark-walnut.jpg"),
     dateMap: loadMaterialTexture("assets/billiards-scenes/date-map-rose-v3.jpg")
   });
+  const DATE_SCENE_TEXTURES = Object.freeze(Object.fromEntries(
+    Object.entries(DATE_SCENE_STYLES).map(([id, style]) => [id, loadMaterialTexture(style.asset)])
+  ));
 
   function readStorage(key, fallback) {
     try {
@@ -287,11 +364,6 @@
   function normalize(vector, fallback = { x: 1, y: 0 }) {
     const length = Math.hypot(vector.x, vector.y);
     return length > 1e-7 ? { x: vector.x / length, y: vector.y / length } : { ...fallback };
-  }
-
-  function directionAngle(left, right) {
-    const dot = clamp(left.x * right.x + left.y * right.y, -1, 1);
-    return Math.acos(dot);
   }
 
   function roundRectPath(ctx, x, y, width, height, radius) {
@@ -348,7 +420,7 @@
       transform: "none",
       transformOrigin: "center"
     });
-    canvas.setAttribute("aria-label", "在桌面任意位置反向滑动瞄准蓄力，松开击球");
+    canvas.setAttribute("aria-label", "在桌面任意位置反向滑动瞄准蓄力，松手或第二指轻触击球");
     resizeCanvas();
   }
 
@@ -601,6 +673,7 @@
   let tableMomentTimer = 0;
   let sceneLensTimer = 0;
   let sceneLensStartTimer = 0;
+  let backdropCommitTimer = 0;
   let storySlowMotionUntil = 0;
   let lastStoryOrigin = { x: 50, y: 50 };
   let lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
@@ -628,6 +701,23 @@
     return entry?.id || entry?.motif || entry?.key || FALLBACK_MOTIFS[number - 1] || "star";
   }
 
+  function motifScenePalette(motif) {
+    return MOTIF_SCENE_PALETTES[motif] || MOTIF_SCENE_PALETTES.night;
+  }
+
+  function stageSceneMood(stageNumber = currentStageNumber()) {
+    return STAGE_SCENE_MOODS[clamp(Number(stageNumber) || 1, 1, STAGE_SCENE_MOODS.length) - 1];
+  }
+
+  function sceneVariantFor(zone, number, motif, archetype) {
+    const motifSeed = [...String(motif)].reduce((total, character) => total + character.charCodeAt(0), 0);
+    const archetypeSeed = [...String(archetype || "direct")].reduce((total, character) => total + character.charCodeAt(0), 0);
+    let index = (number * 3 + zone.visits * 2 + motifSeed + archetypeSeed) % DATE_SCENE_VARIANTS.length;
+    if (index === zone.lastVariantIndex) index = (index + 1 + zone.visits) % DATE_SCENE_VARIANTS.length;
+    zone.lastVariantIndex = index;
+    return { index, ...DATE_SCENE_VARIANTS[index] };
+  }
+
   function createDateMapState() {
     return {
       zones: new Map(DATE_SCENES.map((scene) => [scene.pocketId, {
@@ -635,7 +725,8 @@
         reveal: 0,
         pulse: 0,
         visits: 0,
-        motifs: []
+        motifs: [],
+        lastVariantIndex: -1
       }])),
       routes: [],
       links: [],
@@ -646,6 +737,10 @@
       flow: 0,
       stagePulse: 0,
       powerWave: 0,
+      activeScene: null,
+      previousScene: null,
+      sceneTransition: null,
+      sceneHistory: [],
       completed: false,
       finalProgress: 0,
       ending: null,
@@ -671,6 +766,10 @@
           { x: pocket.captureX, y: pocket.captureY }
         ];
     const motif = motifForBall(number);
+    const now = performance.now();
+    const stageNumber = clamp(currentStageNumber(), 1, STAGE_SCENE_MOODS.length);
+    const sceneStyle = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
+    const variant = sceneVariantFor(zone, number, motif, options.archetype);
     const route = {
       id: `date-route-${runState.shots + 1}-${number}-${dateMapState.routes.length}`,
       number,
@@ -679,25 +778,62 @@
       motif,
       pocketId: pocket.id,
       sceneId: scene.id,
+      sceneName: scene.name,
+      sceneAsset: sceneStyle.asset,
+      stageNumber,
+      stageMood: stageSceneMood(stageNumber).id,
+      variantIndex: variant.index,
+      variantName: variant.name,
+      backdropX: variant.backdropX,
+      backdropY: variant.backdropY,
+      zoom: variant.zoom,
       color: BALL_COLORS[number] || scene.color,
       path,
       railHits: Number(detail.railHits) || 0,
       jawHits: Number(detail.jawHits) || 0,
       travel: Number(detail.travel) || 0,
       archetype: options.archetype || "direct",
-      bornAt: performance.now(),
+      bornAt: now,
       glow: 1
     };
     if (detail && typeof detail === "object" && Object.isExtensible(detail)) detail.dateRouteId = route.id;
     dateMapState.routes.push(route);
     if (dateMapState.routes.length > 15) dateMapState.routes.shift();
     dateMapFrameDirty = true;
+    sceneLightingFrameDirty = true;
     if (zone) {
       zone.reveal = clamp(zone.reveal + (zone.visits ? 0.22 : 0.48), 0, 1);
       zone.pulse = 1;
       zone.visits += 1;
       if (!zone.motifs.includes(motif)) zone.motifs.push(motif);
     }
+    dateMapState.previousScene = dateMapState.activeScene ? { ...dateMapState.activeScene } : null;
+    dateMapState.activeScene = {
+      sceneId: scene.id,
+      sceneName: scene.name,
+      pocketId: pocket.id,
+      number,
+      motif,
+      archetype: route.archetype,
+      stageNumber,
+      variantIndex: variant.index,
+      variantName: variant.name,
+      asset: sceneStyle.asset,
+      primary: sceneStyle.primary,
+      secondary: sceneStyle.secondary,
+      rail: sceneStyle.rail,
+      originX: pocket.captureX,
+      originY: pocket.captureY,
+      bornAt: now
+    };
+    dateMapState.sceneTransition = {
+      from: dateMapState.previousScene,
+      to: dateMapState.activeScene,
+      startedAt: now,
+      duration: SCENE_PORTAL_DURATION_MS
+    };
+    dateMapState.sceneHistory.push({ ...dateMapState.activeScene });
+    if (dateMapState.sceneHistory.length > 15) dateMapState.sceneHistory.shift();
     if (dateMapState.lastPocketId && dateMapState.lastPocketId !== pocket.id) {
       dateMapState.links.push({
         from: dateMapState.lastPocketId,
@@ -709,7 +845,7 @@
     }
     dateMapState.lastPocketId = pocket.id;
     dateMapState.flow = 1;
-    focusBackdropScene(scene, route);
+    focusBackdropScene(scene, route, { commit: false });
     return route;
   }
 
@@ -739,6 +875,7 @@
     dateMapState.activeStreak = paused ? 0 : Math.max(0, streak || 0);
     dateMapState.bestStreak = Math.max(dateMapState.bestStreak, streak || 0);
     dateMapState.flow = paused ? 0 : Math.max(dateMapState.flow, streak > 0 ? 1 : 0.28);
+    sceneLightingFrameDirty = true;
     audio.setDateFlow?.(dateMapState.activeStreak, paused);
   }
 
@@ -1036,6 +1173,8 @@
     dateMapState = createDateMapState();
     dateMapFrameDirty = true;
     dateMapFrameUpdatedAt = -Infinity;
+    sceneLightingFrameDirty = true;
+    sceneLightingFrameUpdatedAt = -Infinity;
     ballRendererDirty = true;
     finalRevealActive = false;
     clearTimeout(microTimer);
@@ -1044,6 +1183,7 @@
     clearTimeout(tableMomentTimer);
     clearTimeout(sceneLensTimer);
     clearTimeout(sceneLensStartTimer);
+    clearTimeout(backdropCommitTimer);
     clearTimeout(finalRevealTimer);
     screenFlash = 0;
     screenShake = 0;
@@ -1055,10 +1195,13 @@
     elements.micro.hidden = true;
     root.dataset.scene = "night-map";
     root.dataset.motif = "night";
-    root.dataset.aimLocked = "false";
+    root.dataset.sceneVariant = "0";
     root.style.setProperty("--hb-scene-x", "50%");
     root.style.setProperty("--hb-scene-y", "18%");
     root.style.setProperty("--hb-scene-opacity", "0.12");
+    root.style.setProperty("--hb-scene-scale", "1.04");
+    root.style.setProperty("--hb-backdrop-image", "url(\"assets/billiards-scenes/date-map-rose-v3.jpg\")");
+    root.style.setProperty("--hb-scene-image", "url(\"assets/billiards-scenes/date-map-rose-v3.jpg\")");
     setDateFlow(0, true);
     rackBalls();
     syncUI();
@@ -1101,16 +1244,29 @@
     };
   }
 
-  function focusBackdropScene(scene, route) {
+  function focusBackdropScene(scene, route, options = {}) {
     if (!scene) return;
+    const style = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
+    const mood = stageSceneMood(route?.stageNumber);
+    const motifPalette = motifScenePalette(route?.motif || "night");
+    const asset = route?.sceneAsset || style.asset;
+    const variant = DATE_SCENE_VARIANTS[route?.variantIndex ?? 0] || DATE_SCENE_VARIANTS[0];
     const revealCount = Math.max(1, dateMapState.routes.length);
-    const opacity = clamp(0.34 + revealCount * 0.025 + dateMapState.activeStreak * 0.025, 0.34, 0.76);
+    const opacity = clamp(0.46 + revealCount * 0.022 + mood.light * 0.13 + dateMapState.activeStreak * 0.018, 0.48, 0.88);
     root.dataset.scene = scene.id;
     root.dataset.motif = route?.motif || "night";
-    root.style.setProperty("--hb-scene-x", `${scene.focusX ?? 50}%`);
-    root.style.setProperty("--hb-scene-y", `${scene.focusY ?? 50}%`);
-    root.style.setProperty("--hb-scene-color", route?.color || scene.color || "#db91aa");
+    root.dataset.sceneVariant = String(route?.variantIndex ?? 0);
+    root.dataset.sceneMood = mood.id;
+    root.style.setProperty("--hb-scene-image", `url(\"${asset}\")`);
+    root.style.setProperty("--hb-scene-x", `${route?.backdropX ?? variant.backdropX ?? scene.focusX ?? 50}%`);
+    root.style.setProperty("--hb-scene-y", `${route?.backdropY ?? variant.backdropY ?? scene.focusY ?? 50}%`);
+    root.style.setProperty("--hb-scene-scale", String(clamp(route?.zoom ?? variant.zoom ?? 1, 1, 1.28)));
+    root.style.setProperty("--hb-scene-color", motifPalette.primary || style.primary || scene.color || "#db91aa");
+    root.style.setProperty("--hb-scene-secondary", motifPalette.secondary || style.secondary || mood.secondary);
+    root.style.setProperty("--hb-stage-scene-primary", mood.primary);
+    root.style.setProperty("--hb-stage-scene-secondary", mood.secondary);
     root.style.setProperty("--hb-scene-opacity", String(opacity));
+    if (options.commit !== false) root.style.setProperty("--hb-backdrop-image", `url(\"${asset}\")`);
   }
 
   function playSceneLens(scene, route, pocket) {
@@ -1120,11 +1276,16 @@
     root.style.setProperty("--hb-scene-origin-x", `${origin.x}%`);
     root.style.setProperty("--hb-scene-origin-y", `${origin.y}%`);
     clearTimeout(sceneLensTimer);
+    clearTimeout(backdropCommitTimer);
     elements.sceneLens.dataset.camera = route?.archetype || "direct";
     elements.sceneLens.classList.remove("is-active");
     void elements.sceneLens.offsetWidth;
     elements.sceneLens.classList.add("is-active");
-    sceneLensTimer = setTimeout(() => elements.sceneLens.classList.remove("is-active"), 980);
+    backdropCommitTimer = setTimeout(() => {
+      const style = DATE_SCENE_STYLES[scene.id] || DATE_SCENE_STYLES["corner-store"];
+      root.style.setProperty("--hb-backdrop-image", `url(\"${route?.sceneAsset || style.asset}\")`);
+    }, 650);
+    sceneLensTimer = setTimeout(() => elements.sceneLens.classList.remove("is-active"), SCENE_PORTAL_DURATION_MS + 120);
   }
 
   function beginPocketStoryFocus(pocket, route = null) {
@@ -1187,6 +1348,8 @@
     const targets = rules.availableTargets(runState);
     const litScenes = [...dateMapState.zones.values()].filter((zone) => zone.visits > 0).length;
     const lastScene = DATE_SCENE_BY_POCKET.get(dateMapState.lastPocketId);
+    const lastRoute = dateMapState.routes.at(-1);
+    const sceneMood = stageSceneMood(lastRoute?.stageNumber || stageNumber);
     if (stageNumber !== cachedStageNumber) tableCacheDirty = true;
     cachedStageNumber = stageNumber;
     cachedAvailableTargets = new Set(targets);
@@ -1194,11 +1357,11 @@
     ballRendererDirty = true;
     root.dataset.stage = String(stageNumber);
     elements.stageKicker.textContent = runState.endState.ended
-      ? "DATE MAP · 今晚完整显影"
-      : `DATE MAP · ${String(runState.pottedNumbers.length).padStart(2, "0")} / 15 笔`;
+      ? "今晚的瞬间 · 全部抵达"
+      : `今晚的瞬间 · ${String(runState.pottedNumbers.length).padStart(2, "0")} / 15`;
     elements.stageTitle.textContent = progress?.target === "eight"
-      ? "整座夜城，只等最后一笔"
-      : lastScene ? `${lastScene.name}正在亮起` : "桌布下藏着一场尚未发生的约会";
+      ? "整座夜城，只等最后一次靠近"
+      : lastScene ? `${lastScene.name} · ${sceneMood.label}` : "桌布下藏着一场尚未发生的约会";
     elements.stageTargets.textContent = progress
       ? progress.target === "eight"
         ? "黑 8 将连接整晚留下的全部路线"
@@ -1228,7 +1391,7 @@
       elements.selectedName.textContent = "今晚尚未落笔";
       elements.callLabel.textContent = "开球";
       elements.callTitle.textContent = "第一杆会唤醒整张地图";
-      elements.callHint.textContent = "桌面任意位置向后滑动，松开完成开球";
+      elements.callHint.textContent = "向后拖动，松手或第二指轻触出杆";
     } else {
       selectedBallNumber = null;
       elements.selectedBall.textContent = progress?.target === "eight" ? "8" : String(Math.max(0, 15 - runState.pottedNumbers.length));
@@ -1246,7 +1409,7 @@
     elements.sound.setAttribute("aria-pressed", String(audio.enabled));
     elements.sound.setAttribute("aria-label", audio.enabled ? "关闭声音" : "开启声音");
     audio.setStage(stageNumber);
-    if (lastScene) focusBackdropScene(lastScene, dateMapState.routes.at(-1));
+    if (lastScene) focusBackdropScene(lastScene, lastRoute);
     syncTableStory();
   }
 
@@ -1302,39 +1465,22 @@
 
   function beginAim(event, point) {
     if (!cueBall) return;
-    const now = performance.now();
     pointerAim = {
       id: event.pointerId,
+      pointerType: event.pointerType || "touch",
       start: { ...point },
       current: point,
       direction: { ...aimDirection },
-      directionAnchor: { ...aimDirection },
-      lockedDirection: null,
-      directionChangedAt: now,
-      lockedAt: 0,
       pullRatio: 0,
       power: 0
     };
-    root.dataset.aimLocked = "false";
     canvas.setPointerCapture?.(event.pointerId);
     canvas.setAttribute("aria-label", "正在调整击球力度：轻推");
     elements.call.classList.add("is-quiet");
     hideCoach();
   }
 
-  function refreshAimLock(now = performance.now()) {
-    if (!pointerAim || pointerAim.lockedDirection || pointerAim.pullRatio < AIM_LOCK_MIN_PULL_RATIO) {
-      return Boolean(pointerAim?.lockedDirection);
-    }
-    if (now - pointerAim.directionChangedAt < AIM_LOCK_DELAY_MS) return false;
-    pointerAim.lockedDirection = { ...pointerAim.directionAnchor };
-    pointerAim.lockedAt = now;
-    root.dataset.aimLocked = "true";
-    if (typeof navigator !== "undefined") navigator.vibrate?.(8);
-    return true;
-  }
-
-  function updateAim(point, options = {}) {
+  function updateAim(point) {
     if (!pointerAim || !cueBall) return;
     pointerAim.current = point;
     const pull = {
@@ -1343,35 +1489,10 @@
     };
     const pullDistance = Math.hypot(pull.x, pull.y);
     if (pullDistance > 5) {
-      const candidate = normalize(pull, pointerAim.directionAnchor);
-      const now = performance.now();
-      if (pointerAim.lockedDirection) {
-        const lockedDelta = directionAngle(candidate, pointerAim.lockedDirection);
-        if (!options.release && lockedDelta > AIM_LOCK_BREAK_ANGLE) {
-          pointerAim.lockedDirection = null;
-          pointerAim.lockedAt = 0;
-          pointerAim.direction = candidate;
-          pointerAim.directionAnchor = { ...candidate };
-          pointerAim.directionChangedAt = now;
-          root.dataset.aimLocked = "false";
-          pointerAim.direction = candidate;
-        } else {
-          pointerAim.direction = options.release
-            ? { ...pointerAim.lockedDirection }
-            : candidate;
-        }
-      } else {
-        const directionDelta = directionAngle(candidate, pointerAim.directionAnchor);
-        if (directionDelta > AIM_LOCK_DIRECTION_EPSILON) {
-          pointerAim.directionAnchor = { ...candidate };
-          pointerAim.directionChangedAt = now;
-        }
-        pointerAim.direction = candidate;
-      }
+      pointerAim.direction = normalize(pull, pointerAim.direction);
     }
     pointerAim.pullRatio = clamp((pullDistance - MIN_PULL) / (MAX_PULL - MIN_PULL), 0, 1);
     pointerAim.power = powerFromPullRatio(pointerAim.pullRatio);
-    refreshAimLock();
     aimDirection = { ...pointerAim.direction };
     aimPower = pointerAim.power;
     const powerLabel = pointerAim.pullRatio < LIGHT_PULL_END
@@ -1383,19 +1504,28 @@
   function cancelAim() {
     pointerAim = null;
     aimPower = 0;
-    root.dataset.aimLocked = "false";
-    canvas.setAttribute("aria-label", "在桌面任意位置反向滑动瞄准蓄力，松开击球");
+    canvas.setAttribute("aria-label", "在桌面任意位置反向滑动瞄准蓄力，松手或第二指轻触击球");
     elements.call.classList.remove("is-quiet");
   }
 
   function releaseAim(event, shouldShoot) {
     if (!pointerAim || event.pointerId !== pointerAim.id) return;
-    refreshAimLock();
     const power = pointerAim.power;
-    const direction = { ...(pointerAim.lockedDirection || pointerAim.direction) };
+    const direction = { ...pointerAim.direction };
     canvas.releasePointerCapture?.(event.pointerId);
     cancelAim();
     if (shouldShoot && power > 0.015) shoot(direction, power);
+  }
+
+  function strikeWithSecondPointer(event) {
+    if (!pointerAim || event.pointerId === pointerAim.id) return false;
+    const firstPointerId = pointerAim.id;
+    const power = pointerAim.power;
+    const direction = { ...pointerAim.direction };
+    canvas.releasePointerCapture?.(firstPointerId);
+    cancelAim();
+    if (power > 0.015) shoot(direction, power);
+    return true;
   }
 
   function shoot(direction, power) {
@@ -2601,12 +2731,346 @@
     return Boolean(dateMapDarkCanvas && dateMapClearCanvas);
   }
 
-  function drawDateMapPhotoBase(litCount, finalBoost) {
+  function sceneTransitionProgress(timestamp) {
+    const transition = dateMapState.sceneTransition;
+    if (!transition) return 1;
+    return clamp((timestamp - transition.startedAt) / transition.duration, 0, 1);
+  }
+
+  function drawSceneImage(sceneState, alpha = 1) {
+    if (!sceneState) return false;
+    const image = DATE_SCENE_TEXTURES[sceneState.sceneId];
+    if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return false;
+    const variant = DATE_SCENE_VARIANTS[sceneState.variantIndex ?? 0] || DATE_SCENE_VARIANTS[0];
+    const destinationWidth = TABLE.right - TABLE.left;
+    const destinationHeight = TABLE.bottom - TABLE.top;
+    const destinationAspect = destinationWidth / destinationHeight;
+    const sourceAspect = image.naturalWidth / image.naturalHeight;
+    let sourceWidth = sourceAspect > destinationAspect ? image.naturalHeight * destinationAspect : image.naturalWidth;
+    let sourceHeight = sourceAspect > destinationAspect ? image.naturalHeight : image.naturalWidth / destinationAspect;
+    const zoom = clamp(variant.zoom || 1, 1, 1.28);
+    sourceWidth /= zoom;
+    sourceHeight /= zoom;
+    const sourceX = clamp((image.naturalWidth - sourceWidth) * variant.focusX, 0, image.naturalWidth - sourceWidth);
+    const sourceY = clamp((image.naturalHeight - sourceHeight) * variant.focusY, 0, image.naturalHeight - sourceHeight);
+    context.save();
+    context.globalAlpha = clamp(alpha, 0, 1);
+    context.drawImage(
+      image,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      TABLE.left,
+      TABLE.top,
+      destinationWidth,
+      destinationHeight
+    );
+    context.restore();
+    return true;
+  }
+
+  function drawSceneGrade(sceneState) {
+    if (!sceneState) return;
+    const mood = stageSceneMood(sceneState.stageNumber);
+    const style = DATE_SCENE_STYLES[sceneState.sceneId] || DATE_SCENE_STYLES["corner-store"];
+    const motifPalette = motifScenePalette(sceneState.motif);
+    context.save();
+    context.globalCompositeOperation = "color";
+    context.globalAlpha = 0.2 + mood.light * 0.08;
+    context.fillStyle = motifPalette.tint || mood.tint;
+    context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+    context.globalCompositeOperation = "soft-light";
+    context.globalAlpha = 0.1 + mood.light * 0.05;
+    context.fillStyle = mood.tint;
+    context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+    context.globalCompositeOperation = "screen";
+    const originGlow = context.createRadialGradient(
+      sceneState.originX,
+      sceneState.originY,
+      0,
+      sceneState.originX,
+      sceneState.originY,
+      WORLD.height * 0.58
+    );
+    originGlow.addColorStop(0, colorWithAlpha(style.rail, 0.22 + mood.light * 0.08));
+    originGlow.addColorStop(0.28, colorWithAlpha(motifPalette.primary, 0.16 + mood.light * 0.06));
+    originGlow.addColorStop(1, colorWithAlpha(motifPalette.secondary, 0));
+    context.fillStyle = originGlow;
+    context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+    context.globalCompositeOperation = "multiply";
+    const depth = context.createLinearGradient(0, TABLE.top, 0, TABLE.bottom);
+    depth.addColorStop(0, "rgba(24, 5, 14, 0.04)");
+    depth.addColorStop(0.55, "rgba(24, 5, 14, 0)");
+    depth.addColorStop(1, "rgba(24, 5, 14, 0.2)");
+    context.fillStyle = depth;
+    context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+    context.restore();
+  }
+
+  function drawScenePortalPhoto(timestamp) {
+    const active = dateMapState.activeScene;
+    if (!active) return false;
+    const transition = dateMapState.sceneTransition;
+    const progress = sceneTransitionProgress(timestamp);
+    if (transition?.from) drawSceneImage(transition.from, stageSceneMood(transition.from.stageNumber).imageAlpha);
+    if (!transition || progress >= 0.998) {
+      drawSceneImage(active, stageSceneMood(active.stageNumber).imageAlpha);
+    } else {
+      const eased = progress * progress * (3 - 2 * progress);
+      const farthestRadius = Math.max(
+        Math.hypot(active.originX - TABLE.left, active.originY - TABLE.top),
+        Math.hypot(active.originX - TABLE.right, active.originY - TABLE.top),
+        Math.hypot(active.originX - TABLE.left, active.originY - TABLE.bottom),
+        Math.hypot(active.originX - TABLE.right, active.originY - TABLE.bottom)
+      );
+      [
+        { scale: 1.14, alpha: 0.2 },
+        { scale: 1.03, alpha: 0.44 },
+        { scale: 0.9, alpha: 0.94 }
+      ].forEach((layer) => {
+        context.save();
+        context.beginPath();
+        context.arc(active.originX, active.originY, Math.max(5, farthestRadius * eased * layer.scale), 0, Math.PI * 2);
+        context.clip();
+        drawSceneImage(active, stageSceneMood(active.stageNumber).imageAlpha * layer.alpha);
+        context.restore();
+      });
+    }
+    drawSceneGrade(active);
+    return true;
+  }
+
+  function drawSceneVariantAtmosphere(timestamp) {
+    const active = dateMapState.activeScene;
+    if (!active) return;
+    const variant = DATE_SCENE_VARIANTS[active.variantIndex] || DATE_SCENE_VARIANTS[0];
+    const focus = {
+      x: TABLE.left + (TABLE.right - TABLE.left) * variant.focusX,
+      y: TABLE.top + (TABLE.bottom - TABLE.top) * variant.focusY,
+      visits: dateMapState.zones.get(active.pocketId)?.visits || 1
+    };
+    drawMotifAtmosphere(active.motif, focus, timestamp, 0.72 + stageSceneMood(active.stageNumber).light * 0.2);
+    drawMotifCinematicProps(active, timestamp);
+  }
+
+  function drawMotifCinematicProps(active, timestamp) {
+    const motif = String(active.motif || "night");
+    const palette = motifScenePalette(motif);
+    const width = TABLE.right - TABLE.left;
+    const height = TABLE.bottom - TABLE.top;
+    const centerX = WORLD.width / 2;
+    const lowerY = TABLE.top + height * 0.64;
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.strokeStyle = colorWithAlpha(palette.primary, 0.34);
+    context.fillStyle = colorWithAlpha(palette.secondary, 0.12);
+    context.shadowColor = palette.primary;
+    context.shadowBlur = 9;
+    context.lineWidth = 2;
+    if (motif === "coffee") {
+      [-45, 45].forEach((offset, index) => {
+        context.globalAlpha = 0.58 - index * 0.08;
+        roundRectPath(context, centerX + offset - 24, lowerY - 8, 48, 34, 8);
+        context.fill();
+        context.stroke();
+        context.beginPath();
+        context.arc(centerX + offset + (offset < 0 ? 27 : -27), lowerY + 8, 10, -Math.PI / 2, Math.PI / 2);
+        context.stroke();
+        for (let line = -1; line <= 1; line += 1) {
+          const sway = Math.sin(timestamp * 0.002 + line + index) * 7;
+          context.beginPath();
+          context.moveTo(centerX + offset + line * 7, lowerY - 12);
+          context.bezierCurveTo(centerX + offset - 9, lowerY - 34, centerX + offset + sway, lowerY - 48, centerX + offset + line * 5, lowerY - 67);
+          context.stroke();
+        }
+      });
+    } else if (motif === "movie-ticket") {
+      [-18, 18].forEach((offset, index) => {
+        context.save();
+        context.translate(centerX + offset, lowerY);
+        context.rotate(index ? 0.12 : -0.1);
+        context.globalAlpha = 0.46;
+        roundRectPath(context, -72, -28, 144, 56, 8);
+        context.fill();
+        context.stroke();
+        context.setLineDash([4, 6]);
+        context.beginPath();
+        context.moveTo(35, -25);
+        context.lineTo(35, 25);
+        context.stroke();
+        context.restore();
+      });
+    } else if (motif === "camera") {
+      context.globalAlpha = 0.52 + Math.sin(timestamp * 0.006) * 0.08;
+      const marginX = 92;
+      const marginY = 188;
+      const corner = 52;
+      [[TABLE.left + marginX, TABLE.top + marginY, 1, 1], [TABLE.right - marginX, TABLE.top + marginY, -1, 1], [TABLE.left + marginX, TABLE.bottom - marginY, 1, -1], [TABLE.right - marginX, TABLE.bottom - marginY, -1, -1]].forEach(([x, y, sx, sy]) => {
+        context.beginPath();
+        context.moveTo(x + sx * corner, y);
+        context.lineTo(x, y);
+        context.lineTo(x, y + sy * corner);
+        context.stroke();
+      });
+    } else if (motif === "streetlamp" || motif === "sunset") {
+      [0.2, 0.5, 0.8].forEach((fraction, index) => {
+        const x = TABLE.left + width * fraction;
+        const y = TABLE.top + height * (0.24 + index * 0.22);
+        const glow = context.createRadialGradient(x, y, 0, x, y, 110);
+        glow.addColorStop(0, colorWithAlpha(palette.primary, 0.25));
+        glow.addColorStop(1, colorWithAlpha(palette.secondary, 0));
+        context.fillStyle = glow;
+        context.fillRect(x - 112, y - 112, 224, 224);
+      });
+    } else if (motif === "bus-card") {
+      const sweep = TABLE.left - 180 + (timestamp * 0.055 % (width + 360));
+      const train = context.createLinearGradient(sweep, 0, sweep + 180, 0);
+      train.addColorStop(0, colorWithAlpha(palette.primary, 0));
+      train.addColorStop(0.5, colorWithAlpha(palette.primary, 0.34));
+      train.addColorStop(1, colorWithAlpha(palette.secondary, 0));
+      context.fillStyle = train;
+      context.fillRect(TABLE.left, lowerY - 62, width, 124);
+    } else if (motif === "umbrella") {
+      context.globalAlpha = 0.34;
+      context.beginPath();
+      context.arc(centerX, lowerY - 20, 126, Math.PI, Math.PI * 2);
+      context.quadraticCurveTo(centerX + 85, lowerY - 4, centerX + 62, lowerY - 20);
+      context.quadraticCurveTo(centerX, lowerY + 4, centerX - 62, lowerY - 20);
+      context.quadraticCurveTo(centerX - 85, lowerY - 4, centerX - 126, lowerY - 20);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(centerX, lowerY - 146);
+      context.lineTo(centerX, lowerY + 64);
+      context.quadraticCurveTo(centerX, lowerY + 92, centerX + 24, lowerY + 78);
+      context.stroke();
+    } else if (motif === "homeward") {
+      const doorGlow = context.createRadialGradient(centerX, lowerY, 0, centerX, lowerY, 170);
+      doorGlow.addColorStop(0, colorWithAlpha(palette.secondary, 0.3));
+      doorGlow.addColorStop(1, colorWithAlpha(palette.primary, 0));
+      context.fillStyle = doorGlow;
+      context.fillRect(centerX - 175, lowerY - 180, 350, 360);
+      context.globalAlpha = 0.42;
+      roundRectPath(context, centerX - 54, lowerY - 104, 108, 208, 3);
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  function drawScenePortalLightingFrame(timestamp) {
+    const active = dateMapState.activeScene;
+    if (!active) return;
+    const mood = stageSceneMood(active.stageNumber);
+    const style = DATE_SCENE_STYLES[active.sceneId] || DATE_SCENE_STYLES["corner-store"];
+    const motifPalette = motifScenePalette(active.motif);
+    const progress = sceneTransitionProgress(timestamp);
+    const pulse = dateMapState.sceneTransition && progress < 1 ? 1 - progress : 0;
+    context.save();
+    context.globalAlpha = 0.2 + mood.light * 0.12 + pulse * 0.18;
+    rails.forEach((railBody, index) => {
+      const material = railBody.plugin.heartbeatRail;
+      if (!material || material.kind === "guard") return;
+      context.save();
+      context.translate(railBody.position.x, railBody.position.y);
+      context.rotate(railBody.angle);
+      context.fillStyle = index % 3 === 0 ? motifPalette.secondary : motifPalette.primary;
+      roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
+      context.fill();
+      context.globalAlpha = 0.62;
+      context.strokeStyle = style.rail;
+      context.lineWidth = material.kind === "jaw" ? 0.8 : 1.25;
+      context.stroke();
+      context.restore();
+    });
+    context.restore();
+    const perimeter = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
+    perimeter.addColorStop(0, style.primary);
+    perimeter.addColorStop(0.48, motifPalette.primary);
+    perimeter.addColorStop(1, motifPalette.secondary);
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.strokeStyle = perimeter;
+    context.shadowColor = style.rail;
+    context.shadowBlur = 8 + pulse * 22 + mood.light * 5;
+    context.globalAlpha = 0.14 + mood.light * 0.1 + pulse * 0.38;
+    context.lineWidth = 3.2 + pulse * 5.8;
+    roundRectPath(context, TABLE.left - 15, TABLE.top - 15, TABLE.right - TABLE.left + 30, TABLE.bottom - TABLE.top + 30, 22);
+    context.stroke();
+    context.globalAlpha = 0.18 + pulse * 0.55;
+    context.lineWidth = 1.4 + pulse * 2.2;
+    context.setLineDash([22, 18]);
+    context.lineDashOffset = -timestamp * 0.075;
+    roundRectPath(context, TABLE.left - 24, TABLE.top - 24, TABLE.right - TABLE.left + 48, TABLE.bottom - TABLE.top + 48, 25);
+    context.stroke();
+    context.setLineDash([]);
+    const waveRadius = 56 + progress * WORLD.height * 0.7;
+    const wave = context.createRadialGradient(active.originX, active.originY, Math.max(0, waveRadius - 64), active.originX, active.originY, waveRadius);
+    wave.addColorStop(0, colorWithAlpha(style.primary, 0));
+    wave.addColorStop(0.78, colorWithAlpha(style.rail, 0.02 + pulse * 0.32));
+    wave.addColorStop(1, colorWithAlpha(style.secondary, 0));
+    context.fillStyle = wave;
+    context.fillRect(TABLE_OUTER.left, TABLE_OUTER.top, TABLE_OUTER.right - TABLE_OUTER.left, TABLE_OUTER.bottom - TABLE_OUTER.top);
+    RELATIONSHIP_SIGHTS.forEach((sight, index) => {
+      const shimmer = 0.55 + Math.sin(timestamp * 0.004 + index * 0.72) * 0.45;
+      context.globalAlpha = (0.12 + mood.light * 0.08 + pulse * 0.24) * shimmer;
+      context.fillStyle = index % 3 === 0 ? style.rail : index % 2 ? motifPalette.primary : motifPalette.secondary;
+      context.shadowColor = context.fillStyle;
+      context.shadowBlur = 5 + pulse * 9;
+      context.beginPath();
+      context.arc(sight.x, sight.y, 2.2 + pulse * 1.8, 0, Math.PI * 2);
+      context.fill();
+    });
+    context.restore();
+  }
+
+  function ensureSceneLightingFrameCanvas() {
+    if (sceneLightingFrameCanvas && sceneLightingFrameContext) return true;
+    const cache = document.createElement("canvas");
+    if (typeof cache.getContext !== "function") return false;
+    cache.width = WORLD.width;
+    cache.height = WORLD.height;
+    const cacheContext = cache.getContext("2d", { alpha: true });
+    if (!cacheContext) return false;
+    sceneLightingFrameCanvas = cache;
+    sceneLightingFrameContext = cacheContext;
+    sceneLightingFrameDirty = true;
+    return true;
+  }
+
+  function rebuildSceneLightingFrame(timestamp) {
+    if (!ensureSceneLightingFrameCanvas()) return false;
+    const liveContext = context;
+    try {
+      context = sceneLightingFrameContext;
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, WORLD.width, WORLD.height);
+      drawScenePortalLightingFrame(timestamp);
+    } finally {
+      context = liveContext;
+    }
+    sceneLightingFrameUpdatedAt = timestamp;
+    sceneLightingFrameDirty = false;
+    return true;
+  }
+
+  function drawScenePortalLighting(timestamp) {
+    if (!dateMapState.activeScene) return;
+    const transitionActive = dateMapState.sceneTransition && sceneTransitionProgress(timestamp) < 1;
+    const refreshDue = !pointerAim && transitionActive && timestamp - sceneLightingFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
+    if ((sceneLightingFrameDirty || refreshDue || !sceneLightingFrameCanvas) && !rebuildSceneLightingFrame(timestamp)) {
+      drawScenePortalLightingFrame(timestamp);
+      return;
+    }
+    context.drawImage(sceneLightingFrameCanvas, 0, 0, WORLD.width, WORLD.height);
+  }
+
+  function drawDateMapPhotoBase(litCount, finalBoost, timestamp) {
     if (!ensureDateMapCaches()) return false;
     const progress = clamp(litCount / 15, 0, 1);
     context.save();
     context.globalAlpha = 0.58 + progress * 0.12;
     context.drawImage(dateMapDarkCanvas, 0, 0, WORLD.width, WORLD.height);
+    drawScenePortalPhoto(timestamp);
     const fullClearAlpha = dateMapState.stagePulse * 0.18 + finalBoost * 0.46;
     if (fullClearAlpha > 0.005) {
       context.globalCompositeOperation = "screen";
@@ -3115,11 +3579,8 @@
     context.lineTo(TABLE.left, TABLE.bottom);
     context.closePath();
     context.clip();
-    drawDateMapPhotoBase(litCount, finalBoost);
-    dateMapState.zones.forEach((zone) => {
-      if (!zone.visits && !finalBoost) return;
-      drawPhotographicScene(zone, timestamp, finalBoost);
-    });
+    drawDateMapPhotoBase(litCount, finalBoost, timestamp);
+    drawSceneVariantAtmosphere(timestamp);
     drawDateConnections(timestamp);
     dateMapState.routes.forEach((route) => drawDateRoute(route, timestamp, finalBoost));
     if (dateMapState.powerWave > 0.02) {
@@ -3406,7 +3867,6 @@
 
   function drawAim() {
     if (!cueBall || shotState || resolvingShot || cinematicActive || resultVisible) return;
-    refreshAimLock();
     const trace = traceAim();
     if (!trace) return;
     const contactNumber = bodyData(trace.hitBall)?.number;
@@ -3541,23 +4001,6 @@
       context.fill();
       context.stroke();
     }
-    if (pointerAim?.lockedDirection) {
-      context.globalAlpha = 0.92;
-      context.strokeStyle = "#f4d59a";
-      context.shadowColor = "#f4c978";
-      context.shadowBlur = 7;
-      context.lineWidth = 1.7;
-      context.setLineDash([]);
-      context.beginPath();
-      context.arc(center.x, center.y, radius + 5, backAngle - 0.24, backAngle + 0.24);
-      context.stroke();
-      const lockX = center.x + Math.cos(backAngle) * (radius + 5);
-      const lockY = center.y + Math.sin(backAngle) * (radius + 5);
-      context.fillStyle = "#fff0c8";
-      context.beginPath();
-      context.arc(lockX, lockY, 2.5, 0, Math.PI * 2);
-      context.fill();
-    }
     context.restore();
   }
 
@@ -3596,6 +4039,7 @@
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
     drawTableLayer();
     drawDateMapLayer(timestamp);
+    drawScenePortalLighting(pointerAim && Number.isFinite(dateMapFrameUpdatedAt) ? dateMapFrameUpdatedAt : timestamp);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
@@ -3726,6 +4170,11 @@
 
   canvas.addEventListener("pointerdown", (event) => {
     audio.unlock();
+    if (pointerAim && event.pointerId !== pointerAim.id) {
+      event.preventDefault();
+      strikeWithSecondPointer(event);
+      return;
+    }
     if (event.isPrimary === false) return;
     if (!canInteract()) return;
     event.preventDefault();
@@ -3742,7 +4191,7 @@
   canvas.addEventListener("pointerup", (event) => {
     if (!pointerAim || event.pointerId !== pointerAim.id) return;
     event.preventDefault();
-    if (!refreshAimLock()) updateAim(pointerToWorld(event), { release: true });
+    updateAim(pointerToWorld(event));
     releaseAim(event, true);
   });
 
@@ -3860,9 +4309,7 @@
           start: Object.freeze({ ...pointerAim.start }),
           current: Object.freeze({ ...pointerAim.current }),
           direction: Object.freeze({ ...pointerAim.direction }),
-          locked: Boolean(pointerAim.lockedDirection),
-          lockedDirection: pointerAim.lockedDirection ? Object.freeze({ ...pointerAim.lockedDirection }) : null,
-          directionStableForMs: Math.max(0, performance.now() - pointerAim.directionChangedAt),
+          pointerType: pointerAim.pointerType,
           pullRatio: pointerAim.pullRatio,
           power: pointerAim.power
         }) : null,
@@ -3873,8 +4320,8 @@
           strongPullStart: STRONG_PULL_START,
           lightPowerMax: LIGHT_POWER_MAX,
           strongPowerMin: STRONG_POWER_MIN,
-          aimLockDelayMs: AIM_LOCK_DELAY_MS,
-          aimLockBreakAngle: AIM_LOCK_BREAK_ANGLE,
+          secondPointerStrike: true,
+          releaseStrike: true,
           minShotSpeed: MIN_SHOT_SPEED,
           maxShotSpeed: MAX_SHOT_SPEED
         }),
@@ -3893,6 +4340,10 @@
             completed: dateMapState.completed,
             finalProgress: dateMapState.finalProgress,
             lastPocketId: dateMapState.lastPocketId,
+            activeSceneId: dateMapState.activeScene?.sceneId || null,
+            activeVariantIndex: dateMapState.activeScene?.variantIndex ?? null,
+            activeStageNumber: dateMapState.activeScene?.stageNumber ?? null,
+            sceneHistory: dateMapState.sceneHistory.length,
             style: Object.freeze({ ...dateMapState.style })
           }),
           microVisible: !elements.micro.hidden,

@@ -176,7 +176,7 @@ test("overrides the legacy rotated canvas and caps high-DPR rendering work", () 
   assert.match(source, /window\.addEventListener\("resize", resizeCanvas\)/);
 });
 
-test("supports direct pull-direction-and-power touch aiming with a stable release lock", () => {
+test("supports direct pull aiming with release and second-pointer strike triggers", () => {
   for (const event of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
     assert.ok(source.includes(`"${event}"`), `missing ${event}`);
   }
@@ -193,14 +193,14 @@ test("supports direct pull-direction-and-power touch aiming with a stable releas
   assert.match(source, /const STRONG_PULL_START = 0\.82/);
   assert.match(source, /const LIGHT_POWER_MAX = 0\.30/);
   assert.match(source, /const STRONG_POWER_MIN = 0\.76/);
-  assert.match(source, /const AIM_LOCK_DELAY_MS = 500/);
-  assert.match(source, /const AIM_LOCK_BREAK_ANGLE = AIM_LOCK_DIRECTION_EPSILON/);
-  assert.match(source, /function refreshAimLock\(now = performance\.now\(\)\)/);
-  assert.match(source, /pointerAim\.lockedDirection = \{ \.\.\.pointerAim\.directionAnchor \}/);
-  assert.match(source, /pointerAim\.direction = candidate/);
-  assert.doesNotMatch(source, /pointerAim\.direction = \{ \.\.\.pointerAim\.directionAnchor \}/);
-  assert.match(source, /if \(!refreshAimLock\(\)\) updateAim\(pointerToWorld\(event\), \{ release: true \}\)/);
-  assert.match(source, /pointerAim\.lockedDirection \|\| pointerAim\.direction/);
+  assert.doesNotMatch(source, /AIM_LOCK|aimLocked|lockedDirection|refreshAimLock/);
+  assert.match(source, /pointerAim\.direction = normalize\(pull, pointerAim\.direction\)/);
+  assert.match(source, /function strikeWithSecondPointer\(event\)/);
+  assert.match(source, /if \(pointerAim && event\.pointerId !== pointerAim\.id\) \{/);
+  assert.match(source, /strikeWithSecondPointer\(event\)/);
+  assert.match(source, /updateAim\(pointerToWorld\(event\)\);\s*releaseAim\(event, true\)/);
+  assert.match(source, /secondPointerStrike: true/);
+  assert.match(source, /releaseStrike: true/);
   assert.match(source, /const MAX_SHOT_SPEED = 42/);
   assert.doesNotMatch(source, /distance\(point, cueBall\.position\) > 54/);
   assert.match(source, /function drawCuePowerGauge\(direction, pullRatio\)/);
@@ -279,10 +279,18 @@ test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /function rebuildDateMapFrame\(timestamp\)/);
   assert.match(source, /const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
   assert.match(source, /function drawDateMapPhotoBase\(/);
-  assert.match(source, /function drawPhotographicScene\(/);
+  assert.match(source, /function drawScenePortalPhoto\(/);
+  assert.match(source, /function drawScenePortalLighting\(/);
+  assert.match(source, /function drawSceneImage\(/);
+  assert.match(source, /DATE_SCENE_TEXTURES/);
+  assert.match(source, /DATE_SCENE_VARIANTS/);
+  assert.match(source, /STAGE_SCENE_MOODS/);
   assert.match(source, /function drawMotifAtmosphere\(/);
   assert.match(source, /date-map-rose-v3\.jpg/);
   assert.match(source, /function playSceneLens\(/);
+  assert.match(source, /originX: pocket\.captureX/);
+  assert.match(source, /originY: pocket\.captureY/);
+  assert.match(source, /sceneTransition = \{/);
   assert.match(source, /function drawDateConnections\(/);
   assert.match(source, /function pointAlongDateRoute\(/);
   assert.match(source, /function drawDateRouteSparkle\(/);

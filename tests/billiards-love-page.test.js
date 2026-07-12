@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-smooth-result-20260712d";
-const styleCacheVersion = "billiards-love-smooth-result-20260712d";
+const runtimeCacheVersion = "billiards-love-scene-portals-20260712e";
+const styleCacheVersion = "billiards-love-scene-portals-20260712e";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -130,7 +130,13 @@ test("uses project-local rose date-map, confession, and proposal art", () => {
   for (const asset of [
     "assets/billiards-scenes/date-map-rose-v3.jpg",
     "assets/billiards-scenes/confession-night.jpg",
-    "assets/billiards-scenes/proposal-dawn.jpg"
+    "assets/billiards-scenes/proposal-dawn.jpg",
+    "assets/billiards-scenes/portal-corner-store-v1.jpg",
+    "assets/billiards-scenes/portal-coffee-window-v1.jpg",
+    "assets/billiards-scenes/portal-late-cinema-v1.jpg",
+    "assets/billiards-scenes/portal-river-walk-v1.jpg",
+    "assets/billiards-scenes/portal-last-train-v1.jpg",
+    "assets/billiards-scenes/portal-walk-home-v1.jpg"
   ]) {
     assert.equal(fs.existsSync(path.join(root, asset)), true, `${asset} should exist`);
   }
@@ -319,6 +325,14 @@ test("integrates shot telemetry, persistent date-map routes, and pocket slow mot
   assert.match(game, /dateMapState\.routes\.push\(route\)/);
   assert.match(game, /function drawDateMap\(timestamp\)/);
   assert.match(game, /drawDateMap\(timestamp\)/);
+  assert.match(game, /function drawScenePortalPhoto\(timestamp\)/);
+  assert.match(game, /function drawScenePortalLighting\(timestamp\)/);
+  assert.match(game, /drawScenePortalLighting\(/);
+  assert.match(game, /DATE_SCENE_VARIANTS/);
+  assert.match(game, /STAGE_SCENE_MOODS/);
+  assert.match(game, /sceneVariantFor\(zone, number, motif, options\.archetype\)/);
+  assert.match(css, /background-image:\s*var\(--hb-backdrop-image\)/);
+  assert.match(css, /background-image:\s*var\(--hb-scene-image\)/);
   assert.match(game, /function drawCueJourney\(/);
   assert.match(game, /function drawFinalDateShape\(/);
   assert.match(html, /id="hb-scene-lens"/);
@@ -416,8 +430,8 @@ test("keeps a dormant result cinematic shell without using it for ordinary pots"
 });
 
 test("presents direct shooting guidance without mandatory selection copy", () => {
-  assert.match(html, /在桌面任意位置反向滑动瞄准蓄力，松开击球/);
-  assert.match(html, /桌面任意位置向后滑动/);
+  assert.match(html, /在桌面任意位置反向滑动瞄准蓄力，松手或第二指轻触击球/);
+  assert.match(html, /向后拖动，松手或第二指轻触出杆/);
   assert.doesNotMatch(html, /先点击目标球|先选中目标球/);
 });
 

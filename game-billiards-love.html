@@ -10,9 +10,10 @@
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-scenes/date-map-rose-v3.jpg" as="image">
+  <link rel="preload" href="assets/billiards-scenes/portal-corner-store-v1.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-smooth-result-20260712d">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-love-scene-portals-20260712e">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="心动桌球：一场约会地图" data-stage="1" data-state="loading">
@@ -24,7 +25,7 @@
       <a class="hb-icon-button hb-back" href="index.html" aria-label="返回首页" title="返回首页"><span aria-hidden="true">&larr;</span></a>
 
       <div class="hb-stage-copy" aria-live="polite">
-        <span id="hb-stage-kicker">约会地图 · 00 / 15 笔</span>
+        <span id="hb-stage-kicker">今晚的瞬间 · 00 / 15</span>
         <strong id="hb-stage-title">桌布下藏着一场尚未发生的约会</strong>
         <small class="hb-sr-only" id="hb-stage-targets">任意非黑 8 彩球都能继续显影这场约会</small>
       </div>
@@ -46,7 +47,7 @@
 
     <section class="hb-playfield" id="hb-playfield" aria-label="标准十五球桌球游戏区域">
       <div class="hb-table-wrap" id="hb-table-wrap">
-        <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="在桌面任意位置反向滑动瞄准蓄力，松开击球"></canvas>
+        <canvas id="hb-canvas" width="720" height="1440" tabindex="0" aria-label="在桌面任意位置反向滑动瞄准蓄力，松手或第二指轻触击球"></canvas>
         <canvas id="hb-ball-canvas" width="720" height="1440" aria-hidden="true"></canvas>
 
         <div class="hb-table-story" id="hb-table-story" aria-hidden="true">
@@ -71,7 +72,7 @@
         <div class="hb-call" id="hb-call" aria-live="polite">
           <span id="hb-call-label">约会开场</span>
           <strong id="hb-call-title">打散今晚的第一束光</strong>
-          <small id="hb-call-hint">桌面任意位置向后滑动，松开完成开球</small>
+          <small id="hb-call-hint">向后拖动，松手或第二指轻触出杆</small>
         </div>
 
         <div class="hb-judgement" id="hb-judgement" role="status" aria-live="polite"></div>
@@ -79,7 +80,7 @@
           <i class="hb-coach-ball">1</i>
           <span></span>
           <i class="hb-coach-cue"></i>
-          <p><strong>桌面任意位置向后滑动</strong><small>松开击球</small></p>
+          <p><strong>向后拖动瞄准与蓄力</strong><small>松手或第二指轻触出杆</small></p>
         </div>
       </div>
     </section>
@@ -137,10 +138,10 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-love-smooth-result-20260712d"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-love-smooth-result-20260712d"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-love-smooth-result-20260712d"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-love-smooth-result-20260712d"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-love-smooth-result-20260712d"></script>
+  <script src="assets/billiards-physics.js?v=billiards-love-scene-portals-20260712e"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-love-scene-portals-20260712e"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-love-scene-portals-20260712e"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-love-scene-portals-20260712e"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-love-scene-portals-20260712e"></script>
 </body>
 </html>
