@@ -7,6 +7,14 @@ const source = readFileSync(path.join(__dirname, "../assets/billiards-love-game.
 const physicsSource = readFileSync(path.join(__dirname, "../assets/billiards-physics.js"), "utf8");
 const rendererSource = readFileSync(path.join(__dirname, "../assets/billiards-ball-renderer.js"), "utf8");
 
+function implementationOf(sourceText, name) {
+  const marker = `function ${name}(`;
+  const start = sourceText.indexOf(marker);
+  assert.notEqual(start, -1, `${name} should exist`);
+  const next = sourceText.indexOf("\n  function ", start + marker.length);
+  return sourceText.slice(start, next === -1 ? sourceText.length : next);
+}
+
 test("builds a fixed-120Hz custom spin and impulse table without Matter", () => {
   assert.match(source, /const FIXED_HZ = 120/);
   assert.match(source, /const FIXED_STEP = 1000 \/ FIXED_HZ/);
@@ -265,7 +273,7 @@ test("evaluates every settled shot exactly through the pure relationship rules e
   }
 });
 
-test("turns physical shots into a persistent ball-color and pocket-effect field", () => {
+test("turns physical shots into persistent ball-color and pocket-effect state", () => {
   assert.match(source, /content\.selectPerformance\(\{/);
   assert.match(source, /content\.analyzeShot\(\{/);
   assert.match(source, /content\.selectShotStory\(\{/);
@@ -281,26 +289,82 @@ test("turns physical shots into a persistent ball-color and pocket-effect field"
   assert.match(source, /activeTheme: \{ \.\.\.BALL_CHROMA_THEMES\[0\] \}/);
   assert.match(source, /activeEffect: null/);
   assert.match(source, /themeTransition: null/);
-  assert.match(source, /rollingTrails: \[\]/);
-  assert.match(source, /railBursts: \[\]/);
   assert.match(source, /pocketFlares: \[\]/);
   assert.match(source, /blackEightBlast: null/);
   assert.match(source, /rememberDateMoment\(0, \{/);
-  assert.match(source, /function spawnChromaRailBurst\(/);
-  assert.match(source, /dateMapState\.rollingTrails\.push\(\{/);
-  assert.match(source, /function drawChromaThemeField\(/);
-  assert.match(source, /function drawChromaCloth\(timestamp\)/);
-  assert.match(source, /function drawChromaPattern\(timestamp\)/);
-  assert.match(source, /function drawRollingChromaTrails\(timestamp\)/);
-  assert.match(source, /function drawChromaRailBursts\(timestamp\)/);
-  assert.match(source, /function drawPocketGlyph\(/);
-  assert.match(source, /function drawBlackEightBlast\(timestamp\)/);
+  assert.match(source, /function drawPocketLightPorts\(timestamp\)/);
+  assert.match(source, /function drawBlackEightLedChoreography\(timestamp\)/);
   assert.match(source, /function drawDateMapLayer\(timestamp\)/);
   assert.match(source, /const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
-  assert.match(source, /fillStyle = "rgba\(1, 6, 12, 0\.3\)"/);
   assert.match(source, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
   assert.doesNotMatch(source, /loadMaterialTexture\("assets\/billiards-scenes/);
   assert.match(source, /content\.getEnding\(grade\)/);
+});
+
+test("uses a resettable stepped water surface as the active cloth renderer", () => {
+  const activeTableRenderer = implementationOf(source, "drawDateMap");
+  const createSurface = implementationOf(source, "createWaterSurface");
+  const simulationUpdates = implementationOf(source, "updateEffects");
+  const advanceSurface = implementationOf(source, "advanceWaterSurface");
+  const resetPath = `${implementationOf(source, "createDateMapState")}\n${implementationOf(source, "resetGame")}`;
+
+  for (const name of [
+    "createWaterSurface",
+    "resetWaterSurface",
+    "disturbWaterWorld",
+    "stepWaterSimulation",
+    "renderWaterSurface"
+  ]) {
+    assert.match(source, new RegExp(`function ${name}\\(`), `missing water renderer stage ${name}`);
+  }
+  assert.ok((source.match(/\bcreateWaterSurface\(/g) || []).length >= 2, "the water surface should be instantiated");
+  assert.match(createSurface, /new Float32Array\(/);
+  assert.match(resetPath, /\b(?:resetWaterSurface|createWaterSurface)\(/);
+  assert.match(simulationUpdates, /\badvanceWaterSurface\(FIXED_STEP\)/);
+  assert.match(advanceSurface, /\bstepWaterSimulation\(\)/);
+  assert.match(activeTableRenderer, /\brenderWaterSurface\(timestamp\)/);
+  assert.doesNotMatch(
+    activeTableRenderer,
+    /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/,
+    "the retired geometric cloth field must not remain on the active render path"
+  );
+});
+
+test("turns rolling balls into water wakes and rail impacts into bidirectional perimeter waves", () => {
+  const rollingUpdate = implementationOf(source, "updateRollingState");
+  const rollingWake = implementationOf(source, "depositRollingWaterWake");
+  const railBurst = implementationOf(source, "spawnChromaRailBurst");
+  const railLightStrip = implementationOf(source, "drawRailLightStrip");
+  const activeRendering = `${implementationOf(source, "drawDateMap")}\n${implementationOf(source, "draw")}`;
+
+  assert.match(rollingUpdate, /\bdepositRollingWaterWake\(ball, data, dx, dy, travel\)/);
+  assert.match(rollingUpdate, /\btravel\b/);
+  assert.match(rollingUpdate, /ball\.speed/);
+  assert.match(rollingWake, /\bdisturbWaterWorld\(/);
+  assert.match(source, /function railDistanceForContact\(/);
+  assert.match(source, /function railPositionFromDistance\(/);
+  assert.match(railBurst, /\brailDistanceForContact\(/);
+  assert.match(
+    railLightStrip,
+    /wave\.originS \+ front/,
+    "each rail wave should travel clockwise from its contact point"
+  );
+  assert.match(railLightStrip, /wave\.originS - front/, "each rail wave should also travel counterclockwise");
+  assert.match(railLightStrip, /\brailPositionFromDistance\(/);
+  assert.match(activeRendering, /\bdrawRailLightStrip\(timestamp/);
+});
+
+test("choreographs the black-eight finale through the perimeter light strip", () => {
+  const activeTableRenderer = implementationOf(source, "drawDateMap");
+  const blackEight = implementationOf(source, "drawBlackEightLedChoreography");
+  const railLightStrip = implementationOf(source, "drawRailLightStrip");
+
+  assert.match(activeTableRenderer, /if \(blackEightActive\) drawBlackEightLedChoreography\(timestamp\)/);
+  assert.match(blackEight, /\bdrawRailLightStrip\(timestamp\)/);
+  assert.match(blackEight, /\bdrawPocketLightPorts\(timestamp\)/);
+  assert.match(railLightStrip, /dateMapState\.blackEightBlast/);
+  assert.match(railLightStrip, /\bblastProgress\b/);
+  assert.match(railLightStrip, /\brailPositionFromDistance\(/);
 });
 test("freezes full-screen cinematics and preserves the completed canvas without repainting under results", () => {
   assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);

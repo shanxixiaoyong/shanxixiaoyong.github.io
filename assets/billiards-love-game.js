@@ -126,6 +126,15 @@
   const MAX_BALL_RENDER_SCALE = 3.5;
   const DATE_MAP_REFRESH_MS = 1000 / 30;
   const SCENE_PORTAL_DURATION_MS = 1120;
+  const WATER_GRID_WIDTH = 144;
+  const WATER_GRID_HEIGHT = 288;
+  const WATER_STEP_MS = 1000 / 30;
+  const WATER_DAMPING = 0.986;
+  const WATER_MAX_HEIGHT = 3.2;
+  const RAIL_LED_INSET = 10;
+  const RAIL_LED_SEGMENTS = 168;
+  const RAIL_WAVE_LIFETIME_MS = 2100;
+  const RAIL_WAVE_SPEED = 920;
   const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
   const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
@@ -728,6 +737,7 @@
   let lastStoryOrigin = { x: 50, y: 50 };
   let lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
   let dateMapState = createDateMapState();
+  let waterSurface = createWaterSurface();
   let finalRevealActive = false;
   let finalRevealTimer = 0;
   let trackNodeMap = new Map();
@@ -803,7 +813,9 @@
       rollingTrails: [],
       railBursts: [],
       pocketFlares: [],
-      blackEightBlast: null
+      blackEightBlast: null,
+      waterEnergy: 0,
+      railWavePeak: 0
     };
   }
 
@@ -915,6 +927,8 @@
       life: 1
     });
     if (dateMapState.pocketFlares.length > 12) dateMapState.pocketFlares.shift();
+    disturbWaterWorld(pocket.captureX, pocket.captureY, number === 8 ? -2.8 : 1.35, number === 8 ? 92 : 52);
+    spawnPocketRailWave(pocket, theme, effect, number === 8 ? 1 : 0.76);
     if (number === 8) {
       dateMapState.blackEightBlast = {
         startedAt: now,
@@ -1017,17 +1031,27 @@
 
   function spawnChromaRailBurst(ball, rail, collision, impactSpeed) {
     const data = bodyData(ball);
-    const effect = dateMapState.activeEffect;
-    if (!data || !effect || data.potted || data.pocketing || impactSpeed < 0.42) return;
+    const effect = dateMapState.activeEffect || POCKET_VFX_PROFILES["top-left"];
+    if (!data || data.potted || data.pocketing || impactSpeed < 0.42) return;
     const contact = collision?.supports?.[0] || { x: ball.position.x, y: ball.position.y };
     const normal = normalize(collision?.normal || {
       x: ball.position.x - rail.position.x,
       y: ball.position.y - rail.position.y
     });
     const theme = BALL_CHROMA_THEMES[data.number] || dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const waveProfiles = {
+      ripple: { speed: 650, width: 190, duration: 2400 },
+      comet: { speed: 1260, width: 105, duration: 1700 },
+      prism: { speed: 900, width: 150, duration: 2200 },
+      pulse: { speed: 780, width: 118, duration: 2000 },
+      lightning: { speed: 1500, width: 74, duration: 1450 },
+      aurora: { speed: 560, width: 240, duration: 2700 }
+    };
+    const profile = waveProfiles[effect.id] || { speed: RAIL_WAVE_SPEED, width: 150, duration: RAIL_WAVE_LIFETIME_MS };
     dateMapState.railBursts.push({
       x: contact.x,
       y: contact.y,
+      originS: railDistanceForContact(contact.x, contact.y),
       normalX: normal.x,
       normalY: normal.y,
       railId: rail.plugin.heartbeatRail?.id || "rail",
@@ -1035,14 +1059,47 @@
       color: theme.primary,
       secondary: effect.secondary,
       intensity: clamp(impactSpeed / 18, 0.25, 1),
+      rgb: colorChannels(theme.primary),
+      speed: profile.speed * (0.82 + clamp(impactSpeed / 30, 0, 1) * 0.36),
+      width: profile.width,
+      duration: profile.duration,
+      ageMs: 0,
       bornAt: performance.now(),
       life: 1
     });
     if (dateMapState.railBursts.length > 36) {
       dateMapState.railBursts.splice(0, dateMapState.railBursts.length - 36);
     }
+    disturbWaterWorld(contact.x - normal.x * 10, contact.y - normal.y * 10,
+      clamp(impactSpeed / 16, 0.32, 1.35), 20 + clamp(impactSpeed, 0, 22));
     dateMapFrameDirty = true;
     sceneLightingFrameDirty = true;
+  }
+
+  function spawnPocketRailWave(pocket, theme, effect, intensity = 0.75) {
+    if (!pocket || !theme || !effect) return;
+    dateMapState.railBursts.push({
+      x: pocket.x,
+      y: pocket.y,
+      originS: railDistanceForContact(pocket.x, pocket.y),
+      normalX: -pocket.inwardX,
+      normalY: -pocket.inwardY,
+      railId: `pocket-${pocket.id}`,
+      effectId: effect.id,
+      color: theme.primary,
+      secondary: effect.secondary,
+      intensity,
+      rgb: colorChannels(theme.primary),
+      speed: RAIL_WAVE_SPEED * (effect.id === "lightning" ? 1.45 : effect.id === "aurora" ? 0.68 : 1),
+      width: effect.id === "aurora" ? 260 : effect.id === "lightning" ? 88 : 172,
+      duration: effect.id === "aurora" ? 2850 : RAIL_WAVE_LIFETIME_MS,
+      ageMs: 0,
+      bornAt: performance.now(),
+      life: 1
+    });
+    if (dateMapState.railBursts.length > 36) {
+      dateMapState.railBursts.splice(0, dateMapState.railBursts.length - 36);
+    }
   }
 
   function createRail(x, y, width, height, id, angle = 0, kind = "cushion") {
@@ -1296,6 +1353,7 @@
     lastStoryOrigin = { x: 50, y: 50 };
     lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
     dateMapState = createDateMapState();
+    resetWaterSurface();
     dateMapFrameDirty = true;
     dateMapFrameUpdatedAt = -Infinity;
     sceneLightingFrameDirty = true;
@@ -1944,10 +2002,11 @@
           shotState.closestPocketDistance = Math.min(shotState.closestPocketDistance, pocketDistance);
         }
       }
-      if (dateMapState.activeEffect && travel > 1.1 && ball.speed > 0.22) {
+      if (travel > 0.55 && ball.speed > 0.16) {
         const lastSampleAt = data.lastChromaTrailAt ?? -Infinity;
-        if (simulationTime - lastSampleAt >= 25) {
+        if (simulationTime - lastSampleAt >= WATER_STEP_MS) {
           const theme = BALL_CHROMA_THEMES[data.number] || BALL_CHROMA_THEMES[0];
+          depositRollingWaterWake(ball, data, dx, dy, travel);
           dateMapState.rollingTrails.push({
             x1: ball.position.x - dx,
             y1: ball.position.y - dy,
@@ -1955,15 +2014,16 @@
             y2: ball.position.y,
             speed: ball.speed,
             ballNumber: data.number,
-            effectId: dateMapState.activeEffect.id,
+            effectId: dateMapState.activeEffect?.id || "ripple",
             color: theme.primary,
-            secondary: dateMapState.activeEffect.secondary,
+            secondary: dateMapState.activeEffect?.secondary || theme.secondary,
+            kind: "water-wake",
             bornAt: performance.now(),
             life: 1
           });
           data.lastChromaTrailAt = simulationTime;
-          if (dateMapState.rollingTrails.length > 180) {
-            dateMapState.rollingTrails.splice(0, dateMapState.rollingTrails.length - 180);
+          if (dateMapState.rollingTrails.length > 96) {
+            dateMapState.rollingTrails.splice(0, dateMapState.rollingTrails.length - 96);
           }
           dateMapFrameDirty = true;
         }
@@ -2545,7 +2605,10 @@
     dateMapState.powerWave *= 0.94;
     dateMapState.rollingTrails.forEach((trail) => { trail.life -= FIXED_STEP / ROLL_TRAIL_LIFETIME_MS; });
     dateMapState.rollingTrails = dateMapState.rollingTrails.filter((trail) => trail.life > 0);
-    dateMapState.railBursts.forEach((burst) => { burst.life -= FIXED_STEP / RAIL_BURST_LIFETIME_MS; });
+    dateMapState.railBursts.forEach((burst) => {
+      burst.ageMs = (burst.ageMs || 0) + FIXED_STEP;
+      burst.life = clamp(1 - burst.ageMs / (burst.duration || RAIL_WAVE_LIFETIME_MS), 0, 1);
+    });
     dateMapState.railBursts = dateMapState.railBursts.filter((burst) => burst.life > 0);
     dateMapState.pocketFlares.forEach((flare) => { flare.life -= FIXED_STEP / 1500; });
     dateMapState.pocketFlares = dateMapState.pocketFlares.filter((flare) => flare.life > 0);
@@ -2554,6 +2617,7 @@
       dateMapState.blackEightBlast.life = clamp(1 - dateMapState.blackEightBlast.ageMs / dateMapState.blackEightBlast.duration, 0, 1);
       if (dateMapState.blackEightBlast.life <= 0) dateMapState.blackEightBlast = null;
     }
+    advanceWaterSurface(FIXED_STEP);
     if (dateMapState.completed && dateMapState.finalProgress < 1) {
       dateMapState.finalProgress = Math.min(1, dateMapState.finalProgress + 0.009);
     }
@@ -3587,6 +3651,468 @@
     return `rgba(${number >> 16 & 255},${number >> 8 & 255},${number & 255},${alpha})`;
   }
 
+  function colorChannels(color) {
+    const hex = String(color || "#000000").replace("#", "");
+    const expanded = hex.length === 3 ? hex.split("").map((value) => value + value).join("") : hex;
+    const number = Number.parseInt(expanded, 16) || 0;
+    return [number >> 16 & 255, number >> 8 & 255, number & 255];
+  }
+
+  function smoothStep(edge0, edge1, value) {
+    const ratio = clamp((value - edge0) / Math.max(0.0001, edge1 - edge0), 0, 1);
+    return ratio * ratio * (3 - 2 * ratio);
+  }
+
+  function createWaterSurface() {
+    const surfaceCanvas = document.createElement("canvas");
+    surfaceCanvas.width = WATER_GRID_WIDTH;
+    surfaceCanvas.height = WATER_GRID_HEIGHT;
+    const surfaceContext = typeof surfaceCanvas.getContext === "function"
+      ? surfaceCanvas.getContext("2d", { alpha: false })
+      : null;
+    const imageData = surfaceContext && typeof surfaceContext.createImageData === "function"
+      ? surfaceContext.createImageData(WATER_GRID_WIDTH, WATER_GRID_HEIGHT)
+      : null;
+    if (imageData) {
+      for (let offset = 3; offset < imageData.data.length; offset += 4) imageData.data[offset] = 255;
+    }
+    return {
+      width: WATER_GRID_WIDTH,
+      height: WATER_GRID_HEIGHT,
+      current: new Float32Array(WATER_GRID_WIDTH * WATER_GRID_HEIGHT),
+      previous: new Float32Array(WATER_GRID_WIDTH * WATER_GRID_HEIGHT),
+      next: new Float32Array(WATER_GRID_WIDTH * WATER_GRID_HEIGHT),
+      canvas: surfaceCanvas,
+      context: surfaceContext,
+      imageData,
+      renderable: Boolean(surfaceContext && imageData),
+      accumulatorMs: 0,
+      stepCount: 0,
+      energy: 0,
+      lastBlackEightImpulse: -1
+    };
+  }
+
+  function resetWaterSurface() {
+    if (!waterSurface) {
+      waterSurface = createWaterSurface();
+      return;
+    }
+    waterSurface.current.fill(0);
+    waterSurface.previous.fill(0);
+    waterSurface.next.fill(0);
+    waterSurface.accumulatorMs = 0;
+    waterSurface.stepCount = 0;
+    waterSurface.energy = 0;
+    waterSurface.lastBlackEightImpulse = -1;
+    const centerX = TABLE.left + (TABLE.right - TABLE.left) * 0.5;
+    const centerY = TABLE.top + (TABLE.bottom - TABLE.top) * 0.56;
+    disturbWaterWorld(centerX, centerY, 0.14, 84);
+  }
+
+  function waterGridPoint(worldX, worldY) {
+    return {
+      x: clamp((worldX - TABLE.left) / (TABLE.right - TABLE.left) * (waterSurface.width - 1), 1, waterSurface.width - 2),
+      y: clamp((worldY - TABLE.top) / (TABLE.bottom - TABLE.top) * (waterSurface.height - 1), 1, waterSurface.height - 2)
+    };
+  }
+
+  function disturbWaterWorld(worldX, worldY, amplitude = 0.6, radiusWorld = 22) {
+    if (!waterSurface || worldX < TABLE.left - radiusWorld || worldX > TABLE.right + radiusWorld
+      || worldY < TABLE.top - radiusWorld || worldY > TABLE.bottom + radiusWorld) return;
+    waterSurface.energy = Math.max(waterSurface.energy, Math.min(1, Math.abs(amplitude) * 0.55));
+    dateMapState.waterEnergy = Math.max(dateMapState.waterEnergy || 0, waterSurface.energy);
+    dateMapFrameDirty = true;
+    if (!waterSurface.renderable) return;
+    const point = waterGridPoint(worldX, worldY);
+    const cellScale = ((TABLE.right - TABLE.left) / waterSurface.width
+      + (TABLE.bottom - TABLE.top) / waterSurface.height) / 2;
+    const radius = clamp(radiusWorld / Math.max(1, cellScale), 1.25, 14);
+    const minX = Math.max(1, Math.floor(point.x - radius));
+    const maxX = Math.min(waterSurface.width - 2, Math.ceil(point.x + radius));
+    const minY = Math.max(1, Math.floor(point.y - radius));
+    const maxY = Math.min(waterSurface.height - 2, Math.ceil(point.y + radius));
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        const distanceRatio = Math.hypot(x - point.x, y - point.y) / radius;
+        if (distanceRatio >= 1) continue;
+        const falloff = 0.5 + Math.cos(distanceRatio * Math.PI) * 0.5;
+        const index = y * waterSurface.width + x;
+        waterSurface.current[index] = clamp(
+          waterSurface.current[index] + amplitude * falloff,
+          -WATER_MAX_HEIGHT,
+          WATER_MAX_HEIGHT
+        );
+      }
+    }
+  }
+
+  function depositRollingWaterWake(ball, data, dx, dy, travel) {
+    if (!waterSurface || travel < 0.18 || ball.speed < 0.12) return;
+    const effectId = dateMapState.activeEffect?.id || "ripple";
+    const profiles = {
+      ripple: { amplitude: 0.54, radius: 27, tail: 2, spread: 0.9 },
+      comet: { amplitude: 0.72, radius: 17, tail: 4, spread: 1.25 },
+      prism: { amplitude: 0.48, radius: 20, tail: 3, spread: 1.5 },
+      pulse: { amplitude: 0.65, radius: 24, tail: 2, spread: 1.1 },
+      lightning: { amplitude: 0.82, radius: 13, tail: 4, spread: 1.8 },
+      aurora: { amplitude: 0.44, radius: 32, tail: 3, spread: 1.2 }
+    };
+    const profile = profiles[effectId] || profiles.ripple;
+    const direction = normalize({ x: dx, y: dy }, { x: 0, y: -1 });
+    const normal = { x: -direction.y, y: direction.x };
+    const speedRatio = clamp(ball.speed / 24, 0.12, 1);
+    const amplitude = profile.amplitude * (0.22 + speedRatio * 0.78);
+    disturbWaterWorld(ball.position.x, ball.position.y, amplitude, profile.radius);
+    for (let step = 1; step <= profile.tail; step += 1) {
+      const tailDistance = step * (8 + speedRatio * 11);
+      const side = Math.sin((waterSurface.stepCount + step * 7 + data.number * 13) * 0.31)
+        * profile.spread * step;
+      disturbWaterWorld(
+        ball.position.x - direction.x * tailDistance + normal.x * side,
+        ball.position.y - direction.y * tailDistance + normal.y * side,
+        -amplitude * (0.36 / step),
+        profile.radius * (0.72 + step * 0.08)
+      );
+    }
+  }
+
+  function stepWaterSimulation() {
+    if (!waterSurface?.renderable) return;
+    const { width, height, current, previous, next } = waterSurface;
+    let energy = 0;
+    for (let y = 1; y < height - 1; y += 1) {
+      const row = y * width;
+      for (let x = 1; x < width - 1; x += 1) {
+        const index = row + x;
+        const neighborAverage = (current[index - 1] + current[index + 1]
+          + current[index - width] + current[index + width]) * 0.5;
+        const value = clamp((neighborAverage - previous[index]) * WATER_DAMPING, -WATER_MAX_HEIGHT, WATER_MAX_HEIGHT);
+        next[index] = value;
+        energy += Math.abs(value);
+      }
+    }
+    waterSurface.previous = current;
+    waterSurface.current = next;
+    waterSurface.next = previous;
+    waterSurface.next.fill(0);
+    waterSurface.stepCount += 1;
+    waterSurface.energy = clamp(energy / (width * height * 0.34), 0, 1);
+    dateMapState.waterEnergy = waterSurface.energy;
+  }
+
+  function advanceWaterSurface(deltaMs) {
+    if (!waterSurface) return;
+    if (!waterSurface.renderable) {
+      waterSurface.energy *= 0.985;
+      dateMapState.waterEnergy = waterSurface.energy;
+      return;
+    }
+    waterSurface.accumulatorMs += deltaMs;
+    while (waterSurface.accumulatorMs >= WATER_STEP_MS) {
+      waterSurface.accumulatorMs -= WATER_STEP_MS;
+      if (dateMapState.blackEightBlast) {
+        const blast = dateMapState.blackEightBlast;
+        const phase = Math.floor(blast.ageMs / 105);
+        if (phase !== waterSurface.lastBlackEightImpulse) {
+          waterSurface.lastBlackEightImpulse = phase;
+          const progress = clamp(blast.ageMs / blast.duration, 0, 1);
+          const sweep = phase * 2.399963;
+          const radius = 34 + progress * 270;
+          disturbWaterWorld(
+            WORLD.width / 2 + Math.cos(sweep) * radius * 0.58,
+            WORLD.height / 2 + Math.sin(sweep) * radius,
+            progress < 0.24 ? -1.1 : 0.78 + Math.sin(phase) * 0.2,
+            34 + progress * 36
+          );
+        }
+      }
+      stepWaterSimulation();
+    }
+  }
+
+  function waterThemeTransitionMix(timestamp, gridX, gridY, heightValue, transitionState) {
+    if (!transitionState) return 1;
+    const dx = (gridX - transitionState.origin.x) / waterSurface.width;
+    const dy = (gridY - transitionState.origin.y) / waterSurface.height;
+    const distanceFromOrigin = Math.hypot(dx, dy);
+    const turbulentEdge = Math.sin(gridX * 0.17 + gridY * 0.071 + timestamp * 0.0011) * 0.028
+      + Math.sin(gridY * 0.13 - timestamp * 0.0008) * 0.018
+      + heightValue * 0.012;
+    return smoothStep(distanceFromOrigin - 0.12, distanceFromOrigin + 0.08,
+      transitionState.progress * 1.34 + turbulentEdge);
+  }
+
+  function renderWaterSurface(timestamp) {
+    const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const previousTheme = dateMapState.previousTheme || theme;
+    const width = TABLE.right - TABLE.left;
+    const height = TABLE.bottom - TABLE.top;
+    if (!waterSurface?.context || !waterSurface.imageData || typeof waterSurface.context.putImageData !== "function") {
+      const fallback = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
+      fallback.addColorStop(0, theme.deep);
+      fallback.addColorStop(0.46, colorWithAlpha(theme.primary, 0.62));
+      fallback.addColorStop(1, theme.deep);
+      context.fillStyle = fallback;
+      context.fillRect(TABLE.left, TABLE.top, width, height);
+      return;
+    }
+    const current = waterSurface.current;
+    const pixels = waterSurface.imageData.data;
+    const targetDeep = colorChannels(theme.deep);
+    const targetPrimary = colorChannels(theme.primary);
+    const targetSecondary = colorChannels(theme.secondary);
+    const sourceDeep = colorChannels(previousTheme.deep);
+    const sourcePrimary = colorChannels(previousTheme.primary);
+    const sourceSecondary = colorChannels(previousTheme.secondary);
+    const blast = dateMapState.blackEightBlast;
+    const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
+    const spectralStrength = blast
+      ? smoothStep(0.18, 0.46, blastProgress) * (1 - smoothStep(0.82, 1, blastProgress))
+      : 0;
+    const specularGain = blast ? 104 : 66;
+    const transition = dateMapState.themeTransition;
+    const transitionState = transition ? {
+      progress: clamp((timestamp - transition.startedAt) / transition.duration, 0, 1),
+      origin: waterGridPoint(transition.originX, transition.originY)
+    } : null;
+    const time = timestamp * 0.001;
+    for (let y = 1; y < waterSurface.height - 1; y += 1) {
+      const v = y / (waterSurface.height - 1);
+      for (let x = 1; x < waterSurface.width - 1; x += 1) {
+        const index = y * waterSurface.width + x;
+        const offset = index * 4;
+        const surfaceHeight = current[index];
+        const gradientX = current[index + 1] - current[index - 1];
+        const gradientY = current[index + waterSurface.width] - current[index - waterSurface.width];
+        const microX = Math.sin(x * 0.37 + Math.sin(y * 0.061 - time * 0.74) * 2.1 + time * 1.26) * 0.032
+          + Math.cos((x - y) * 0.093 - time * 0.81) * 0.018;
+        const microY = Math.cos(y * 0.29 + Math.sin(x * 0.052 + time * 0.67) * 2.4 - time * 1.08) * 0.03
+          + Math.sin((x + y) * 0.071 + time * 0.58) * 0.016;
+        const waterGradientX = gradientX + microX;
+        const waterGradientY = gradientY + microY;
+        const slope = Math.hypot(waterGradientX, waterGradientY);
+        const diffuse = clamp(0.46 - waterGradientX * 0.36 - waterGradientY * 0.18, 0.08, 0.94);
+        const specular = Math.pow(clamp(0.78 - waterGradientX * 0.62 - waterGradientY * 0.28, 0, 1), 15);
+        const flowA = Math.sin(x * 0.231 + Math.sin(y * 0.059 - time * 0.62) * 2.2 + time * 0.86);
+        const flowB = Math.cos(y * 0.187 + Math.sin(x * 0.047 + time * 0.54) * 2.5 - time * 0.72);
+        const flowC = Math.sin((x - y) * 0.113 + Math.sin((x + y) * 0.031 + time * 0.33) * 2.8);
+        const causticField = 0.5 + (flowA * flowB * 0.68 + flowC * 0.32) * 0.5 + surfaceHeight * 0.055;
+        const caustic = Math.pow(clamp(causticField, 0, 1), 11) * (0.16 + slope * 0.58);
+        const mix = waterThemeTransitionMix(timestamp, x, y, surfaceHeight, transitionState);
+        const deepR = sourceDeep[0] + (targetDeep[0] - sourceDeep[0]) * mix;
+        const deepG = sourceDeep[1] + (targetDeep[1] - sourceDeep[1]) * mix;
+        const deepB = sourceDeep[2] + (targetDeep[2] - sourceDeep[2]) * mix;
+        const primaryR = sourcePrimary[0] + (targetPrimary[0] - sourcePrimary[0]) * mix;
+        const primaryG = sourcePrimary[1] + (targetPrimary[1] - sourcePrimary[1]) * mix;
+        const primaryB = sourcePrimary[2] + (targetPrimary[2] - sourcePrimary[2]) * mix;
+        const secondaryR = sourceSecondary[0] + (targetSecondary[0] - sourceSecondary[0]) * mix;
+        const secondaryG = sourceSecondary[1] + (targetSecondary[1] - sourceSecondary[1]) * mix;
+        const secondaryB = sourceSecondary[2] + (targetSecondary[2] - sourceSecondary[2]) * mix;
+        const depthShade = clamp(0.38 + diffuse * 0.42 + surfaceHeight * 0.035, 0.18, 0.82);
+        const edgeShade = 1 - Math.pow(Math.abs(v - 0.5) * 1.42, 2) * 0.2;
+        const spectralPhase = x * 0.083 + y * 0.039
+          + Math.sin(y * 0.043 - time * 0.5) * 2.1
+          + Math.sin(x * 0.031 + time * 0.42) * 1.7
+          + time * 1.45 + surfaceHeight;
+        const eclipse = blast ? 1 - smoothStep(0, 0.2, blastProgress) * 0.5 + smoothStep(0.7, 0.84, blastProgress) * 0.45 : 1;
+        pixels[offset] = clamp((deepR * 0.72 + primaryR * 0.18 + secondaryR * 0.05) * depthShade * edgeShade * eclipse
+          + specular * specularGain + caustic * 48 + spectralStrength * (22 + Math.sin(spectralPhase) * 18), 0, 255);
+        pixels[offset + 1] = clamp((deepG * 0.72 + primaryG * 0.18 + secondaryG * 0.05) * depthShade * edgeShade * eclipse
+          + specular * (specularGain + 10) + caustic * 54 + spectralStrength * (22 + Math.sin(spectralPhase + 2.094) * 18), 0, 255);
+        pixels[offset + 2] = clamp((deepB * 0.72 + primaryB * 0.18 + secondaryB * 0.05) * depthShade * edgeShade * eclipse
+          + specular * (specularGain + 22) + caustic * 64 + spectralStrength * (22 + Math.sin(spectralPhase + 4.188) * 18), 0, 255);
+        pixels[offset + 3] = 255;
+      }
+    }
+    waterSurface.context.putImageData(waterSurface.imageData, 0, 0);
+    context.save();
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
+    const reflectedLight = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
+    reflectedLight.addColorStop(0, "rgba(255,255,255,0.08)");
+    reflectedLight.addColorStop(0.18, "rgba(255,255,255,0)");
+    reflectedLight.addColorStop(0.7, colorWithAlpha(theme.secondary, 0.055));
+    reflectedLight.addColorStop(1, "rgba(0,0,0,0.24)");
+    context.fillStyle = reflectedLight;
+    context.fillRect(TABLE.left, TABLE.top, width, height);
+    context.restore();
+  }
+
+  function railBounds() {
+    return {
+      left: TABLE.left - RAIL_LED_INSET,
+      right: TABLE.right + RAIL_LED_INSET,
+      top: TABLE.top - RAIL_LED_INSET,
+      bottom: TABLE.bottom + RAIL_LED_INSET
+    };
+  }
+
+  function railPerimeterLength() {
+    const bounds = railBounds();
+    return 2 * ((bounds.right - bounds.left) + (bounds.bottom - bounds.top));
+  }
+
+  function railDistanceForContact(x, y) {
+    const bounds = railBounds();
+    const width = bounds.right - bounds.left;
+    const height = bounds.bottom - bounds.top;
+    const candidates = [
+      { distance: Math.abs(y - bounds.top), value: clamp(x - bounds.left, 0, width) },
+      { distance: Math.abs(x - bounds.right), value: width + clamp(y - bounds.top, 0, height) },
+      { distance: Math.abs(y - bounds.bottom), value: width + height + clamp(bounds.right - x, 0, width) },
+      { distance: Math.abs(x - bounds.left), value: width * 2 + height + clamp(bounds.bottom - y, 0, height) }
+    ];
+    candidates.sort((left, right) => left.distance - right.distance);
+    return candidates[0].value;
+  }
+
+  function railPositionFromDistance(distanceAlongRail) {
+    const bounds = railBounds();
+    const width = bounds.right - bounds.left;
+    const height = bounds.bottom - bounds.top;
+    const perimeter = 2 * (width + height);
+    let distance = ((distanceAlongRail % perimeter) + perimeter) % perimeter;
+    if (distance <= width) return { x: bounds.left + distance, y: bounds.top, nx: 0, ny: 1 };
+    distance -= width;
+    if (distance <= height) return { x: bounds.right, y: bounds.top + distance, nx: -1, ny: 0 };
+    distance -= height;
+    if (distance <= width) return { x: bounds.right - distance, y: bounds.bottom, nx: 0, ny: -1 };
+    distance -= width;
+    return { x: bounds.left, y: bounds.bottom - distance, nx: 1, ny: 0 };
+  }
+
+  function circularRailDistance(left, right, perimeter = railPerimeterLength()) {
+    const direct = Math.abs(left - right) % perimeter;
+    return Math.min(direct, perimeter - direct);
+  }
+
+  function drawRailLightStrip(timestamp) {
+    const perimeter = railPerimeterLength();
+    const segmentLength = perimeter / RAIL_LED_SEGMENTS;
+    const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
+    const effect = dateMapState.activeEffect || POCKET_VFX_PROFILES["top-left"];
+    const baseColor = colorChannels(theme.primary);
+    const secondaryColor = colorChannels(effect.secondary);
+    const blast = dateMapState.blackEightBlast;
+    const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
+    let peak = 0;
+    context.save();
+    context.lineCap = "round";
+    context.globalCompositeOperation = "source-over";
+    context.strokeStyle = "rgba(1, 4, 9, 0.92)";
+    context.lineWidth = 11;
+    roundRectPath(context, TABLE.left - RAIL_LED_INSET, TABLE.top - RAIL_LED_INSET,
+      TABLE.right - TABLE.left + RAIL_LED_INSET * 2, TABLE.bottom - TABLE.top + RAIL_LED_INSET * 2, 7);
+    context.stroke();
+    for (let index = 0; index < RAIL_LED_SEGMENTS; index += 1) {
+      const centerDistance = (index + 0.5) * segmentLength;
+      let brightness = blast ? 0.012 : 0.052 + Math.min(4, dateMapState.activeStreak) * 0.012;
+      let red = baseColor[0];
+      let green = baseColor[1];
+      let blue = baseColor[2];
+      dateMapState.railBursts.forEach((wave) => {
+        const ageSeconds = wave.ageMs / 1000;
+        const front = wave.speed * ageSeconds;
+        const clockwise = circularRailDistance(centerDistance, wave.originS + front, perimeter);
+        const counterClockwise = circularRailDistance(centerDistance, wave.originS - front, perimeter);
+        const distanceToFront = Math.min(clockwise, counterClockwise);
+        const waveShape = Math.pow(clamp(1 - distanceToFront / wave.width, 0, 1), 2);
+        const waveLife = clamp(1 - wave.ageMs / wave.duration, 0, 1);
+        const contribution = waveShape * waveLife * (0.42 + wave.intensity * 0.72);
+        if (contribution > brightness) {
+          red = wave.rgb[0];
+          green = wave.rgb[1];
+          blue = wave.rgb[2];
+        }
+        brightness += contribution;
+      });
+      if (blast) {
+        const pocketIndex = Math.floor(blastProgress * 7.5);
+        const nearestPocketIndex = POCKETS.reduce((best, pocket, pocketPosition) => {
+          const pocketDistance = circularRailDistance(centerDistance, railDistanceForContact(pocket.x, pocket.y), perimeter);
+          return pocketDistance < best.distance ? { distance: pocketDistance, index: pocketPosition } : best;
+        }, { distance: Infinity, index: 0 }).index;
+        const pocketIgnition = smoothStep(nearestPocketIndex / 8, nearestPocketIndex / 8 + 0.1, blastProgress);
+        const chase = smoothStep(0.18, 0.36, blastProgress) * (1 - smoothStep(0.78, 0.92, blastProgress));
+        const chaseFront = (timestamp * 0.8 + blastProgress * perimeter * 2.4) % perimeter;
+        const chaseDistance = Math.min(
+          circularRailDistance(centerDistance, chaseFront, perimeter),
+          circularRailDistance(centerDistance, perimeter - chaseFront, perimeter)
+        );
+        const chaseWave = Math.pow(clamp(1 - chaseDistance / 150, 0, 1), 2) * chase;
+        const climax = smoothStep(0.68, 0.82, blastProgress) * (1 - smoothStep(0.9, 1, blastProgress));
+        brightness += pocketIgnition * 0.16 + chaseWave * 1.18 + climax * 0.88;
+        const spectral = centerDistance / perimeter * Math.PI * 2 + blastProgress * 15 + pocketIndex * 0.2;
+        red = 132 + Math.sin(spectral) * 110;
+        green = 132 + Math.sin(spectral + 2.094) * 110;
+        blue = 132 + Math.sin(spectral + 4.188) * 110;
+      }
+      brightness = clamp(brightness, 0, 1);
+      peak = Math.max(peak, brightness);
+      const from = railPositionFromDistance(index * segmentLength + segmentLength * 0.12);
+      const to = railPositionFromDistance((index + 1) * segmentLength - segmentLength * 0.12);
+      const color = `rgb(${Math.round(clamp(red, 0, 255))},${Math.round(clamp(green, 0, 255))},${Math.round(clamp(blue, 0, 255))})`;
+      if (brightness > 0.32) {
+        context.globalAlpha = brightness * 0.22;
+        context.strokeStyle = color;
+        context.lineWidth = 10 + brightness * 4;
+        context.beginPath();
+        context.moveTo(from.x, from.y);
+        context.lineTo(to.x, to.y);
+        context.stroke();
+      }
+      context.globalAlpha = 0.14 + brightness * 0.86;
+      context.strokeStyle = color;
+      context.lineWidth = 1.7 + brightness * 2.6;
+      context.beginPath();
+      context.moveTo(from.x, from.y);
+      context.lineTo(to.x, to.y);
+      context.stroke();
+    }
+    dateMapState.railWavePeak = peak;
+    context.restore();
+  }
+
+  function drawPocketLightPorts(timestamp) {
+    const blast = dateMapState.blackEightBlast;
+    const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
+    context.save();
+    context.globalCompositeOperation = "screen";
+    POCKETS.forEach((pocket, pocketIndex) => {
+      const profile = POCKET_VFX_PROFILES[pocket.id];
+      const active = dateMapState.activeEffect?.pocketId === pocket.id;
+      const ignition = blast ? smoothStep(pocketIndex / 8, pocketIndex / 8 + 0.1, blastProgress) : 0;
+      const flare = dateMapState.pocketFlares.reduce((peak, item) => item.pocketId === pocket.id ? Math.max(peak, item.life) : peak, 0);
+      const level = clamp(0.12 + (active ? 0.22 : 0) + flare * 0.66 + ignition * 0.8, 0, 1);
+      const radius = POCKET_RADIUS + 5.5;
+      const channels = [profile.primary, profile.secondary, dateMapState.activeTheme?.primary || "#ffffff"];
+      for (let segment = 0; segment < 18; segment += 1) {
+        const start = segment / 18 * Math.PI * 2 + timestamp * (active ? 0.00016 : 0.00004);
+        const end = start + Math.PI * 2 / 18 * 0.72;
+        const shimmer = 0.64 + Math.sin(timestamp * 0.004 + segment * 0.91 + pocketIndex) * 0.36;
+        context.globalAlpha = level * (0.34 + shimmer * 0.66);
+        context.strokeStyle = channels[(segment + pocketIndex) % channels.length];
+        context.lineWidth = 1.6 + level * 2.4;
+        context.beginPath();
+        context.arc(pocket.x, pocket.y, radius, start, end);
+        context.stroke();
+      }
+      if (flare > 0.02) {
+        const glowRadius = 48 + (1 - flare) * 92;
+        const glow = context.createRadialGradient(pocket.x, pocket.y, POCKET_RADIUS * 0.45, pocket.x, pocket.y, glowRadius);
+        glow.addColorStop(0, colorWithAlpha(profile.primary, flare * 0.34));
+        glow.addColorStop(0.42, colorWithAlpha(profile.secondary, flare * 0.12));
+        glow.addColorStop(1, colorWithAlpha(profile.secondary, 0));
+        context.globalAlpha = 1;
+        context.fillStyle = glow;
+        context.fillRect(pocket.x - glowRadius, pocket.y - glowRadius, glowRadius * 2, glowRadius * 2);
+      }
+    });
+    context.restore();
+  }
+
   function pointAlongDateRoute(path, ratio) {
     if (!path?.length) return null;
     if (path.length === 1) return { ...path[0], dx: 0, dy: -1 };
@@ -4261,6 +4787,11 @@
     context.restore();
   }
 
+  function drawBlackEightLedChoreography(timestamp) {
+    drawRailLightStrip(timestamp);
+    drawPocketLightPorts(timestamp);
+  }
+
   function drawDateMap(timestamp) {
     const blackEightActive = Boolean(dateMapState.blackEightBlast);
     context.save();
@@ -4271,22 +4802,13 @@
     context.lineTo(TABLE.left, TABLE.bottom);
     context.closePath();
     context.clip();
-    if (blackEightActive) {
-      const eclipseBase = context.createRadialGradient(WORLD.width / 2, WORLD.height / 2, 30, WORLD.width / 2, WORLD.height / 2, WORLD.height * 0.58);
-      eclipseBase.addColorStop(0, "#090817");
-      eclipseBase.addColorStop(0.5, "#040611");
-      eclipseBase.addColorStop(1, "#010208");
-      context.fillStyle = eclipseBase;
-      context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
-      drawBlackEightBlast(timestamp);
-    } else {
-      drawChromaCloth(timestamp);
-      drawChromaPattern(timestamp);
-      drawRollingChromaTrails(timestamp);
-      drawChromaRailBursts(timestamp);
-    }
+    renderWaterSurface(timestamp);
     context.restore();
-    if (!blackEightActive) drawPocketVfx(timestamp);
+    if (blackEightActive) drawBlackEightLedChoreography(timestamp);
+    else {
+      drawRailLightStrip(timestamp);
+      drawPocketLightPorts(timestamp);
+    }
   }
 
   function ensureDateMapFrameCanvas() {
@@ -4713,7 +5235,6 @@
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
     drawTableLayer();
     drawDateMapLayer(timestamp);
-    drawScenePortalLighting(pointerAim && Number.isFinite(dateMapFrameUpdatedAt) ? dateMapFrameUpdatedAt : timestamp);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
@@ -4821,6 +5342,7 @@
           color: "#e8fff7"
         });
         if (collisionFeedbacks.length > 24) collisionFeedbacks.splice(0, collisionFeedbacks.length - 24);
+        disturbWaterWorld(contact.x, contact.y, clamp(relative / 13, 0.28, 1.4), 18 + clamp(relative, 0, 24));
         spawnParticles(contact.x, contact.y, "#d9ede4", Math.min(4, Math.ceil(relative / 4)));
         screenShake = Math.max(screenShake, Math.min(2.8, relative * 0.06));
       }
@@ -5027,7 +5549,13 @@
             activeEffectId: dateMapState.activeEffect?.id || null,
             rollingTrailCount: dateMapState.rollingTrails.length,
             railBurstCount: dateMapState.railBursts.length,
+            railWaveCount: dateMapState.railBursts.length,
+            railWavePeak: dateMapState.railWavePeak,
             pocketFlareCount: dateMapState.pocketFlares.length,
+            waterGridWidth: waterSurface?.width || 0,
+            waterGridHeight: waterSurface?.height || 0,
+            waterEnergy: dateMapState.waterEnergy,
+            waterRenderer: "height-field-caustics",
             blackEightBlast: Boolean(dateMapState.blackEightBlast),
             blackEightBlastLife: dateMapState.blackEightBlast?.life ?? 0,
             blackEightBlastDuration: dateMapState.blackEightBlast?.duration ?? 0,

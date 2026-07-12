@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-chroma-vfx-20260712j";
-const styleCacheVersion = "billiards-chroma-vfx-20260712j";
+const runtimeCacheVersion = "billiards-liquid-led-20260712k";
+const styleCacheVersion = "billiards-liquid-led-20260712k";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -28,6 +28,14 @@ function fragment(source, opening, closing) {
   const end = source.indexOf(closing, start);
   assert.notEqual(end, -1, `${closing} should exist after ${opening}`);
   return source.slice(start, end + closing.length);
+}
+
+function implementationOf(source, name) {
+  const marker = `function ${name}(`;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, `${name} should exist`);
+  const next = source.indexOf("\n  function ", start + marker.length);
+  return source.slice(start, next === -1 ? source.length : next);
 }
 
 function rule(selector) {
@@ -126,11 +134,23 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
   }
 });
 
-test("uses a procedural chromatic field without narrative scene photography", () => {
+test("uses a simulated water field without narrative scene photography", () => {
+  const activeTableRenderer = implementationOf(game, "drawDateMap");
+
   assert.match(game, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
   assert.match(game, /const POCKET_VFX_PROFILES = Object\.freeze\(\{/);
-  assert.match(game, /function drawChromaThemeField\(/);
-  assert.match(game, /function drawChromaPattern\(/);
+  assert.match(game, /function createWaterSurface\(/);
+  assert.match(game, /function disturbWaterWorld\(/);
+  assert.match(game, /function stepWaterSimulation\(/);
+  assert.match(game, /function renderWaterSurface\(/);
+  assert.match(activeTableRenderer, /renderWaterSurface\(timestamp\)/);
+  assert.match(game, /function drawRailLightStrip\(/);
+  assert.match(activeTableRenderer, /drawRailLightStrip\(timestamp\)/);
+  assert.match(activeTableRenderer, /drawPocketLightPorts\(timestamp\)/);
+  assert.doesNotMatch(
+    activeTableRenderer,
+    /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/
+  );
   assert.match(css, /--hb-backdrop-image:\s*none;/);
   assert.match(css, /radial-gradient\(circle at 72% 18%/);
   assert.doesNotMatch(html + css + game, /date-map-rose|portal-corner|portal-coffee|portal-late|portal-river|portal-last|portal-walk|proposal-dawn/);
@@ -292,8 +312,13 @@ test("keeps table moments lightweight and lets misses pause rather than end the 
   assert.doesNotMatch(outcomes, /queueStageMicro\(/);
 });
 
-test("integrates shot telemetry, persistent chroma state, and pocket slow motion", () => {
+test("integrates shot telemetry, persistent water and rail state, and pocket slow motion", () => {
   const tableStory = fragment(html, '<div class="hb-table-story"', "</div>\n        </div>");
+  const activeTableRenderer = implementationOf(game, "drawDateMap");
+  const rollingUpdate = implementationOf(game, "updateRollingState");
+  const rollingWake = implementationOf(game, "depositRollingWaterWake");
+  const railBurst = implementationOf(game, "spawnChromaRailBurst");
+  const railLightStrip = implementationOf(game, "drawRailLightStrip");
   for (const token of ["hb-table-reflection", "hb-pocket-focus"]) {
     assert.match(tableStory, new RegExp(token));
   }
@@ -316,15 +341,27 @@ test("integrates shot telemetry, persistent chroma state, and pocket slow motion
   assert.match(game, /const POCKET_VFX_PROFILES = Object\.freeze\(\{/);
   assert.match(game, /activeTheme: \{ \.\.\.BALL_CHROMA_THEMES\[0\] \}/);
   assert.match(game, /activeEffect: null/);
-  assert.match(game, /rollingTrails: \[\]/);
-  assert.match(game, /railBursts: \[\]/);
   assert.match(game, /blackEightBlast: null/);
-  assert.match(game, /function drawChromaCloth\(timestamp\)/);
-  assert.match(game, /function drawChromaPattern\(timestamp\)/);
-  assert.match(game, /function drawRollingChromaTrails\(timestamp\)/);
-  assert.match(game, /function drawChromaRailBursts\(timestamp\)/);
-  assert.match(game, /function drawPocketVfx\(timestamp\)/);
-  assert.match(game, /function drawBlackEightBlast\(timestamp\)/);
+  assert.match(game, /function createWaterSurface\(/);
+  assert.match(game, /function resetWaterSurface\(/);
+  assert.match(game, /function disturbWaterWorld\(/);
+  assert.match(game, /function stepWaterSimulation\(/);
+  assert.match(game, /function renderWaterSurface\(/);
+  assert.match(rollingUpdate, /depositRollingWaterWake\(ball, data, dx, dy, travel\)/);
+  assert.match(rollingWake, /disturbWaterWorld\(/);
+  assert.match(game, /function railDistanceForContact\(/);
+  assert.match(game, /function railPositionFromDistance\(/);
+  assert.match(railBurst, /railDistanceForContact\(/);
+  assert.match(railLightStrip, /wave\.originS \+ front/);
+  assert.match(railLightStrip, /wave\.originS - front/);
+  assert.match(railLightStrip, /railPositionFromDistance\(/);
+  assert.match(activeTableRenderer, /renderWaterSurface\(timestamp\)/);
+  assert.doesNotMatch(
+    activeTableRenderer,
+    /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/
+  );
+  assert.match(game, /function drawPocketLightPorts\(timestamp\)/);
+  assert.match(game, /function drawBlackEightLedChoreography\(timestamp\)/);
   assert.match(game, /function drawScenePortalLighting\(timestamp\)/);
   assert.match(game, /drawScenePortalLighting\(/);
   assert.match(game, /spawnChromaRailBurst\(bodyA, bodyB, collision, impactSpeed\)/);
@@ -396,6 +433,11 @@ test("keeps a compact result dock and reserves the largest effect for black 8", 
   assert.match(game, /function beginFinalDateMapReveal\(outcome\)/);
   assert.match(game, /dateMapState\.blackEightBlast = \{/);
   assert.match(game, /duration: success \? 4400 : 3200/);
+  const railLightStrip = implementationOf(game, "drawRailLightStrip");
+  const blackEight = implementationOf(game, "drawBlackEightLedChoreography");
+  assert.match(blackEight, /drawRailLightStrip\(timestamp\)/);
+  assert.match(blackEight, /drawPocketLightPorts\(timestamp\)/);
+  assert.match(railLightStrip, /dateMapState\.blackEightBlast/);
   assert.match(game, /screenShake = Math\.max\(screenShake, success \? 7\.2 : 4\.2\)/);
   assert.match(game, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
   const outcomes = fragment(game, "function processOutcomePerformances", "function finalizeShot");
