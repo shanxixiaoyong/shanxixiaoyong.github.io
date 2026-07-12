@@ -131,8 +131,9 @@ button {
 .hb-backdrop {
   z-index: -3;
   overflow: hidden;
-  background: #16080f url("billiards-scenes/date-map-rose-v3.jpg") center / cover no-repeat;
-  filter: brightness(0.47) saturate(0.9);
+  background:
+    linear-gradient(rgba(20, 5, 13, 0.58), rgba(20, 5, 13, 0.58)),
+    #16080f url("billiards-scenes/date-map-rose-v3.jpg") center / cover no-repeat;
 }
 
 .hb-backdrop::before {
@@ -140,29 +141,10 @@ button {
   position: absolute;
   inset: -8%;
   background: url("billiards-scenes/date-map-rose-v3.jpg") var(--hb-scene-x) var(--hb-scene-y) / 168% auto no-repeat;
-  filter: blur(13px) brightness(0.67) saturate(0.98);
   opacity: var(--hb-scene-opacity);
   transform: scale(1.05);
   transform-origin: var(--hb-scene-x) var(--hb-scene-y);
-  transition: opacity 900ms ease, background-position 1050ms cubic-bezier(0.22, 0.72, 0.2, 1), filter 900ms ease, transform 1050ms cubic-bezier(0.22, 0.72, 0.2, 1);
-}
-
-.hb-app[data-stage="1"] .hb-backdrop::before {
-  filter: blur(13px) brightness(0.58) saturate(0.72);
-}
-
-.hb-app[data-stage="3"] .hb-backdrop::before,
-.hb-app[data-stage="4"] .hb-backdrop::before {
-  filter: blur(10px) brightness(0.68) saturate(0.96);
-}
-
-.hb-app[data-stage="5"] .hb-backdrop::before,
-.hb-app[data-stage="6"] .hb-backdrop::before {
-  filter: blur(8px) brightness(0.7) saturate(0.9);
-}
-
-.hb-app[data-stage="7"] .hb-backdrop::before {
-  filter: blur(6px) brightness(0.76) saturate(1.02);
+  transition: opacity 900ms ease, background-position 1050ms cubic-bezier(0.22, 0.72, 0.2, 1), transform 1050ms cubic-bezier(0.22, 0.72, 0.2, 1);
 }
 
 .hb-backdrop::after {
@@ -188,11 +170,10 @@ button {
   inset: 0;
   overflow: hidden;
   background: url("billiards-scenes/date-map-rose-v3.jpg") var(--hb-scene-x) var(--hb-scene-y) / 168% auto no-repeat;
-  filter: blur(9px) brightness(0.82) saturate(0.96);
   opacity: 0;
   clip-path: circle(0 at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
   pointer-events: none;
-  will-change: clip-path, filter, opacity, transform;
+  will-change: clip-path, opacity, transform;
 }
 
 .hb-scene-lens i,
@@ -271,8 +252,6 @@ button {
   color: #f7f0e2;
   text-decoration: none;
   cursor: pointer;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
   transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
@@ -1261,52 +1240,49 @@ button {
   z-index: 60;
   top: auto;
   right: max(10px, var(--safe-right));
-  bottom: max(8px, var(--safe-bottom));
+  bottom: max(4px, var(--safe-bottom));
   left: max(10px, var(--safe-left));
-  max-height: 40dvh;
-  overflow: auto;
+  height: 52px;
+  max-height: none;
+  overflow: hidden;
   display: grid;
-  place-content: center;
-  justify-items: center;
-  padding: 18px 18px 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  padding: 7px 7px 7px 12px;
   border: 1px solid rgba(240, 183, 203, 0.28);
   border-radius: 8px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(42, 10, 25, 0.76), rgba(25, 5, 15, 0.88));
-  box-shadow: 0 -12px 34px rgba(18, 2, 10, 0.34), 0 0 28px rgba(213, 103, 145, 0.08);
-  -webkit-backdrop-filter: blur(11px) saturate(1.08);
-  backdrop-filter: blur(11px) saturate(1.08);
+  text-align: left;
+  background: linear-gradient(90deg, rgba(45, 11, 27, 0.96), rgba(29, 6, 17, 0.98));
+  box-shadow: 0 7px 22px rgba(12, 1, 7, 0.32), inset 0 1px rgba(255, 226, 234, 0.04);
+  animation: hb-result-dock-enter 280ms ease-out both;
 }
 
 .hb-result > span {
+  min-width: 0;
+  align-self: end;
   color: var(--hb-gold);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
+  line-height: 1;
 }
 
 .hb-result > strong {
-  margin-top: 6px;
+  min-width: 0;
+  align-self: start;
+  margin-top: 3px;
+  overflow: hidden;
   font-family: "Songti SC", "STSong", serif;
-  font-size: 23px;
+  font-size: 15px;
   font-weight: 650;
-  line-height: 1.25;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.hb-result > p {
-  max-width: 320px;
-  margin: 7px 0 0;
-  color: #dac2cb;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
+.hb-result > p,
 .hb-result-grid {
-  width: min(100%, 340px);
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  margin-top: 12px;
-  background: rgba(255, 255, 255, 0.12);
+  display: none;
 }
 
 .hb-result-grid span {
@@ -1327,18 +1303,48 @@ button {
 }
 
 .hb-result-actions {
-  width: min(100%, 300px);
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 12px;
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: auto;
+  display: flex;
+  gap: 6px;
+  margin: 0;
 }
 
+.hb-result-actions button,
 .hb-result-actions a {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
   display: grid;
   place-items: center;
+  padding: 0;
+  border-radius: 50%;
   background: transparent;
   color: #ede7da;
+}
+
+.hb-result-actions button {
+  background: #e7aebd;
+  color: #30101d;
+}
+
+.hb-result-actions > * > span:not(.hb-sr-only) {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.hb-app[data-state="result"] .hb-relationship-track,
+.hb-app[data-state="result"] .hb-bottom-bar {
+  opacity: 0;
+  transform: translateY(5px);
+  pointer-events: none;
+}
+
+@keyframes hb-result-dock-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes hb-table-moment-enter {
@@ -1350,7 +1356,6 @@ button {
   0% {
     opacity: 0;
     clip-path: circle(0 at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(12px) brightness(1.18) saturate(0.8);
     transform: scale(1.12);
   }
   22% {
@@ -1360,13 +1365,11 @@ button {
   58% {
     opacity: 0.48;
     clip-path: circle(72vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(3px) brightness(0.94) saturate(1.04);
     transform: scale(1.035);
   }
   100% {
     opacity: 0;
     clip-path: circle(130vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(0) brightness(0.82) saturate(0.96);
     transform: scale(1);
   }
 }
@@ -1375,18 +1378,15 @@ button {
   0% {
     opacity: 0;
     clip-path: circle(8vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(16px) brightness(0.72) saturate(0.72);
     transform: scale(1.08);
   }
   38% {
     opacity: 0.6;
     clip-path: circle(66vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(5px) brightness(0.94) saturate(0.96);
   }
   100% {
     opacity: 0;
     clip-path: circle(130vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(0) brightness(0.8) saturate(0.96);
     transform: scale(1);
   }
 }
@@ -1395,7 +1395,6 @@ button {
   0% {
     opacity: 0;
     clip-path: circle(0 at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(8px) brightness(2.1) saturate(0.72);
     transform: scale(1.2);
   }
   18% {
@@ -1405,13 +1404,11 @@ button {
   48% {
     opacity: 0.48;
     clip-path: circle(120vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(1px) brightness(1.08) saturate(1.06);
     transform: scale(1.025);
   }
   100% {
     opacity: 0;
     clip-path: circle(130vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(0) brightness(0.82) saturate(0.96);
     transform: scale(1);
   }
 }
@@ -1420,7 +1417,6 @@ button {
   0% {
     opacity: 0;
     clip-path: circle(0 at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(12px) brightness(1.18);
     transform: translate3d(-5%, 0, 0) scale(1.12);
   }
   34% {
@@ -1430,7 +1426,6 @@ button {
   68% {
     opacity: 0.36;
     clip-path: circle(120vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(2px) brightness(0.92);
     transform: translate3d(1.5%, 0, 0) scale(1.025);
   }
   100% {
@@ -1444,19 +1439,16 @@ button {
   0% {
     opacity: 0;
     clip-path: circle(14vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(10px) brightness(0.74);
     transform: scale(1.24);
   }
   42% {
     opacity: 0.62;
     clip-path: circle(92vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(3px) brightness(0.98);
     transform: scale(1.07);
   }
   100% {
     opacity: 0;
     clip-path: circle(130vmax at var(--hb-scene-origin-x) var(--hb-scene-origin-y));
-    filter: blur(0) brightness(0.82);
     transform: scale(1);
   }
 }

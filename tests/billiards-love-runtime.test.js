@@ -169,8 +169,8 @@ test("maps touch coordinates directly into the portrait world without rotation i
 test("overrides the legacy rotated canvas and caps high-DPR rendering work", () => {
   assert.match(source, /aspectRatio: "1 \/ 2"/);
   assert.match(source, /transform: "none"/);
-  assert.match(source, /const MAX_RENDER_WIDTH = 1440/);
-  assert.match(source, /const MAX_RENDER_HEIGHT = 2880/);
+  assert.match(source, /const MAX_RENDER_WIDTH = 1200/);
+  assert.match(source, /const MAX_RENDER_HEIGHT = 2400/);
   assert.match(source, /Math\.sqrt\(MAX_RENDER_PIXELS \/ \(cssWidth \* cssHeight\)\)/);
   assert.match(source, /context\.setTransform\(canvas\.width \/ WORLD\.width/);
   assert.match(source, /window\.addEventListener\("resize", resizeCanvas\)/);
@@ -194,9 +194,11 @@ test("supports direct pull-direction-and-power touch aiming with a stable releas
   assert.match(source, /const LIGHT_POWER_MAX = 0\.30/);
   assert.match(source, /const STRONG_POWER_MIN = 0\.76/);
   assert.match(source, /const AIM_LOCK_DELAY_MS = 500/);
-  assert.match(source, /const AIM_LOCK_BREAK_ANGLE = 0\.055/);
+  assert.match(source, /const AIM_LOCK_BREAK_ANGLE = AIM_LOCK_DIRECTION_EPSILON/);
   assert.match(source, /function refreshAimLock\(now = performance\.now\(\)\)/);
   assert.match(source, /pointerAim\.lockedDirection = \{ \.\.\.pointerAim\.directionAnchor \}/);
+  assert.match(source, /pointerAim\.direction = candidate/);
+  assert.doesNotMatch(source, /pointerAim\.direction = \{ \.\.\.pointerAim\.directionAnchor \}/);
   assert.match(source, /if \(!refreshAimLock\(\)\) updateAim\(pointerToWorld\(event\), \{ release: true \}\)/);
   assert.match(source, /pointerAim\.lockedDirection \|\| pointerAim\.direction/);
   assert.match(source, /const MAX_SHOT_SPEED = 42/);
@@ -273,6 +275,9 @@ test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /function rememberDateMoment\(/);
   assert.match(source, /dateMapState\.routes\.push\(route\)/);
   assert.match(source, /function drawDateMap\(timestamp\)/);
+  assert.match(source, /function drawDateMapLayer\(timestamp\)/);
+  assert.match(source, /function rebuildDateMapFrame\(timestamp\)/);
+  assert.match(source, /const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
   assert.match(source, /function drawDateMapPhotoBase\(/);
   assert.match(source, /function drawPhotographicScene\(/);
   assert.match(source, /function drawMotifAtmosphere\(/);
@@ -294,9 +299,9 @@ test("turns physical shots into a persistent six-pocket date map", () => {
   assert.match(source, /content\.getEnding\(grade\)/);
 });
 
-test("freezes only full-screen cinematics and keeps the completed map alive behind results", () => {
-  assert.match(source, /if \(!cinematicActive\) draw\(timestamp\);/);
-  assert.doesNotMatch(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
+test("freezes full-screen cinematics and preserves the completed canvas without repainting under results", () => {
+  assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
+  assert.match(source, /if \(!ballRendererDirty && !hasDynamicBall\) return true/);
 });
 
 test("starts immediately with no start gate or pause state", () => {

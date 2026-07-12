@@ -8,8 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-love-rose-starlight-20260712c";
-const styleCacheVersion = "billiards-love-rose-starlight-20260712c";
+const runtimeCacheVersion = "billiards-love-smooth-result-20260712d";
+const styleCacheVersion = "billiards-love-smooth-result-20260712d";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -339,7 +339,7 @@ test("shows a conic-gradient proportional power arc around the cue ball", () => 
   assert.match(game, /const radius = BALL_RADIUS \+ 22/);
   assert.match(game, /context\.createConicGradient\(arcStart, center\.x, center\.y\)/);
   assert.match(game, /context\.arc\(center\.x, center\.y, radius, arcStart \+ arcSpan \* from, arcStart \+ arcSpan \* to\)/);
-  assert.match(game, /const segmentCount = 52/);
+  assert.match(game, /const segmentCount = 32/);
   assert.match(game, /const profile = Math\.sin\(Math\.PI \* clamp\(relativeMidpoint, 0, 1\)\)/);
   assert.match(game, /context\.lineWidth = 2\.4 \+ profile \* 2\.1/);
   assert.match(game, /context\.arc\(nodeX, nodeY, 1\.35/);
@@ -383,6 +383,13 @@ test("keeps a dormant result cinematic shell without using it for ordinary pots"
   assert.match(css, /\.hb-cinematic-transition\s*\{[^}]*z-index:\s*8;[^}]*\}/s);
   assert.match(rule(".hb-cinematic-skip"), /z-index:\s*10;/);
   assert.match(css, /\.hb-result\s*\{[^}]*z-index:\s*60;[^}]*\}/s);
+  assert.match(css, /\.hb-result\s*\{[^}]*height:\s*52px;[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
+  assert.doesNotMatch(css, /\.hb-result\s*\{[^}]*(?:backdrop-filter|40dvh)/s);
+  assert.match(css, /\.hb-result > p,\s*\.hb-result-grid\s*\{\s*display:\s*none;/s);
+  assert.match(html, /id="hb-retry"[^>]*aria-label="再遇一次"/);
+  assert.match(html, /href="index\.html" aria-label="回到个人天地"/);
+  assert.doesNotMatch(rule(".hb-backdrop"), /filter:/);
+  assert.doesNotMatch(rule(".hb-scene-lens"), /filter:/);
   assert.match(css, /\.hb-cinematic-image,[\s\S]*?\.hb-cinematic-transition\s*\{[\s\S]*?pointer-events:\s*none;/);
   assert.doesNotMatch(cinematicHtml, /hb-cinematic-particles|hb-cinematic-vignette/);
   assert.doesNotMatch(rule(".hb-cinematic-image"), /filter:|animation:/);

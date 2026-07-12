@@ -20,6 +20,10 @@
   let tableCacheDirty = true;
   let dateMapDarkCanvas = null;
   let dateMapClearCanvas = null;
+  let dateMapFrameCanvas = null;
+  let dateMapFrameContext = null;
+  let dateMapFrameUpdatedAt = -Infinity;
+  let dateMapFrameDirty = true;
   const tableWrap = required("#hb-table-wrap");
   const elements = {
     stageKicker: required("#hb-stage-kicker"),
@@ -106,7 +110,7 @@
   const AIM_LOCK_DELAY_MS = 500;
   const AIM_LOCK_MIN_PULL_RATIO = 0.035;
   const AIM_LOCK_DIRECTION_EPSILON = 0.012;
-  const AIM_LOCK_BREAK_ANGLE = 0.055;
+  const AIM_LOCK_BREAK_ANGLE = AIM_LOCK_DIRECTION_EPSILON;
   const MIN_SHOT_SPEED = 2.6;
   const MAX_SHOT_SPEED = 42;
   const STOP_SPEED = Physics.CONFIG.stopSpeed;
@@ -116,10 +120,11 @@
   const POCKET_STORY_SLOW_MOTION_MS = 460;
   const POCKET_STORY_TIME_SCALE = 0.24;
   const TABLE_MOMENT_DEFAULT_DURATION = 1500;
-  const MAX_RENDER_WIDTH = 1440;
-  const MAX_RENDER_HEIGHT = 2880;
+  const MAX_RENDER_WIDTH = 1200;
+  const MAX_RENDER_HEIGHT = 2400;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
   const MAX_BALL_RENDER_SCALE = 3.5;
+  const DATE_MAP_REFRESH_MS = 1000 / 30;
   const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
   const RACK_APEX = Object.freeze({ x: WORLD.width / 2, y: 510 });
   const COACH_KEY = "yl-heartbeat-billiards-coach-v2";
@@ -222,6 +227,7 @@
     image.decoding = "async";
     image.addEventListener("load", () => {
       tableCacheDirty = true;
+      dateMapFrameDirty = true;
     }, { once: true });
     image.src = source;
     return image;
@@ -611,6 +617,7 @@
   let ballRenderer = null;
   let ballRendererCanvas = null;
   let ballRendererFailed = false;
+  let ballRendererDirty = true;
 
   function motifForBall(number) {
     const source = content.BALL_DATE_MOTIFS;
@@ -684,6 +691,7 @@
     if (detail && typeof detail === "object" && Object.isExtensible(detail)) detail.dateRouteId = route.id;
     dateMapState.routes.push(route);
     if (dateMapState.routes.length > 15) dateMapState.routes.shift();
+    dateMapFrameDirty = true;
     if (zone) {
       zone.reveal = clamp(zone.reveal + (zone.visits ? 0.22 : 0.48), 0, 1);
       zone.pulse = 1;
@@ -1026,6 +1034,9 @@
     lastStoryOrigin = { x: 50, y: 50 };
     lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
     dateMapState = createDateMapState();
+    dateMapFrameDirty = true;
+    dateMapFrameUpdatedAt = -Infinity;
+    ballRendererDirty = true;
     finalRevealActive = false;
     clearTimeout(microTimer);
     clearTimeout(judgementTimer);
@@ -1176,8 +1187,11 @@
     const targets = rules.availableTargets(runState);
     const litScenes = [...dateMapState.zones.values()].filter((zone) => zone.visits > 0).length;
     const lastScene = DATE_SCENE_BY_POCKET.get(dateMapState.lastPocketId);
+    if (stageNumber !== cachedStageNumber) tableCacheDirty = true;
     cachedStageNumber = stageNumber;
     cachedAvailableTargets = new Set(targets);
+    dateMapFrameDirty = true;
+    ballRendererDirty = true;
     root.dataset.stage = String(stageNumber);
     elements.stageKicker.textContent = runState.endState.ended
       ? "DATE MAP · 今晚完整显影"
@@ -1314,7 +1328,6 @@
     }
     if (now - pointerAim.directionChangedAt < AIM_LOCK_DELAY_MS) return false;
     pointerAim.lockedDirection = { ...pointerAim.directionAnchor };
-    pointerAim.direction = { ...pointerAim.lockedDirection };
     pointerAim.lockedAt = now;
     root.dataset.aimLocked = "true";
     if (typeof navigator !== "undefined") navigator.vibrate?.(8);
@@ -1341,8 +1354,11 @@
           pointerAim.directionAnchor = { ...candidate };
           pointerAim.directionChangedAt = now;
           root.dataset.aimLocked = "false";
+          pointerAim.direction = candidate;
         } else {
-          pointerAim.direction = { ...pointerAim.lockedDirection };
+          pointerAim.direction = options.release
+            ? { ...pointerAim.lockedDirection }
+            : candidate;
         }
       } else {
         const directionDelta = directionAngle(candidate, pointerAim.directionAnchor);
@@ -1350,7 +1366,7 @@
           pointerAim.directionAnchor = { ...candidate };
           pointerAim.directionChangedAt = now;
         }
-        pointerAim.direction = { ...pointerAim.directionAnchor };
+        pointerAim.direction = candidate;
       }
     }
     pointerAim.pullRatio = clamp((pullDistance - MIN_PULL) / (MAX_PULL - MIN_PULL), 0, 1);
@@ -3138,6 +3154,45 @@
     context.restore();
   }
 
+  function ensureDateMapFrameCanvas() {
+    if (dateMapFrameCanvas && dateMapFrameContext) return true;
+    const cache = document.createElement("canvas");
+    if (typeof cache.getContext !== "function") return false;
+    cache.width = WORLD.width;
+    cache.height = WORLD.height;
+    const cacheContext = cache.getContext("2d", { alpha: true });
+    if (!cacheContext) return false;
+    dateMapFrameCanvas = cache;
+    dateMapFrameContext = cacheContext;
+    dateMapFrameDirty = true;
+    return true;
+  }
+
+  function rebuildDateMapFrame(timestamp) {
+    if (!ensureDateMapFrameCanvas()) return false;
+    const liveContext = context;
+    try {
+      context = dateMapFrameContext;
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, WORLD.width, WORLD.height);
+      drawDateMap(timestamp);
+    } finally {
+      context = liveContext;
+    }
+    dateMapFrameUpdatedAt = timestamp;
+    dateMapFrameDirty = false;
+    return true;
+  }
+
+  function drawDateMapLayer(timestamp) {
+    const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
+    if ((dateMapFrameDirty || refreshDue || !dateMapFrameCanvas) && !rebuildDateMapFrame(timestamp)) {
+      drawDateMap(timestamp);
+      return;
+    }
+    context.drawImage(dateMapFrameCanvas, 0, 0, WORLD.width, WORLD.height);
+  }
+
   function drawBall(ball, timestamp) {
     const data = bodyData(ball);
     if (!data || data.potted) return;
@@ -3255,6 +3310,7 @@
       const pixelRatio = Math.max(1, Math.min(renderScale, MAX_BALL_RENDER_SCALE));
       ballRenderer.resize(Math.max(1, rect.width), Math.max(1, rect.height), pixelRatio);
       if (ballRenderer.supported === false) throw new Error("BilliardsBallRenderer resize failed");
+      ballRendererDirty = true;
       return true;
     } catch {
       disableBallRenderer();
@@ -3287,6 +3343,7 @@
           || ballRenderer.supported === false) {
         throw new Error("BilliardsBallRenderer adapter is incomplete");
       }
+      ballRendererDirty = true;
       return resizeBallRenderer();
     } catch {
       disableBallRenderer();
@@ -3296,6 +3353,11 @@
 
   function syncBallRenderer(timestamp) {
     if (!ballRenderer) return false;
+    const hasDynamicBall = Boolean(shotState || resolvingShot || balls.some((ball) => {
+      const data = bodyData(ball);
+      return data?.pocketing || data?.compression > 0.001 || data?.impactGlow > 0.01 || ball.speed > NATURAL_STOP_SPEED;
+    }));
+    if (!ballRendererDirty && !hasDynamicBall) return true;
     try {
       const renderBalls = balls
         .filter((ball) => !bodyData(ball)?.potted)
@@ -3334,6 +3396,7 @@
         disableBallRenderer();
         return false;
       }
+      ballRendererDirty = false;
       return true;
     } catch {
       disableBallRenderer();
@@ -3449,7 +3512,7 @@
       context.shadowColor = activeColor;
       context.lineCap = "round";
       context.shadowBlur = 2;
-      const segmentCount = 52;
+      const segmentCount = 32;
       for (let index = 0; index < segmentCount; index += 1) {
         const from = index / segmentCount;
         if (from >= activeRatio) break;
@@ -3532,7 +3595,7 @@
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
     drawTableLayer();
-    drawDateMap(timestamp);
+    drawDateMapLayer(timestamp);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
@@ -3590,9 +3653,8 @@
       accumulator = 0;
       updateEffects();
     }
-    // Cinematics cover the table; the result sheet does not. Keep the completed
-    // map alive behind the result so the ending remains on the cloth.
-    if (!cinematicActive) draw(timestamp);
+    // The completed canvas remains visible without repainting beneath the result dock.
+    if (!cinematicActive && !resultVisible) draw(timestamp);
     frameHandle = requestAnimationFrame(frame);
   }
 

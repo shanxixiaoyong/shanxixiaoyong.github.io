@@ -237,9 +237,9 @@ test("boots immediately into a playable portrait rack with bounded high-DPR outp
   assert.equal(snapshot.runState.breakCompleted, false);
   assert.equal(snapshot.runState.interest, 72);
   assert.ok(snapshot.cue.y > Math.max(...snapshot.balls.filter((ball) => ball.number > 0).map((ball) => ball.y)));
-  assert.ok(snapshot.render.width <= 1440);
-  assert.ok(snapshot.render.height <= 2880);
-  assert.ok(snapshot.render.width * snapshot.render.height <= 1440 * 2880);
+  assert.ok(snapshot.render.width <= 1200);
+  assert.ok(snapshot.render.height <= 2400);
+  assert.ok(snapshot.render.width * snapshot.render.height <= 1200 * 2400);
   assert.equal(debug.shoot(0.22), true, "the first shot must not wait for a start action");
 });
 
