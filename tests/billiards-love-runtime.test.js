@@ -151,7 +151,7 @@ test("adapts to an optional Three ball renderer and retains a per-frame 2D fallb
   assert.match(source, /ballRenderer\.resize\(/);
   assert.match(source, /ballRenderer\.sync\(renderBalls/);
   assert.match(source, /ballRenderer\.render\(timestamp\)/);
-  assert.match(source, /const pixelRatio = Math\.max\(1, Math\.min\(renderScale, MAX_BALL_RENDER_SCALE\)\)/);
+  assert.match(source, /const pixelRatio = clamp\(renderScale \* BALL_RENDER_SCALE_RATIO, MIN_BALL_RENDER_SCALE, MAX_BALL_RENDER_SCALE\)/);
   assert.match(source, /rendered === false \|\| ballRenderer\.supported === false/);
   assert.match(source, /failedCanvas\.style\.visibility = "hidden"/);
   assert.match(source, /const renderedByBallRenderer = syncBallRenderer\(timestamp\)/);
@@ -160,8 +160,10 @@ test("adapts to an optional Three ball renderer and retains a per-frame 2D fallb
 });
 
 test("keeps the 3D ball layer light enough for high-DPR portrait phones", () => {
-  assert.match(source, /const MAX_BALL_RENDER_SCALE = 3\.5/);
-  assert.match(source, /Math\.min\(renderScale, MAX_BALL_RENDER_SCALE\)/);
+  assert.match(source, /const MIN_BALL_RENDER_SCALE = 0\.78/);
+  assert.match(source, /const MAX_BALL_RENDER_SCALE = 1\.35/);
+  assert.match(source, /const BALL_RENDER_SCALE_RATIO = 0\.84/);
+  assert.match(source, /clamp\(renderScale \* BALL_RENDER_SCALE_RATIO, MIN_BALL_RENDER_SCALE, MAX_BALL_RENDER_SCALE\)/);
   assert.match(rendererSource, /new as\(this\.ballRadius,32,16\)/);
   assert.doesNotMatch(rendererSource, /antialias:!0/);
 });
@@ -178,8 +180,8 @@ test("maps touch coordinates directly into the portrait world without rotation i
 test("overrides the legacy rotated canvas and caps high-DPR rendering work", () => {
   assert.match(source, /aspectRatio: "1 \/ 2"/);
   assert.match(source, /transform: "none"/);
-  assert.match(source, /const MAX_RENDER_WIDTH = 1200/);
-  assert.match(source, /const MAX_RENDER_HEIGHT = 2400/);
+  assert.match(source, /const MAX_RENDER_WIDTH = 1080/);
+  assert.match(source, /const MAX_RENDER_HEIGHT = 2160/);
   assert.match(source, /Math\.sqrt\(MAX_RENDER_PIXELS \/ \(cssWidth \* cssHeight\)\)/);
   assert.match(source, /context\.setTransform\(canvas\.width \/ WORLD\.width/);
   assert.match(source, /window\.addEventListener\("resize", resizeCanvas\)/);
@@ -294,6 +296,7 @@ test("turns physical shots into persistent ball-color and pocket-effect state", 
   assert.match(source, /blackEightBlast: null/);
   assert.match(source, /rememberDateMoment\(0, \{/);
   assert.match(source, /function drawPocketLightPorts\(timestamp\)/);
+  assert.match(source, /function renderCushionLightResponse\(timestamp\)/);
   assert.match(source, /function drawCushionLightResponse\(timestamp\)/);
   assert.match(source, /function drawDateMapLayer\(timestamp\)/);
   assert.match(source, /const refreshDue = timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
@@ -332,6 +335,33 @@ test("uses a resettable stepped water surface as the active cloth renderer", () 
     /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/,
     "the retired geometric cloth field must not remain on the active render path"
   );
+});
+
+test("budgets material wake work and throttles expensive cloth redraws", () => {
+  assert.match(source, /const MAX_WATER_WAKE_DEPOSITS_PER_STEP = 6/);
+  assert.match(source, /waterSurface\.stepCount \+ data\.number \* 7/);
+  assert.match(source, /waterSurface\.wakeDepositsThisStep >= MAX_WATER_WAKE_DEPOSITS_PER_STEP/);
+  assert.match(source, /collisionFeedbacks\.length > 12/);
+  assert.match(source, /let dateMapFramesSinceRebuild = 0/);
+  assert.match(source, /const frameBudgetReady = dateMapFramesSinceRebuild >= 2/);
+  assert.match(source, /if \(\(!dateMapFrameCanvas \|\| refreshDue && frameBudgetReady\) && !rebuildDateMapFrame\(timestamp\)\)/);
+  assert.doesNotMatch(source, /dateMapFrameDirty \|\| refreshDue \|\| !dateMapFrameCanvas/);
+  assert.match(source, /const RAIL_LED_SEGMENT_LENGTH = 18/);
+  assert.match(source, /function rebuildCushionLightFrame\(timestamp\)/);
+  assert.match(source, /context\.drawImage\(cushionLightFrameCanvas, 0, 0, WORLD\.width, WORLD\.height\)/);
+  assert.match(source, /const collisionFeedbackSpriteCache = new Map\(\)/);
+  assert.match(source, /const COLLISION_SPRITE_CACHE_LIMIT = 9/);
+  assert.match(source, /function collisionFeedbackSpriteFor\(feedback\)/);
+  assert.match(source, /while \(collisionFeedbackSpriteCache\.size > COLLISION_SPRITE_CACHE_LIMIT\)/);
+  assert.match(source, /function scheduleCollisionFeedbackPrewarm\(material = activeSurfaceMaterial\(\)\)/);
+  assert.match(source, /window\.requestIdleCallback\(warm, \{ timeout: 160 \}\)/);
+  assert.match(source, /context\.drawImage\(sprite\.canvas, -extent, -extent, extent \* 2, extent \* 2\)/);
+});
+
+test("uploads the displacement field only when its revision changes", () => {
+  assert.match(source, /fieldRevision: waterSurface\.revision/);
+  assert.match(surfaceRendererSource, /revision != null && revision === fieldRevision/);
+  assert.match(surfaceRendererSource, /uploadField\(frame\.current, frame\.pigment, frame\.fieldWidth, frame\.fieldHeight, frame\.fieldRevision\)/);
 });
 
 test("drives sixteen ball-specific materials and organic pocket transitions from one height field", () => {
@@ -394,7 +424,7 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
   const rollingWake = implementationOf(source, "depositRollingWaterWake");
   const materialInfluence = implementationOf(source, "drawMaterialMotionTrails");
   const railBurst = implementationOf(source, "spawnChromaRailBurst");
-  const cushionLight = implementationOf(source, "drawCushionLightResponse");
+  const cushionLight = `${implementationOf(source, "renderCushionLightResponse")}\n${implementationOf(source, "drawCushionLightResponse")}`;
   const activeRendering = `${implementationOf(source, "drawDateMap")}\n${implementationOf(source, "draw")}`;
 
   assert.match(rollingUpdate, /\bdepositRollingWaterWake\(ball, data, dx, dy, travel\)/);
@@ -427,7 +457,7 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
 test("choreographs the black-eight finale through physical cushions and visible pockets", () => {
   const activeTableRenderer = implementationOf(source, "drawDateMap");
   const activeFrameRenderer = implementationOf(source, "draw");
-  const cushionLight = implementationOf(source, "drawCushionLightResponse");
+  const cushionLight = `${implementationOf(source, "renderCushionLightResponse")}\n${implementationOf(source, "drawCushionLightResponse")}`;
   const sceneLighting = implementationOf(source, "drawScenePortalLightingFrame");
 
   assert.match(activeTableRenderer, /if \(blackEightActive\) drawBlackEightBlast\(timestamp\)/);

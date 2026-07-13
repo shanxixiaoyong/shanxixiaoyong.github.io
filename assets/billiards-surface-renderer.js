@@ -487,6 +487,7 @@
     let fieldPixels = null;
     let fieldWidth = 0;
     let fieldHeight = 0;
+    let fieldRevision = null;
     let active = true;
 
     function resize(width, height) {
@@ -518,8 +519,9 @@
       previousBaseSource = source;
     }
 
-    function uploadField(current, pigment, width, height) {
+    function uploadField(current, pigment, width, height, revision) {
       const dimensionsChanged = !fieldPixels || fieldWidth !== width || fieldHeight !== height;
+      if (!dimensionsChanged && revision != null && revision === fieldRevision) return;
       if (dimensionsChanged) {
         fieldWidth = width;
         fieldHeight = height;
@@ -544,6 +546,7 @@
       } else {
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, fieldPixels);
       }
+      fieldRevision = revision ?? null;
     }
 
     function render(frame) {
@@ -552,7 +555,7 @@
         resize(frame.width, frame.height);
         uploadBase(frame.base);
         uploadPreviousBase(frame.previousBase || frame.base);
-        uploadField(frame.current, frame.pigment, frame.fieldWidth, frame.fieldHeight);
+        uploadField(frame.current, frame.pigment, frame.fieldWidth, frame.fieldHeight, frame.fieldRevision);
         gl.useProgram(program);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, baseTexture);

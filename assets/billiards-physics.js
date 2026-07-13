@@ -303,20 +303,43 @@
     return true;
   }
 
-  function closestPointOnRectangle(ball, rail) {
+  function railGeometry(rail) {
+    const cached = rail.plugin?.billiardsPhysicsGeometry;
+    if (cached) return cached;
     const cosine = Math.cos(rail.angle);
     const sine = Math.sin(rail.angle);
+    const halfWidth = rail.width / 2;
+    const halfHeight = rail.height / 2;
+    const geometry = {
+      cosine,
+      sine,
+      halfWidth,
+      halfHeight,
+      extentX: Math.abs(cosine) * halfWidth + Math.abs(sine) * halfHeight,
+      extentY: Math.abs(sine) * halfWidth + Math.abs(cosine) * halfHeight
+    };
+    if (rail.plugin) rail.plugin.billiardsPhysicsGeometry = geometry;
+    return geometry;
+  }
+
+  function ballNearRectangle(ball, rail, margin = 0) {
+    const geometry = railGeometry(rail);
+    const reach = ball.circleRadius + margin;
+    return Math.abs(ball.position.x - rail.position.x) <= geometry.extentX + reach
+      && Math.abs(ball.position.y - rail.position.y) <= geometry.extentY + reach;
+  }
+
+  function closestPointOnRectangle(ball, rail) {
+    const { cosine, sine, halfWidth, halfHeight } = railGeometry(rail);
     const dx = ball.position.x - rail.position.x;
     const dy = ball.position.y - rail.position.y;
     const localX = dx * cosine + dy * sine;
     const localY = -dx * sine + dy * cosine;
-    const halfWidth = rail.width / 2;
-    const halfHeight = rail.height / 2;
     const closestX = clamp(localX, -halfWidth, halfWidth);
     const closestY = clamp(localY, -halfHeight, halfHeight);
     let differenceX = localX - closestX;
     let differenceY = localY - closestY;
-    let distance = Math.hypot(differenceX, differenceY);
+    let distance = Math.sqrt(differenceX * differenceX + differenceY * differenceY);
     let penetration;
 
     if (distance < EPSILON) {
@@ -350,6 +373,7 @@
 
   function resolveRailCollision(ball, rail, collisions, seen) {
     if (ball.isSensor || ball.collisionFilter.mask === 0) return false;
+    if (!ballNearRectangle(ball, rail)) return false;
     const contact = closestPointOnRectangle(ball, rail);
     if (!contact) return false;
     const { normal, penetration } = contact;

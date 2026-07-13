@@ -24,6 +24,13 @@
   let dateMapFrameContext = null;
   let dateMapFrameUpdatedAt = -Infinity;
   let dateMapFrameDirty = true;
+  let dateMapFramesSinceRebuild = 0;
+  let cushionLightFrameCanvas = null;
+  let cushionLightFrameContext = null;
+  let cushionLightFrameUpdatedAt = -Infinity;
+  let cushionLightFrameDirty = true;
+  let cushionLightFramesSinceRebuild = 0;
+  let cushionLightHadActivity = false;
   let sceneLightingFrameCanvas = null;
   let sceneLightingFrameContext = null;
   let sceneLightingFrameUpdatedAt = -Infinity;
@@ -119,10 +126,12 @@
   const POCKET_STORY_SLOW_MOTION_MS = 460;
   const POCKET_STORY_TIME_SCALE = 0.24;
   const TABLE_MOMENT_DEFAULT_DURATION = 1500;
-  const MAX_RENDER_WIDTH = 1200;
-  const MAX_RENDER_HEIGHT = 2400;
+  const MAX_RENDER_WIDTH = 1080;
+  const MAX_RENDER_HEIGHT = 2160;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
-  const MAX_BALL_RENDER_SCALE = 3.5;
+  const MIN_BALL_RENDER_SCALE = 0.78;
+  const MAX_BALL_RENDER_SCALE = 1.35;
+  const BALL_RENDER_SCALE_RATIO = 0.84;
   const DATE_MAP_REFRESH_MS = 1000 / 30;
   const SCENE_PORTAL_DURATION_MS = 1120;
   const WATER_GRID_WIDTH = 144;
@@ -130,7 +139,12 @@
   const WATER_STEP_MS = 1000 / 30;
   const WATER_DAMPING = 0.986;
   const WATER_MAX_HEIGHT = 3.2;
-  const RAIL_LED_SEGMENT_LENGTH = 9;
+  const MAX_WATER_WAKE_DEPOSITS_PER_STEP = 6;
+  const RAIL_LED_SEGMENT_LENGTH = 18;
+  const COLLISION_SPRITE_BASE_RADIUS = 72;
+  const COLLISION_SPRITE_EXTENT = 132;
+  const COLLISION_SPRITE_RENDER_SCALE = 2;
+  const COLLISION_SPRITE_CACHE_LIMIT = 9;
   const RAIL_WAVE_LIFETIME_MS = 2100;
   const RAIL_WAVE_SPEED = 920;
   const CUE_SPOT = Object.freeze({ x: WORLD.width / 2, y: 1080 });
@@ -775,6 +789,9 @@
   let pocketBursts = [];
   let storyTrails = [];
   let collisionFeedbacks = [];
+  const collisionFeedbackSpriteCache = new Map();
+  let pendingMaterialCollision = null;
+  let lastMaterialCollisionFlushStep = -1;
   let collisionCount = 0;
   let microQueue = [];
   let microTimer = 0;
@@ -943,8 +960,10 @@
     if (previous !== material.id && waterSurface) {
       waterSurface.pigment.fill(0);
       waterSurface.pigmentNext.fill(0);
+      waterSurface.revision += 1;
     }
     ensureSurfaceTexture(material.id);
+    scheduleCollisionFeedbackPrewarm(material);
     syncSurfaceMaterialUI();
     if (options.animate !== false) {
       const impulse = material.id === "ink" ? -2.35 : material.id === "eclipse" ? -2.72 : material.id === "lava" ? 2.25 : 1.82;
@@ -1499,6 +1518,8 @@
     pocketBursts = [];
     storyTrails = [];
     collisionFeedbacks = [];
+    pendingMaterialCollision = null;
+    lastMaterialCollisionFlushStep = -1;
     collisionCount = 0;
     microQueue = [];
     cinematicQueue = [];
@@ -1513,6 +1534,11 @@
     resetWaterSurface();
     dateMapFrameDirty = true;
     dateMapFrameUpdatedAt = -Infinity;
+    dateMapFramesSinceRebuild = 0;
+    cushionLightFrameUpdatedAt = -Infinity;
+    cushionLightFrameDirty = true;
+    cushionLightFramesSinceRebuild = 0;
+    cushionLightHadActivity = false;
     sceneLightingFrameDirty = true;
     sceneLightingFrameUpdatedAt = -Infinity;
     ballRendererDirty = true;
@@ -2755,6 +2781,7 @@
         color
       });
     }
+    if (particles.length > 96) particles.splice(0, particles.length - 96);
   }
 
   function collisionMaterialFamily(materialId) {
@@ -2851,10 +2878,30 @@
       normalY: direction.y,
       seed
     });
-    if (collisionFeedbacks.length > 20) collisionFeedbacks.splice(0, collisionFeedbacks.length - 20);
+    if (collisionFeedbacks.length > 12) collisionFeedbacks.splice(0, collisionFeedbacks.length - 12);
+  }
+
+  function queueMaterialCollisionResponse(contact, normal, relative, numbers = []) {
+    if (pendingMaterialCollision && pendingMaterialCollision.relative >= relative) return;
+    pendingMaterialCollision = {
+      contact: { x: contact.x, y: contact.y },
+      normal: { x: normal.x, y: normal.y },
+      relative,
+      numbers: [...numbers]
+    };
+  }
+
+  function flushMaterialCollisionResponse() {
+    const flushStep = Math.floor(simulationTime / WATER_STEP_MS);
+    if (flushStep === lastMaterialCollisionFlushStep || !pendingMaterialCollision) return;
+    lastMaterialCollisionFlushStep = flushStep;
+    const pending = pendingMaterialCollision;
+    pendingMaterialCollision = null;
+    spawnMaterialCollisionResponse(pending.contact, pending.normal, pending.relative, pending.numbers);
   }
 
   function updateEffects() {
+    flushMaterialCollisionResponse();
     particles.forEach((particle) => {
       particle.x += particle.vx;
       particle.y += particle.vy;
@@ -4543,7 +4590,10 @@
       stepCount: 0,
       energy: 0,
       lastBlackEightImpulse: -1,
-      lastSurfaceTransitionImpulse: -1
+      lastSurfaceTransitionImpulse: -1,
+      revision: 0,
+      wakeBudgetStep: -1,
+      wakeDepositsThisStep: 0
     };
   }
 
@@ -4562,6 +4612,9 @@
     waterSurface.energy = 0;
     waterSurface.lastBlackEightImpulse = -1;
     waterSurface.lastSurfaceTransitionImpulse = -1;
+    waterSurface.revision += 1;
+    waterSurface.wakeBudgetStep = -1;
+    waterSurface.wakeDepositsThisStep = 0;
     const centerX = TABLE.left + (TABLE.right - TABLE.left) * 0.5;
     const centerY = TABLE.top + (TABLE.bottom - TABLE.top) * 0.56;
     disturbWaterWorld(centerX, centerY, 0.14, 84);
@@ -4592,10 +4645,14 @@
     const maxX = Math.min(waterSurface.width - 2, Math.ceil(point.x + radius));
     const minY = Math.max(1, Math.floor(point.y - radius));
     const maxY = Math.min(waterSurface.height - 2, Math.ceil(point.y + radius));
+    let changed = false;
     for (let y = minY; y <= maxY; y += 1) {
       for (let x = minX; x <= maxX; x += 1) {
-        const distanceRatio = Math.hypot(x - point.x, y - point.y) / radius;
-        if (distanceRatio >= 1) continue;
+        const normalizedX = (x - point.x) / radius;
+        const normalizedY = (y - point.y) / radius;
+        const distanceSquared = normalizedX * normalizedX + normalizedY * normalizedY;
+        if (distanceSquared >= 1) continue;
+        const distanceRatio = Math.sqrt(distanceSquared);
         const falloff = 0.5 + Math.cos(distanceRatio * Math.PI) * 0.5;
         const index = y * waterSurface.width + x;
         waterSurface.current[index] = clamp(
@@ -4610,8 +4667,10 @@
             1
           );
         }
+        changed = true;
       }
     }
+    if (changed) waterSurface.revision += 1;
   }
 
   function disturbMaterialWorld(worldX, worldY, amplitude, radiusXWorld, radiusYWorld, angle, phase = 0) {
@@ -4629,21 +4688,26 @@
     const point = waterGridPoint(worldX, worldY);
     const cellWidth = (TABLE.right - TABLE.left) / (waterSurface.width - 1);
     const cellHeight = (TABLE.bottom - TABLE.top) / (waterSurface.height - 1);
-    const radiusCells = Math.ceil(reach / Math.min(cellWidth, cellHeight));
-    const minX = Math.max(1, Math.floor(point.x - radiusCells));
-    const maxX = Math.min(waterSurface.width - 2, Math.ceil(point.x + radiusCells));
-    const minY = Math.max(1, Math.floor(point.y - radiusCells));
-    const maxY = Math.min(waterSurface.height - 2, Math.ceil(point.y + radiusCells));
     const cosine = Math.cos(angle);
     const sine = Math.sin(angle);
+    const extentX = Math.sqrt(radiusX * radiusX * cosine * cosine + radiusY * radiusY * sine * sine);
+    const extentY = Math.sqrt(radiusX * radiusX * sine * sine + radiusY * radiusY * cosine * cosine);
+    const minX = Math.max(1, Math.floor(point.x - extentX / cellWidth));
+    const maxX = Math.min(waterSurface.width - 2, Math.ceil(point.x + extentX / cellWidth));
+    const minY = Math.max(1, Math.floor(point.y - extentY / cellHeight));
+    const maxY = Math.min(waterSurface.height - 2, Math.ceil(point.y + extentY / cellHeight));
+    let changed = false;
     for (let y = minY; y <= maxY; y += 1) {
       for (let x = minX; x <= maxX; x += 1) {
         const worldDx = (x - point.x) * cellWidth;
         const worldDy = (y - point.y) * cellHeight;
         const localX = worldDx * cosine + worldDy * sine;
         const localY = -worldDx * sine + worldDy * cosine;
-        const distanceRatio = Math.hypot(localX / radiusX, localY / radiusY);
-        if (distanceRatio >= 1) continue;
+        const normalizedX = localX / radiusX;
+        const normalizedY = localY / radiusY;
+        const distanceSquared = normalizedX * normalizedX + normalizedY * normalizedY;
+        if (distanceSquared >= 1) continue;
+        const distanceRatio = Math.sqrt(distanceSquared);
         const baseFalloff = 0.5 + Math.cos(distanceRatio * Math.PI) * 0.5;
         const grain = 0.78
           + Math.sin(localX * 0.075 + phase) * 0.12
@@ -4662,8 +4726,10 @@
             1
           );
         }
+        changed = true;
       }
     }
+    if (changed) waterSurface.revision += 1;
   }
 
   function depositRollingWaterWake(ball, data, dx, dy, travel) {
@@ -4686,7 +4752,13 @@
     const phase = waterSurface.stepCount * 0.23 + data.number * 1.71;
     const cadence = ["amethyst", "rose-quartz"].includes(material.id) ? 5
       : ["galaxy", "abyss", "eclipse", "ink", "jade-mist"].includes(material.id) ? 4 : 3;
-    if ((waterSurface.stepCount + data.number * 3) % cadence !== 0) return;
+    if ((waterSurface.stepCount + data.number * 7) % cadence !== 0) return;
+    if (waterSurface.wakeBudgetStep !== waterSurface.stepCount) {
+      waterSurface.wakeBudgetStep = waterSurface.stepCount;
+      waterSurface.wakeDepositsThisStep = 0;
+    }
+    if (waterSurface.wakeDepositsThisStep >= MAX_WATER_WAKE_DEPOSITS_PER_STEP) return;
+    waterSurface.wakeDepositsThisStep += 1;
     const heading = Math.atan2(direction.y, direction.x);
     if (material.id === "circuit") {
       const grid = 36;
@@ -4782,6 +4854,7 @@
     waterSurface.pigmentNext = pigment;
     waterSurface.pigmentNext.fill(0);
     waterSurface.stepCount += 1;
+    waterSurface.revision += 1;
     waterSurface.energy = clamp(energy / (width * height * 0.34), 0, 1);
     dateMapState.waterEnergy = waterSurface.energy;
   }
@@ -4940,6 +5013,7 @@
         materialId: surfaceMaterialId,
         current: waterSurface.current,
         pigment: waterSurface.pigment,
+        fieldRevision: waterSurface.revision,
         fieldWidth: waterSurface.width,
         fieldHeight: waterSurface.height,
         width,
@@ -5187,7 +5261,7 @@
     return Math.min(direct, perimeter - direct);
   }
 
-  function drawCushionLightResponse(timestamp) {
+  function renderCushionLightResponse(timestamp) {
     const perimeter = railPerimeterLength();
     const surface = activeSurfaceMaterial();
     const baseColor = colorChannels(surface.rail);
@@ -5280,6 +5354,53 @@
     context.shadowBlur = 0;
     dateMapState.railWavePeak = peak;
     context.restore();
+  }
+
+  function ensureCushionLightFrameCanvas() {
+    if (cushionLightFrameCanvas && cushionLightFrameContext) return true;
+    const cache = document.createElement("canvas");
+    if (typeof cache.getContext !== "function") return false;
+    cache.width = WORLD.width;
+    cache.height = WORLD.height;
+    const cacheContext = cache.getContext("2d", { alpha: true });
+    if (!cacheContext) return false;
+    cushionLightFrameCanvas = cache;
+    cushionLightFrameContext = cacheContext;
+    cushionLightFrameDirty = true;
+    return true;
+  }
+
+  function rebuildCushionLightFrame(timestamp) {
+    if (!ensureCushionLightFrameCanvas()) return false;
+    const liveContext = context;
+    try {
+      context = cushionLightFrameContext;
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, WORLD.width, WORLD.height);
+      renderCushionLightResponse(timestamp);
+    } finally {
+      context = liveContext;
+    }
+    cushionLightFrameUpdatedAt = timestamp;
+    cushionLightFrameDirty = false;
+    cushionLightFramesSinceRebuild = 0;
+    return true;
+  }
+
+  function drawCushionLightResponse(timestamp) {
+    cushionLightFramesSinceRebuild += 1;
+    const active = dateMapState.railBursts.length > 0 || Boolean(dateMapState.blackEightBlast);
+    const needsFinalClear = cushionLightHadActivity && !active;
+    const refreshDue = timestamp - cushionLightFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
+    const frameBudgetReady = cushionLightFramesSinceRebuild >= 2;
+    if ((!cushionLightFrameCanvas
+        || (active || needsFinalClear || cushionLightFrameDirty) && refreshDue && frameBudgetReady)
+        && !rebuildCushionLightFrame(timestamp)) {
+      renderCushionLightResponse(timestamp);
+      return;
+    }
+    cushionLightHadActivity = active;
+    context.drawImage(cushionLightFrameCanvas, 0, 0, WORLD.width, WORLD.height);
   }
 
   function drawPocketLightPorts(timestamp) {
@@ -6428,12 +6549,15 @@
     }
     dateMapFrameUpdatedAt = timestamp;
     dateMapFrameDirty = false;
+    dateMapFramesSinceRebuild = 0;
     return true;
   }
 
   function drawDateMapLayer(timestamp) {
+    dateMapFramesSinceRebuild += 1;
     const refreshDue = timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
-    if ((dateMapFrameDirty || refreshDue || !dateMapFrameCanvas) && !rebuildDateMapFrame(timestamp)) {
+    const frameBudgetReady = dateMapFramesSinceRebuild >= 2;
+    if ((!dateMapFrameCanvas || refreshDue && frameBudgetReady) && !rebuildDateMapFrame(timestamp)) {
       drawDateMap(timestamp);
       return;
     }
@@ -6554,7 +6678,7 @@
     if (!ballRenderer || !ballRendererCanvas) return false;
     try {
       const rect = ballRendererCanvas.getBoundingClientRect();
-      const pixelRatio = Math.max(1, Math.min(renderScale, MAX_BALL_RENDER_SCALE));
+      const pixelRatio = clamp(renderScale * BALL_RENDER_SCALE_RATIO, MIN_BALL_RENDER_SCALE, MAX_BALL_RENDER_SCALE);
       ballRenderer.resize(Math.max(1, rect.width), Math.max(1, rect.height), pixelRatio);
       if (ballRenderer.supported === false) throw new Error("BilliardsBallRenderer resize failed");
       ballRendererDirty = true;
@@ -6581,7 +6705,7 @@
         table: { ...TABLE },
         ballRadius: BALL_RADIUS,
         colors: BALL_COLORS,
-        pixelRatio: Math.max(1, Math.min(renderScale, MAX_BALL_RENDER_SCALE))
+        pixelRatio: clamp(renderScale * BALL_RENDER_SCALE_RATIO, MIN_BALL_RENDER_SCALE, MAX_BALL_RENDER_SCALE)
       };
       ballRenderer = factory ? factory(options) : new Renderer(options);
       if (typeof ballRenderer?.resize !== "function"
@@ -6819,7 +6943,7 @@
     context.fillRect(-radius, -radius, radius * 2, radius * 2);
   }
 
-  function drawMaterialCollisionFeedback(feedback) {
+  function renderMaterialCollisionFeedback(feedback) {
     const progress = 1 - feedback.life;
     const alpha = feedback.life * feedback.intensity;
     const random = seededSurfaceRandom(Math.floor(feedback.seed * 100003));
@@ -6978,6 +7102,103 @@
     context.restore();
   }
 
+  function collisionFeedbackIntensityBucket(intensity) {
+    if (intensity < 0.46) return 0.38;
+    if (intensity < 0.78) return 0.64;
+    return 0.92;
+  }
+
+  function collisionFeedbackSpriteFor(feedback) {
+    const intensity = collisionFeedbackIntensityBucket(feedback.intensity);
+    const key = `${feedback.materialId}:${feedback.family}:${intensity}`;
+    if (collisionFeedbackSpriteCache.has(key)) {
+      const cached = collisionFeedbackSpriteCache.get(key);
+      collisionFeedbackSpriteCache.delete(key);
+      collisionFeedbackSpriteCache.set(key, cached);
+      return cached;
+    }
+    const sprite = document.createElement("canvas");
+    const size = COLLISION_SPRITE_EXTENT * 2;
+    sprite.width = Math.ceil(size * COLLISION_SPRITE_RENDER_SCALE);
+    sprite.height = Math.ceil(size * COLLISION_SPRITE_RENDER_SCALE);
+    const spriteContext = sprite.getContext("2d", { alpha: true });
+    if (!spriteContext) return null;
+    const liveContext = context;
+    try {
+      context = spriteContext;
+      context.setTransform(
+        COLLISION_SPRITE_RENDER_SCALE,
+        0,
+        0,
+        COLLISION_SPRITE_RENDER_SCALE,
+        0,
+        0
+      );
+      renderMaterialCollisionFeedback({
+        ...feedback,
+        x: COLLISION_SPRITE_EXTENT,
+        y: COLLISION_SPRITE_EXTENT,
+        radius: COLLISION_SPRITE_BASE_RADIUS,
+        life: 1,
+        intensity,
+        normalX: 1,
+        normalY: 0,
+        seed: [...feedback.materialId].reduce((seed, character) => seed * 31 + character.charCodeAt(0), 17) + intensity * 100
+      });
+    } finally {
+      context = liveContext;
+    }
+    const cached = Object.freeze({ canvas: sprite, extent: COLLISION_SPRITE_EXTENT });
+    collisionFeedbackSpriteCache.set(key, cached);
+    while (collisionFeedbackSpriteCache.size > COLLISION_SPRITE_CACHE_LIMIT) {
+      collisionFeedbackSpriteCache.delete(collisionFeedbackSpriteCache.keys().next().value);
+    }
+    return cached;
+  }
+
+  function prewarmCollisionFeedbackSprites(material = activeSurfaceMaterial()) {
+    const family = collisionMaterialFamily(material.id);
+    [0.38, 0.64, 0.92].forEach((intensity) => {
+      collisionFeedbackSpriteFor({
+        materialId: material.id,
+        family,
+        intensity,
+        color: material.rail,
+        secondary: material.railSecondary || material.rail,
+        normalX: 1,
+        normalY: 0,
+        seed: intensity * 100
+      });
+    });
+  }
+
+  function scheduleCollisionFeedbackPrewarm(material = activeSurfaceMaterial()) {
+    const warm = () => prewarmCollisionFeedbackSprites(material);
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(warm, { timeout: 160 });
+    } else {
+      setTimeout(warm, 16);
+    }
+  }
+
+  function drawMaterialCollisionFeedback(feedback) {
+    const sprite = collisionFeedbackSpriteFor(feedback);
+    if (!sprite) {
+      renderMaterialCollisionFeedback(feedback);
+      return;
+    }
+    const progress = 1 - feedback.life;
+    const scale = clamp(feedback.radius / COLLISION_SPRITE_BASE_RADIUS, 0.16, 1.08);
+    const extent = sprite.extent * scale;
+    context.save();
+    context.translate(feedback.x, feedback.y);
+    context.rotate(Math.atan2(feedback.normalY, feedback.normalX) + (feedback.family === "eclipse" ? progress * 1.4 : 0));
+    context.globalAlpha = feedback.life;
+    context.globalCompositeOperation = feedback.family === "ink" ? "multiply" : "screen";
+    context.drawImage(sprite.canvas, -extent, -extent, extent * 2, extent * 2);
+    context.restore();
+  }
+
   function drawEffects() {
     context.save();
     particles.forEach((particle) => {
@@ -7106,7 +7327,7 @@
           x: (bodyA.position.x + bodyB.position.x) / 2,
           y: (bodyA.position.y + bodyB.position.y) / 2
         };
-        spawnMaterialCollisionResponse(contact, normal, relative, [dataA.number, dataB.number]);
+        queueMaterialCollisionResponse(contact, normal, relative, [dataA.number, dataB.number]);
         spawnParticles(contact.x, contact.y, activeSurfaceMaterial().rail, Math.min(6, Math.ceil(relative / 3.5)));
         screenShake = Math.max(screenShake, Math.min(2.8, relative * 0.06));
       }
@@ -7228,6 +7449,7 @@
   buildRails();
   buildTimeline();
   rackBalls();
+  scheduleCollisionFeedbackPrewarm();
   if (coachSeen) elements.coach.classList.add("is-gone");
   syncUI();
   root.dataset.state = "break";

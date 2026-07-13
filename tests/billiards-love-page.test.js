@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-individual-materials-20260713d";
-const styleCacheVersion = "billiards-individual-materials-20260713d";
+const runtimeCacheVersion = "billiards-performance-cache-20260713e";
+const styleCacheVersion = "billiards-performance-cache-20260713e";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -406,7 +406,7 @@ test("integrates shot telemetry, persistent water and rail state, and pocket slo
   const rollingUpdate = implementationOf(game, "updateRollingState");
   const rollingWake = implementationOf(game, "depositRollingWaterWake");
   const railBurst = implementationOf(game, "spawnChromaRailBurst");
-  const cushionLight = implementationOf(game, "drawCushionLightResponse");
+  const cushionLight = `${implementationOf(game, "renderCushionLightResponse")}\n${implementationOf(game, "drawCushionLightResponse")}`;
   for (const token of ["hb-table-reflection", "hb-pocket-focus"]) {
     assert.match(tableStory, new RegExp(token));
   }
@@ -521,7 +521,7 @@ test("keeps a compact result dock and reserves the largest effect for black 8", 
   assert.match(game, /function beginFinalDateMapReveal\(outcome\)/);
   assert.match(game, /dateMapState\.blackEightBlast = \{/);
   assert.match(game, /duration: success \? 4400 : 3200/);
-  const cushionLight = implementationOf(game, "drawCushionLightResponse");
+  const cushionLight = `${implementationOf(game, "renderCushionLightResponse")}\n${implementationOf(game, "drawCushionLightResponse")}`;
   const activeFrameRenderer = implementationOf(game, "draw");
   assert.match(activeFrameRenderer, /drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
   assert.match(cushionLight, /dateMapState\.blackEightBlast/);
