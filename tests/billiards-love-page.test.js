@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-worlds-20260713b";
-const styleCacheVersion = "billiards-worlds-20260713b";
+const runtimeCacheVersion = "billiards-worlds-20260713c";
+const styleCacheVersion = "billiards-worlds-20260713c";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

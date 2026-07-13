@@ -102,8 +102,8 @@
         + fieldAt(vUv + vec2(0.0, uFieldTexel.y * 2.6))
         + fieldAt(vUv - vec2(0.0, uFieldTexel.y * 2.6))) * 0.25;
       float broadHeight = wideField.r * 2.0 - 1.0;
-      float influence = clamp(slope * 5.6 + abs(height - broadHeight) * 1.08
-        + abs(broadHeight) * 0.36 + pigment * 0.78 + uBlast * 0.22, 0.0, 1.0);
+      float influence = clamp(slope * 6.25 + abs(height - broadHeight) * 1.18
+        + abs(broadHeight) * 0.4 + pigment * 0.9 + uBlast * 0.22, 0.0, 1.0);
       float time = uTime;
       vec2 uv = vUv;
       vec3 color;
@@ -297,6 +297,14 @@
         color += vec3(1.0, 0.24, 0.5) * rose * influence * pearl * 0.24;
         color = max(color, original * 0.79);
       }
+
+      float motionPresence = smoothstep(0.055, 0.74, influence + pigment * 0.28);
+      float motionCrest = smoothstep(0.026, 0.24, slope + pigmentEdge * 1.45);
+      float motionPulse = 0.84 + 0.16 * sin(time * 2.35 + height * 10.0);
+      float crestGain = motionPresence * motionCrest * motionPulse * (0.055 + uEnergy * 0.08);
+      vec3 reactiveLift = mix(color, vec3(1.0), uMaterial == 4 ? 0.14 : 0.28);
+      color += reactiveLift * crestGain;
+      color *= 1.0 + motionPresence * (0.018 + uEnergy * 0.035);
 
       if (uTransitionActive > 0.5) {
         float coarseFlow = softNoise(vUv * vec2(4.2, 7.4) + vec2(time * 0.11, -time * 0.075));

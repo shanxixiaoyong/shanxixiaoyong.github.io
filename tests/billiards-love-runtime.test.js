@@ -340,6 +340,8 @@ test("uses a resettable stepped water surface as the active cloth renderer", () 
 });
 
 test("budgets material wake work and throttles expensive cloth redraws", () => {
+  assert.match(source, /const WATER_GRID_WIDTH = 128/);
+  assert.match(source, /const WATER_GRID_HEIGHT = 256/);
   assert.match(source, /const MAX_WATER_WAKE_DEPOSITS_PER_STEP = 6/);
   assert.match(source, /waterSurface\.stepCount \+ data\.number \* 7/);
   assert.match(source, /waterSurface\.wakeDepositsThisStep >= MAX_WATER_WAKE_DEPOSITS_PER_STEP/);
@@ -362,6 +364,16 @@ test("budgets material wake work and throttles expensive cloth redraws", () => {
   assert.match(texturePreload, /const loadOne = \(\) =>/);
   assert.match(texturePreload, /queueNext\(420\)/);
   assert.doesNotMatch(texturePreload, /pending\.forEach|while \(pending\.length/);
+  const surfaceArtwork = implementationOf(source, "createSurfaceArtwork");
+  const surfaceTexture = implementationOf(source, "drawSurfaceTexture");
+  assert.match(source, /const SURFACE_AMBIENT_PROFILES = Object\.freeze\(\{/);
+  assert.match(surfaceArtwork, /const scale = 1\.05/);
+  assert.match(surfaceTexture, /target\.filter = ambientProfile\.filter/);
+  assert.match(surfaceTexture, /target\.filter = "none"/);
+  assert.match(surfaceTexture, /const overscan = 8/);
+  assert.match(surfaceRendererSource, /float motionPresence = smoothstep/);
+  assert.match(surfaceRendererSource, /float motionCrest = smoothstep/);
+  assert.match(surfaceRendererSource, /color \+= reactiveLift \* crestGain/);
 });
 
 test("uploads the displacement field only when its revision changes", () => {

@@ -138,8 +138,8 @@
   const BALL_RENDER_SCALE_RATIO = 1;
   const DATE_MAP_REFRESH_MS = 1000 / 30;
   const SCENE_PORTAL_DURATION_MS = 1120;
-  const WATER_GRID_WIDTH = 144;
-  const WATER_GRID_HEIGHT = 288;
+  const WATER_GRID_WIDTH = 128;
+  const WATER_GRID_HEIGHT = 256;
   const WATER_STEP_MS = 1000 / 30;
   const WATER_DAMPING = 0.986;
   const WATER_MAX_HEIGHT = 3.2;
@@ -192,6 +192,46 @@
   const POCKET_VFX_BY_ID = Object.freeze(Object.fromEntries(
     Object.values(POCKET_VFX_PROFILES).map((profile) => [profile.id, profile])
   ));
+  const SURFACE_AMBIENT_PROFILES = Object.freeze({
+    paper: Object.freeze({
+      filter: "blur(2px) saturate(0.58) contrast(0.76) brightness(0.88)",
+      veilTop: "rgba(8,15,14,0.04)",
+      veilBottom: "rgba(3,9,9,0.11)"
+    }),
+    cool: Object.freeze({
+      filter: "blur(2.4px) saturate(0.68) contrast(0.78) brightness(0.86)",
+      veilTop: "rgba(1,9,16,0.05)",
+      veilBottom: "rgba(0,5,12,0.12)"
+    }),
+    ember: Object.freeze({
+      filter: "blur(2.2px) saturate(0.72) contrast(0.78) brightness(0.84)",
+      veilTop: "rgba(12,5,2,0.05)",
+      veilBottom: "rgba(8,2,1,0.12)"
+    }),
+    deep: Object.freeze({
+      filter: "blur(2.6px) saturate(0.72) contrast(0.8) brightness(0.84)",
+      veilTop: "rgba(2,5,12,0.05)",
+      veilBottom: "rgba(0,2,8,0.13)"
+    })
+  });
+  const SURFACE_AMBIENT_GROUPS = Object.freeze({
+    ink: "paper",
+    amber: "paper",
+    lava: "ember",
+    gold: "ember",
+    "solar-porcelain": "ember",
+    amethyst: "cool",
+    emerald: "cool",
+    abyss: "cool",
+    "jade-mist": "cool",
+    galaxy: "deep",
+    circuit: "deep",
+    burgundy: "deep",
+    eclipse: "deep",
+    "crimson-storm": "deep",
+    copper: "deep",
+    "rose-quartz": "deep"
+  });
   const SURFACE_MATERIALS = Object.freeze([
     Object.freeze({ id: "gold", label: "时间流淌", rail: "#ddb55f", railSecondary: "#547dae", damping: 0.981, disturbance: 1.24, radius: 0.94, wake: 1.38, tail: 1.46, railSpeed: 0.92, railWidth: 1.24, railGain: 1.34, traceDecay: 0.974, traceDiffuse: 0.026, traceDeposit: 0.38, trailLife: 2900 }),
     Object.freeze({ id: "galaxy", label: "星际漩涡", rail: "#72cfff", railSecondary: "#8d62ff", damping: 0.988, disturbance: 0.96, radius: 1.22, wake: 1.12, tail: 1.82, railSpeed: 0.72, railWidth: 1.42, railGain: 1.12, traceDecay: 0.965, traceDiffuse: 0.032, traceDeposit: 0.25, trailLife: 3200 }),
@@ -4453,7 +4493,7 @@
     if (!target) return null;
     const width = TABLE.right - TABLE.left;
     const height = TABLE.bottom - TABLE.top;
-    const scale = 1.25;
+    const scale = 1.05;
     artwork.width = Math.round(width * scale);
     artwork.height = Math.round(height * scale);
     target.setTransform(scale, 0, 0, scale, 0, 0);
@@ -4544,14 +4584,28 @@
     target.save();
     target.imageSmoothingEnabled = true;
     target.imageSmoothingQuality = "high";
-    target.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, 0, 0, width, height);
+    const ambientProfile = SURFACE_AMBIENT_PROFILES[SURFACE_AMBIENT_GROUPS[materialId]]
+      || SURFACE_AMBIENT_PROFILES.deep;
+    const overscan = 8;
+    target.filter = ambientProfile.filter;
+    target.drawImage(
+      image,
+      sourceX,
+      sourceY,
+      cropWidth,
+      cropHeight,
+      -overscan,
+      -overscan,
+      width + overscan * 2,
+      height + overscan * 2
+    );
+    target.filter = "none";
 
-    // Preserve each world's authored palette; this neutral veil only keeps balls legible.
+    // The authored world stays recognizable, while motion restores the local detail.
     const readability = target.createLinearGradient(0, 0, width, height);
-    const brightWorld = ["ink", "amber", "gold", "amethyst"].includes(materialId);
-    readability.addColorStop(0, `rgba(0,0,0,${brightWorld ? 0.025 : 0.005})`);
-    readability.addColorStop(0.5, `rgba(0,0,0,${brightWorld ? 0.075 : 0.035})`);
-    readability.addColorStop(1, `rgba(0,0,0,${brightWorld ? 0.15 : 0.1})`);
+    readability.addColorStop(0, ambientProfile.veilTop);
+    readability.addColorStop(0.52, "rgba(0,0,0,0.04)");
+    readability.addColorStop(1, ambientProfile.veilBottom);
     target.fillStyle = readability;
     target.fillRect(0, 0, width, height);
 
