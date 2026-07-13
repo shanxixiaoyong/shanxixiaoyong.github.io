@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-worlds-20260713a";
-const styleCacheVersion = "billiards-worlds-20260713a";
+const runtimeCacheVersion = "billiards-worlds-20260713b";
+const styleCacheVersion = "billiards-worlds-20260713b";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -447,6 +447,8 @@ test("integrates shot telemetry, persistent water and rail state, and pocket slo
     /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/
   );
   assert.match(game, /function drawPocketLightPorts\(timestamp\)/);
+  assert.match(game, /function drawBallSeparationLayer\(ball\)/);
+  assert.match(activeFrameRenderer, /drawPocketLightPorts\(timestamp\)[\s\S]*balls\.forEach\(drawBallSeparationLayer\)[\s\S]*syncBallRenderer\(timestamp\)/);
   assert.doesNotMatch(game, /function drawBlackEightLedChoreography\(/);
   assert.match(game, /function drawScenePortalLighting\(timestamp\)/);
   assert.match(game, /drawScenePortalLighting\(/);

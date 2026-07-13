@@ -47,7 +47,8 @@ test("builds high-resolution world textures, physically lit spheres, and separat
   assert.ok(source.includes("equirectangular-map"));
   assert.equal((source.match(/Object\.freeze\(\{key:"/g) || []).length, 16, "every ball should have a dedicated world material");
   assert.match(source, /roughness:n\.roughness,metalness:n\.metalness/);
-  assert.match(source, /emissive:n\.emissive\|\|"#000000"/);
+  assert.match(source, /emissive:n\.emissive\|\|n\.primary/);
+  assert.match(source, /emissiveIntensity:Math\.max\(n\.emissiveIntensity\|\|0,t===0\?\.06:\.11\)/);
   assert.ok(source.includes("billiards-hemisphere-fill"));
   assert.ok(source.includes("billiards-key-light"));
   assert.ok(source.includes("billiards-warm-rim-light"));
@@ -121,9 +122,10 @@ test("keeps a high-contrast world badge painted over every object-ball texture",
 
   assert.ok(artworkCall > 0 && badgeCall > artworkCall, "number badges must be painted after world artwork");
   assert.equal((textureSource.match(/bbrDrawWorldBadge\(a,/g) || []).length, 2, "both hemispheres need a readable badge");
-  assert.match(textureSource, /let c=Yn\*\.122/);
-  assert.match(source, /font="800 "\+\(s>9\?54:62\)\+"px Arial, sans-serif"/);
+  assert.match(textureSource, /let c=Yn\*\.132/);
+  assert.match(source, /font="800 "\+\(s>9\?58:67\)\+"px Arial, sans-serif"/);
   assert.match(source, /imageSmoothingQuality="high"/);
+  assert.match(source, /shadowMaterial\.opacity=\.46\*Vi/);
 });
 
 test("returns a complete non-throwing fallback when WebGL2 is unavailable", () => {

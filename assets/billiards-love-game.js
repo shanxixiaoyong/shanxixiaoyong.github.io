@@ -6804,6 +6804,51 @@
     context.drawImage(dateMapFrameCanvas, 0, 0, WORLD.width, WORLD.height);
   }
 
+  function drawBallSeparationLayer(ball) {
+    const data = bodyData(ball);
+    if (!data || data.potted) return;
+    const scale = data.pocketing?.scale ?? 1;
+    const depth = data.pocketing?.depth ?? 0;
+    const theme = BALL_CHROMA_THEMES[data.number] || BALL_CHROMA_THEMES[0];
+    const visibility = clamp(1 - depth * 0.7, 0.18, 1);
+    context.save();
+    context.translate(ball.position.x, ball.position.y + depth * 13);
+    context.scale(scale, scale);
+
+    const localShade = context.createRadialGradient(0, 1.8, BALL_RADIUS * 0.54, 0, 1.8, BALL_RADIUS * 1.72);
+    localShade.addColorStop(0, `rgba(0, 0, 0, ${0.48 * visibility})`);
+    localShade.addColorStop(0.64, `rgba(0, 0, 0, ${0.34 * visibility})`);
+    localShade.addColorStop(1, "rgba(0, 0, 0, 0)");
+    context.fillStyle = localShade;
+    context.beginPath();
+    context.arc(0, 0, BALL_RADIUS * 1.76, 0, Math.PI * 2);
+    context.fill();
+
+    context.globalAlpha = 0.68 * visibility;
+    context.fillStyle = "rgba(0, 0, 0, 0.72)";
+    context.beginPath();
+    context.ellipse(BALL_RADIUS * 0.16, BALL_RADIUS * 0.28, BALL_RADIUS * 1.18, BALL_RADIUS * 0.48, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.globalAlpha = 0.82 * visibility;
+    context.strokeStyle = "rgba(1, 5, 8, 0.92)";
+    context.lineWidth = 3.8;
+    context.beginPath();
+    context.arc(0, 0, BALL_RADIUS + 1.25, 0, Math.PI * 2);
+    context.stroke();
+
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = 0.8 * visibility;
+    context.strokeStyle = colorWithAlpha(theme.glow, 0.94);
+    context.lineWidth = 1.2;
+    context.shadowColor = theme.primary;
+    context.shadowBlur = 5;
+    context.beginPath();
+    context.arc(0, 0, BALL_RADIUS + 1.05, Math.PI * 1.08, Math.PI * 1.92);
+    context.stroke();
+    context.restore();
+  }
+
   function drawBall(ball, timestamp) {
     const data = bodyData(ball);
     if (!data || data.potted) return;
@@ -7482,6 +7527,7 @@
     drawCushionLightResponse(timestamp);
     POCKETS.forEach(drawLeatherPocket);
     drawPocketLightPorts(timestamp);
+    balls.forEach(drawBallSeparationLayer);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
     if (!renderedByBallRenderer) {
       balls.slice().sort((left, right) => left.position.y - right.position.y).forEach((ball) => drawBall(ball, timestamp));
