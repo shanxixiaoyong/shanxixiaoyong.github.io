@@ -81,8 +81,10 @@ test("implements six portrait pockets and a delayed, duplicate-safe pocket lifec
   assert.match(source, /function advancePocketApproach\(body, pocket\)/);
   assert.match(source, /enteredAt: simulationTime/);
   assert.match(source, /approach\.enteredAt < simulationTime/);
-  assert.match(source, /const POCKET_LIP_SETTLE_RATIO = 0\.88/);
+  assert.match(source, /const POCKET_LIP_SETTLE_RATIO = 0\.72/);
   assert.match(source, /const settledOverLip = body\.speed <= NATURAL_STOP_SPEED/);
+  assert.match(source, /const visuallyInsidePocket = body\.speed <= NATURAL_STOP_SPEED \* 1\.6/);
+  assert.match(source, /Math\.hypot\(body\.position\.x - pocket\.x, body\.position\.y - pocket\.y\)[\s\S]*?<= POCKET_RADIUS - BALL_RADIUS \* 0\.08/);
   assert.match(source, /approach\.maximumDepth >= requiredDepth/);
   assert.match(source, /inwardPocketSpeed\(body, pocket\) <= POCKET_MIN_INWARD_SPEED/);
   assert.doesNotMatch(source, /Body\.applyForce/);
@@ -161,10 +163,10 @@ test("adapts to an optional Three ball renderer and retains a per-frame 2D fallb
 
 test("keeps the 3D ball layer light enough for high-DPR portrait phones", () => {
   assert.match(source, /const MIN_BALL_RENDER_SCALE = 0\.78/);
-  assert.match(source, /const MAX_BALL_RENDER_SCALE = 1\.35/);
-  assert.match(source, /const BALL_RENDER_SCALE_RATIO = 0\.84/);
+  assert.match(source, /const MAX_BALL_RENDER_SCALE = 1\.6/);
+  assert.match(source, /const BALL_RENDER_SCALE_RATIO = 1/);
   assert.match(source, /clamp\(renderScale \* BALL_RENDER_SCALE_RATIO, MIN_BALL_RENDER_SCALE, MAX_BALL_RENDER_SCALE\)/);
-  assert.match(rendererSource, /new as\(this\.ballRadius,32,16\)/);
+  assert.match(rendererSource, /new as\(this\.ballRadius,40,24\)/);
   assert.doesNotMatch(rendererSource, /antialias:!0/);
 });
 
@@ -283,9 +285,9 @@ test("turns physical shots into persistent ball-color and pocket-effect state", 
   assert.match(source, /function rememberDateMoment\(/);
   assert.match(source, /dateMapState\.routes\.push\(route\)/);
   assert.match(source, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
-  assert.match(source, /0: Object\.freeze\(\{ id: "pearl"/);
-  assert.match(source, /8: Object\.freeze\(\{ id: "eclipse"/);
-  assert.match(source, /15: Object\.freeze\(\{ id: "ruby-stripe"/);
+  assert.match(source, /0: Object\.freeze\(\{ id: "ink-landscape"/);
+  assert.match(source, /8: Object\.freeze\(\{ id: "cursed-codex"/);
+  assert.match(source, /15: Object\.freeze\(\{ id: "quantum-vortex"/);
   for (const effect of ["ripple", "comet", "prism", "pulse", "lightning", "aurora"]) {
     assert.match(source, new RegExp(`id: "${effect}"`));
   }
@@ -356,6 +358,10 @@ test("budgets material wake work and throttles expensive cloth redraws", () => {
   assert.match(source, /function scheduleCollisionFeedbackPrewarm\(material = activeSurfaceMaterial\(\)\)/);
   assert.match(source, /window\.requestIdleCallback\(warm, \{ timeout: 160 \}\)/);
   assert.match(source, /context\.drawImage\(sprite\.canvas, -extent, -extent, extent \* 2, extent \* 2\)/);
+  const texturePreload = implementationOf(source, "preloadSurfaceTextures");
+  assert.match(texturePreload, /const loadOne = \(\) =>/);
+  assert.match(texturePreload, /queueNext\(420\)/);
+  assert.doesNotMatch(texturePreload, /pending\.forEach|while \(pending\.length/);
 });
 
 test("uploads the displacement field only when its revision changes", () => {
@@ -391,6 +397,8 @@ test("drives sixteen ball-specific materials and organic pocket transitions from
   assert.match(surfaceSelection, /ensureSurfaceTexture\(material\.id\)/);
   assert.match(surfaceSelection, /spawnSurfaceMaterialWave\(material, origin, theme\)/);
   assert.match(surfaceSelection, /surfaceTransition = \{/);
+  assert.match(surfaceSelection, /origins = mergeWithCurrent/);
+  assert.match(surfaceSelection, /slice\(-4\)/);
   assert.match(disturbance, /material\.disturbance/);
   assert.match(disturbance, /material\.radius/);
   assert.match(disturbance, /material\.traceDeposit/);
@@ -412,10 +420,15 @@ test("drives sixteen ball-specific materials and organic pocket transitions from
   assert.match(renderer, /originY: 1 - clamp/);
   assert.match(surfaceRendererSource, /uniform sampler2D uPreviousBase;/);
   assert.match(surfaceRendererSource, /uniform float uTransitionProgress;/);
-  assert.match(surfaceRendererSource, /float transitionDistance = length\(transitionDelta\)/);
-  assert.match(surfaceRendererSource, /float boundaryNoise = sin\(transitionAngle/);
+  assert.match(surfaceRendererSource, /uniform int uTransitionOriginCount;/);
+  assert.match(surfaceRendererSource, /uniform vec2 uTransitionOrigins\[4\];/);
+  assert.match(surfaceRendererSource, /uniform vec3 uTransitionColors\[4\];/);
+  assert.match(surfaceRendererSource, /uniform float uTransitionProgresses\[4\];/);
+  assert.match(surfaceRendererSource, /float candidateDistance = length\(candidateDelta\)/);
+  assert.match(surfaceRendererSource, /float boundaryNoise = sin\(candidateAngle/);
   assert.match(surfaceRendererSource, /float echo = exp/);
   assert.match(surfaceRendererSource, /color = mix\(previous, color, clamp\(reveal, 0\.0, 1\.0\)\)/);
+  assert.match(surfaceRendererSource, /float intersection = uTransitionOriginCount > 1/);
   assert.match(surfaceRendererSource, /float tendrilField = softNoise/);
 });
 

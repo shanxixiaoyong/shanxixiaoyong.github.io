@@ -1826,22 +1826,22 @@ body {
   grid-template-columns: repeat(2, 32px);
 }
 
-.hb-app[data-surface-material="lava"] { --hb-surface-halo: #ff6a12; --hb-surface-deep: #190503; --hb-surface-ambient: #8e2308; --hb-surface-image: url("billiards-surfaces/lava.jpg"); }
-.hb-app[data-surface-material="galaxy"] { --hb-surface-halo: #72bcff; --hb-surface-deep: #05071e; --hb-surface-ambient: #412f9e; --hb-surface-image: url("billiards-surfaces/galaxy.jpg"); }
-.hb-app[data-surface-material="circuit"] { --hb-surface-halo: #35edff; --hb-surface-deep: #020b20; --hb-surface-ambient: #7b25ad; --hb-surface-image: url("billiards-surfaces/circuit.jpg"); }
-.hb-app[data-surface-material="ink"] { --hb-surface-halo: #e7e9df; --hb-surface-deep: #0c1513; --hb-surface-ambient: #6f827a; --hb-surface-image: url("billiards-surfaces/ink.jpg"); }
-.hb-app[data-surface-material="gold"] { --hb-surface-halo: #ffd75d; --hb-surface-deep: #241300; --hb-surface-ambient: #a96a00; --hb-surface-image: url("billiards-surfaces/gold.jpg"); }
-.hb-app[data-surface-material="amber"] { --hb-surface-halo: #ff9a2f; --hb-surface-deep: #2b0b00; --hb-surface-ambient: #b43b05; --hb-surface-image: url("billiards-surfaces/amber.jpg"); }
-.hb-app[data-surface-material="emerald"] { --hb-surface-halo: #4af0a3; --hb-surface-deep: #001b12; --hb-surface-ambient: #087549; --hb-surface-image: url("billiards-surfaces/emerald.jpg"); }
-.hb-app[data-surface-material="burgundy"] { --hb-surface-halo: #f34c78; --hb-surface-deep: #210008; --hb-surface-ambient: #791026; --hb-surface-image: url("billiards-surfaces/burgundy.jpg"); }
-.hb-app[data-surface-material="eclipse"] { --hb-surface-halo: #d89bff; --hb-surface-deep: #030108; --hb-surface-ambient: #8d5123; --hb-surface-image: url("billiards-surfaces/eclipse.jpg"); }
-.hb-app[data-surface-material="solar-porcelain"] { --hb-surface-halo: #fff0b8; --hb-surface-deep: #221300; --hb-surface-ambient: #c18a27; --hb-surface-image: url("billiards-surfaces/solar-porcelain.jpg"); }
-.hb-app[data-surface-material="abyss"] { --hb-surface-halo: #50dcff; --hb-surface-deep: #000d2b; --hb-surface-ambient: #0755a3; --hb-surface-image: url("billiards-surfaces/abyss.jpg"); }
-.hb-app[data-surface-material="crimson-storm"] { --hb-surface-halo: #ff6570; --hb-surface-deep: #1d0005; --hb-surface-ambient: #9b0718; --hb-surface-image: url("billiards-surfaces/crimson-storm.jpg"); }
-.hb-app[data-surface-material="amethyst"] { --hb-surface-halo: #d28cff; --hb-surface-deep: #140026; --hb-surface-ambient: #64258d; --hb-surface-image: url("billiards-surfaces/amethyst.jpg"); }
-.hb-app[data-surface-material="copper"] { --hb-surface-halo: #ff9a42; --hb-surface-deep: #210800; --hb-surface-ambient: #9d3409; --hb-surface-image: url("billiards-surfaces/copper.jpg"); }
-.hb-app[data-surface-material="jade-mist"] { --hb-surface-halo: #a7f2ce; --hb-surface-deep: #001a12; --hb-surface-ambient: #1c7155; --hb-surface-image: url("billiards-surfaces/jade-mist.jpg"); }
-.hb-app[data-surface-material="rose-quartz"] { --hb-surface-halo: #ffb4cd; --hb-surface-deep: #26000e; --hb-surface-ambient: #8f2449; --hb-surface-image: url("billiards-surfaces/rose-quartz.jpg"); }
+.hb-app[data-surface-material="lava"] { --hb-surface-halo: #ff6a12; --hb-surface-deep: #190503; --hb-surface-ambient: #8e2308; --hb-surface-image: url("billiards-surfaces/worlds/02-volcanic-rift.jpg"); }
+.hb-app[data-surface-material="galaxy"] { --hb-surface-halo: #72bcff; --hb-surface-deep: #05071e; --hb-surface-ambient: #412f9e; --hb-surface-image: url("billiards-surfaces/worlds/01-galactic-vortex.jpg"); }
+.hb-app[data-surface-material="circuit"] { --hb-surface-halo: #35edff; --hb-surface-deep: #020b20; --hb-surface-ambient: #7b25ad; --hb-surface-image: url("billiards-surfaces/worlds/04-cyber-matrix.jpg"); }
+.hb-app[data-surface-material="ink"] { --hb-surface-halo: #e7e9df; --hb-surface-deep: #0c1513; --hb-surface-ambient: #6f827a; --hb-surface-image: url("billiards-surfaces/worlds/00-ink-landscape.jpg"); }
+.hb-app[data-surface-material="gold"] { --hb-surface-halo: #ffd75d; --hb-surface-deep: #241300; --hb-surface-ambient: #a96a00; --hb-surface-image: url("billiards-surfaces/worlds/09-chrono-orrery.jpg"); }
+.hb-app[data-surface-material="amber"] { --hb-surface-halo: #ff9a2f; --hb-surface-deep: #2b0b00; --hb-surface-ambient: #b43b05; --hb-surface-image: url("billiards-surfaces/worlds/05-wind-traces.jpg"); }
+.hb-app[data-surface-material="emerald"] { --hb-surface-halo: #4af0a3; --hb-surface-deep: #001b12; --hb-surface-ambient: #087549; --hb-surface-image: url("billiards-surfaces/worlds/13-orbital-station.jpg"); }
+.hb-app[data-surface-material="burgundy"] { --hb-surface-halo: #f34c78; --hb-surface-deep: #210008; --hb-surface-ambient: #791026; --hb-surface-image: url("billiards-surfaces/worlds/07-rhythm-pulse.jpg"); }
+.hb-app[data-surface-material="eclipse"] { --hb-surface-halo: #d89bff; --hb-surface-deep: #030108; --hb-surface-ambient: #8d5123; --hb-surface-image: url("billiards-surfaces/worlds/08-cursed-codex.jpg"); }
+.hb-app[data-surface-material="solar-porcelain"] { --hb-surface-halo: #fff0b8; --hb-surface-deep: #221300; --hb-surface-ambient: #c18a27; --hb-surface-image: url("billiards-surfaces/worlds/06-arcane-array.jpg"); }
+.hb-app[data-surface-material="abyss"] { --hb-surface-halo: #50dcff; --hb-surface-deep: #000d2b; --hb-surface-ambient: #0755a3; --hb-surface-image: url("billiards-surfaces/worlds/14-tidal-maelstrom.jpg"); }
+.hb-app[data-surface-material="crimson-storm"] { --hb-surface-halo: #ff6570; --hb-surface-deep: #1d0005; --hb-surface-ambient: #9b0718; --hb-surface-image: url("billiards-surfaces/worlds/11-mythic-thunder.jpg"); }
+.hb-app[data-surface-material="amethyst"] { --hb-surface-halo: #d28cff; --hb-surface-deep: #140026; --hb-surface-ambient: #64258d; --hb-surface-image: url("billiards-surfaces/worlds/03-glacier-mirror.jpg"); }
+.hb-app[data-surface-material="copper"] { --hb-surface-halo: #ff9a42; --hb-surface-deep: #210800; --hb-surface-ambient: #9d3409; --hb-surface-image: url("billiards-surfaces/worlds/10-neon-megacity.jpg"); }
+.hb-app[data-surface-material="jade-mist"] { --hb-surface-halo: #a7f2ce; --hb-surface-deep: #001a12; --hb-surface-ambient: #1c7155; --hb-surface-image: url("billiards-surfaces/worlds/12-aurora-realm.jpg"); }
+.hb-app[data-surface-material="rose-quartz"] { --hb-surface-halo: #ffb4cd; --hb-surface-deep: #26000e; --hb-surface-ambient: #8f2449; --hb-surface-image: url("billiards-surfaces/worlds/15-quantum-vortex.jpg"); }
 
 .hb-app[data-surface-material="lava"] { --stage-accent: #ff9b38; }
 .hb-app[data-surface-material="galaxy"] { --stage-accent: #91c8ff; }
@@ -2317,5 +2317,142 @@ body {
 
   .hb-cinematic-copy strong {
     font-size: 24px;
+  }
+}
+
+/* The physical rails provide the only frame; overlays must not draw extra rectangles. */
+.hb-table-wrap {
+  border: 0;
+  box-shadow:
+    0 18px 28px rgba(0, 0, 0, 0.66),
+    0 0 18px color-mix(in srgb, var(--hb-surface-halo, #63dbe6) 9%, transparent);
+}
+
+.hb-table-story::before,
+.hb-table-story::after {
+  display: none;
+}
+
+.hb-result {
+  z-index: 60;
+  top: auto;
+  right: max(12px, var(--safe-right));
+  bottom: max(10px, var(--safe-bottom));
+  left: max(12px, var(--safe-left));
+  width: auto;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto;
+  gap: 7px 12px;
+  align-items: center;
+  padding: 15px 15px 14px;
+  border: 1px solid color-mix(in srgb, var(--stage-accent) 34%, rgba(214, 235, 241, 0.2));
+  border-radius: 8px;
+  text-align: left;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--stage-accent) 9%, transparent), transparent 42%),
+    rgba(3, 9, 13, 0.9);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.52),
+    inset 0 1px rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(16px) saturate(1.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.18);
+}
+
+.hb-result > span {
+  grid-column: 1;
+  grid-row: 1;
+  color: color-mix(in srgb, var(--stage-accent) 74%, #ffe8a8);
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+.hb-result > strong {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  overflow: visible;
+  color: #f4fbff;
+  font-size: 17px;
+  line-height: 1.22;
+  white-space: normal;
+}
+
+.hb-result > p {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: block;
+  margin: 0;
+  color: rgba(222, 236, 240, 0.72);
+  font-size: 10px;
+  line-height: 1.48;
+}
+
+.hb-result-grid {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: rgba(178, 220, 230, 0.12);
+}
+
+.hb-result-grid span {
+  min-height: 42px;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  padding: 6px 2px;
+  text-align: center;
+  background: rgba(2, 9, 14, 0.86);
+}
+
+.hb-result-grid small {
+  color: rgba(188, 211, 218, 0.68);
+  font-size: 8px;
+}
+
+.hb-result-grid b {
+  color: #f6fcff;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.hb-result-actions {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  gap: 7px;
+  margin: 0;
+}
+
+.hb-result-actions button,
+.hb-result-actions a {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+@media (max-width: 380px) {
+  .hb-result {
+    right: max(8px, var(--safe-right));
+    left: max(8px, var(--safe-left));
+    padding: 13px 12px 12px;
+  }
+
+  .hb-result > strong {
+    font-size: 15px;
+  }
+
+  .hb-result-grid b {
+    font-size: 14px;
   }
 }

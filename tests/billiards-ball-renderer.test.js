@@ -32,7 +32,7 @@ test("uses a world-space rolling quaternion derived from continuous table displa
   assert.ok(/([\w$]+)\.mesh\.quaternion\.set\(-\1\.quaternion\.x,\1\.quaternion\.y,-\1\.quaternion\.z,\1\.quaternion\.w\)/.test(source));
 });
 
-test("builds equirectangular numbered textures, physically lit sphere materials, and separate shadows", () => {
+test("builds high-resolution world textures, physically lit spheres, and separate shadows", () => {
   for (const type of [
     "SphereGeometry", "MeshStandardMaterial",
     "HemisphereLight", "DirectionalLight", "PointLight", "OrthographicCamera"
@@ -40,16 +40,21 @@ test("builds equirectangular numbered textures, physically lit sphere materials,
     assert.ok(source.includes(`\"${type}\"`), `missing bundled Three type ${type}`);
   }
   assert.ok(source.includes("isCanvasTexture=!0"), "missing bundled CanvasTexture runtime");
-  assert.ok(/this\.sphereGeometry=new [\w$]+\(this\.ballRadius,32,16\),this\.shadowGeometry=new [\w$]+\(1,48\)/.test(source));
+  assert.match(source, /zi=768;/);
+  assert.match(source, /Yn=384;/);
+  assert.ok(/this\.sphereGeometry=new [\w$]+\(this\.ballRadius,40,24\),this\.shadowGeometry=new [\w$]+\(1,48\)/.test(source));
   assert.equal((source.match(/antialias:!1/g) || []).length, 2, "the high-DPR ball layer should not spend frames on multisampling");
   assert.ok(source.includes("equirectangular-map"));
-  assert.ok(source.includes("roughness:.19,metalness:0"));
+  assert.equal((source.match(/Object\.freeze\(\{key:"/g) || []).length, 16, "every ball should have a dedicated world material");
+  assert.match(source, /roughness:n\.roughness,metalness:n\.metalness/);
+  assert.match(source, /emissive:n\.emissive\|\|"#000000"/);
   assert.ok(source.includes("billiards-hemisphere-fill"));
   assert.ok(source.includes("billiards-key-light"));
   assert.ok(source.includes("billiards-warm-rim-light"));
   assert.ok(source.includes("independent-shadow"));
   assert.ok(/fillText\(String\([\w$]+\)/.test(source), "number glyphs must be painted into the texture");
-  assert.ok(/=[\w$]+>8,[\w$]+="#f5f0e7"/.test(source), "stripe balls must use a distinct latitudinal map");
+  assert.match(source, /bbrPaintStyleTexture\(a,e,o\)/);
+  assert.doesNotMatch(source.slice(source.indexOf("function Cm("), source.indexOf("function Rm(")), /stripe|>8/);
 });
 
 test("exposes the frame-driven API with an orthographic transparent WebGL2 renderer", () => {
@@ -107,21 +112,18 @@ test("defines and code-draws a distinct restrained motif for each object ball", 
   assert.equal(sandbox.drawMotifShape(new Proxy({}, { get: () => () => {} }), "unknown"), false);
 });
 
-test("keeps the number spot larger, painted last, and visually primary", () => {
+test("keeps a high-contrast world badge painted over every object-ball texture", () => {
   const textureStart = source.indexOf("function Cm(");
   const textureEnd = source.indexOf("function Rm(", textureStart);
   const textureSource = source.slice(textureStart, textureEnd);
-  const motifCall = textureSource.indexOf("bbrDrawMotif(");
-  const numberCall = textureSource.indexOf("Yc(", motifCall);
+  const artworkCall = textureSource.indexOf("bbrPaintStyleTexture(");
+  const badgeCall = textureSource.indexOf("bbrDrawWorldBadge(");
 
-  assert.ok(motifCall > 0 && numberCall > motifCall, "number spots must be painted over and after motifs");
-  assert.equal((textureSource.match(/Yc\(a,/g) || []).length, 2, "both hemispheres need a readable number");
-  assert.match(textureSource, /bbrDrawMotif\(a,zi\*g,Yn\*\.658,h,s\)/, "motifs must live in the rotating texture map");
-  assert.match(source, /font="700 "\+\(s>9\?27:31\)\+"px Arial, sans-serif"/);
-
-  const maximumMotifBackdropRadius = 7.4 * 1.15 * 1.18;
-  const numberSpotRadius = 256 * 0.096;
-  assert.ok(maximumMotifBackdropRadius < numberSpotRadius / 2, "motifs must stay subordinate to the number spot");
+  assert.ok(artworkCall > 0 && badgeCall > artworkCall, "number badges must be painted after world artwork");
+  assert.equal((textureSource.match(/bbrDrawWorldBadge\(a,/g) || []).length, 2, "both hemispheres need a readable badge");
+  assert.match(textureSource, /let c=Yn\*\.122/);
+  assert.match(source, /font="800 "\+\(s>9\?54:62\)\+"px Arial, sans-serif"/);
+  assert.match(source, /imageSmoothingQuality="high"/);
 });
 
 test("returns a complete non-throwing fallback when WebGL2 is unavailable", () => {

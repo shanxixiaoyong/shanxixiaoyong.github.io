@@ -33,6 +33,10 @@
     uniform float uAspect;
     uniform vec2 uTransitionOrigin;
     uniform vec3 uTransitionColor;
+    uniform int uTransitionOriginCount;
+    uniform vec2 uTransitionOrigins[4];
+    uniform vec3 uTransitionColors[4];
+    uniform float uTransitionProgresses[4];
     uniform int uMaterial;
     in vec2 vUv;
     out vec4 outColor;
@@ -295,22 +299,43 @@
       }
 
       if (uTransitionActive > 0.5) {
-        vec2 transitionDelta = (vUv - uTransitionOrigin) * vec2(uAspect, 1.0);
-        float transitionDistance = length(transitionDelta);
-        float transitionAngle = atan(transitionDelta.y, transitionDelta.x);
-        float transitionEase = smoothstep(0.0, 1.0, uTransitionProgress);
         float coarseFlow = softNoise(vUv * vec2(4.2, 7.4) + vec2(time * 0.11, -time * 0.075));
         float middleFlow = softNoise(vUv * vec2(10.0, 17.0) + vec2(-time * 0.16, time * 0.1));
         float fineFlow = softNoise(vUv * vec2(25.0, 43.0) + vec2(time * 0.23, time * 0.16));
-        float boundaryNoise = sin(transitionAngle * 3.0 + time * 1.3 + float(uMaterial)) * 0.058
-          + sin(transitionAngle * 7.0 - time * 0.9 + height * 6.0) * 0.026
-          + (coarseFlow - 0.5) * 0.19
-          + (middleFlow - 0.5) * 0.085
-          + (fineFlow - 0.5) * 0.024
-          + broadHeight * 0.025;
-        float radius = mix(-0.028, 1.34, transitionEase);
-        float signedDistance = transitionDistance + boundaryNoise - radius;
-        float reveal = 1.0 - smoothstep(-0.09, 0.052, signedDistance);
+        float signedDistance = 10.0;
+        float secondDistance = 10.0;
+        float reveal = 0.0;
+        vec2 transitionDelta = (vUv - uTransitionOrigin) * vec2(uAspect, 1.0);
+        float transitionAngle = atan(transitionDelta.y, transitionDelta.x);
+        float selectedProgress = uTransitionProgress;
+        vec3 selectedColor = uTransitionColor;
+        for (int originIndex = 0; originIndex < 4; originIndex += 1) {
+          if (originIndex >= uTransitionOriginCount) break;
+          vec2 candidateDelta = (vUv - uTransitionOrigins[originIndex]) * vec2(uAspect, 1.0);
+          float candidateDistance = length(candidateDelta);
+          float candidateAngle = atan(candidateDelta.y, candidateDelta.x);
+          float candidateProgress = clamp(uTransitionProgresses[originIndex], 0.0, 1.0);
+          float transitionEase = smoothstep(0.0, 1.0, candidateProgress);
+          float boundaryNoise = sin(candidateAngle * 3.0 + time * 1.3 + float(uMaterial + originIndex)) * 0.058
+            + sin(candidateAngle * 7.0 - time * 0.9 + height * 6.0 + float(originIndex) * 1.7) * 0.026
+            + (coarseFlow - 0.5) * 0.19
+            + (middleFlow - 0.5) * 0.085
+            + (fineFlow - 0.5) * 0.024
+            + broadHeight * 0.025;
+          float radius = mix(-0.028, 1.34, transitionEase);
+          float candidateSignedDistance = candidateDistance + boundaryNoise - radius;
+          reveal = max(reveal, 1.0 - smoothstep(-0.09, 0.052, candidateSignedDistance));
+          if (candidateSignedDistance < signedDistance) {
+            secondDistance = signedDistance;
+            signedDistance = candidateSignedDistance;
+            transitionDelta = candidateDelta;
+            transitionAngle = candidateAngle;
+            selectedProgress = candidateProgress;
+            selectedColor = uTransitionColors[originIndex];
+          } else if (candidateSignedDistance < secondDistance) {
+            secondDistance = candidateSignedDistance;
+          }
+        }
         float tendrilField = softNoise(
           vUv * vec2(18.0, 31.0)
             + vec2(cos(transitionAngle), sin(transitionAngle)) * 2.4
@@ -319,7 +344,7 @@
         float tendril = smoothstep(0.68, 0.94, tendrilField + middleFlow * 0.16)
           * smoothstep(-0.12, 0.025, signedDistance)
           * (1.0 - smoothstep(0.025, 0.22, signedDistance));
-        reveal = max(reveal, tendril * (0.62 + (1.0 - uTransitionProgress) * 0.28));
+        reveal = max(reveal, tendril * (0.62 + (1.0 - selectedProgress) * 0.28));
         vec2 radial = normalize(transitionDelta + vec2(0.0001));
         vec2 tangent = vec2(-radial.y, radial.x);
         vec2 lens = (radial * sin(signedDistance * 62.0 - time * 4.2)
@@ -331,9 +356,13 @@
         float echo = exp(-pow(abs(signedDistance + 0.095) / 0.028, 2.0)) * (0.5 + fineFlow * 0.5);
         float sparkCell = hash21(floor(vUv * vec2(170.0, 300.0)) + floor(time * 24.0));
         float sparks = step(0.97, sparkCell) * exp(-abs(signedDistance) * 20.0);
-        float glowLife = 1.0 - smoothstep(0.82, 1.0, uTransitionProgress);
-        vec3 edgeColor = uMaterial == 4 ? vec3(0.84, 0.88, 0.83) : uTransitionColor;
-        color += edgeColor * (boundary * (0.5 + influence * 0.34) + echo * 0.24 + sparks * 0.68) * glowLife;
+        float glowLife = 1.0 - smoothstep(0.82, 1.0, selectedProgress);
+        float intersection = uTransitionOriginCount > 1
+          ? exp(-abs(secondDistance - signedDistance) * 20.0) * exp(-abs(signedDistance) * 8.0)
+          : 0.0;
+        vec3 edgeColor = uMaterial == 4 ? vec3(0.84, 0.88, 0.83) : selectedColor;
+        color += edgeColor * (boundary * (0.5 + influence * 0.34) + echo * 0.24 + sparks * 0.68 + intersection * 0.54) * glowLife;
+        color += mix(selectedColor, vec3(1.0), 0.56) * intersection * (0.18 + glowLife * 0.42);
         if (uMaterial == 4) color *= 1.0 - boundary * 0.16;
         if (uMaterial == 9) {
           color += vec3(0.98, 0.55, 0.16) * boundary * glowLife * 0.46;
@@ -464,6 +493,10 @@
       transitionProgress: gl.getUniformLocation(program, "uTransitionProgress"),
       transitionOrigin: gl.getUniformLocation(program, "uTransitionOrigin"),
       transitionColor: gl.getUniformLocation(program, "uTransitionColor"),
+      transitionOriginCount: gl.getUniformLocation(program, "uTransitionOriginCount"),
+      transitionOrigins: gl.getUniformLocation(program, "uTransitionOrigins[0]"),
+      transitionColors: gl.getUniformLocation(program, "uTransitionColors[0]"),
+      transitionProgresses: gl.getUniformLocation(program, "uTransitionProgresses[0]"),
       aspect: gl.getUniformLocation(program, "uAspect"),
       material: gl.getUniformLocation(program, "uMaterial")
     };
@@ -489,6 +522,9 @@
     let fieldHeight = 0;
     let fieldRevision = null;
     let active = true;
+    const transitionOriginData = new Float32Array(8);
+    const transitionColorData = new Float32Array(12);
+    const transitionProgressData = new Float32Array(4);
 
     function resize(width, height) {
       const nextWidth = Math.max(2, Math.round(width));
@@ -581,6 +617,29 @@
           transition?.color?.[0] ?? 1,
           transition?.color?.[1] ?? 1,
           transition?.color?.[2] ?? 1);
+        const transitionOrigins = transition?.origins?.length
+          ? transition.origins.slice(0, 4)
+          : transition ? [{
+              originX: transition.originX ?? 0.5,
+              originY: transition.originY ?? 0.5,
+              progress: transition.progress || 0,
+              color: transition.color || [1, 1, 1]
+            }] : [];
+        transitionOriginData.fill(0);
+        transitionColorData.fill(0);
+        transitionProgressData.fill(0);
+        transitionOrigins.forEach((origin, index) => {
+          transitionOriginData[index * 2] = origin.originX ?? 0.5;
+          transitionOriginData[index * 2 + 1] = origin.originY ?? 0.5;
+          transitionColorData[index * 3] = origin.color?.[0] ?? 1;
+          transitionColorData[index * 3 + 1] = origin.color?.[1] ?? 1;
+          transitionColorData[index * 3 + 2] = origin.color?.[2] ?? 1;
+          transitionProgressData[index] = Math.max(0, Math.min(1, origin.progress || 0));
+        });
+        gl.uniform1i(uniforms.transitionOriginCount, transitionOrigins.length);
+        gl.uniform2fv(uniforms.transitionOrigins, transitionOriginData);
+        gl.uniform3fv(uniforms.transitionColors, transitionColorData);
+        gl.uniform1fv(uniforms.transitionProgresses, transitionProgressData);
         gl.uniform1f(uniforms.aspect, canvas.width / canvas.height);
         gl.uniform1i(uniforms.material, MATERIAL_INDEX[frame.materialId] ?? 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);

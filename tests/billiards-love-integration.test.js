@@ -330,8 +330,8 @@ test("keeps one pocket effect while successive ball colors retheme the cloth", (
   assert.equal(second.presentation.dateMap.activeSceneId, "ripple");
   assert.equal(first.presentation.dateMap.activeEffectId, "ripple");
   assert.equal(second.presentation.dateMap.activeEffectId, "ripple");
-  assert.equal(first.presentation.dateMap.activeThemeId, "solar");
-  assert.equal(second.presentation.dateMap.activeThemeId, "cobalt");
+  assert.equal(first.presentation.dateMap.activeThemeId, "galactic-vortex");
+  assert.equal(second.presentation.dateMap.activeThemeId, "volcanic-rift");
   assert.equal(first.presentation.dateMap.activeBallNumber, 1);
   assert.equal(second.presentation.dateMap.activeBallNumber, 2);
   assert.equal(second.presentation.dateMap.sceneHistory, 2);
@@ -349,7 +349,7 @@ test("uses the active pocket identity for rolling trails and rail impacts", () =
   assert.equal(debug.shoot(0.96, { x: 1, y: 0 }), true);
 
   let snapshot = debug.step(3);
-  assert.equal(snapshot.presentation.dateMap.activeThemeId, "cobalt");
+  assert.equal(snapshot.presentation.dateMap.activeThemeId, "volcanic-rift");
   assert.equal(snapshot.presentation.dateMap.activeEffectId, "lightning");
   assert.ok(snapshot.presentation.dateMap.rollingTrailCount > 0);
 
@@ -361,10 +361,10 @@ test("uses the active pocket identity for rolling trails and rail impacts", () =
 
 test("maps every object ball to its own automatic material without changing the physical rack", () => {
   const cases = [
-    [1, "gold"], [2, "galaxy"], [3, "lava"], [4, "circuit"],
-    [5, "amber"], [6, "emerald"], [7, "burgundy"], [8, "eclipse"],
-    [9, "solar-porcelain"], [10, "abyss"], [11, "crimson-storm"], [12, "amethyst"],
-    [13, "copper"], [14, "jade-mist"], [15, "rose-quartz"]
+    [1, "galaxy"], [2, "lava"], [3, "amethyst"], [4, "circuit"],
+    [5, "amber"], [6, "solar-porcelain"], [7, "burgundy"], [8, "eclipse"],
+    [9, "gold"], [10, "copper"], [11, "crimson-storm"], [12, "jade-mist"],
+    [13, "emerald"], [14, "abyss"], [15, "rose-quartz"]
   ];
 
   for (const [number, material] of cases) {
@@ -553,7 +553,7 @@ test("keeps pots, misses, and the black eight inside the persistent date map", (
   assert.equal(snapshot.presentation.dateMap.completed, false);
   assert.equal(snapshot.presentation.cinematicActive, false);
   assert.equal(snapshot.presentation.cinematicQueued, 0);
-  assert.equal(snapshot.presentation.dateMap.activeThemeId, "eclipse");
+  assert.equal(snapshot.presentation.dateMap.activeThemeId, "cursed-codex");
   assert.equal(snapshot.presentation.dateMap.blackEightBlast, true);
   assert.equal(snapshot.presentation.dateMap.blackEightBlastDuration, 3200);
   snapshot = eightDebug.step(120);
@@ -708,8 +708,8 @@ test("keeps an object ball physical until its pocket animation completes, then s
   assert.equal(snapshot.shotPottedNumbers.includes(1), false, "settlement must wait for the visual descent");
   assert.equal(snapshot.runState.pottedNumbers.includes(1), false);
   assert.equal(snapshot.runState.shots, 0);
-  assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, "gold");
-  assert.equal(snapshot.presentation.dateMap.surfaceTransitionTo, "gold");
+  assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, "galaxy");
+  assert.equal(snapshot.presentation.dateMap.surfaceTransitionTo, "galaxy");
   assert.equal(snapshot.presentation.dateMap.routes, 1, "the pocket slow motion should start one color transition");
 
   snapshot = debug.step(10);
@@ -750,7 +750,7 @@ test("animates a cue scratch before removing and respotting the white ball", () 
   for (let step = 0; step < 8 && !findBall(snapshot, 0).pocketing; step += 1) snapshot = debug.step(1);
   assert.ok(findBall(snapshot, 0).pocketing);
   assert.equal(snapshot.presentation.dateMap.activeBallNumber, 0);
-  assert.equal(snapshot.presentation.dateMap.activeThemeId, "pearl");
+  assert.equal(snapshot.presentation.dateMap.activeThemeId, "ink-landscape");
   assert.equal(snapshot.presentation.dateMap.activeEffectId, "pulse");
   snapshot = debug.step(10);
   let cue = findBall(snapshot, 0);

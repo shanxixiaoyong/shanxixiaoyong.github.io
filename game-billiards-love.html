@@ -11,8 +11,8 @@
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="preload" href="assets/billiards-surfaces/ink.jpg" as="image" fetchpriority="high">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-performance-cache-20260713e">
+  <link rel="preload" href="assets/billiards-surfaces/worlds/00-ink-landscape.jpg" as="image" fetchpriority="high">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-worlds-20260713a">
 </head>
 <body class="heartbeat-billiards-page">
   <main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技" data-stage="1" data-state="loading" data-shell-theme="chromatic" data-surface-material="ink">
@@ -128,6 +128,10 @@
         <span><small>进球率</small><b id="hb-result-accuracy">0%</b></span>
         <span><small>最佳连进</small><b id="hb-result-streak">0</b></span>
         <span><small>光场强度</small><b id="hb-result-interest">稳定</b></span>
+        <span><small>累计进球</small><b id="hb-result-potted">0</b></span>
+        <span><small>借库进球</small><b id="hb-result-banks">0</b></span>
+        <span><small>一杆多球</small><b id="hb-result-multi">0</b></span>
+        <span><small>白球落袋</small><b id="hb-result-scratches">0</b></span>
       </div>
       <div class="hb-result-actions">
         <button id="hb-retry" type="button" aria-label="再开一局" title="再开一局"><span aria-hidden="true">&#8635;</span><span class="hb-sr-only">再开一局</span></button>
@@ -137,11 +141,11 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-performance-cache-20260713e"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-performance-cache-20260713e"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-performance-cache-20260713e"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-performance-cache-20260713e"></script>
-  <script src="assets/billiards-surface-renderer.js?v=billiards-performance-cache-20260713e"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-performance-cache-20260713e"></script>
+  <script src="assets/billiards-physics.js?v=billiards-worlds-20260713a"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-worlds-20260713a"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-worlds-20260713a"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-worlds-20260713a"></script>
+  <script src="assets/billiards-surface-renderer.js?v=billiards-worlds-20260713a"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-worlds-20260713a"></script>
 </body>
 </html>

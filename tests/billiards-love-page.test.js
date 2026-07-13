@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-performance-cache-20260713e";
-const styleCacheVersion = "billiards-performance-cache-20260713e";
+const runtimeCacheVersion = "billiards-worlds-20260713a";
+const styleCacheVersion = "billiards-worlds-20260713a";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -181,51 +181,54 @@ test("couples the photographic cloth and rolling field inside one WebGL material
   assert.match(game, /surfaceRenderer \? "webgl2-displaced-texture" : "canvas-field-fallback"/);
 });
 
-test("maps the cue ball and all fifteen object balls to individual reference-quality materials", () => {
+test("maps the cue ball and all fifteen object balls to sixteen authored top-down worlds", () => {
   const expected = [
-    ["gold", "日冕流金"],
-    ["galaxy", "深空星河"],
-    ["lava", "熔岩脉冲"],
-    ["circuit", "星云电路"],
-    ["amber", "琥珀流体"],
-    ["emerald", "翡翠潮汐"],
-    ["burgundy", "酒红晶域"],
-    ["ink", "水墨游龙"],
-    ["eclipse", "黑曜日蚀"],
-    ["solar-porcelain", "日光瓷金"],
-    ["abyss", "深渊生物光"],
-    ["crimson-storm", "猩红风暴"],
-    ["amethyst", "紫晶棱镜"],
-    ["copper", "熔铜秘流"],
-    ["jade-mist", "翡翠流岚"],
-    ["rose-quartz", "玫瑰晶潮"]
+    ["ink", "水墨风韵", "00-ink-landscape.jpg"],
+    ["galaxy", "星际漩涡", "01-galactic-vortex.jpg"],
+    ["lava", "熔岩裂域", "02-volcanic-rift.jpg"],
+    ["amethyst", "冰川裂镜", "03-glacier-mirror.jpg"],
+    ["circuit", "赛博矩阵", "04-cyber-matrix.jpg"],
+    ["amber", "风之痕迹", "05-wind-traces.jpg"],
+    ["solar-porcelain", "魔法阵域", "06-arcane-array.jpg"],
+    ["burgundy", "音律律动", "07-rhythm-pulse.jpg"],
+    ["eclipse", "墨咒书卷", "08-cursed-codex.jpg"],
+    ["gold", "时间流淌", "09-chrono-orrery.jpg"],
+    ["copper", "赛博都市", "10-neon-megacity.jpg"],
+    ["crimson-storm", "神话雷霆", "11-mythic-thunder.jpg"],
+    ["jade-mist", "极光之境", "12-aurora-realm.jpg"],
+    ["emerald", "未来宇宙站", "13-orbital-station.jpg"],
+    ["abyss", "潮汐之舞", "14-tidal-maelstrom.jpg"],
+    ["rose-quartz", "量子漩涡", "15-quantum-vortex.jpg"]
   ];
   assert.match(html, /data-surface-material="ink"/);
-  for (const [id, label] of expected) {
-    const texture = `assets/billiards-surfaces/${id}.jpg`;
+  for (const [id, label, filename] of expected) {
+    const texture = `assets/billiards-surfaces/worlds/${filename}`;
     assert.match(game, new RegExp(`id: "${id}", label: "${label}"`));
     assert.ok(
       game.includes(`${id}: "${texture}"`) || game.includes(`"${id}": "${texture}"`),
       `${id} should map to its local material texture`
     );
     assert.match(css, new RegExp(`data-surface-material="${id}"`));
-    assert.match(css, new RegExp(escapeRegExp(`url("billiards-surfaces/${id}.jpg")`)));
+    assert.match(css, new RegExp(escapeRegExp(`url("billiards-surfaces/worlds/${filename}")`)));
     assert.equal(fs.existsSync(path.join(root, texture)), true, `${texture} should exist`);
     assert.ok(fs.statSync(path.join(root, texture)).size > 500 * 1024, `${texture} should retain high-detail raster data`);
   }
   assert.equal(expected.length, 16);
-  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/ink\.jpg" as="image" fetchpriority="high">/);
+  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/worlds\/00-ink-landscape\.jpg" as="image" fetchpriority="high">/);
   for (const mapping of [
     /0: "ink"/,
-    /1: "gold"/, /2: "galaxy"/, /3: "lava"/, /4: "circuit"/,
-    /5: "amber"/, /6: "emerald"/, /7: "burgundy"/, /8: "eclipse"/,
-    /9: "solar-porcelain"/, /10: "abyss"/, /11: "crimson-storm"/,
-    /12: "amethyst"/, /13: "copper"/, /14: "jade-mist"/, /15: "rose-quartz"/
+    /1: "galaxy"/, /2: "lava"/, /3: "amethyst"/, /4: "circuit"/,
+    /5: "amber"/, /6: "solar-porcelain"/, /7: "burgundy"/, /8: "eclipse"/,
+    /9: "gold"/, /10: "copper"/, /11: "crimson-storm"/,
+    /12: "jade-mist"/, /13: "emerald"/, /14: "abyss"/, /15: "rose-quartz"/
   ]) assert.match(game, mapping);
   assert.match(game, /const SURFACE_TEXTURE_SOURCES = Object\.freeze\(\{/);
   assert.match(game, /function selectSurfaceMaterial\(/);
   assert.match(game, /function transitionSurfaceForBall\(/);
   assert.match(game, /origin: \{ x: pocket\.captureX, y: pocket\.captureY \}/);
+  assert.match(game, /origins = mergeWithCurrent/);
+  assert.match(surfaceRenderer, /uniform vec2 uTransitionOrigins\[4\];/);
+  assert.match(surfaceRenderer, /float intersection = uTransitionOriginCount > 1/);
   assert.doesNotMatch(game, /SURFACE_KEY|writeStorage\(SURFACE/);
   assert.doesNotMatch(html + css, /hb-surface-(?:toggle|menu|option)/);
   assert.match(game, /materialId === "ink"/);
@@ -236,11 +239,6 @@ test("maps the cue ball and all fifteen object balls to individual reference-qua
   assert.match(game, /function spawnMaterialCollisionResponse\(/);
   assert.match(game, /let brightness = 0;/);
   assert.doesNotMatch(game, /function drawMaterialFrameFinish\(/);
-  assert.match(game, /paintLavaArtwork/);
-  assert.match(game, /paintGalaxyArtwork/);
-  assert.match(game, /paintCircuitArtwork/);
-  assert.match(game, /paintIceArtwork/);
-  assert.match(game, /paintInkArtwork/);
   assert.match(game, /waterSurface\.pigment/);
 });
 
@@ -513,9 +511,12 @@ test("keeps a compact result dock and reserves the largest effect for black 8", 
   assert.match(rule(".hb-cinematic"), /z-index:\s*50;/);
   assert.match(rule(".hb-cinematic"), /contain:\s*paint;/);
   assert.match(css, /\.hb-result\s*\{[^}]*z-index:\s*60;[^}]*\}/s);
-  assert.match(css, /\.hb-result\s*\{[^}]*height:\s*52px;[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
-  assert.doesNotMatch(css, /\.hb-result\s*\{[^}]*(?:backdrop-filter|40dvh)/s);
-  assert.match(css, /\.hb-result > p,\s*\.hb-result-grid\s*\{\s*display:\s*none;/s);
+  assert.match(css, /\.hb-result\s*\{[^}]*bottom:\s*max\(10px, var\(--safe-bottom\)\);[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
+  assert.match(css, /\.hb-result\s*\{[^}]*backdrop-filter:\s*blur\(16px\) saturate\(1\.18\);/s);
+  assert.match(css, /\.hb-result-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/s);
+  for (const id of ["potted", "banks", "multi", "scratches"]) {
+    assert.match(html, new RegExp(`id="hb-result-${id}"`));
+  }
   assert.match(html, /id="hb-retry"[^>]*aria-label="再开一局"/);
   assert.match(html, /href="index\.html" aria-label="返回首页"/);
   assert.match(game, /function beginFinalDateMapReveal\(outcome\)/);

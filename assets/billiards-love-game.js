@@ -83,6 +83,10 @@
     resultAccuracy: required("#hb-result-accuracy"),
     resultStreak: required("#hb-result-streak"),
     resultInterest: required("#hb-result-interest"),
+    resultPotted: required("#hb-result-potted"),
+    resultBanks: required("#hb-result-banks"),
+    resultMulti: required("#hb-result-multi"),
+    resultScratches: required("#hb-result-scratches"),
     retry: required("#hb-retry")
   };
   const WORLD = Object.freeze({ width: 720, height: 1440 });
@@ -97,7 +101,7 @@
   const POCKET_SHELF_DEPTH_TOLERANCE = BALL_RADIUS * 0.10;
   const POCKET_SHELF_LATERAL_TOLERANCE = BALL_RADIUS * 0.08;
   const POCKET_APPROACH_EXIT_DEPTH = BALL_RADIUS * 0.30;
-  const POCKET_LIP_SETTLE_RATIO = 0.88;
+  const POCKET_LIP_SETTLE_RATIO = 0.72;
   const POCKET_VISUAL_CAPTURE_RATIO = 0.25;
   const CORNER_POCKET_MOUTH = BALL_DIAMETER * 2.28;
   const SIDE_POCKET_MOUTH = BALL_DIAMETER * 2.53;
@@ -130,8 +134,8 @@
   const MAX_RENDER_HEIGHT = 2160;
   const MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT;
   const MIN_BALL_RENDER_SCALE = 0.78;
-  const MAX_BALL_RENDER_SCALE = 1.35;
-  const BALL_RENDER_SCALE_RATIO = 0.84;
+  const MAX_BALL_RENDER_SCALE = 1.6;
+  const BALL_RENDER_SCALE_RATIO = 1;
   const DATE_MAP_REFRESH_MS = 1000 / 30;
   const SCENE_PORTAL_DURATION_MS = 1120;
   const WATER_GRID_WIDTH = 144;
@@ -154,28 +158,28 @@
   const RECORD_KEY = "yl-heartbeat-billiards-record-v2";
   const VIEWED_KEY = "yl-heartbeat-billiards-viewed-v2";
   const BALL_COLORS = Object.freeze({
-    1: "#e9c348", 2: "#2676bf", 3: "#c33f40", 4: "#754493",
-    5: "#df7b30", 6: "#358553", 7: "#8e3740", 8: "#181b1d",
-    9: "#e9c348", 10: "#2676bf", 11: "#c33f40", 12: "#754493",
-    13: "#df7b30", 14: "#358553", 15: "#8e3740"
+    1: "#6d8cff", 2: "#ff6a20", 3: "#8be8ff", 4: "#39e7ff",
+    5: "#d5a35d", 6: "#aa74ff", 7: "#ed4dce", 8: "#17120f",
+    9: "#d7a84f", 10: "#20dff4", 11: "#a9dfff", 12: "#67f1b6",
+    13: "#a9c9df", 14: "#2bd5c8", 15: "#9a6dff"
   });
   const BALL_CHROMA_THEMES = Object.freeze({
-    0: Object.freeze({ id: "pearl", label: "极光白", primary: "#eefaff", secondary: "#9ec9ff", accent: "#ffb9ef", deep: "#102130", glow: "#ffffff" }),
-    1: Object.freeze({ id: "solar", label: "日冕金", primary: "#ffd85d", secondary: "#ff8f2f", accent: "#fff1a8", deep: "#3a1d08", glow: "#fff7c4" }),
-    2: Object.freeze({ id: "cobalt", label: "电光蓝", primary: "#3aa8ff", secondary: "#3157ff", accent: "#9eeaff", deep: "#071c4a", glow: "#d4f7ff" }),
-    3: Object.freeze({ id: "crimson", label: "脉冲红", primary: "#ff4f68", secondary: "#b5144c", accent: "#ffb29f", deep: "#3d0717", glow: "#ffd7cf" }),
-    4: Object.freeze({ id: "nebula", label: "星云紫", primary: "#b96cff", secondary: "#6437d9", accent: "#ff9ae8", deep: "#210b48", glow: "#f2d5ff" }),
-    5: Object.freeze({ id: "molten", label: "熔光橙", primary: "#ff9b3e", secondary: "#ef4428", accent: "#ffd27d", deep: "#421407", glow: "#ffe3a8" }),
-    6: Object.freeze({ id: "emerald", label: "生物绿", primary: "#3ee6a0", secondary: "#087c6b", accent: "#b7ff98", deep: "#042c27", glow: "#d8ffd0" }),
-    7: Object.freeze({ id: "ruby", label: "深红晶", primary: "#e93673", secondary: "#6f173d", accent: "#ff9dba", deep: "#310717", glow: "#ffd1df" }),
-    8: Object.freeze({ id: "eclipse", label: "黑曜日蚀", primary: "#11131d", secondary: "#612caa", accent: "#ffcc62", deep: "#010208", glow: "#ffffff" }),
-    9: Object.freeze({ id: "solar-stripe", label: "日冕流金", primary: "#ffd85d", secondary: "#fff6d0", accent: "#ff8f2f", deep: "#3a1d08", glow: "#ffffff" }),
-    10: Object.freeze({ id: "cobalt-stripe", label: "电光冰蓝", primary: "#3aa8ff", secondary: "#edf8ff", accent: "#755dff", deep: "#071c4a", glow: "#ffffff" }),
-    11: Object.freeze({ id: "crimson-stripe", label: "脉冲银红", primary: "#ff4f68", secondary: "#fff1ed", accent: "#d01a57", deep: "#3d0717", glow: "#ffffff" }),
-    12: Object.freeze({ id: "nebula-stripe", label: "星云银紫", primary: "#b96cff", secondary: "#f7ecff", accent: "#ff82d8", deep: "#210b48", glow: "#ffffff" }),
-    13: Object.freeze({ id: "molten-stripe", label: "熔光银橙", primary: "#ff9b3e", secondary: "#fff4df", accent: "#ef4428", deep: "#421407", glow: "#ffffff" }),
-    14: Object.freeze({ id: "emerald-stripe", label: "生物银绿", primary: "#3ee6a0", secondary: "#effff8", accent: "#28b46c", deep: "#042c27", glow: "#ffffff" }),
-    15: Object.freeze({ id: "ruby-stripe", label: "深红银晶", primary: "#e93673", secondary: "#fff0f5", accent: "#92214f", deep: "#310717", glow: "#ffffff" })
+    0: Object.freeze({ id: "ink-landscape", label: "水墨风韵", primary: "#e9eee8", secondary: "#53635e", accent: "#a33a2d", deep: "#101816", glow: "#ffffff" }),
+    1: Object.freeze({ id: "galactic-vortex", label: "星际漩涡", primary: "#78b8ff", secondary: "#855dff", accent: "#ffc66e", deep: "#070b2c", glow: "#eaf5ff" }),
+    2: Object.freeze({ id: "volcanic-rift", label: "熔岩裂域", primary: "#ff6a20", secondary: "#d41712", accent: "#ffd15b", deep: "#210300", glow: "#fff0bb" }),
+    3: Object.freeze({ id: "glacier-mirror", label: "冰川裂镜", primary: "#8be8ff", secondary: "#3b86d8", accent: "#ffffff", deep: "#03172d", glow: "#effcff" }),
+    4: Object.freeze({ id: "cyber-matrix", label: "赛博矩阵", primary: "#39e7ff", secondary: "#c73cff", accent: "#88ffea", deep: "#02091c", glow: "#e6ffff" }),
+    5: Object.freeze({ id: "wind-traces", label: "风之痕迹", primary: "#d5a35d", secondary: "#835426", accent: "#ffe5a8", deep: "#241307", glow: "#fff0ca" }),
+    6: Object.freeze({ id: "arcane-array", label: "魔法阵域", primary: "#aa74ff", secondary: "#5731c8", accent: "#e4bd6a", deep: "#0d0824", glow: "#f3e5ff" }),
+    7: Object.freeze({ id: "rhythm-pulse", label: "音律律动", primary: "#ed4dce", secondary: "#36cfff", accent: "#f6ce45", deep: "#050713", glow: "#ffffff" }),
+    8: Object.freeze({ id: "cursed-codex", label: "墨咒书卷", primary: "#17120f", secondary: "#b99048", accent: "#8d1f22", deep: "#010101", glow: "#ffe8a8" }),
+    9: Object.freeze({ id: "chrono-orrery", label: "时间流淌", primary: "#d7a84f", secondary: "#516e9d", accent: "#f2dfaa", deep: "#07101f", glow: "#fff2bd" }),
+    10: Object.freeze({ id: "neon-megacity", label: "赛博都市", primary: "#20dff4", secondary: "#f23fc4", accent: "#758cff", deep: "#020918", glow: "#e9ffff" }),
+    11: Object.freeze({ id: "mythic-thunder", label: "神话雷霆", primary: "#a9dfff", secondary: "#567dff", accent: "#ffffff", deep: "#020b1b", glow: "#ffffff" }),
+    12: Object.freeze({ id: "aurora-realm", label: "极光之境", primary: "#67f1b6", secondary: "#b45cff", accent: "#9fe9ff", deep: "#031423", glow: "#efffff" }),
+    13: Object.freeze({ id: "orbital-station", label: "未来宇宙站", primary: "#a9c9df", secondary: "#4b8ed2", accent: "#eaf8ff", deep: "#050b13", glow: "#ffffff" }),
+    14: Object.freeze({ id: "tidal-maelstrom", label: "潮汐之舞", primary: "#2bd5c8", secondary: "#147c94", accent: "#e5ffff", deep: "#01181d", glow: "#efffff" }),
+    15: Object.freeze({ id: "quantum-vortex", label: "量子漩涡", primary: "#9a6dff", secondary: "#29baf4", accent: "#ffc65b", deep: "#07051b", glow: "#ffffff" })
   });
   const POCKET_VFX_PROFILES = Object.freeze({
     "top-left": Object.freeze({ id: "ripple", label: "液态潮汐", glyph: "rings", primary: "#54d8ff", secondary: "#8a7dff" }),
@@ -185,61 +189,64 @@
     "bottom-left": Object.freeze({ id: "lightning", label: "电弧裂变", glyph: "bolts", primary: "#d7f7ff", secondary: "#6a5cff" }),
     "bottom-right": Object.freeze({ id: "aurora", label: "极光绸带", glyph: "ribbons", primary: "#68ffc8", secondary: "#d967ff" })
   });
+  const POCKET_VFX_BY_ID = Object.freeze(Object.fromEntries(
+    Object.values(POCKET_VFX_PROFILES).map((profile) => [profile.id, profile])
+  ));
   const SURFACE_MATERIALS = Object.freeze([
-    Object.freeze({ id: "gold", label: "日冕流金", rail: "#ffd75d", railSecondary: "#ff8d1f", damping: 0.981, disturbance: 1.24, radius: 0.94, wake: 1.38, tail: 1.46, railSpeed: 0.92, railWidth: 1.24, railGain: 1.34, traceDecay: 0.974, traceDiffuse: 0.026, traceDeposit: 0.38, trailLife: 2900 }),
-    Object.freeze({ id: "galaxy", label: "深空星河", rail: "#72cfff", railSecondary: "#8d62ff", damping: 0.988, disturbance: 0.96, radius: 1.22, wake: 1.12, tail: 1.82, railSpeed: 0.72, railWidth: 1.42, railGain: 1.12, traceDecay: 0.965, traceDiffuse: 0.032, traceDeposit: 0.25, trailLife: 3200 }),
-    Object.freeze({ id: "lava", label: "熔岩脉冲", rail: "#ff4b36", railSecondary: "#ffad37", damping: 0.979, disturbance: 1.28, radius: 0.92, wake: 1.4, tail: 1.48, railSpeed: 0.86, railWidth: 1.28, railGain: 1.32, traceDecay: 0.972, traceDiffuse: 0.024, traceDeposit: 0.38, trailLife: 2800 }),
-    Object.freeze({ id: "circuit", label: "星云电路", rail: "#bb64ff", railSecondary: "#3ee9ff", damping: 0.974, disturbance: 0.9, radius: 0.8, wake: 1.24, tail: 1.02, railSpeed: 1.52, railWidth: 0.82, railGain: 1.3, traceDecay: 0.986, traceDiffuse: 0.01, traceDeposit: 0.32, trailLife: 2500 }),
-    Object.freeze({ id: "amber", label: "琥珀流体", rail: "#ff9a2f", railSecondary: "#ffd469", damping: 0.982, disturbance: 1.18, radius: 1.08, wake: 1.3, tail: 1.62, railSpeed: 0.82, railWidth: 1.34, railGain: 1.3, traceDecay: 0.968, traceDiffuse: 0.036, traceDeposit: 0.42, trailLife: 3100 }),
-    Object.freeze({ id: "emerald", label: "翡翠潮汐", rail: "#42e89a", railSecondary: "#a9ffcf", damping: 0.989, disturbance: 1.04, radius: 1.18, wake: 1.18, tail: 1.58, railSpeed: 0.78, railWidth: 1.36, railGain: 1.18, traceDecay: 0.976, traceDiffuse: 0.04, traceDeposit: 0.36, trailLife: 3300 }),
-    Object.freeze({ id: "burgundy", label: "酒红晶域", rail: "#ed4b76", railSecondary: "#ff9eb6", damping: 0.986, disturbance: 1.12, radius: 0.98, wake: 1.28, tail: 1.38, railSpeed: 0.9, railWidth: 1.16, railGain: 1.26, traceDecay: 0.98, traceDiffuse: 0.02, traceDeposit: 0.34, trailLife: 3000 }),
-    Object.freeze({ id: "ink", label: "水墨游龙", rail: "#f1f2eb", railSecondary: "#68736e", damping: 0.971, disturbance: 0.82, radius: 1.5, wake: 0.98, tail: 1.58, railSpeed: 0.76, railWidth: 1.42, railGain: 1.02, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0.56, trailLife: 3900 }),
-    Object.freeze({ id: "eclipse", label: "黑曜日蚀", rail: "#f8bd65", railSecondary: "#9d61ff", damping: 0.984, disturbance: 1.34, radius: 1.38, wake: 1.52, tail: 1.92, railSpeed: 1.14, railWidth: 1.5, railGain: 1.58, traceDecay: 0.962, traceDiffuse: 0.034, traceDeposit: 0.5, trailLife: 4300 }),
-    Object.freeze({ id: "solar-porcelain", label: "日光瓷金", rail: "#ffe9a1", railSecondary: "#d8a42b", damping: 0.987, disturbance: 1.02, radius: 1.04, wake: 1.2, tail: 1.32, railSpeed: 0.88, railWidth: 1.12, railGain: 1.22, traceDecay: 0.981, traceDiffuse: 0.028, traceDeposit: 0.32, trailLife: 3200 }),
-    Object.freeze({ id: "abyss", label: "深渊生物光", rail: "#48dcff", railSecondary: "#176dff", damping: 0.991, disturbance: 1.08, radius: 1.3, wake: 1.34, tail: 1.86, railSpeed: 0.74, railWidth: 1.44, railGain: 1.3, traceDecay: 0.97, traceDiffuse: 0.046, traceDeposit: 0.4, trailLife: 3700 }),
-    Object.freeze({ id: "crimson-storm", label: "猩红风暴", rail: "#ff6973", railSecondary: "#ff1f3d", damping: 0.978, disturbance: 1.32, radius: 0.88, wake: 1.42, tail: 1.54, railSpeed: 1.26, railWidth: 1.06, railGain: 1.48, traceDecay: 0.969, traceDiffuse: 0.022, traceDeposit: 0.44, trailLife: 2900 }),
-    Object.freeze({ id: "amethyst", label: "紫晶棱镜", rail: "#d28cff", railSecondary: "#6d70ff", damping: 0.992, disturbance: 1.1, radius: 0.84, wake: 1.18, tail: 1.12, railSpeed: 1.04, railWidth: 0.96, railGain: 1.28, traceDecay: 0.984, traceDiffuse: 0.012, traceDeposit: 0.3, trailLife: 3400 }),
-    Object.freeze({ id: "copper", label: "熔铜秘流", rail: "#ff9a42", railSecondary: "#d84a0d", damping: 0.98, disturbance: 1.24, radius: 1.12, wake: 1.38, tail: 1.72, railSpeed: 0.84, railWidth: 1.32, railGain: 1.38, traceDecay: 0.966, traceDiffuse: 0.038, traceDeposit: 0.46, trailLife: 3300 }),
-    Object.freeze({ id: "jade-mist", label: "翡翠流岚", rail: "#a7f2ce", railSecondary: "#28a877", damping: 0.99, disturbance: 1.0, radius: 1.34, wake: 1.24, tail: 1.76, railSpeed: 0.7, railWidth: 1.46, railGain: 1.16, traceDecay: 0.972, traceDiffuse: 0.052, traceDeposit: 0.42, trailLife: 3800 }),
-    Object.freeze({ id: "rose-quartz", label: "玫瑰晶潮", rail: "#ffafc8", railSecondary: "#e73e83", damping: 0.988, disturbance: 1.12, radius: 0.96, wake: 1.3, tail: 1.44, railSpeed: 0.94, railWidth: 1.18, railGain: 1.3, traceDecay: 0.978, traceDiffuse: 0.024, traceDeposit: 0.38, trailLife: 3300 })
+    Object.freeze({ id: "gold", label: "时间流淌", rail: "#ddb55f", railSecondary: "#547dae", damping: 0.981, disturbance: 1.24, radius: 0.94, wake: 1.38, tail: 1.46, railSpeed: 0.92, railWidth: 1.24, railGain: 1.34, traceDecay: 0.974, traceDiffuse: 0.026, traceDeposit: 0.38, trailLife: 2900 }),
+    Object.freeze({ id: "galaxy", label: "星际漩涡", rail: "#72cfff", railSecondary: "#8d62ff", damping: 0.988, disturbance: 0.96, radius: 1.22, wake: 1.12, tail: 1.82, railSpeed: 0.72, railWidth: 1.42, railGain: 1.12, traceDecay: 0.965, traceDiffuse: 0.032, traceDeposit: 0.25, trailLife: 3200 }),
+    Object.freeze({ id: "lava", label: "熔岩裂域", rail: "#ff4b27", railSecondary: "#ffb13d", damping: 0.979, disturbance: 1.28, radius: 0.92, wake: 1.4, tail: 1.48, railSpeed: 0.86, railWidth: 1.28, railGain: 1.32, traceDecay: 0.972, traceDiffuse: 0.024, traceDeposit: 0.38, trailLife: 2800 }),
+    Object.freeze({ id: "circuit", label: "赛博矩阵", rail: "#31e8ff", railSecondary: "#d63dff", damping: 0.974, disturbance: 0.9, radius: 0.8, wake: 1.24, tail: 1.02, railSpeed: 1.52, railWidth: 0.82, railGain: 1.3, traceDecay: 0.986, traceDiffuse: 0.01, traceDeposit: 0.32, trailLife: 2500 }),
+    Object.freeze({ id: "amber", label: "风之痕迹", rail: "#d7a760", railSecondary: "#806039", damping: 0.982, disturbance: 1.18, radius: 1.08, wake: 1.3, tail: 1.62, railSpeed: 0.82, railWidth: 1.34, railGain: 1.3, traceDecay: 0.968, traceDiffuse: 0.036, traceDeposit: 0.42, trailLife: 3100 }),
+    Object.freeze({ id: "emerald", label: "未来宇宙站", rail: "#c5dfef", railSecondary: "#4a8ed0", damping: 0.989, disturbance: 1.04, radius: 1.18, wake: 1.18, tail: 1.58, railSpeed: 0.78, railWidth: 1.36, railGain: 1.18, traceDecay: 0.976, traceDiffuse: 0.04, traceDeposit: 0.36, trailLife: 3300 }),
+    Object.freeze({ id: "burgundy", label: "音律律动", rail: "#f04bd1", railSecondary: "#31d6ff", damping: 0.986, disturbance: 1.12, radius: 0.98, wake: 1.28, tail: 1.38, railSpeed: 0.9, railWidth: 1.16, railGain: 1.26, traceDecay: 0.98, traceDiffuse: 0.02, traceDeposit: 0.34, trailLife: 3000 }),
+    Object.freeze({ id: "ink", label: "水墨风韵", rail: "#f1f2eb", railSecondary: "#68736e", damping: 0.971, disturbance: 0.82, radius: 1.5, wake: 0.98, tail: 1.58, railSpeed: 0.76, railWidth: 1.42, railGain: 1.02, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0.56, trailLife: 3900 }),
+    Object.freeze({ id: "eclipse", label: "墨咒书卷", rail: "#e7bd6b", railSecondary: "#7e2024", damping: 0.984, disturbance: 1.34, radius: 1.38, wake: 1.52, tail: 1.92, railSpeed: 1.14, railWidth: 1.5, railGain: 1.58, traceDecay: 0.962, traceDiffuse: 0.034, traceDeposit: 0.5, trailLife: 4300 }),
+    Object.freeze({ id: "solar-porcelain", label: "魔法阵域", rail: "#b27cff", railSecondary: "#e6bd67", damping: 0.987, disturbance: 1.02, radius: 1.04, wake: 1.2, tail: 1.32, railSpeed: 0.88, railWidth: 1.12, railGain: 1.22, traceDecay: 0.981, traceDiffuse: 0.028, traceDeposit: 0.32, trailLife: 3200 }),
+    Object.freeze({ id: "abyss", label: "潮汐之舞", rail: "#31e0d1", railSecondary: "#dffeff", damping: 0.991, disturbance: 1.08, radius: 1.3, wake: 1.34, tail: 1.86, railSpeed: 0.74, railWidth: 1.44, railGain: 1.3, traceDecay: 0.97, traceDiffuse: 0.046, traceDeposit: 0.4, trailLife: 3700 }),
+    Object.freeze({ id: "crimson-storm", label: "神话雷霆", rail: "#e7f7ff", railSecondary: "#5c82ff", damping: 0.978, disturbance: 1.32, radius: 0.88, wake: 1.42, tail: 1.54, railSpeed: 1.26, railWidth: 1.06, railGain: 1.48, traceDecay: 0.969, traceDiffuse: 0.022, traceDeposit: 0.44, trailLife: 2900 }),
+    Object.freeze({ id: "amethyst", label: "冰川裂镜", rail: "#bdf5ff", railSecondary: "#4d9ce5", damping: 0.992, disturbance: 1.1, radius: 0.84, wake: 1.18, tail: 1.12, railSpeed: 1.04, railWidth: 0.96, railGain: 1.28, traceDecay: 0.984, traceDiffuse: 0.012, traceDeposit: 0.3, trailLife: 3400 }),
+    Object.freeze({ id: "copper", label: "赛博都市", rail: "#25dff3", railSecondary: "#f343c5", damping: 0.98, disturbance: 1.24, radius: 1.12, wake: 1.38, tail: 1.72, railSpeed: 0.84, railWidth: 1.32, railGain: 1.38, traceDecay: 0.966, traceDiffuse: 0.038, traceDeposit: 0.46, trailLife: 3300 }),
+    Object.freeze({ id: "jade-mist", label: "极光之境", rail: "#72f2b4", railSecondary: "#b75dff", damping: 0.99, disturbance: 1.0, radius: 1.34, wake: 1.24, tail: 1.76, railSpeed: 0.7, railWidth: 1.46, railGain: 1.16, traceDecay: 0.972, traceDiffuse: 0.052, traceDeposit: 0.42, trailLife: 3800 }),
+    Object.freeze({ id: "rose-quartz", label: "量子漩涡", rail: "#9d70ff", railSecondary: "#2bc1f2", damping: 0.988, disturbance: 1.12, radius: 0.96, wake: 1.3, tail: 1.44, railSpeed: 0.94, railWidth: 1.18, railGain: 1.3, traceDecay: 0.978, traceDiffuse: 0.024, traceDeposit: 0.38, trailLife: 3300 })
   ]);
   const SURFACE_MATERIAL_BY_ID = Object.freeze(Object.fromEntries(
     SURFACE_MATERIALS.map((material) => [material.id, material])
   ));
   const SURFACE_TEXTURE_SOURCES = Object.freeze({
-    gold: "assets/billiards-surfaces/gold.jpg",
-    amber: "assets/billiards-surfaces/amber.jpg",
-    emerald: "assets/billiards-surfaces/emerald.jpg",
-    burgundy: "assets/billiards-surfaces/burgundy.jpg",
-    lava: "assets/billiards-surfaces/lava.jpg",
-    galaxy: "assets/billiards-surfaces/galaxy.jpg",
-    circuit: "assets/billiards-surfaces/circuit.jpg",
-    ink: "assets/billiards-surfaces/ink.jpg",
-    eclipse: "assets/billiards-surfaces/eclipse.jpg",
-    "solar-porcelain": "assets/billiards-surfaces/solar-porcelain.jpg",
-    abyss: "assets/billiards-surfaces/abyss.jpg",
-    "crimson-storm": "assets/billiards-surfaces/crimson-storm.jpg",
-    amethyst: "assets/billiards-surfaces/amethyst.jpg",
-    copper: "assets/billiards-surfaces/copper.jpg",
-    "jade-mist": "assets/billiards-surfaces/jade-mist.jpg",
-    "rose-quartz": "assets/billiards-surfaces/rose-quartz.jpg"
+    ink: "assets/billiards-surfaces/worlds/00-ink-landscape.jpg",
+    galaxy: "assets/billiards-surfaces/worlds/01-galactic-vortex.jpg",
+    lava: "assets/billiards-surfaces/worlds/02-volcanic-rift.jpg",
+    amethyst: "assets/billiards-surfaces/worlds/03-glacier-mirror.jpg",
+    circuit: "assets/billiards-surfaces/worlds/04-cyber-matrix.jpg",
+    amber: "assets/billiards-surfaces/worlds/05-wind-traces.jpg",
+    "solar-porcelain": "assets/billiards-surfaces/worlds/06-arcane-array.jpg",
+    burgundy: "assets/billiards-surfaces/worlds/07-rhythm-pulse.jpg",
+    eclipse: "assets/billiards-surfaces/worlds/08-cursed-codex.jpg",
+    gold: "assets/billiards-surfaces/worlds/09-chrono-orrery.jpg",
+    copper: "assets/billiards-surfaces/worlds/10-neon-megacity.jpg",
+    "crimson-storm": "assets/billiards-surfaces/worlds/11-mythic-thunder.jpg",
+    "jade-mist": "assets/billiards-surfaces/worlds/12-aurora-realm.jpg",
+    emerald: "assets/billiards-surfaces/worlds/13-orbital-station.jpg",
+    abyss: "assets/billiards-surfaces/worlds/14-tidal-maelstrom.jpg",
+    "rose-quartz": "assets/billiards-surfaces/worlds/15-quantum-vortex.jpg"
   });
   const BALL_SURFACE_MATERIALS = Object.freeze({
     0: "ink",
-    1: "gold",
-    2: "galaxy",
-    3: "lava",
+    1: "galaxy",
+    2: "lava",
+    3: "amethyst",
     4: "circuit",
     5: "amber",
-    6: "emerald",
+    6: "solar-porcelain",
     7: "burgundy",
     8: "eclipse",
-    9: "solar-porcelain",
-    10: "abyss",
+    9: "gold",
+    10: "copper",
     11: "crimson-storm",
-    12: "amethyst",
-    13: "copper",
-    14: "jade-mist",
+    12: "jade-mist",
+    13: "emerald",
+    14: "abyss",
     15: "rose-quartz"
   });
   const CHROMA_TRANSITION_MS = 1180;
@@ -944,18 +951,42 @@
     const origin = options.origin || CUE_SPOT;
     const theme = options.theme || dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
     const duration = Number(options.duration) || (id === "ink" ? 1180 : id === "eclipse" ? 1460 : 1040);
+    const now = performance.now();
+    const shotToken = shotState?.startedAt ?? null;
+    const activeTransition = dateMapState.surfaceTransition;
+    const mergeWithCurrent = Boolean(
+      activeTransition
+      && shotToken !== null
+      && activeTransition.shotToken === shotToken
+      && now - activeTransition.startedAt < Math.max(activeTransition.duration, 1500)
+    );
+    const nextOrigin = {
+      x: origin.x,
+      y: origin.y,
+      color: theme.primary,
+      ballNumber: Number(options.ballNumber) || 0,
+      bornAt: now,
+      duration
+    };
+    const origins = mergeWithCurrent
+      ? [...(activeTransition.origins || []), nextOrigin].slice(-4)
+      : [nextOrigin];
     surfaceMaterialId = material.id;
-    dateMapState.previousSurfaceMaterialId = previous;
+    dateMapState.previousSurfaceMaterialId = mergeWithCurrent ? activeTransition.from : previous;
     dateMapState.surfaceMaterialId = material.id;
     dateMapState.surfaceTransition = {
-      from: previous,
+      from: mergeWithCurrent ? activeTransition.from : previous,
       to: material.id,
-      startedAt: performance.now(),
-      duration,
+      startedAt: mergeWithCurrent ? activeTransition.startedAt : now,
+      duration: mergeWithCurrent
+        ? Math.max(activeTransition.duration, now - activeTransition.startedAt + duration)
+        : duration,
       originX: origin.x,
       originY: origin.y,
       color: theme.primary,
-      ballNumber: Number(options.ballNumber) || 0
+      ballNumber: Number(options.ballNumber) || 0,
+      shotToken,
+      origins
     };
     if (previous !== material.id && waterSurface) {
       waterSurface.pigment.fill(0);
@@ -2018,7 +2049,12 @@
       const settledOverLip = body.speed <= NATURAL_STOP_SPEED
         && approach.maximumDepth >= pocket.captureDepth * POCKET_LIP_SETTLE_RATIO
         && currentLateral <= pocket.captureHalfWidth + POCKET_SHELF_LATERAL_TOLERANCE;
-      if (settledOverLip) {
+      const visuallyInsidePocket = body.speed <= NATURAL_STOP_SPEED * 1.6
+        && currentDepth >= pocket.captureDepth * 0.55
+        && currentLateral <= pocket.captureHalfWidth + POCKET_SHELF_LATERAL_TOLERANCE * 1.35
+        && Math.hypot(body.position.x - pocket.x, body.position.y - pocket.y)
+          <= POCKET_RADIUS - BALL_RADIUS * 0.08;
+      if (settledOverLip || visuallyInsidePocket) {
         approach.captureCrossed = true;
         approach.settledOverLip = true;
         approach.captureCrossX = body.position.x;
@@ -2738,6 +2774,10 @@
     elements.resultShots.textContent = String(rating.technical.shots);
     elements.resultAccuracy.textContent = `${rating.technical.successfulShotRate}%`;
     elements.resultStreak.textContent = String(rating.technical.bestStreak);
+    elements.resultPotted.textContent = String(rating.technical.pottedBalls);
+    elements.resultBanks.textContent = String(rating.technical.bankedPots);
+    elements.resultMulti.textContent = String(rating.technical.multiBallShots);
+    elements.resultScratches.textContent = String(rating.technical.cueScratches);
     const energyLabels = {
       lost: "能量耗尽",
       danger: "能量告急",
@@ -3036,16 +3076,7 @@
     }
     context.restore();
 
-    context.save();
-    context.strokeStyle = "rgba(193, 220, 255, 0.34)";
-    context.lineWidth = 1.2;
-    roundRectPath(context, TABLE_OUTER.left + 15, TABLE_OUTER.top + 15, TABLE_OUTER.right - TABLE_OUTER.left - 30, TABLE_OUTER.bottom - TABLE_OUTER.top - 30, 20);
-    context.stroke();
-    context.strokeStyle = "rgba(1, 3, 8, 0.88)";
-    context.lineWidth = 5;
-    roundRectPath(context, TABLE.left - 43, TABLE.top - 43, TABLE.right - TABLE.left + 86, TABLE.bottom - TABLE.top + 86, 23);
-    context.stroke();
-    context.restore();
+    // The eight physical cushions define the table edge; decorative rings read as render artifacts.
   }
 
   function drawWoolCloth() {
@@ -4468,7 +4499,30 @@
   }
 
   function preloadSurfaceTextures() {
-    Object.keys(SURFACE_TEXTURE_SOURCES).forEach((materialId) => ensureSurfaceTexture(materialId));
+    ensureSurfaceTexture(surfaceMaterialId);
+    const pending = Object.keys(SURFACE_TEXTURE_SOURCES).filter((materialId) => materialId !== surfaceMaterialId);
+    const scheduleTimeout = typeof window.setTimeout === "function"
+      ? window.setTimeout.bind(window)
+      : typeof setTimeout === "function" ? setTimeout : null;
+    const queueNext = (delay = 680) => {
+      if (!pending.length) return;
+      if (scheduleTimeout) scheduleTimeout(requestNext, delay);
+      else requestNext();
+    };
+    const loadOne = () => {
+      if (!pending.length) return;
+      ensureSurfaceTexture(pending.shift());
+      queueNext();
+    };
+    const requestNext = () => {
+      if (!pending.length) return;
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(loadOne, { timeout: 1600 });
+      } else {
+        loadOne();
+      }
+    };
+    queueNext(420);
   }
 
   function drawSurfaceTexture(target, image, width, height, materialId) {
@@ -4492,51 +4546,19 @@
     target.imageSmoothingQuality = "high";
     target.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, 0, 0, width, height);
 
+    // Preserve each world's authored palette; this neutral veil only keeps balls legible.
     const readability = target.createLinearGradient(0, 0, width, height);
-    if (["lava", "crimson-storm"].includes(materialId)) {
-      readability.addColorStop(0, "rgba(8,0,0,0.02)");
-      readability.addColorStop(0.48, "rgba(0,0,0,0.08)");
-      readability.addColorStop(1, "rgba(15,0,0,0.16)");
-    } else if (["galaxy", "abyss", "eclipse"].includes(materialId)) {
-      readability.addColorStop(0, "rgba(0,4,18,0.03)");
-      readability.addColorStop(0.5, "rgba(0,0,8,0.09)");
-      readability.addColorStop(1, "rgba(1,0,16,0.16)");
-    } else if (materialId === "circuit") {
-      readability.addColorStop(0, "rgba(0,7,22,0.05)");
-      readability.addColorStop(0.5, "rgba(0,2,12,0.12)");
-      readability.addColorStop(1, "rgba(0,0,9,0.18)");
-    } else if (materialId === "amethyst") {
-      readability.addColorStop(0, "rgba(19,0,38,0.05)");
-      readability.addColorStop(0.5, "rgba(12,0,30,0.11)");
-      readability.addColorStop(1, "rgba(8,0,24,0.2)");
-    } else if (["gold", "solar-porcelain"].includes(materialId)) {
-      readability.addColorStop(0, "rgba(24,12,0,0.02)");
-      readability.addColorStop(0.5, "rgba(10,5,0,0.09)");
-      readability.addColorStop(1, "rgba(20,9,0,0.18)");
-    } else if (["amber", "copper"].includes(materialId)) {
-      readability.addColorStop(0, "rgba(28,7,0,0.04)");
-      readability.addColorStop(0.5, "rgba(15,3,0,0.1)");
-      readability.addColorStop(1, "rgba(24,5,0,0.2)");
-    } else if (["emerald", "jade-mist"].includes(materialId)) {
-      readability.addColorStop(0, "rgba(0,20,11,0.04)");
-      readability.addColorStop(0.5, "rgba(0,10,7,0.09)");
-      readability.addColorStop(1, "rgba(0,16,9,0.19)");
-    } else if (["burgundy", "rose-quartz"].includes(materialId)) {
-      readability.addColorStop(0, "rgba(25,0,7,0.03)");
-      readability.addColorStop(0.5, "rgba(13,0,4,0.1)");
-      readability.addColorStop(1, "rgba(22,0,6,0.2)");
-    } else {
-      readability.addColorStop(0, "rgba(13,31,27,0.02)");
-      readability.addColorStop(0.54, "rgba(9,25,22,0.07)");
-      readability.addColorStop(1, "rgba(2,14,12,0.14)");
-    }
+    const brightWorld = ["ink", "amber", "gold", "amethyst"].includes(materialId);
+    readability.addColorStop(0, `rgba(0,0,0,${brightWorld ? 0.025 : 0.005})`);
+    readability.addColorStop(0.5, `rgba(0,0,0,${brightWorld ? 0.075 : 0.035})`);
+    readability.addColorStop(1, `rgba(0,0,0,${brightWorld ? 0.15 : 0.1})`);
     target.fillStyle = readability;
     target.fillRect(0, 0, width, height);
 
     const vignette = target.createRadialGradient(width / 2, height / 2, width * 0.12, width / 2, height / 2, height * 0.56);
     vignette.addColorStop(0, "rgba(0,0,0,0)");
     vignette.addColorStop(0.7, "rgba(0,0,0,0.015)");
-    vignette.addColorStop(1, materialId === "ink" ? "rgba(5,18,15,0.22)" : "rgba(0,0,0,0.3)");
+    vignette.addColorStop(1, materialId === "ink" ? "rgba(5,12,10,0.17)" : "rgba(0,0,0,0.2)");
     target.fillStyle = vignette;
     target.fillRect(0, 0, width, height);
     target.restore();
@@ -4874,16 +4896,22 @@
         const age = Math.max(0, performance.now() - transition.startedAt);
         const transitionProgress = clamp(age / transition.duration, 0, 1);
         const phase = Math.floor(age / 82);
-        if (phase !== waterSurface.lastSurfaceTransitionImpulse && transitionProgress < 0.94) {
-          waterSurface.lastSurfaceTransitionImpulse = phase;
-          const sweep = phase * 2.399963 + (transition.ballNumber || 0) * 0.47;
-          const eased = 1 - Math.pow(1 - transitionProgress, 2.4);
-          const xReach = (TABLE.right - TABLE.left) * 0.76 * eased;
-          const yReach = (TABLE.bottom - TABLE.top) * 0.76 * eased;
-          const x = transition.originX + Math.cos(sweep) * xReach;
-          const y = transition.originY + Math.sin(sweep) * yReach;
-          const polarity = phase % 3 === 0 ? -1 : 1;
-          disturbMaterialWorld(x, y, polarity * (0.38 + (1 - transitionProgress) * 0.62), 150, 34, sweep + Math.PI / 2, phase * 0.91);
+        const origins = transition.origins?.length ? transition.origins : [transition];
+        const impulseKey = `${phase}:${origins.length}`;
+        if (impulseKey !== waterSurface.lastSurfaceTransitionImpulse && transitionProgress < 0.96) {
+          waterSurface.lastSurfaceTransitionImpulse = impulseKey;
+          origins.forEach((transitionOrigin, originIndex) => {
+            const originAge = Math.max(0, performance.now() - (transitionOrigin.bornAt || transition.startedAt));
+            const originProgress = clamp(originAge / (transitionOrigin.duration || transition.duration), 0, 1);
+            const sweep = phase * 2.399963 + (transitionOrigin.ballNumber || 0) * 0.47 + originIndex * 1.37;
+            const eased = 1 - Math.pow(1 - originProgress, 2.4);
+            const xReach = (TABLE.right - TABLE.left) * 0.76 * eased;
+            const yReach = (TABLE.bottom - TABLE.top) * 0.76 * eased;
+            const x = transitionOrigin.x + Math.cos(sweep) * xReach;
+            const y = transitionOrigin.y + Math.sin(sweep) * yReach;
+            const polarity = (phase + originIndex) % 3 === 0 ? -1 : 1;
+            disturbMaterialWorld(x, y, polarity * (0.38 + (1 - originProgress) * 0.62), 150, 34, sweep + Math.PI / 2, phase * 0.91 + originIndex);
+          });
         }
       }
       if (dateMapState.blackEightBlast) {
@@ -4919,58 +4947,12 @@
   }
 
   function drawSurfaceReflectedLight(surfaceMaterialId, width, height) {
+    const material = SURFACE_MATERIAL_BY_ID[surfaceMaterialId] || SURFACE_MATERIAL_BY_ID.ink;
     const reflectedLight = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    if (["lava", "crimson-storm"].includes(surfaceMaterialId)) {
-      reflectedLight.addColorStop(0, "rgba(255,111,24,0.1)");
-      reflectedLight.addColorStop(0.3, "rgba(255,72,8,0)");
-      reflectedLight.addColorStop(0.74, "rgba(35,2,0,0.08)");
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.34)");
-    } else if (["galaxy", "abyss"].includes(surfaceMaterialId)) {
-      reflectedLight.addColorStop(0, "rgba(122,194,255,0.1)");
-      reflectedLight.addColorStop(0.3, "rgba(122,194,255,0)");
-      reflectedLight.addColorStop(0.72, "rgba(229,98,255,0.055)");
-      reflectedLight.addColorStop(1, "rgba(0,0,15,0.3)");
-    } else if (surfaceMaterialId === "circuit") {
-      reflectedLight.addColorStop(0, "rgba(70,240,255,0.08)");
-      reflectedLight.addColorStop(0.28, "rgba(70,240,255,0)");
-      reflectedLight.addColorStop(0.7, "rgba(234,63,255,0.07)");
-      reflectedLight.addColorStop(1, "rgba(0,0,12,0.32)");
-    } else if (surfaceMaterialId === "amethyst") {
-      reflectedLight.addColorStop(0, "rgba(225,175,255,0.16)");
-      reflectedLight.addColorStop(0.24, "rgba(184,113,255,0.02)");
-      reflectedLight.addColorStop(0.76, "rgba(80,42,135,0.08)");
-      reflectedLight.addColorStop(1, "rgba(12,2,25,0.3)");
-    } else if (surfaceMaterialId === "eclipse") {
-      reflectedLight.addColorStop(0, "rgba(255,196,88,0.13)");
-      reflectedLight.addColorStop(0.27, "rgba(161,92,255,0.03)");
-      reflectedLight.addColorStop(0.7, "rgba(37,4,59,0.1)");
-      reflectedLight.addColorStop(1, "rgba(0,0,5,0.36)");
-    } else if (["gold", "solar-porcelain"].includes(surfaceMaterialId)) {
-      reflectedLight.addColorStop(0, "rgba(255,226,102,0.15)");
-      reflectedLight.addColorStop(0.3, "rgba(255,184,38,0.01)");
-      reflectedLight.addColorStop(0.74, "rgba(72,35,0,0.08)");
-      reflectedLight.addColorStop(1, "rgba(14,7,0,0.3)");
-    } else if (["amber", "copper"].includes(surfaceMaterialId)) {
-      reflectedLight.addColorStop(0, "rgba(255,171,67,0.13)");
-      reflectedLight.addColorStop(0.3, "rgba(255,108,20,0.01)");
-      reflectedLight.addColorStop(0.74, "rgba(74,15,0,0.08)");
-      reflectedLight.addColorStop(1, "rgba(17,3,0,0.3)");
-    } else if (["emerald", "jade-mist"].includes(surfaceMaterialId)) {
-      reflectedLight.addColorStop(0, "rgba(92,255,177,0.12)");
-      reflectedLight.addColorStop(0.3, "rgba(37,222,139,0.01)");
-      reflectedLight.addColorStop(0.74, "rgba(0,47,29,0.08)");
-      reflectedLight.addColorStop(1, "rgba(0,13,8,0.3)");
-    } else if (["burgundy", "rose-quartz"].includes(surfaceMaterialId)) {
-      reflectedLight.addColorStop(0, "rgba(255,100,135,0.12)");
-      reflectedLight.addColorStop(0.3, "rgba(222,34,75,0.01)");
-      reflectedLight.addColorStop(0.74, "rgba(61,0,14,0.08)");
-      reflectedLight.addColorStop(1, "rgba(15,0,4,0.31)");
-    } else {
-      reflectedLight.addColorStop(0, "rgba(255,255,248,0.16)");
-      reflectedLight.addColorStop(0.28, "rgba(255,255,248,0)");
-      reflectedLight.addColorStop(0.74, "rgba(0,0,0,0.035)");
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.17)");
-    }
+    reflectedLight.addColorStop(0, colorWithAlpha(material.rail, surfaceMaterialId === "ink" ? 0.08 : 0.065));
+    reflectedLight.addColorStop(0.28, colorWithAlpha(material.rail, 0));
+    reflectedLight.addColorStop(0.72, colorWithAlpha(material.railSecondary || material.rail, 0.035));
+    reflectedLight.addColorStop(1, "rgba(0,0,0,0.16)");
     context.save();
     context.globalCompositeOperation = "source-over";
     context.globalAlpha = 1;
@@ -4986,15 +4968,23 @@
     const height = TABLE.bottom - TABLE.top;
     const surfaceMaterialId = activeSurfaceMaterial().id;
     const artwork = surfaceArtworkFor(surfaceMaterialId);
+    root.dataset.surfaceTextureState = surfaceTextureCache.get(surfaceMaterialId)?.ready ? "ready" : "fallback";
     if (surfaceRenderer && artwork) {
       const surfaceTransition = dateMapState.surfaceTransition;
-      const transitionProgress = surfaceTransition
-        ? clamp((timestamp - surfaceTransition.startedAt) / surfaceTransition.duration, 0, 1)
+      const transitionOrigins = surfaceTransition
+        ? (surfaceTransition.origins?.length ? surfaceTransition.origins : [surfaceTransition]).map((origin) => ({
+            ...origin,
+            progress: clamp((timestamp - (origin.bornAt || surfaceTransition.startedAt)) / (origin.duration || surfaceTransition.duration), 0, 1)
+          }))
+        : [];
+      const transitionProgress = transitionOrigins.length
+        ? Math.max(...transitionOrigins.map((origin) => origin.progress))
         : 1;
+      const transitionComplete = transitionOrigins.length > 0
+        && transitionOrigins.every((origin) => origin.progress >= 1);
       const previousArtwork = surfaceTransition
         ? surfaceArtworkFor(surfaceTransition.from) || artwork
         : artwork;
-      const transitionChannels = colorChannels(surfaceTransition?.color || theme.primary).map((channel) => channel / 255);
       const blast = dateMapState.blackEightBlast;
       const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
       const blastStrength = blast
@@ -5028,22 +5018,30 @@
           progress: transitionProgress,
           originX: clamp((surfaceTransition.originX - TABLE.left) / width, 0, 1),
           originY: 1 - clamp((surfaceTransition.originY - TABLE.top) / height, 0, 1),
-          color: transitionChannels
+          color: colorChannels(surfaceTransition.color || theme.primary).map((channel) => channel / 255),
+          origins: transitionOrigins.map((origin) => ({
+            originX: clamp((origin.x - TABLE.left) / width, 0, 1),
+            originY: 1 - clamp((origin.y - TABLE.top) / height, 0, 1),
+            progress: origin.progress,
+            color: colorChannels(origin.color || surfaceTransition.color || theme.primary).map((channel) => channel / 255)
+          }))
         } : null
       });
       if (renderedSurface) {
+        root.dataset.surfaceBackend = "webgl";
         context.save();
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = "high";
         context.drawImage(renderedSurface, TABLE.left, TABLE.top, width, height);
         context.restore();
         drawSurfaceReflectedLight(surfaceMaterialId, width, height);
-        if (surfaceTransition && transitionProgress >= 1) dateMapState.surfaceTransition = null;
+        if (surfaceTransition && transitionComplete) dateMapState.surfaceTransition = null;
         return;
       }
       surfaceRendererFailed = true;
       surfaceRenderer = null;
     }
+    root.dataset.surfaceBackend = "canvas";
     if (!waterSurface?.context || !waterSurface.imageData || typeof waterSurface.context.putImageData !== "function") {
       const fallback = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
       fallback.addColorStop(0, theme.deep);
@@ -5294,12 +5292,19 @@
           const counterClockwise = circularRailDistance(centerDistance, wave.originS - front, perimeter);
           const distanceToFront = Math.min(clockwise, counterClockwise);
           const waveShape = Math.pow(clamp(1 - distanceToFront / wave.width, 0, 1), 2);
+          const echoFront = Math.max(0, front - wave.width * 0.92);
+          const echoClockwise = circularRailDistance(centerDistance, wave.originS + echoFront, perimeter);
+          const echoCounterClockwise = circularRailDistance(centerDistance, wave.originS - echoFront, perimeter);
+          const echoDistance = Math.min(echoClockwise, echoCounterClockwise);
+          const echoShape = Math.pow(clamp(1 - echoDistance / (wave.width * 1.55), 0, 1), 3) * 0.34;
           const waveLife = clamp(1 - wave.ageMs / wave.duration, 0, 1);
-          const contribution = waveShape * waveLife * (0.42 + wave.intensity * 0.72);
+          const contribution = (waveShape + echoShape) * waveLife * (0.42 + wave.intensity * 0.72);
           if (contribution > brightness) {
-            red = wave.rgb[0];
-            green = wave.rgb[1];
-            blue = wave.rgb[2];
+            const secondary = colorChannels(wave.secondary || wave.color);
+            const spectralMix = 0.16 + echoShape * 0.62;
+            red = wave.rgb[0] + (secondary[0] - wave.rgb[0]) * spectralMix;
+            green = wave.rgb[1] + (secondary[1] - wave.rgb[1]) * spectralMix;
+            blue = wave.rgb[2] + (secondary[2] - wave.rgb[2]) * spectralMix;
           }
           brightness += contribution;
         });
@@ -5329,25 +5334,41 @@
         peak = Math.max(peak, brightness);
         if (brightness < 0.035) return;
         const color = `rgb(${Math.round(clamp(red, 0, 255))},${Math.round(clamp(green, 0, 255))},${Math.round(clamp(blue, 0, 255))})`;
-        const segmentLength = length / segmentCount * 1.08;
+        const segmentLength = length / segmentCount * 1.22;
         const thickness = (horizontal ? railShape.height : railShape.width) * 0.92;
-        const gradient = horizontal
+        const glowGradient = horizontal
           ? context.createLinearGradient(center.x - segmentLength / 2, center.y, center.x + segmentLength / 2, center.y)
           : context.createLinearGradient(center.x, center.y - segmentLength / 2, center.x, center.y + segmentLength / 2);
         const rgba = (alpha) => `rgba(${Math.round(red)},${Math.round(green)},${Math.round(blue)},${alpha})`;
-        gradient.addColorStop(0, rgba(0));
-        gradient.addColorStop(0.22, rgba(brightness * 0.34));
-        gradient.addColorStop(0.5, rgba(brightness * 0.9));
-        gradient.addColorStop(0.78, rgba(brightness * 0.34));
-        gradient.addColorStop(1, rgba(0));
+        glowGradient.addColorStop(0, rgba(0));
+        glowGradient.addColorStop(0.18, rgba(brightness * 0.22));
+        glowGradient.addColorStop(0.5, rgba(brightness * 0.76));
+        glowGradient.addColorStop(0.82, rgba(brightness * 0.22));
+        glowGradient.addColorStop(1, rgba(0));
         context.globalAlpha = 1;
-        context.fillStyle = gradient;
+        context.fillStyle = glowGradient;
         context.shadowColor = color;
-        context.shadowBlur = 4 + brightness * 15;
+        context.shadowBlur = 8 + brightness * 24;
         if (horizontal) {
           context.fillRect(center.x - segmentLength / 2, center.y - thickness / 2, segmentLength, thickness);
         } else {
           context.fillRect(center.x - thickness / 2, center.y - segmentLength / 2, thickness, segmentLength);
+        }
+        const coreGradient = horizontal
+          ? context.createLinearGradient(center.x - segmentLength / 2, center.y, center.x + segmentLength / 2, center.y)
+          : context.createLinearGradient(center.x, center.y - segmentLength / 2, center.x, center.y + segmentLength / 2);
+        coreGradient.addColorStop(0, "rgba(255,255,255,0)");
+        coreGradient.addColorStop(0.36, rgba(brightness * 0.52));
+        coreGradient.addColorStop(0.5, `rgba(255,255,255,${brightness * 0.82})`);
+        coreGradient.addColorStop(0.64, rgba(brightness * 0.52));
+        coreGradient.addColorStop(1, "rgba(255,255,255,0)");
+        context.shadowBlur = 2 + brightness * 8;
+        context.fillStyle = coreGradient;
+        const coreThickness = Math.max(1.4, thickness * 0.22);
+        if (horizontal) {
+          context.fillRect(center.x - segmentLength / 2, center.y - coreThickness / 2, segmentLength, coreThickness);
+        } else {
+          context.fillRect(center.x - coreThickness / 2, center.y - segmentLength / 2, coreThickness, segmentLength);
         }
       }
     });
@@ -5403,6 +5424,100 @@
     context.drawImage(cushionLightFrameCanvas, 0, 0, WORLD.width, WORLD.height);
   }
 
+  function drawPocketPortSignature(pocket, profile, level, timestamp, pocketIndex, radius) {
+    const phase = timestamp * 0.001 + pocketIndex * 1.37;
+    const inwardAngle = Math.atan2(pocket.inwardY, pocket.inwardX);
+    context.save();
+    context.translate(pocket.x, pocket.y);
+    context.rotate(inwardAngle);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.shadowColor = profile.primary;
+    context.shadowBlur = 7 + level * 15;
+    if (profile.id === "ripple") {
+      for (let ring = 0; ring < 4; ring += 1) {
+        const spread = radius * (0.84 + ring * 0.2) + (phase * 9 + ring * 8) % 10;
+        context.globalAlpha = level * (0.64 - ring * 0.1);
+        context.strokeStyle = ring % 2 ? profile.secondary : profile.primary;
+        context.lineWidth = 2.4 - ring * 0.28;
+        context.beginPath();
+        ellipsePath(context, 0, 0, spread, spread * 0.46, 0, -2.7, 2.7);
+        context.stroke();
+      }
+    } else if (profile.id === "comet") {
+      for (let ribbon = -2; ribbon <= 2; ribbon += 1) {
+        const sway = ribbon * 7 + Math.sin(phase * 2 + ribbon) * 3;
+        context.globalAlpha = level * (0.58 - Math.abs(ribbon) * 0.08);
+        context.strokeStyle = ribbon % 2 ? profile.secondary : profile.primary;
+        context.lineWidth = 1.4 + (2 - Math.abs(ribbon)) * 0.8;
+        context.beginPath();
+        context.moveTo(radius * 0.68, sway * 0.25);
+        context.bezierCurveTo(radius * 1.1, sway, radius * 1.52, -sway * 0.4, radius * (1.94 + ribbon * 0.06), sway * 1.4);
+        context.stroke();
+      }
+    } else if (profile.id === "prism") {
+      const colors = [profile.primary, "#ffffff", profile.secondary];
+      colors.forEach((color, channel) => {
+        const offset = (channel - 1) * 5;
+        context.globalAlpha = level * 0.6;
+        context.strokeStyle = color;
+        context.lineWidth = 1.35;
+        context.beginPath();
+        context.moveTo(radius * 0.7, offset);
+        context.lineTo(radius * 1.2, -radius * 0.68 + offset);
+        context.lineTo(radius * 1.62, offset * 1.6);
+        context.lineTo(radius * 1.2, radius * 0.68 + offset);
+        context.stroke();
+      });
+    } else if (profile.id === "pulse") {
+      context.rotate(phase * 0.32);
+      for (let ring = 0; ring < 3; ring += 1) {
+        context.setLineDash([5 + ring * 3, 7 + ring * 2]);
+        context.lineDashOffset = -phase * (12 + ring * 4);
+        context.globalAlpha = level * (0.68 - ring * 0.14);
+        context.strokeStyle = ring % 2 ? profile.secondary : profile.primary;
+        context.lineWidth = 2.3 - ring * 0.35;
+        context.beginPath();
+        context.arc(0, 0, radius * (0.92 + ring * 0.22), 0, Math.PI * 2);
+        context.stroke();
+      }
+      context.setLineDash([]);
+    } else if (profile.id === "lightning") {
+      for (let branch = -2; branch <= 2; branch += 1) {
+        const direction = branch * 0.25 + Math.sin(phase * 3 + branch) * 0.08;
+        context.globalAlpha = level * (0.72 - Math.abs(branch) * 0.09);
+        context.strokeStyle = branch === 0 ? "#ffffff" : branch % 2 ? profile.secondary : profile.primary;
+        context.lineWidth = branch === 0 ? 2.4 : 1.25;
+        context.beginPath();
+        let x = radius * 0.65;
+        let y = branch * 4;
+        context.moveTo(x, y);
+        for (let step = 1; step <= 4; step += 1) {
+          x = radius * (0.65 + step * 0.3);
+          y += Math.sin(phase * 5 + branch * 2.3 + step * 1.8) * (5 + step * 1.5) + direction * 5;
+          context.lineTo(x, y);
+        }
+        context.stroke();
+      }
+    } else {
+      for (let ribbon = -2; ribbon <= 2; ribbon += 1) {
+        const offset = ribbon * 7;
+        context.globalAlpha = level * (0.42 - Math.abs(ribbon) * 0.04);
+        context.strokeStyle = ribbon % 2 ? profile.secondary : profile.primary;
+        context.lineWidth = 4.8 - Math.abs(ribbon) * 0.55;
+        context.beginPath();
+        context.moveTo(radius * 0.62, offset * 0.25);
+        context.bezierCurveTo(
+          radius * 1.02, -24 + offset + Math.sin(phase + ribbon) * 7,
+          radius * 1.48, 25 + offset - Math.sin(phase * 1.3 + ribbon) * 8,
+          radius * 1.94, offset * 0.55
+        );
+        context.stroke();
+      }
+    }
+    context.restore();
+  }
+
   function drawPocketLightPorts(timestamp) {
     const blast = dateMapState.blackEightBlast;
     const surface = activeSurfaceMaterial();
@@ -5415,7 +5530,7 @@
       const active = dateMapState.activeEffect?.pocketId === pocket.id;
       const ignition = blast ? smoothStep(pocketIndex / 8, pocketIndex / 8 + 0.1, blastProgress) : 0;
       const flare = dateMapState.pocketFlares.reduce((peak, item) => item.pocketId === pocket.id ? Math.max(peak, item.life) : peak, 0);
-      const level = clamp(0.12 + (active ? 0.22 : 0) + flare * 0.66 + ignition * 0.8, 0, 1);
+      const level = clamp(0.19 + (active ? 0.28 : 0) + flare * 0.64 + ignition * 0.8, 0, 1);
       const radius = POCKET_RADIUS + 5.5;
       const channels = [theme.glow, surface.rail, surface.railSecondary || theme.secondary];
       for (let segment = 0; segment < 18; segment += 1) {
@@ -5429,51 +5544,7 @@
         context.arc(pocket.x, pocket.y, radius, start, end);
         context.stroke();
       }
-      if (["lava", "gold", "amber", "solar-porcelain", "copper", "crimson-storm"].includes(surface.id)) {
-        context.globalAlpha = level * 0.58;
-        context.strokeStyle = "#ff9a22";
-        for (let tongue = 0; tongue < 8; tongue += 1) {
-          const angle = tongue / 8 * Math.PI * 2 + timestamp * 0.00018;
-          const reach = radius + 7 + Math.sin(timestamp * 0.005 + tongue) * 5;
-          context.beginPath();
-          context.moveTo(pocket.x + Math.cos(angle) * radius * 0.78, pocket.y + Math.sin(angle) * radius * 0.78);
-          context.lineTo(pocket.x + Math.cos(angle) * reach, pocket.y + Math.sin(angle) * reach);
-          context.stroke();
-        }
-      } else if (["galaxy", "emerald", "abyss", "jade-mist", "eclipse"].includes(surface.id)) {
-        context.globalAlpha = level * 0.5;
-        context.strokeStyle = "#b17bff";
-        context.lineWidth = 1.25;
-        context.beginPath();
-        ellipsePath(context, pocket.x, pocket.y, radius * 1.34, radius * 0.52, timestamp * 0.00022 + pocketIndex, 0, Math.PI * 2);
-        context.stroke();
-      } else if (surface.id === "circuit") {
-        context.globalAlpha = level * 0.62;
-        context.strokeStyle = pocketIndex % 2 ? "#ef55ff" : "#4cf3ff";
-        context.lineWidth = 1.2;
-        roundRectPath(context, pocket.x - radius * 0.8, pocket.y - radius * 0.8, radius * 1.6, radius * 1.6, 3);
-        context.stroke();
-      } else if (["amethyst", "burgundy", "rose-quartz"].includes(surface.id)) {
-        context.globalAlpha = level * 0.54;
-        context.strokeStyle = "#eaffff";
-        context.lineWidth = 1.1;
-        for (let shard = 0; shard < 10; shard += 1) {
-          const angle = shard / 10 * Math.PI * 2;
-          context.beginPath();
-          context.moveTo(pocket.x + Math.cos(angle) * radius * 0.82, pocket.y + Math.sin(angle) * radius * 0.82);
-          context.lineTo(pocket.x + Math.cos(angle) * radius * 1.28, pocket.y + Math.sin(angle) * radius * 1.28);
-          context.stroke();
-        }
-      } else {
-        context.globalCompositeOperation = "source-over";
-        context.globalAlpha = level * 0.34;
-        context.strokeStyle = "#18231f";
-        context.lineWidth = 5.5;
-        context.beginPath();
-        context.arc(pocket.x, pocket.y, radius * 1.08, -0.2 + pocketIndex * 0.1, Math.PI * 1.6 + pocketIndex * 0.1);
-        context.stroke();
-        context.globalCompositeOperation = "screen";
-      }
+      drawPocketPortSignature(pocket, profile, level, timestamp, pocketIndex, radius);
       if (flare > 0.02) {
         const glowRadius = 48 + (1 - flare) * 92;
         const glow = context.createRadialGradient(pocket.x, pocket.y, POCKET_RADIUS * 0.45, pocket.x, pocket.y, glowRadius);
@@ -6050,6 +6121,122 @@
     });
   }
 
+  function drawPocketMotionSignatures(timestamp) {
+    if (!dateMapState.rollingTrails.length) return;
+    const latestByBall = new Map();
+    dateMapState.rollingTrails.forEach((trail) => {
+      if (trail.life > 0.035) latestByBall.set(trail.ballNumber, trail);
+    });
+    const surface = activeSurfaceMaterial();
+    context.save();
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    [...latestByBall.values()].slice(-16).forEach((node, nodeIndex) => {
+      const profile = POCKET_VFX_BY_ID[node.effectId] || POCKET_VFX_BY_ID.ripple;
+      const dx = node.x2 - node.x1;
+      const dy = node.y2 - node.y1;
+      const length = Math.max(0.001, Math.hypot(dx, dy));
+      const speed = clamp(node.speed / 22, 0.12, 1);
+      const alpha = clamp(node.life, 0, 1) * (0.22 + speed * 0.42);
+      const heading = Math.atan2(dy, dx);
+      const phase = timestamp * 0.0014 + node.ballNumber * 1.73 + nodeIndex * 0.63;
+      const reach = 28 + speed * 58;
+      context.save();
+      context.translate(node.x2, node.y2);
+      context.rotate(heading);
+      context.globalCompositeOperation = "screen";
+      context.shadowColor = surface.rail;
+      context.shadowBlur = 4 + speed * 10;
+      if (profile.id === "ripple") {
+        for (let ring = 0; ring < 3; ring += 1) {
+          const radius = reach * (0.46 + ring * 0.32) + (phase * 8 + ring * 9) % 11;
+          context.globalAlpha = alpha * (0.58 - ring * 0.12);
+          context.strokeStyle = ring % 2 ? profile.secondary : node.color;
+          context.lineWidth = 3.2 - ring * 0.62;
+          context.beginPath();
+          ellipsePath(context, -reach * 0.16, Math.sin(phase + ring) * 8, radius * 1.38, radius * 0.48, -0.18, -2.74, 2.64);
+          context.stroke();
+        }
+      } else if (profile.id === "comet") {
+        const plume = context.createRadialGradient(-reach * 0.35, 0, 2, -reach * 0.35, 0, reach * 0.92);
+        plume.addColorStop(0, colorWithAlpha("#fff6c8", alpha * 0.34));
+        plume.addColorStop(0.24, colorWithAlpha(node.color, alpha * 0.24));
+        plume.addColorStop(1, colorWithAlpha(profile.secondary, 0));
+        context.globalAlpha = 1;
+        context.fillStyle = plume;
+        context.fillRect(-reach * 1.4, -reach, reach * 2, reach * 2);
+        for (let flame = -2; flame <= 2; flame += 1) {
+          context.globalAlpha = alpha * (0.48 - Math.abs(flame) * 0.06);
+          context.strokeStyle = flame % 2 ? profile.secondary : surface.rail;
+          context.lineWidth = 2.2 + (2 - Math.abs(flame)) * 1.1;
+          context.beginPath();
+          context.moveTo(reach * 0.2, flame * 4);
+          context.bezierCurveTo(-reach * 0.08, flame * 13, -reach * 0.72, -flame * 16 + Math.sin(phase + flame) * 9, -reach * 1.18, flame * 8);
+          context.stroke();
+        }
+      } else if (profile.id === "prism") {
+        [profile.primary, node.color, profile.secondary].forEach((color, channel) => {
+          const offset = (channel - 1) * 8;
+          context.globalAlpha = alpha * 0.52;
+          context.strokeStyle = color;
+          context.lineWidth = 1.2 + channel * 0.45;
+          context.beginPath();
+          context.moveTo(-reach * 0.42, offset);
+          context.quadraticCurveTo(0, -reach * 0.62 + offset, reach * 0.66, offset * 0.42);
+          context.quadraticCurveTo(0, reach * 0.62 + offset, -reach * 0.42, offset);
+          context.stroke();
+        });
+      } else if (profile.id === "pulse") {
+        context.rotate(-heading + phase * 0.08);
+        for (let ring = 0; ring < 3; ring += 1) {
+          const radius = reach * (0.42 + ring * 0.3) + (phase * 10 % 12);
+          context.setLineDash([7 + ring * 3, 8 + ring * 4]);
+          context.lineDashOffset = -phase * (10 + ring * 5);
+          context.globalAlpha = alpha * (0.62 - ring * 0.12);
+          context.strokeStyle = ring % 2 ? profile.secondary : node.color;
+          context.lineWidth = 2.6 - ring * 0.46;
+          context.beginPath();
+          context.arc(0, 0, radius, 0, Math.PI * 2);
+          context.stroke();
+        }
+        context.setLineDash([]);
+      } else if (profile.id === "lightning") {
+        for (let branch = -2; branch <= 2; branch += 1) {
+          context.globalAlpha = alpha * (0.72 - Math.abs(branch) * 0.08);
+          context.strokeStyle = branch === 0 ? "#ffffff" : branch % 2 ? profile.secondary : node.color;
+          context.lineWidth = branch === 0 ? 2.5 : 1.35;
+          context.beginPath();
+          let x = -reach * 0.62;
+          let y = branch * 5;
+          context.moveTo(x, y);
+          for (let step = 1; step <= 6; step += 1) {
+            x += reach * 0.22;
+            y += Math.sin(phase * 5 + branch * 1.7 + step * 2.1) * (6 + step * 1.6);
+            context.lineTo(x, y);
+          }
+          context.stroke();
+        }
+      } else {
+        for (let ribbon = -2; ribbon <= 2; ribbon += 1) {
+          const offset = ribbon * 9;
+          context.globalAlpha = alpha * (0.4 - Math.abs(ribbon) * 0.035);
+          context.strokeStyle = ribbon % 2 ? profile.secondary : node.color;
+          context.lineWidth = 7 - Math.abs(ribbon) * 0.7;
+          context.beginPath();
+          context.moveTo(-reach * 0.86, offset * 0.45);
+          context.bezierCurveTo(
+            -reach * 0.38, -reach * 0.45 + offset + Math.sin(phase + ribbon) * 11,
+            reach * 0.24, reach * 0.44 + offset - Math.sin(phase * 1.23 + ribbon) * 12,
+            reach * 0.82, offset * 0.3
+          );
+          context.stroke();
+        }
+      }
+      context.restore();
+    });
+    context.restore();
+  }
+
   function drawMaterialMotionTrails(timestamp) {
     if (surfaceRenderer) return;
     const displacementInfluences = collectSurfaceInfluences();
@@ -6503,6 +6690,58 @@
       context.fillStyle = wash;
       context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     }
+    const vortex = smoothStep(0.08, 0.36, progress) * (1 - smoothStep(0.86, 1, progress));
+    if (vortex > 0.01) {
+      context.save();
+      context.translate(x, y);
+      context.rotate(progress * Math.PI * 1.35);
+      context.lineCap = "round";
+      for (let ray = 0; ray < 16; ray += 1) {
+        const angle = ray / 16 * Math.PI * 2;
+        const theme = BALL_CHROMA_THEMES[ray] || BALL_CHROMA_THEMES[0];
+        const twist = (ray % 2 ? -1 : 1) * (0.24 + progress * 0.34);
+        const reach = 150 + (ray % 5) * 38 + climax * 120;
+        context.globalAlpha = vortex * (0.24 + (ray % 4) * 0.045);
+        context.strokeStyle = ray === 8 ? "#fff5cd" : theme.primary;
+        context.shadowColor = theme.glow;
+        context.shadowBlur = 5 + climax * 12;
+        context.lineWidth = ray === 8 ? 3.4 : 1.3 + (ray % 3) * 0.55;
+        context.beginPath();
+        context.moveTo(Math.cos(angle) * 18, Math.sin(angle) * 18);
+        context.bezierCurveTo(
+          Math.cos(angle + twist) * reach * 0.34,
+          Math.sin(angle + twist) * reach * 0.34,
+          Math.cos(angle + twist * 1.8) * reach * 0.72,
+          Math.sin(angle + twist * 1.8) * reach * 0.72,
+          Math.cos(angle + twist * 2.35) * reach,
+          Math.sin(angle + twist * 2.35) * reach
+        );
+        context.stroke();
+      }
+      context.shadowBlur = 0;
+      [0.24, 0.48, 0.72].forEach((ring, ringIndex) => {
+        const ringRadius = 52 + ring * 280 + climax * 38;
+        context.globalAlpha = vortex * (0.34 - ringIndex * 0.07);
+        context.strokeStyle = ringIndex === 1 ? "#a86cff" : "#ffd066";
+        context.lineWidth = 1.5 + climax * 1.4;
+        context.setLineDash([8 + ringIndex * 4, 12 + ringIndex * 5]);
+        context.lineDashOffset = (ringIndex % 2 ? 1 : -1) * timestamp * 0.04;
+        context.beginPath();
+        context.arc(0, 0, ringRadius, 0, Math.PI * 2);
+        context.stroke();
+      });
+      context.setLineDash([]);
+      const coreRadius = 24 + progress * 48 + climax * 34;
+      const core = context.createRadialGradient(0, 0, 0, 0, 0, coreRadius);
+      core.addColorStop(0, `rgba(0,0,0,${0.9 * vortex})`);
+      core.addColorStop(0.42, `rgba(18,5,34,${0.72 * vortex})`);
+      core.addColorStop(0.72, `rgba(255,190,70,${0.28 * climax})`);
+      core.addColorStop(1, "rgba(255,210,100,0)");
+      context.globalAlpha = 1;
+      context.fillStyle = core;
+      context.fillRect(-coreRadius, -coreRadius, coreRadius * 2, coreRadius * 2);
+      context.restore();
+    }
     context.restore();
   }
 
@@ -6518,6 +6757,7 @@
     context.clip();
     renderWaterSurface(timestamp);
     drawMaterialMotionTrails(timestamp);
+    drawPocketMotionSignatures(timestamp);
     if (blackEightActive) drawBlackEightBlast(timestamp);
     context.restore();
   }
@@ -6589,26 +6829,35 @@
     context.arc(0, 0, BALL_RADIUS, 0, Math.PI * 2);
     context.clip();
     context.rotate(data.rollAngle);
-    if (number === 0) {
-      const cueGradient = context.createRadialGradient(-5, -6, 1, 0, 0, BALL_RADIUS * 1.2);
-      cueGradient.addColorStop(0, "#ffffff");
-      cueGradient.addColorStop(0.58, "#eeeae0");
-      cueGradient.addColorStop(1, "#89938d");
-      context.fillStyle = cueGradient;
-      context.fillRect(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
-      context.fillStyle = "rgba(136, 47, 48, 0.72)";
+    const worldTheme = BALL_CHROMA_THEMES[number] || BALL_CHROMA_THEMES[0];
+    const worldGradient = context.createRadialGradient(-5, -6, 1, 2, 3, BALL_RADIUS * 1.34);
+    worldGradient.addColorStop(0, worldTheme.glow);
+    worldGradient.addColorStop(0.22, worldTheme.primary);
+    worldGradient.addColorStop(0.62, worldTheme.secondary);
+    worldGradient.addColorStop(1, worldTheme.deep);
+    context.fillStyle = worldGradient;
+    context.fillRect(-BALL_RADIUS * 1.5, -BALL_RADIUS * 1.5, BALL_RADIUS * 3, BALL_RADIUS * 3);
+    context.globalAlpha = 0.44;
+    context.strokeStyle = worldTheme.accent;
+    context.lineWidth = number === 0 ? 1.15 : 0.9;
+    for (let ring = 0; ring < 3; ring += 1) {
       context.beginPath();
-      context.arc(0, -BALL_RADIUS * 0.62, 1.6, 0, Math.PI * 2);
+      context.arc(
+        Math.sin(number * 1.7 + ring) * BALL_RADIUS * 0.18,
+        Math.cos(number * 1.3 + ring) * BALL_RADIUS * 0.16,
+        BALL_RADIUS * (0.3 + ring * 0.22),
+        number * 0.29 + ring * 0.8,
+        number * 0.29 + ring * 0.8 + Math.PI * (0.76 + ring * 0.15)
+      );
+      context.stroke();
+    }
+    context.globalAlpha = 1;
+    if (number === 0) {
+      context.fillStyle = "rgba(147, 43, 35, 0.9)";
+      context.beginPath();
+      context.arc(0, -BALL_RADIUS * 0.62, 1.8, 0, Math.PI * 2);
       context.fill();
     } else {
-      const color = BALL_COLORS[number];
-      const stripe = number > 8;
-      context.fillStyle = stripe ? "#f3eee1" : color;
-      context.fillRect(-BALL_RADIUS * 1.5, -BALL_RADIUS * 1.5, BALL_RADIUS * 3, BALL_RADIUS * 3);
-      if (stripe) {
-        context.fillStyle = color;
-        context.fillRect(-BALL_RADIUS * 1.5, -BALL_RADIUS * 0.48, BALL_RADIUS * 3, BALL_RADIUS * 0.96);
-      }
       const shade = context.createRadialGradient(-5, -6, 1, 2, 3, BALL_RADIUS * 1.22);
       shade.addColorStop(0, "rgba(255,255,255,0.38)");
       shade.addColorStop(0.36, "rgba(255,255,255,0.02)");
@@ -6616,12 +6865,15 @@
       context.fillStyle = shade;
       context.fillRect(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
       drawMotifGlyph(motifForBall(number), 0, BALL_RADIUS * 0.62, 3.8, 0.72);
-      context.fillStyle = "#f7f2e7";
+      context.shadowColor = worldTheme.glow;
+      context.shadowBlur = 4;
+      context.fillStyle = "rgba(250, 249, 243, 0.96)";
       context.beginPath();
-      context.arc(0, 0, 6.6, 0, Math.PI * 2);
+      context.arc(0, 0, 7.3, 0, Math.PI * 2);
       context.fill();
+      context.shadowBlur = 0;
       context.fillStyle = "#191c1c";
-      context.font = "700 7.2px system-ui, sans-serif";
+      context.font = "800 8.2px system-ui, sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
       context.fillText(String(number), 0, 0.4);
