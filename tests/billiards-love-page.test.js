@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-reactive-surfaces-20260713c";
-const styleCacheVersion = "billiards-reactive-surfaces-20260713c";
+const runtimeCacheVersion = "billiards-individual-materials-20260713d";
+const styleCacheVersion = "billiards-individual-materials-20260713d";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -173,15 +173,16 @@ test("couples the photographic cloth and rolling field inside one WebGL material
   assert.match(surfaceRenderer, /float charge = smoothstep/);
   assert.match(surfaceRenderer, /vec2 refractDirection = normalize/);
   assert.match(surfaceRenderer, /color = mix\(center, wet/);
-  assert.doesNotMatch(surfaceRenderer, /float stars =|vec3 electric =|float facet =/);
+  assert.match(surfaceRenderer, /float softNoise\(/);
+  assert.match(surfaceRenderer, /uniform float uBlastProgress;/);
+  assert.match(surfaceRenderer, /uniform vec2 uBlastOrigin;/);
   assert.match(game, /function initializeSurfaceRenderer\(/);
   assert.match(game, /surfaceRenderer\.render\(\{/);
   assert.match(game, /surfaceRenderer \? "webgl2-displaced-texture" : "canvas-field-fallback"/);
 });
 
-test("automatically maps standard ball colors to nine reference-matched surface materials", () => {
+test("maps the cue ball and all fifteen object balls to individual reference-quality materials", () => {
   const expected = [
-    ["ice", "极光冰面"],
     ["gold", "日冕流金"],
     ["galaxy", "深空星河"],
     ["lava", "熔岩脉冲"],
@@ -189,28 +190,37 @@ test("automatically maps standard ball colors to nine reference-matched surface 
     ["amber", "琥珀流体"],
     ["emerald", "翡翠潮汐"],
     ["burgundy", "酒红晶域"],
-    ["ink", "水墨日蚀"]
+    ["ink", "水墨游龙"],
+    ["eclipse", "黑曜日蚀"],
+    ["solar-porcelain", "日光瓷金"],
+    ["abyss", "深渊生物光"],
+    ["crimson-storm", "猩红风暴"],
+    ["amethyst", "紫晶棱镜"],
+    ["copper", "熔铜秘流"],
+    ["jade-mist", "翡翠流岚"],
+    ["rose-quartz", "玫瑰晶潮"]
   ];
-  assert.match(html, /data-surface-material="ice"/);
+  assert.match(html, /data-surface-material="ink"/);
   for (const [id, label] of expected) {
     const texture = `assets/billiards-surfaces/${id}.jpg`;
     assert.match(game, new RegExp(`id: "${id}", label: "${label}"`));
-    assert.match(game, new RegExp(`${id}: "${escapeRegExp(texture)}"`));
+    assert.ok(
+      game.includes(`${id}: "${texture}"`) || game.includes(`"${id}": "${texture}"`),
+      `${id} should map to its local material texture`
+    );
     assert.match(css, new RegExp(`data-surface-material="${id}"`));
     assert.match(css, new RegExp(escapeRegExp(`url("billiards-surfaces/${id}.jpg")`)));
     assert.equal(fs.existsSync(path.join(root, texture)), true, `${texture} should exist`);
     assert.ok(fs.statSync(path.join(root, texture)).size > 500 * 1024, `${texture} should retain high-detail raster data`);
   }
-  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/ice\.jpg" as="image" fetchpriority="high">/);
+  assert.equal(expected.length, 16);
+  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/ink\.jpg" as="image" fetchpriority="high">/);
   for (const mapping of [
-    /1: "gold", 9: "gold"/,
-    /2: "galaxy", 10: "galaxy"/,
-    /3: "lava", 11: "lava"/,
-    /4: "circuit", 12: "circuit"/,
-    /5: "amber", 13: "amber"/,
-    /6: "emerald", 14: "emerald"/,
-    /7: "burgundy", 15: "burgundy"/,
-    /8: "ink"/
+    /0: "ink"/,
+    /1: "gold"/, /2: "galaxy"/, /3: "lava"/, /4: "circuit"/,
+    /5: "amber"/, /6: "emerald"/, /7: "burgundy"/, /8: "eclipse"/,
+    /9: "solar-porcelain"/, /10: "abyss"/, /11: "crimson-storm"/,
+    /12: "amethyst"/, /13: "copper"/, /14: "jade-mist"/, /15: "rose-quartz"/
   ]) assert.match(game, mapping);
   assert.match(game, /const SURFACE_TEXTURE_SOURCES = Object\.freeze\(\{/);
   assert.match(game, /function selectSurfaceMaterial\(/);
@@ -223,6 +233,9 @@ test("automatically maps standard ball colors to nine reference-matched surface 
   assert.match(game, /function drawSurfaceTexture\(/);
   assert.match(game, /function createSurfaceArtwork\(/);
   assert.match(game, /function drawMaterialMotionTrails\(/);
+  assert.match(game, /function spawnMaterialCollisionResponse\(/);
+  assert.match(game, /let brightness = 0;/);
+  assert.doesNotMatch(game, /function drawMaterialFrameFinish\(/);
   assert.match(game, /paintLavaArtwork/);
   assert.match(game, /paintGalaxyArtwork/);
   assert.match(game, /paintCircuitArtwork/);
@@ -514,6 +527,8 @@ test("keeps a compact result dock and reserves the largest effect for black 8", 
   assert.match(cushionLight, /dateMapState\.blackEightBlast/);
   assert.match(game, /screenShake = Math\.max\(screenShake, success \? 7\.2 : 4\.2\)/);
   assert.match(game, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
+  assert.match(game, /if \(dateMapState\.blackEightBlast\) \{/);
+  assert.match(game, /setTimeout\(finishWhenReady, 120\)/);
   const outcomes = fragment(game, "function processOutcomePerformances", "function finalizeShot");
   assert.doesNotMatch(outcomes, /queueCinematic\(/);
   assert.match(outcomes, /beginFinalDateMapReveal\(outcome\)/);

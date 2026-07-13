@@ -1829,22 +1829,36 @@ body {
 .hb-app[data-surface-material="lava"] { --hb-surface-halo: #ff6a12; --hb-surface-deep: #190503; --hb-surface-ambient: #8e2308; --hb-surface-image: url("billiards-surfaces/lava.jpg"); }
 .hb-app[data-surface-material="galaxy"] { --hb-surface-halo: #72bcff; --hb-surface-deep: #05071e; --hb-surface-ambient: #412f9e; --hb-surface-image: url("billiards-surfaces/galaxy.jpg"); }
 .hb-app[data-surface-material="circuit"] { --hb-surface-halo: #35edff; --hb-surface-deep: #020b20; --hb-surface-ambient: #7b25ad; --hb-surface-image: url("billiards-surfaces/circuit.jpg"); }
-.hb-app[data-surface-material="ice"] { --hb-surface-halo: #bdefff; --hb-surface-deep: #03182c; --hb-surface-ambient: #176fa4; --hb-surface-image: url("billiards-surfaces/ice.jpg"); }
 .hb-app[data-surface-material="ink"] { --hb-surface-halo: #e7e9df; --hb-surface-deep: #0c1513; --hb-surface-ambient: #6f827a; --hb-surface-image: url("billiards-surfaces/ink.jpg"); }
 .hb-app[data-surface-material="gold"] { --hb-surface-halo: #ffd75d; --hb-surface-deep: #241300; --hb-surface-ambient: #a96a00; --hb-surface-image: url("billiards-surfaces/gold.jpg"); }
 .hb-app[data-surface-material="amber"] { --hb-surface-halo: #ff9a2f; --hb-surface-deep: #2b0b00; --hb-surface-ambient: #b43b05; --hb-surface-image: url("billiards-surfaces/amber.jpg"); }
 .hb-app[data-surface-material="emerald"] { --hb-surface-halo: #4af0a3; --hb-surface-deep: #001b12; --hb-surface-ambient: #087549; --hb-surface-image: url("billiards-surfaces/emerald.jpg"); }
 .hb-app[data-surface-material="burgundy"] { --hb-surface-halo: #f34c78; --hb-surface-deep: #210008; --hb-surface-ambient: #791026; --hb-surface-image: url("billiards-surfaces/burgundy.jpg"); }
+.hb-app[data-surface-material="eclipse"] { --hb-surface-halo: #d89bff; --hb-surface-deep: #030108; --hb-surface-ambient: #8d5123; --hb-surface-image: url("billiards-surfaces/eclipse.jpg"); }
+.hb-app[data-surface-material="solar-porcelain"] { --hb-surface-halo: #fff0b8; --hb-surface-deep: #221300; --hb-surface-ambient: #c18a27; --hb-surface-image: url("billiards-surfaces/solar-porcelain.jpg"); }
+.hb-app[data-surface-material="abyss"] { --hb-surface-halo: #50dcff; --hb-surface-deep: #000d2b; --hb-surface-ambient: #0755a3; --hb-surface-image: url("billiards-surfaces/abyss.jpg"); }
+.hb-app[data-surface-material="crimson-storm"] { --hb-surface-halo: #ff6570; --hb-surface-deep: #1d0005; --hb-surface-ambient: #9b0718; --hb-surface-image: url("billiards-surfaces/crimson-storm.jpg"); }
+.hb-app[data-surface-material="amethyst"] { --hb-surface-halo: #d28cff; --hb-surface-deep: #140026; --hb-surface-ambient: #64258d; --hb-surface-image: url("billiards-surfaces/amethyst.jpg"); }
+.hb-app[data-surface-material="copper"] { --hb-surface-halo: #ff9a42; --hb-surface-deep: #210800; --hb-surface-ambient: #9d3409; --hb-surface-image: url("billiards-surfaces/copper.jpg"); }
+.hb-app[data-surface-material="jade-mist"] { --hb-surface-halo: #a7f2ce; --hb-surface-deep: #001a12; --hb-surface-ambient: #1c7155; --hb-surface-image: url("billiards-surfaces/jade-mist.jpg"); }
+.hb-app[data-surface-material="rose-quartz"] { --hb-surface-halo: #ffb4cd; --hb-surface-deep: #26000e; --hb-surface-ambient: #8f2449; --hb-surface-image: url("billiards-surfaces/rose-quartz.jpg"); }
 
 .hb-app[data-surface-material="lava"] { --stage-accent: #ff9b38; }
 .hb-app[data-surface-material="galaxy"] { --stage-accent: #91c8ff; }
 .hb-app[data-surface-material="circuit"] { --stage-accent: #58edff; }
-.hb-app[data-surface-material="ice"] { --stage-accent: #c8f5ff; }
 .hb-app[data-surface-material="ink"] { --stage-accent: #dce4dc; }
 .hb-app[data-surface-material="gold"] { --stage-accent: #ffe17a; }
 .hb-app[data-surface-material="amber"] { --stage-accent: #ffad4c; }
 .hb-app[data-surface-material="emerald"] { --stage-accent: #62efad; }
 .hb-app[data-surface-material="burgundy"] { --stage-accent: #f2668b; }
+.hb-app[data-surface-material="eclipse"] { --stage-accent: #e0a5ff; }
+.hb-app[data-surface-material="solar-porcelain"] { --stage-accent: #ffe59a; }
+.hb-app[data-surface-material="abyss"] { --stage-accent: #65ddff; }
+.hb-app[data-surface-material="crimson-storm"] { --stage-accent: #ff7480; }
+.hb-app[data-surface-material="amethyst"] { --stage-accent: #d99cff; }
+.hb-app[data-surface-material="copper"] { --stage-accent: #ffad68; }
+.hb-app[data-surface-material="jade-mist"] { --stage-accent: #a7efcf; }
+.hb-app[data-surface-material="rose-quartz"] { --stage-accent: #ffb1cb; }
 
 .hb-app[data-surface-material] .hb-backdrop {
   background-image:

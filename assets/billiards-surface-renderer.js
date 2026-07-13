@@ -2,8 +2,10 @@
   "use strict";
 
   const MATERIAL_INDEX = Object.freeze({
-    lava: 0, galaxy: 1, circuit: 2, ice: 3, ink: 4,
-    gold: 5, amber: 6, emerald: 7, burgundy: 8
+    lava: 0, galaxy: 1, circuit: 2, amethyst: 3, ink: 4,
+    gold: 5, amber: 6, emerald: 7, burgundy: 8, eclipse: 9,
+    "solar-porcelain": 10, abyss: 11, "crimson-storm": 12,
+    copper: 13, "jade-mist": 14, "rose-quartz": 15
   });
   const VERTEX_SOURCE = `#version 300 es
     in vec2 aPosition;
@@ -24,6 +26,8 @@
     uniform float uTime;
     uniform float uEnergy;
     uniform float uBlast;
+    uniform float uBlastProgress;
+    uniform vec2 uBlastOrigin;
     uniform float uTransitionActive;
     uniform float uTransitionProgress;
     uniform float uAspect;
@@ -56,6 +60,23 @@
       return vec3(red, green, blue);
     }
 
+    float hash21(vec2 point) {
+      point = fract(point * vec2(123.34, 456.21));
+      point += dot(point, point + 45.32);
+      return fract(point.x * point.y);
+    }
+
+    float softNoise(vec2 point) {
+      vec2 cell = floor(point);
+      vec2 local = fract(point);
+      local = local * local * (3.0 - 2.0 * local);
+      return mix(
+        mix(hash21(cell), hash21(cell + vec2(1.0, 0.0)), local.x),
+        mix(hash21(cell + vec2(0.0, 1.0)), hash21(cell + vec2(1.0)), local.x),
+        local.y
+      );
+    }
+
     void main() {
       vec4 field = fieldAt(vUv);
       float height = field.r * 2.0 - 1.0;
@@ -78,7 +99,7 @@
         + fieldAt(vUv - vec2(0.0, uFieldTexel.y * 2.6))) * 0.25;
       float broadHeight = wideField.r * 2.0 - 1.0;
       float influence = clamp(slope * 5.6 + abs(height - broadHeight) * 1.08
-        + abs(broadHeight) * 0.36 + pigment * 0.78 + uBlast, 0.0, 1.0);
+        + abs(broadHeight) * 0.36 + pigment * 0.78 + uBlast * 0.22, 0.0, 1.0);
       float time = uTime;
       vec2 uv = vUv;
       vec3 color;
@@ -144,10 +165,10 @@
         color = chromaticSample(uv, spectralShift);
         float baseValue = luminance(color);
         vec3 edgeSample = baseAt(uv + uBaseTexel * 2.0) - baseAt(uv - uBaseTexel * 2.0);
-        float existingIce = smoothstep(0.24, 0.78, baseValue + length(edgeSample) * 1.8);
+        float existingIce = smoothstep(0.18, 0.72, baseValue + length(edgeSample) * 1.8);
         float facetPulse = 0.72 + 0.28 * sin(time * 2.9 + height * 11.0);
         color *= 1.0 + existingIce * fracture * facetPulse * 0.52;
-        color += color * existingIce * influence * 0.2;
+        color += vec3(0.32, 0.08, 0.52) * existingIce * influence * 0.16;
         color = max(color, original * (0.78 - influence * 0.06));
       } else if (uMaterial == 4) {
         vec2 curl = vec2(-gradient.y, gradient.x) + pigmentGradient * 0.42;
@@ -194,7 +215,7 @@
         float caustic = 0.68 + 0.32 * sin(time * 2.1 + broadHeight * 12.0);
         color += vec3(0.08, 0.94, 0.48) * existingEmerald * influence * caustic * 0.28;
         color = max(color, original * (0.78 - influence * 0.04));
-      } else {
+      } else if (uMaterial == 8) {
         vec3 original = baseAt(vUv);
         vec2 crystalFlow = mix(gradient, guidedFlow, 0.64 + detailStrength * 0.26);
         uv += crystalFlow * (0.041 + influence * 0.12);
@@ -204,21 +225,162 @@
         float crystalPulse = 0.74 + 0.26 * sin(time * 3.2 + height * 9.0);
         color += vec3(0.82, 0.04, 0.18) * existingRuby * influence * crystalPulse * 0.34;
         color = max(color, original * (0.8 - influence * 0.05));
+      } else if (uMaterial == 9) {
+        vec2 centerDelta = (vUv - vec2(0.5)) * vec2(uAspect, 1.0);
+        vec2 orbit = normalize(vec2(-centerDelta.y, centerDelta.x) + vec2(0.0001));
+        vec2 lensFlow = orbit * (height * 0.06 + pigment * 0.026) + guidedFlow * 0.78;
+        uv += lensFlow * (0.075 + influence * 0.13) + gradient * 0.025;
+        vec2 spectralShift = orbit * influence * 0.009;
+        color = chromaticSample(uv, spectralShift);
+        float voidTone = smoothstep(0.12, 0.7, 1.0 - luminance(color));
+        float corona = smoothstep(0.12, 0.78, color.r + color.b * 0.68 - color.g * 0.44);
+        color *= 0.93 - voidTone * influence * 0.2;
+        color += vec3(0.8, 0.36, 1.0) * corona * influence * 0.16;
+        color += vec3(1.0, 0.64, 0.2) * pigmentEdge * (0.18 + influence * 0.42);
+      } else if (uMaterial == 10) {
+        vec2 porcelainFlow = mix(gradient, guidedFlow, 0.76 + detailStrength * 0.16);
+        uv += porcelainFlow * (0.028 + influence * 0.074);
+        vec3 original = baseAt(vUv);
+        color = baseAt(uv);
+        float veins = smoothstep(0.1, 0.58, color.r * 0.58 + color.g * 0.34 - color.b * 0.3);
+        float glaze = 0.74 + 0.26 * sin(time * 1.7 + broadHeight * 10.0);
+        color += vec3(1.0, 0.67, 0.16) * veins * influence * glaze * 0.28;
+        color = max(color, original * 0.82);
+      } else if (uMaterial == 11) {
+        vec3 original = baseAt(vUv);
+        vec2 currentFlow = mix(vec2(-gradient.y, gradient.x), guidedFlow, 0.66 + detailStrength * 0.2);
+        uv += currentFlow * (0.072 + influence * 0.17) + gradient * 0.034;
+        vec2 causticShift = normalize(currentFlow + vec2(0.0001)) * influence * 0.0055;
+        color = chromaticSample(uv, causticShift);
+        float cyan = smoothstep(0.06, 0.56, color.b * 0.76 + color.g * 0.42 - color.r * 0.28);
+        float caustic = 0.66 + 0.34 * sin(time * 2.45 + broadHeight * 13.0);
+        color += vec3(0.02, 0.56, 1.0) * cyan * influence * caustic * 0.3;
+        color = max(color, original * (0.76 - influence * 0.04));
+      } else if (uMaterial == 12) {
+        vec2 stormFlow = mix(gradient, guidedFlow + detailTangent * height * 0.28, 0.56 + detailStrength * 0.25);
+        uv += stormFlow * (0.045 + influence * 0.12);
+        color = baseAt(uv);
+        float charge = smoothstep(0.02, 0.36, pigmentEdge * 2.8 + slope * 1.5 + pigment * 0.46);
+        float pulse = 0.54 + 0.46 * sin(time * 6.1 + height * 15.0);
+        color += vec3(1.0, 0.08, 0.12) * charge * (0.28 + pulse * 0.44);
+        color *= 1.0 + vec3(0.22, -0.035, -0.035) * influence;
+      } else if (uMaterial == 13) {
+        vec3 original = baseAt(vUv);
+        vec2 metalCurl = mix(vec2(-gradient.y, gradient.x), guidedFlow, 0.5 + detailStrength * 0.34);
+        uv += metalCurl * (0.062 + influence * 0.154) + gradient * 0.018;
+        vec2 spread = normalize(metalCurl + vec2(0.0001)) * (0.0025 + influence * 0.007);
+        color = (baseAt(uv) * 2.0 + baseAt(uv + spread) + baseAt(uv - spread)) * 0.25;
+        float copperGlow = smoothstep(0.05, 0.58, color.r * 0.78 + color.g * 0.15 - color.b * 0.46);
+        color += vec3(1.0, 0.28, 0.035) * copperGlow * influence * 0.34;
+        color = max(color, original * 0.76);
+      } else if (uMaterial == 14) {
+        vec3 original = baseAt(vUv);
+        vec2 mistFlow = mix(vec2(-gradient.y, gradient.x) + pigmentGradient * 0.34, guidedFlow, 0.7);
+        uv += mistFlow * (0.06 + influence * 0.15) + gradient * 0.022;
+        color = baseAt(uv);
+        float jade = smoothstep(0.04, 0.56, color.g * 0.76 - color.r * 0.2 - color.b * 0.04);
+        float breath = 0.72 + 0.28 * sin(time * 1.55 + broadHeight * 9.0);
+        color += vec3(0.24, 0.88, 0.58) * jade * influence * breath * 0.24;
+        color = max(color, original * (0.79 - influence * 0.04));
+      } else {
+        vec3 original = baseAt(vUv);
+        vec2 quartzFlow = mix(gradient, guidedFlow, 0.68 + detailStrength * 0.24);
+        uv += quartzFlow * (0.044 + influence * 0.126);
+        vec2 spectralShift = normalize(quartzFlow + vec2(0.0001)) * influence * 0.006;
+        color = chromaticSample(uv, spectralShift);
+        float rose = smoothstep(0.05, 0.56, color.r * 0.72 + color.b * 0.18 - color.g * 0.28);
+        float pearl = 0.7 + 0.3 * sin(time * 2.7 + height * 10.0);
+        color += vec3(1.0, 0.24, 0.5) * rose * influence * pearl * 0.24;
+        color = max(color, original * 0.79);
       }
 
       if (uTransitionActive > 0.5) {
         vec2 transitionDelta = (vUv - uTransitionOrigin) * vec2(uAspect, 1.0);
         float transitionDistance = length(transitionDelta);
-        float boundaryNoise = sin(vUv.x * 39.0 + vUv.y * 23.0 + height * 8.0) * 0.012
-          + sin(vUv.y * 61.0 - vUv.x * 17.0 + pigment * 5.0) * 0.008;
-        float radius = mix(0.018, 1.18, smoothstep(0.0, 1.0, uTransitionProgress));
+        float transitionAngle = atan(transitionDelta.y, transitionDelta.x);
+        float transitionEase = smoothstep(0.0, 1.0, uTransitionProgress);
+        float coarseFlow = softNoise(vUv * vec2(4.2, 7.4) + vec2(time * 0.11, -time * 0.075));
+        float middleFlow = softNoise(vUv * vec2(10.0, 17.0) + vec2(-time * 0.16, time * 0.1));
+        float fineFlow = softNoise(vUv * vec2(25.0, 43.0) + vec2(time * 0.23, time * 0.16));
+        float boundaryNoise = sin(transitionAngle * 3.0 + time * 1.3 + float(uMaterial)) * 0.058
+          + sin(transitionAngle * 7.0 - time * 0.9 + height * 6.0) * 0.026
+          + (coarseFlow - 0.5) * 0.19
+          + (middleFlow - 0.5) * 0.085
+          + (fineFlow - 0.5) * 0.024
+          + broadHeight * 0.025;
+        float radius = mix(-0.028, 1.34, transitionEase);
         float signedDistance = transitionDistance + boundaryNoise - radius;
-        float reveal = 1.0 - smoothstep(-0.045, 0.038, signedDistance);
-        vec3 previous = previousBaseAt(vUv + gradient * 0.012);
-        color = mix(previous, color, reveal);
-        float boundary = 1.0 - smoothstep(0.0, 0.045, abs(signedDistance));
-        float glowLife = 1.0 - smoothstep(0.76, 1.0, uTransitionProgress);
-        color += uTransitionColor * boundary * glowLife * (0.2 + influence * 0.18);
+        float reveal = 1.0 - smoothstep(-0.09, 0.052, signedDistance);
+        float tendrilField = softNoise(
+          vUv * vec2(18.0, 31.0)
+            + vec2(cos(transitionAngle), sin(transitionAngle)) * 2.4
+            + vec2(-time * 0.18, time * 0.24)
+        );
+        float tendril = smoothstep(0.68, 0.94, tendrilField + middleFlow * 0.16)
+          * smoothstep(-0.12, 0.025, signedDistance)
+          * (1.0 - smoothstep(0.025, 0.22, signedDistance));
+        reveal = max(reveal, tendril * (0.62 + (1.0 - uTransitionProgress) * 0.28));
+        vec2 radial = normalize(transitionDelta + vec2(0.0001));
+        vec2 tangent = vec2(-radial.y, radial.x);
+        vec2 lens = (radial * sin(signedDistance * 62.0 - time * 4.2)
+          + tangent * sin(transitionAngle * 5.0 + time * 1.7 + coarseFlow * 4.0))
+          * exp(-abs(signedDistance) * 16.0) * 0.018;
+        vec3 previous = previousBaseAt(vUv + gradient * 0.012 - lens);
+        color = mix(previous, color, clamp(reveal, 0.0, 1.0));
+        float boundary = exp(-pow(abs(signedDistance) / 0.052, 2.0)) * (0.58 + middleFlow * 0.42);
+        float echo = exp(-pow(abs(signedDistance + 0.095) / 0.028, 2.0)) * (0.5 + fineFlow * 0.5);
+        float sparkCell = hash21(floor(vUv * vec2(170.0, 300.0)) + floor(time * 24.0));
+        float sparks = step(0.97, sparkCell) * exp(-abs(signedDistance) * 20.0);
+        float glowLife = 1.0 - smoothstep(0.82, 1.0, uTransitionProgress);
+        vec3 edgeColor = uMaterial == 4 ? vec3(0.84, 0.88, 0.83) : uTransitionColor;
+        color += edgeColor * (boundary * (0.5 + influence * 0.34) + echo * 0.24 + sparks * 0.68) * glowLife;
+        if (uMaterial == 4) color *= 1.0 - boundary * 0.16;
+        if (uMaterial == 9) {
+          color += vec3(0.98, 0.55, 0.16) * boundary * glowLife * 0.46;
+          color += vec3(0.55, 0.24, 1.0) * echo * glowLife * 0.4;
+        }
+      }
+
+      if (uBlast > 0.001) {
+        vec2 blastDelta = (vUv - uBlastOrigin) * vec2(uAspect, 1.0);
+        float blastDistance = length(blastDelta);
+        vec2 blastRadial = normalize(blastDelta + vec2(0.0001));
+        vec2 blastTangent = vec2(-blastRadial.y, blastRadial.x);
+        float blastAngle = atan(blastDelta.y, blastDelta.x);
+        float turbulence = softNoise(vUv * vec2(7.0, 12.0) + vec2(time * 0.14, -time * 0.1));
+        float filamentNoise = softNoise(vUv * vec2(19.0, 34.0) + vec2(-time * 0.22, time * 0.16));
+        float collapse = smoothstep(0.0, 0.26, uBlastProgress);
+        float release = 1.0 - smoothstep(0.78, 1.0, uBlastProgress);
+        float coronaRadius = mix(0.018, 0.82, smoothstep(0.02, 0.76, uBlastProgress));
+        float warp = exp(-blastDistance * (2.8 + collapse * 4.2)) * uBlast * release * 0.46;
+        float spiral = sin(blastAngle * 4.0 - blastDistance * 30.0 + time * 2.0 + turbulence * 5.5);
+        vec2 warpedUv = vUv
+          + blastTangent * warp * (0.03 + 0.01 * spiral)
+          - blastRadial * warp * (0.007 + turbulence * 0.007);
+        vec3 lensed = chromaticSample(warpedUv, blastTangent * warp * 0.0035);
+        color = mix(color, lensed, clamp(warp * 1.25, 0.0, 0.38));
+        float core = 1.0 - smoothstep(0.008, 0.105 + uBlastProgress * 0.055, blastDistance);
+        float raggedEdge = (turbulence - 0.5) * (0.018 + uBlastProgress * 0.012);
+        float corona = exp(-pow(abs(blastDistance + raggedEdge - coronaRadius) / (0.014 + uBlastProgress * 0.012), 2.0));
+        float filamentWave = 0.5 + 0.5 * sin(
+          blastAngle * 5.0 - blastDistance * 36.0 + time * 2.35 + turbulence * 6.0
+        );
+        float textureLight = smoothstep(0.16, 0.76, luminance(lensed) + detailStrength * 0.72);
+        float filaments = smoothstep(0.9, 0.995, filamentWave + (filamentNoise - 0.5) * 0.2)
+          * (1.0 - smoothstep(0.08, 1.05, blastDistance))
+          * smoothstep(0.035, 0.15, blastDistance)
+          * textureLight;
+        float violetFlow = smoothstep(0.91, 0.998, 0.5 + 0.5 * sin(
+          blastAngle * 3.0 + blastDistance * 24.0 - time * 1.8 + filamentNoise * 4.0
+        )) * (1.0 - smoothstep(0.04, 0.92, blastDistance)) * textureLight;
+        float climax = exp(-pow((uBlastProgress - 0.59) / 0.13, 2.0));
+        color *= 1.0 - core * uBlast * 0.94;
+        color *= 1.0 + textureLight * uBlast * (0.26 + climax * 0.86);
+        color += vec3(1.0, 0.61, 0.15) * (corona * 1.08 + filaments * 0.16) * uBlast;
+        color += vec3(0.54, 0.2, 1.0) * (violetFlow * 0.13 + filaments * 0.08) * uBlast;
+        color += mix(color, vec3(1.0, 0.82, 0.48), 0.22)
+          * textureLight * textureLight * climax * uBlast * 0.38;
+        color += vec3(1.0, 0.88, 0.58) * climax * exp(-blastDistance * 4.8) * uBlast * 0.16;
       }
 
       float vignette = smoothstep(0.92, 0.3, length((vUv - 0.5) * vec2(1.15, 0.72)));
@@ -296,6 +458,8 @@
       time: gl.getUniformLocation(program, "uTime"),
       energy: gl.getUniformLocation(program, "uEnergy"),
       blast: gl.getUniformLocation(program, "uBlast"),
+      blastProgress: gl.getUniformLocation(program, "uBlastProgress"),
+      blastOrigin: gl.getUniformLocation(program, "uBlastOrigin"),
       transitionActive: gl.getUniformLocation(program, "uTransitionActive"),
       transitionProgress: gl.getUniformLocation(program, "uTransitionProgress"),
       transitionOrigin: gl.getUniformLocation(program, "uTransitionOrigin"),
@@ -404,6 +568,8 @@
         gl.uniform1f(uniforms.time, (frame.time || 0) * 0.001);
         gl.uniform1f(uniforms.energy, Math.max(0, Math.min(1, frame.energy || 0)));
         gl.uniform1f(uniforms.blast, Math.max(0, Math.min(1, frame.blast || 0)));
+        gl.uniform1f(uniforms.blastProgress, Math.max(0, Math.min(1, frame.blastProgress || 0)));
+        gl.uniform2f(uniforms.blastOrigin, frame.blastOriginX ?? 0.5, frame.blastOriginY ?? 0.5);
         const transition = frame.transition;
         gl.uniform1f(uniforms.transitionActive, transition ? 1 : 0);
         gl.uniform1f(uniforms.transitionProgress, Math.max(0, Math.min(1, transition?.progress || 0)));

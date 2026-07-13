@@ -359,10 +359,12 @@ test("uses the active pocket identity for rolling trails and rail impacts", () =
   assert.ok(snapshot.presentation.dateMap.railBurstCount > 0, "an active lightning pocket should electrify the next cushion impact");
 });
 
-test("maps standard ball colors to nine automatic materials without changing the physical rack", () => {
+test("maps every object ball to its own automatic material without changing the physical rack", () => {
   const cases = [
     [1, "gold"], [2, "galaxy"], [3, "lava"], [4, "circuit"],
-    [5, "amber"], [6, "emerald"], [7, "burgundy"], [8, "ink"]
+    [5, "amber"], [6, "emerald"], [7, "burgundy"], [8, "eclipse"],
+    [9, "solar-porcelain"], [10, "abyss"], [11, "crimson-storm"], [12, "amethyst"],
+    [13, "copper"], [14, "jade-mist"], [15, "rose-quartz"]
   ];
 
   for (const [number, material] of cases) {
@@ -380,7 +382,7 @@ test("maps standard ball colors to nine automatic materials without changing the
     });
     const snapshot = debug.snapshot();
     assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, material, `ball ${number}`);
-    assert.equal(snapshot.presentation.dateMap.surfaceMaterialCount, 9);
+    assert.equal(snapshot.presentation.dateMap.surfaceMaterialCount, 16);
     assert.deepEqual([...snapshot.ballNumbers], numbers);
   }
 });
@@ -415,7 +417,7 @@ test("launches the default opening shot upward and accumulates physical roll", (
   assert.ok(cue.y < before.y);
 });
 
-test("emits compression and an impact ring on a real opening collision", () => {
+test("emits compression and material feedback on a real opening collision", () => {
   const debug = bootRuntime();
   debug.reset();
   debug.shoot(1);

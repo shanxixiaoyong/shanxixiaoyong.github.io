@@ -172,7 +172,6 @@
     "bottom-right": Object.freeze({ id: "aurora", label: "极光绸带", glyph: "ribbons", primary: "#68ffc8", secondary: "#d967ff" })
   });
   const SURFACE_MATERIALS = Object.freeze([
-    Object.freeze({ id: "ice", label: "极光冰面", rail: "#d9f9ff", railSecondary: "#68cfff", damping: 0.994, disturbance: 1.02, radius: 0.7, wake: 1.08, tail: 0.8, railSpeed: 1.08, railWidth: 0.72, railGain: 1.18, traceDecay: 0.989, traceDiffuse: 0.006, traceDeposit: 0.18, trailLife: 3600 }),
     Object.freeze({ id: "gold", label: "日冕流金", rail: "#ffd75d", railSecondary: "#ff8d1f", damping: 0.981, disturbance: 1.24, radius: 0.94, wake: 1.38, tail: 1.46, railSpeed: 0.92, railWidth: 1.24, railGain: 1.34, traceDecay: 0.974, traceDiffuse: 0.026, traceDeposit: 0.38, trailLife: 2900 }),
     Object.freeze({ id: "galaxy", label: "深空星河", rail: "#72cfff", railSecondary: "#8d62ff", damping: 0.988, disturbance: 0.96, radius: 1.22, wake: 1.12, tail: 1.82, railSpeed: 0.72, railWidth: 1.42, railGain: 1.12, traceDecay: 0.965, traceDiffuse: 0.032, traceDeposit: 0.25, trailLife: 3200 }),
     Object.freeze({ id: "lava", label: "熔岩脉冲", rail: "#ff4b36", railSecondary: "#ffad37", damping: 0.979, disturbance: 1.28, radius: 0.92, wake: 1.4, tail: 1.48, railSpeed: 0.86, railWidth: 1.28, railGain: 1.32, traceDecay: 0.972, traceDiffuse: 0.024, traceDeposit: 0.38, trailLife: 2800 }),
@@ -180,13 +179,20 @@
     Object.freeze({ id: "amber", label: "琥珀流体", rail: "#ff9a2f", railSecondary: "#ffd469", damping: 0.982, disturbance: 1.18, radius: 1.08, wake: 1.3, tail: 1.62, railSpeed: 0.82, railWidth: 1.34, railGain: 1.3, traceDecay: 0.968, traceDiffuse: 0.036, traceDeposit: 0.42, trailLife: 3100 }),
     Object.freeze({ id: "emerald", label: "翡翠潮汐", rail: "#42e89a", railSecondary: "#a9ffcf", damping: 0.989, disturbance: 1.04, radius: 1.18, wake: 1.18, tail: 1.58, railSpeed: 0.78, railWidth: 1.36, railGain: 1.18, traceDecay: 0.976, traceDiffuse: 0.04, traceDeposit: 0.36, trailLife: 3300 }),
     Object.freeze({ id: "burgundy", label: "酒红晶域", rail: "#ed4b76", railSecondary: "#ff9eb6", damping: 0.986, disturbance: 1.12, radius: 0.98, wake: 1.28, tail: 1.38, railSpeed: 0.9, railWidth: 1.16, railGain: 1.26, traceDecay: 0.98, traceDiffuse: 0.02, traceDeposit: 0.34, trailLife: 3000 }),
-    Object.freeze({ id: "ink", label: "水墨日蚀", rail: "#f1f2eb", railSecondary: "#68736e", damping: 0.971, disturbance: 0.82, radius: 1.5, wake: 0.98, tail: 1.58, railSpeed: 0.76, railWidth: 1.42, railGain: 1.02, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0.56, trailLife: 3900 })
+    Object.freeze({ id: "ink", label: "水墨游龙", rail: "#f1f2eb", railSecondary: "#68736e", damping: 0.971, disturbance: 0.82, radius: 1.5, wake: 0.98, tail: 1.58, railSpeed: 0.76, railWidth: 1.42, railGain: 1.02, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0.56, trailLife: 3900 }),
+    Object.freeze({ id: "eclipse", label: "黑曜日蚀", rail: "#f8bd65", railSecondary: "#9d61ff", damping: 0.984, disturbance: 1.34, radius: 1.38, wake: 1.52, tail: 1.92, railSpeed: 1.14, railWidth: 1.5, railGain: 1.58, traceDecay: 0.962, traceDiffuse: 0.034, traceDeposit: 0.5, trailLife: 4300 }),
+    Object.freeze({ id: "solar-porcelain", label: "日光瓷金", rail: "#ffe9a1", railSecondary: "#d8a42b", damping: 0.987, disturbance: 1.02, radius: 1.04, wake: 1.2, tail: 1.32, railSpeed: 0.88, railWidth: 1.12, railGain: 1.22, traceDecay: 0.981, traceDiffuse: 0.028, traceDeposit: 0.32, trailLife: 3200 }),
+    Object.freeze({ id: "abyss", label: "深渊生物光", rail: "#48dcff", railSecondary: "#176dff", damping: 0.991, disturbance: 1.08, radius: 1.3, wake: 1.34, tail: 1.86, railSpeed: 0.74, railWidth: 1.44, railGain: 1.3, traceDecay: 0.97, traceDiffuse: 0.046, traceDeposit: 0.4, trailLife: 3700 }),
+    Object.freeze({ id: "crimson-storm", label: "猩红风暴", rail: "#ff6973", railSecondary: "#ff1f3d", damping: 0.978, disturbance: 1.32, radius: 0.88, wake: 1.42, tail: 1.54, railSpeed: 1.26, railWidth: 1.06, railGain: 1.48, traceDecay: 0.969, traceDiffuse: 0.022, traceDeposit: 0.44, trailLife: 2900 }),
+    Object.freeze({ id: "amethyst", label: "紫晶棱镜", rail: "#d28cff", railSecondary: "#6d70ff", damping: 0.992, disturbance: 1.1, radius: 0.84, wake: 1.18, tail: 1.12, railSpeed: 1.04, railWidth: 0.96, railGain: 1.28, traceDecay: 0.984, traceDiffuse: 0.012, traceDeposit: 0.3, trailLife: 3400 }),
+    Object.freeze({ id: "copper", label: "熔铜秘流", rail: "#ff9a42", railSecondary: "#d84a0d", damping: 0.98, disturbance: 1.24, radius: 1.12, wake: 1.38, tail: 1.72, railSpeed: 0.84, railWidth: 1.32, railGain: 1.38, traceDecay: 0.966, traceDiffuse: 0.038, traceDeposit: 0.46, trailLife: 3300 }),
+    Object.freeze({ id: "jade-mist", label: "翡翠流岚", rail: "#a7f2ce", railSecondary: "#28a877", damping: 0.99, disturbance: 1.0, radius: 1.34, wake: 1.24, tail: 1.76, railSpeed: 0.7, railWidth: 1.46, railGain: 1.16, traceDecay: 0.972, traceDiffuse: 0.052, traceDeposit: 0.42, trailLife: 3800 }),
+    Object.freeze({ id: "rose-quartz", label: "玫瑰晶潮", rail: "#ffafc8", railSecondary: "#e73e83", damping: 0.988, disturbance: 1.12, radius: 0.96, wake: 1.3, tail: 1.44, railSpeed: 0.94, railWidth: 1.18, railGain: 1.3, traceDecay: 0.978, traceDiffuse: 0.024, traceDeposit: 0.38, trailLife: 3300 })
   ]);
   const SURFACE_MATERIAL_BY_ID = Object.freeze(Object.fromEntries(
     SURFACE_MATERIALS.map((material) => [material.id, material])
   ));
   const SURFACE_TEXTURE_SOURCES = Object.freeze({
-    ice: "assets/billiards-surfaces/ice.jpg",
     gold: "assets/billiards-surfaces/gold.jpg",
     amber: "assets/billiards-surfaces/amber.jpg",
     emerald: "assets/billiards-surfaces/emerald.jpg",
@@ -194,18 +200,33 @@
     lava: "assets/billiards-surfaces/lava.jpg",
     galaxy: "assets/billiards-surfaces/galaxy.jpg",
     circuit: "assets/billiards-surfaces/circuit.jpg",
-    ink: "assets/billiards-surfaces/ink.jpg"
+    ink: "assets/billiards-surfaces/ink.jpg",
+    eclipse: "assets/billiards-surfaces/eclipse.jpg",
+    "solar-porcelain": "assets/billiards-surfaces/solar-porcelain.jpg",
+    abyss: "assets/billiards-surfaces/abyss.jpg",
+    "crimson-storm": "assets/billiards-surfaces/crimson-storm.jpg",
+    amethyst: "assets/billiards-surfaces/amethyst.jpg",
+    copper: "assets/billiards-surfaces/copper.jpg",
+    "jade-mist": "assets/billiards-surfaces/jade-mist.jpg",
+    "rose-quartz": "assets/billiards-surfaces/rose-quartz.jpg"
   });
   const BALL_SURFACE_MATERIALS = Object.freeze({
-    0: "ice",
-    1: "gold", 9: "gold",
-    2: "galaxy", 10: "galaxy",
-    3: "lava", 11: "lava",
-    4: "circuit", 12: "circuit",
-    5: "amber", 13: "amber",
-    6: "emerald", 14: "emerald",
-    7: "burgundy", 15: "burgundy",
-    8: "ink"
+    0: "ink",
+    1: "gold",
+    2: "galaxy",
+    3: "lava",
+    4: "circuit",
+    5: "amber",
+    6: "emerald",
+    7: "burgundy",
+    8: "eclipse",
+    9: "solar-porcelain",
+    10: "abyss",
+    11: "crimson-storm",
+    12: "amethyst",
+    13: "copper",
+    14: "jade-mist",
+    15: "rose-quartz"
   });
   const CHROMA_TRANSITION_MS = 1180;
   const ROLL_TRAIL_LIFETIME_MS = 980;
@@ -770,7 +791,7 @@
   let storySlowMotionUntil = 0;
   let lastStoryOrigin = { x: 50, y: 50 };
   let lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
-  let surfaceMaterialId = "ice";
+  let surfaceMaterialId = "ink";
   let dateMapState = createDateMapState();
   let waterSurface = createWaterSurface();
   const surfaceArtworkCache = new Map();
@@ -862,11 +883,11 @@
   }
 
   function activeSurfaceMaterial() {
-    return SURFACE_MATERIAL_BY_ID[surfaceMaterialId] || SURFACE_MATERIAL_BY_ID.ice;
+    return SURFACE_MATERIAL_BY_ID[surfaceMaterialId] || SURFACE_MATERIAL_BY_ID.ink;
   }
 
   function surfaceMaterialForBall(number) {
-    return BALL_SURFACE_MATERIALS[number] || "ice";
+    return BALL_SURFACE_MATERIALS[number] || "ink";
   }
 
   function syncSurfaceMaterialUI() {
@@ -889,7 +910,7 @@
       rgb: colorChannels(material.rail),
       speed: RAIL_WAVE_SPEED * material.railSpeed,
       width: 190 * material.railWidth,
-      duration: RAIL_WAVE_LIFETIME_MS * (material.id === "ice" ? 1.38 : material.id === "circuit" ? 0.82 : 1.08),
+      duration: RAIL_WAVE_LIFETIME_MS * (material.id === "ink" || material.id === "jade-mist" ? 1.38 : material.id === "circuit" ? 0.82 : 1.08),
       ageMs: 0,
       bornAt: performance.now(),
       life: 1
@@ -905,7 +926,7 @@
     const previous = surfaceMaterialId;
     const origin = options.origin || CUE_SPOT;
     const theme = options.theme || dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
-    const duration = Number(options.duration) || (id === "ink" ? 1180 : 940);
+    const duration = Number(options.duration) || (id === "ink" ? 1180 : id === "eclipse" ? 1460 : 1040);
     surfaceMaterialId = material.id;
     dateMapState.previousSurfaceMaterialId = previous;
     dateMapState.surfaceMaterialId = material.id;
@@ -926,13 +947,13 @@
     ensureSurfaceTexture(material.id);
     syncSurfaceMaterialUI();
     if (options.animate !== false) {
-      const impulse = material.id === "ink" ? -2.35 : material.id === "lava" ? 2.25 : 1.82;
+      const impulse = material.id === "ink" ? -2.35 : material.id === "eclipse" ? -2.72 : material.id === "lava" ? 2.25 : 1.82;
       disturbWaterWorld(origin.x, origin.y, impulse, material.id === "ink" ? 104 : 76);
       disturbMaterialWorld(origin.x, origin.y, impulse * 0.62, 184, 74,
         Math.atan2(origin.y - WORLD.height / 2, origin.x - WORLD.width / 2), Number(options.ballNumber) || 0);
       spawnSurfaceMaterialWave(material, origin, theme);
       lastStoryWorldOrigin = { x: origin.x, y: origin.y };
-      screenFlash = Math.max(screenFlash, material.id === "ink" ? 0.24 : 0.16);
+      screenFlash = Math.max(screenFlash, material.id === "eclipse" ? 0.42 : material.id === "ink" ? 0.24 : 0.18);
       dateMapFrameDirty = true;
       sceneLightingFrameDirty = true;
     }
@@ -945,7 +966,7 @@
       origin: { x: pocket.captureX, y: pocket.captureY },
       theme,
       ballNumber: number,
-      duration: number === 8 ? 1260 : number === 0 ? 860 : 980
+      duration: number === 8 ? 1520 : number === 0 ? 1080 : 1180
     });
   }
 
@@ -1487,7 +1508,7 @@
     storySlowMotionUntil = 0;
     lastStoryOrigin = { x: 50, y: 50 };
     lastStoryWorldOrigin = { x: WORLD.width / 2, y: WORLD.height / 2 };
-    surfaceMaterialId = "ice";
+    surfaceMaterialId = "ink";
     dateMapState = createDateMapState();
     resetWaterSurface();
     dateMapFrameDirty = true;
@@ -2494,11 +2515,16 @@
   function scheduleResultAfterTable(delayMs) {
     finalRevealActive = true;
     clearTimeout(finalRevealTimer);
-    finalRevealTimer = setTimeout(() => {
+    const finishWhenReady = () => {
+      if (dateMapState.blackEightBlast) {
+        finalRevealTimer = setTimeout(finishWhenReady, 120);
+        return;
+      }
       finalRevealActive = false;
       hideTableMoment();
       if (!resultVisible) showResult();
-    }, delayMs);
+    };
+    finalRevealTimer = setTimeout(finishWhenReady, delayMs);
   }
 
   function beginFinalDateMapReveal(outcome) {
@@ -2731,6 +2757,103 @@
     }
   }
 
+  function collisionMaterialFamily(materialId) {
+    if (["lava", "gold", "crimson-storm", "copper"].includes(materialId)) return "plasma";
+    if (["galaxy", "abyss", "emerald", "jade-mist", "amber"].includes(materialId)) return "fluid";
+    if (["amethyst", "burgundy", "rose-quartz", "solar-porcelain"].includes(materialId)) return "crystal";
+    if (materialId === "circuit") return "circuit";
+    if (materialId === "eclipse") return "eclipse";
+    return "ink";
+  }
+
+  function spawnMaterialCollisionResponse(contact, normal, relative, numbers = []) {
+    const material = activeSurfaceMaterial();
+    const family = collisionMaterialFamily(material.id);
+    const direction = normalize(normal || { x: 1, y: 0 }, { x: 1, y: 0 });
+    const tangent = { x: -direction.y, y: direction.x };
+    const intensity = clamp(relative / 15, 0.28, 1);
+    const seed = collisionCount * 1.713 + (numbers[0] || 0) * 2.17 + (numbers[1] || 0) * 0.73;
+    const heading = Math.atan2(direction.y, direction.x);
+    const radius = 58 + intensity * 68;
+
+    disturbWaterWorld(contact.x, contact.y, 0.42 + intensity * 1.12, 28 + intensity * 34);
+    if (family === "plasma") {
+      for (let branch = 0; branch < 5; branch += 1) {
+        const offset = branch - 2;
+        const curve = Math.sin(seed + branch * 2.19) * 0.68 + offset * 0.26;
+        disturbMaterialWorld(
+          contact.x + tangent.x * offset * 13,
+          contact.y + tangent.y * offset * 13,
+          (branch % 2 ? -0.46 : 0.74) * intensity,
+          radius * (1.15 + branch * 0.08),
+          18 + branch * 4,
+          heading + curve,
+          seed + branch * 1.37
+        );
+      }
+    } else if (family === "fluid") {
+      [-1, 0, 1].forEach((side, index) => {
+        disturbMaterialWorld(
+          contact.x + tangent.x * side * (34 + intensity * 24),
+          contact.y + tangent.y * side * (34 + intensity * 24),
+          (index === 1 ? 0.94 : -0.58) * intensity,
+          radius * (1.2 + index * 0.18),
+          52 + index * 14,
+          heading + Math.PI / 2 + side * 0.62,
+          seed + index * 2.11
+        );
+      });
+    } else if (family === "crystal") {
+      for (let facet = 0; facet < 6; facet += 1) {
+        const angle = heading + facet / 6 * Math.PI * 2 + Math.sin(seed + facet) * 0.27;
+        disturbMaterialWorld(
+          contact.x + Math.cos(angle) * facet * 2.6,
+          contact.y + Math.sin(angle) * facet * 2.6,
+          (facet % 2 ? -0.56 : 0.78) * intensity,
+          radius * (0.82 + facet * 0.08),
+          13 + facet * 2.4,
+          angle,
+          seed + facet * 1.61
+        );
+      }
+    } else if (family === "circuit") {
+      const grid = 30;
+      for (let node = -2; node <= 2; node += 1) {
+        const x = Math.round((contact.x + tangent.x * node * grid) / grid) * grid;
+        const y = Math.round((contact.y + tangent.y * node * grid) / grid) * grid;
+        disturbMaterialWorld(x, y, (node % 2 ? -0.5 : 0.8) * intensity, 76, 14, node % 2 ? 0 : Math.PI / 2, seed + node);
+      }
+    } else if (family === "eclipse") {
+      for (let orbit = 0; orbit < 4; orbit += 1) {
+        const angle = heading + Math.PI / 2 + orbit * 0.74;
+        disturbMaterialWorld(contact.x, contact.y, (orbit % 2 ? -1 : 1) * intensity, radius * (1.4 + orbit * 0.22), 44 + orbit * 12, angle, seed + orbit * 2.4);
+      }
+    } else {
+      for (let wash = 0; wash < 5; wash += 1) {
+        const side = wash - 2;
+        disturbMaterialWorld(contact.x + tangent.x * side * 17, contact.y + tangent.y * side * 17, (wash % 3 ? -0.4 : 0.68) * intensity, radius * 1.5, 58 + wash * 9, heading + Math.PI / 2 + side * 0.19, seed + wash);
+      }
+    }
+
+    collisionFeedbacks.push({
+      x: contact.x,
+      y: contact.y,
+      radius: 12,
+      speed: 1.2 + intensity * 2.8,
+      life: 1,
+      duration: 760 + intensity * 360,
+      intensity,
+      color: material.rail,
+      secondary: material.railSecondary || material.rail,
+      materialId: material.id,
+      family,
+      normalX: direction.x,
+      normalY: direction.y,
+      seed
+    });
+    if (collisionFeedbacks.length > 20) collisionFeedbacks.splice(0, collisionFeedbacks.length - 20);
+  }
+
   function updateEffects() {
     particles.forEach((particle) => {
       particle.x += particle.vx;
@@ -2768,9 +2891,9 @@
       dateMapState.finalProgress = Math.min(1, dateMapState.finalProgress + 0.009);
     }
     collisionFeedbacks.forEach((feedback) => {
-      feedback.life -= FIXED_STEP / 520;
+      feedback.life -= FIXED_STEP / (feedback.duration || 860);
       feedback.radius += feedback.speed;
-      feedback.speed *= 0.9;
+      feedback.speed *= 0.93;
     });
     collisionFeedbacks = collisionFeedbacks.filter((feedback) => feedback.life > 0);
     balls.forEach((ball) => {
@@ -3389,26 +3512,8 @@
       context.restore();
     });
     context.restore();
-    const perimeter = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    perimeter.addColorStop(0, effect.primary);
-    perimeter.addColorStop(0.48, theme.primary);
-    perimeter.addColorStop(1, effect.secondary);
     context.save();
     context.globalCompositeOperation = "screen";
-    context.strokeStyle = perimeter;
-    context.shadowColor = effect.secondary;
-    context.shadowBlur = 7 + pulse * 22;
-    context.globalAlpha = 0.12 + pulse * 0.42;
-    context.lineWidth = 3.2 + pulse * 5.8;
-    roundRectPath(context, TABLE.left - 15, TABLE.top - 15, TABLE.right - TABLE.left + 30, TABLE.bottom - TABLE.top + 30, 22);
-    context.stroke();
-    context.globalAlpha = 0.15 + pulse * 0.55;
-    context.lineWidth = 1.4 + pulse * 2.2;
-    context.setLineDash([22, 18]);
-    context.lineDashOffset = -timestamp * 0.075;
-    roundRectPath(context, TABLE.left - 24, TABLE.top - 24, TABLE.right - TABLE.left + 48, TABLE.bottom - TABLE.top + 48, 25);
-    context.stroke();
-    context.setLineDash([]);
     const waveRadius = 56 + progress * WORLD.height * 0.7;
     const wave = context.createRadialGradient(active.originX, active.originY, Math.max(0, waveRadius - 64), active.originX, active.originY, waveRadius);
     wave.addColorStop(0, colorWithAlpha(theme.primary, 0));
@@ -3462,7 +3567,7 @@
   function drawScenePortalLighting(timestamp) {
     if (!dateMapState.activeScene) return;
     const transitionActive = dateMapState.sceneTransition && sceneTransitionProgress(timestamp) < 1;
-    const refreshDue = !pointerAim && transitionActive && timestamp - sceneLightingFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
+    const refreshDue = transitionActive && timestamp - sceneLightingFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
     if ((sceneLightingFrameDirty || refreshDue || !sceneLightingFrameCanvas) && !rebuildSceneLightingFrame(timestamp)) {
       drawScenePortalLightingFrame(timestamp);
       return;
@@ -4281,11 +4386,10 @@
     }
     const seed = [...materialId].reduce((total, character) => Math.imul(total ^ character.charCodeAt(0), 16777619), 2166136261);
     const random = seededSurfaceRandom(seed);
-    if (materialId === "lava") paintLavaArtwork(target, width, height, random);
-    else if (["gold", "amber", "burgundy"].includes(materialId)) paintLavaArtwork(target, width, height, random);
-    else if (materialId === "galaxy") paintGalaxyArtwork(target, width, height, random);
+    if (["lava", "gold", "amber", "burgundy", "crimson-storm", "copper", "rose-quartz", "solar-porcelain"].includes(materialId)) paintLavaArtwork(target, width, height, random);
+    else if (["galaxy", "abyss", "eclipse"].includes(materialId)) paintGalaxyArtwork(target, width, height, random);
     else if (materialId === "circuit") paintCircuitArtwork(target, width, height, random);
-    else if (materialId === "ice" || materialId === "emerald") paintIceArtwork(target, width, height, random);
+    else if (["amethyst", "emerald", "jade-mist"].includes(materialId)) paintIceArtwork(target, width, height, random);
     else paintInkArtwork(target, width, height, random);
     return artwork;
   }
@@ -4342,11 +4446,11 @@
     target.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, 0, 0, width, height);
 
     const readability = target.createLinearGradient(0, 0, width, height);
-    if (materialId === "lava") {
+    if (["lava", "crimson-storm"].includes(materialId)) {
       readability.addColorStop(0, "rgba(8,0,0,0.02)");
       readability.addColorStop(0.48, "rgba(0,0,0,0.08)");
       readability.addColorStop(1, "rgba(15,0,0,0.16)");
-    } else if (materialId === "galaxy") {
+    } else if (["galaxy", "abyss", "eclipse"].includes(materialId)) {
       readability.addColorStop(0, "rgba(0,4,18,0.03)");
       readability.addColorStop(0.5, "rgba(0,0,8,0.09)");
       readability.addColorStop(1, "rgba(1,0,16,0.16)");
@@ -4354,23 +4458,23 @@
       readability.addColorStop(0, "rgba(0,7,22,0.05)");
       readability.addColorStop(0.5, "rgba(0,2,12,0.12)");
       readability.addColorStop(1, "rgba(0,0,9,0.18)");
-    } else if (materialId === "ice") {
-      readability.addColorStop(0, "rgba(0,18,41,0.08)");
-      readability.addColorStop(0.5, "rgba(0,13,35,0.13)");
-      readability.addColorStop(1, "rgba(0,9,27,0.2)");
-    } else if (materialId === "gold") {
+    } else if (materialId === "amethyst") {
+      readability.addColorStop(0, "rgba(19,0,38,0.05)");
+      readability.addColorStop(0.5, "rgba(12,0,30,0.11)");
+      readability.addColorStop(1, "rgba(8,0,24,0.2)");
+    } else if (["gold", "solar-porcelain"].includes(materialId)) {
       readability.addColorStop(0, "rgba(24,12,0,0.02)");
       readability.addColorStop(0.5, "rgba(10,5,0,0.09)");
       readability.addColorStop(1, "rgba(20,9,0,0.18)");
-    } else if (materialId === "amber") {
+    } else if (["amber", "copper"].includes(materialId)) {
       readability.addColorStop(0, "rgba(28,7,0,0.04)");
       readability.addColorStop(0.5, "rgba(15,3,0,0.1)");
       readability.addColorStop(1, "rgba(24,5,0,0.2)");
-    } else if (materialId === "emerald") {
+    } else if (["emerald", "jade-mist"].includes(materialId)) {
       readability.addColorStop(0, "rgba(0,20,11,0.04)");
       readability.addColorStop(0.5, "rgba(0,10,7,0.09)");
       readability.addColorStop(1, "rgba(0,16,9,0.19)");
-    } else if (materialId === "burgundy") {
+    } else if (["burgundy", "rose-quartz"].includes(materialId)) {
       readability.addColorStop(0, "rgba(25,0,7,0.03)");
       readability.addColorStop(0.5, "rgba(13,0,4,0.1)");
       readability.addColorStop(1, "rgba(22,0,6,0.2)");
@@ -4438,7 +4542,8 @@
       accumulatorMs: 0,
       stepCount: 0,
       energy: 0,
-      lastBlackEightImpulse: -1
+      lastBlackEightImpulse: -1,
+      lastSurfaceTransitionImpulse: -1
     };
   }
 
@@ -4456,6 +4561,7 @@
     waterSurface.stepCount = 0;
     waterSurface.energy = 0;
     waterSurface.lastBlackEightImpulse = -1;
+    waterSurface.lastSurfaceTransitionImpulse = -1;
     const centerX = TABLE.left + (TABLE.right - TABLE.left) * 0.5;
     const centerY = TABLE.top + (TABLE.bottom - TABLE.top) * 0.56;
     disturbWaterWorld(centerX, centerY, 0.14, 84);
@@ -4578,7 +4684,8 @@
     const speedRatio = clamp(ball.speed / 24, 0.12, 1);
     const amplitude = profile.amplitude * material.wake * (0.32 + speedRatio * 0.96);
     const phase = waterSurface.stepCount * 0.23 + data.number * 1.71;
-    const cadence = material.id === "ice" ? 5 : material.id === "galaxy" || material.id === "ink" ? 4 : 3;
+    const cadence = ["amethyst", "rose-quartz"].includes(material.id) ? 5
+      : ["galaxy", "abyss", "eclipse", "ink", "jade-mist"].includes(material.id) ? 4 : 3;
     if ((waterSurface.stepCount + data.number * 3) % cadence !== 0) return;
     const heading = Math.atan2(direction.y, direction.x);
     if (material.id === "circuit") {
@@ -4591,29 +4698,29 @@
       return;
     }
     const sideReach = material.id === "ink" ? 104
-      : material.id === "emerald" ? 88
-        : material.id === "galaxy" ? 80
-          : material.id === "amber" ? 72
-            : material.id === "gold" ? 62 : 54;
+      : ["emerald", "jade-mist"].includes(material.id) ? 88
+        : ["galaxy", "abyss", "eclipse"].includes(material.id) ? 82
+          : ["amber", "copper"].includes(material.id) ? 72
+            : ["gold", "solar-porcelain"].includes(material.id) ? 62 : 54;
     const side = Math.sin(phase * 0.74) * sideReach;
     const centerX = ball.position.x - direction.x * (28 + speedRatio * 38) + normal.x * side;
     const centerY = ball.position.y - direction.y * (28 + speedRatio * 38) + normal.y * side;
-    if (material.id === "lava") {
+    if (["lava", "crimson-storm"].includes(material.id)) {
       const growthAngle = heading + Math.sin(phase * 0.83) * 1.18;
       disturbMaterialWorld(centerX, centerY, amplitude * 0.9, 132, 31, growthAngle, phase);
       disturbMaterialWorld(centerX + normal.x * 62, centerY + normal.y * 62, amplitude * 0.52, 92, 22, growthAngle + 1.05, phase + 2.1);
       disturbMaterialWorld(centerX - normal.x * 48, centerY - normal.y * 48, -amplitude * 0.36, 82, 26, growthAngle - 0.72, phase - 1.4);
-    } else if (material.id === "gold") {
+    } else if (["gold", "solar-porcelain", "copper"].includes(material.id)) {
       const flareAngle = heading + Math.PI / 2 + Math.sin(phase * 0.61) * 0.86;
       disturbMaterialWorld(centerX, centerY, amplitude * 0.84, 164, 46, flareAngle, phase);
       disturbMaterialWorld(centerX + normal.x * 74, centerY + normal.y * 74, amplitude * 0.48, 116, 28, flareAngle + 0.92, phase + 1.8);
       disturbMaterialWorld(centerX - normal.x * 58, centerY - normal.y * 58, -amplitude * 0.31, 104, 24, flareAngle - 0.76, phase - 1.3);
-    } else if (material.id === "galaxy") {
+    } else if (["galaxy", "abyss", "eclipse"].includes(material.id)) {
       const orbitAngle = heading + Math.PI / 2 + Math.sin(phase * 0.57) * 0.7;
       disturbMaterialWorld(centerX, centerY, amplitude * 0.78, 178, 72, orbitAngle, phase);
       disturbMaterialWorld(centerX + normal.x * 88, centerY + normal.y * 88, -amplitude * 0.66, 146, 58, orbitAngle + 0.86, phase + 1.7);
       disturbMaterialWorld(centerX - normal.x * 72, centerY - normal.y * 72, amplitude * 0.44, 122, 50, orbitAngle - 0.64, phase - 1.2);
-    } else if (material.id === "ice") {
+    } else if (["amethyst", "rose-quartz"].includes(material.id)) {
       const stressAngle = heading + Math.sin(phase * 1.13) * 1.46;
       disturbMaterialWorld(centerX, centerY, amplitude * 0.82, 154, 23, stressAngle, phase);
       disturbMaterialWorld(centerX + normal.x * 58, centerY + normal.y * 58, -amplitude * 0.6, 108, 19, stressAngle + 1.24, phase + 2.4);
@@ -4623,7 +4730,7 @@
       disturbMaterialWorld(centerX, centerY, amplitude * 0.86, 196, 86, viscousAngle, phase);
       disturbMaterialWorld(centerX + normal.x * 92, centerY + normal.y * 92, -amplitude * 0.58, 148, 62, viscousAngle + 0.68, phase + 2.3);
       disturbMaterialWorld(centerX - normal.x * 74, centerY - normal.y * 74, amplitude * 0.4, 132, 54, viscousAngle - 0.55, phase - 1.5);
-    } else if (material.id === "emerald") {
+    } else if (["emerald", "jade-mist"].includes(material.id)) {
       const tideAngle = heading + Math.PI / 2 + Math.sin(phase * 0.51) * 0.76;
       disturbMaterialWorld(centerX, centerY, amplitude * 0.8, 214, 74, tideAngle, phase);
       disturbMaterialWorld(centerX + normal.x * 108, centerY + normal.y * 108, -amplitude * 0.54, 162, 58, tideAngle + 0.9, phase + 1.9);
@@ -4689,6 +4796,23 @@
     waterSurface.accumulatorMs += deltaMs;
     while (waterSurface.accumulatorMs >= WATER_STEP_MS) {
       waterSurface.accumulatorMs -= WATER_STEP_MS;
+      if (dateMapState.surfaceTransition) {
+        const transition = dateMapState.surfaceTransition;
+        const age = Math.max(0, performance.now() - transition.startedAt);
+        const transitionProgress = clamp(age / transition.duration, 0, 1);
+        const phase = Math.floor(age / 82);
+        if (phase !== waterSurface.lastSurfaceTransitionImpulse && transitionProgress < 0.94) {
+          waterSurface.lastSurfaceTransitionImpulse = phase;
+          const sweep = phase * 2.399963 + (transition.ballNumber || 0) * 0.47;
+          const eased = 1 - Math.pow(1 - transitionProgress, 2.4);
+          const xReach = (TABLE.right - TABLE.left) * 0.76 * eased;
+          const yReach = (TABLE.bottom - TABLE.top) * 0.76 * eased;
+          const x = transition.originX + Math.cos(sweep) * xReach;
+          const y = transition.originY + Math.sin(sweep) * yReach;
+          const polarity = phase % 3 === 0 ? -1 : 1;
+          disturbMaterialWorld(x, y, polarity * (0.38 + (1 - transitionProgress) * 0.62), 150, 34, sweep + Math.PI / 2, phase * 0.91);
+        }
+      }
       if (dateMapState.blackEightBlast) {
         const blast = dateMapState.blackEightBlast;
         const phase = Math.floor(blast.ageMs / 105);
@@ -4723,12 +4847,12 @@
 
   function drawSurfaceReflectedLight(surfaceMaterialId, width, height) {
     const reflectedLight = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    if (surfaceMaterialId === "lava") {
+    if (["lava", "crimson-storm"].includes(surfaceMaterialId)) {
       reflectedLight.addColorStop(0, "rgba(255,111,24,0.1)");
       reflectedLight.addColorStop(0.3, "rgba(255,72,8,0)");
       reflectedLight.addColorStop(0.74, "rgba(35,2,0,0.08)");
       reflectedLight.addColorStop(1, "rgba(0,0,0,0.34)");
-    } else if (surfaceMaterialId === "galaxy") {
+    } else if (["galaxy", "abyss"].includes(surfaceMaterialId)) {
       reflectedLight.addColorStop(0, "rgba(122,194,255,0.1)");
       reflectedLight.addColorStop(0.3, "rgba(122,194,255,0)");
       reflectedLight.addColorStop(0.72, "rgba(229,98,255,0.055)");
@@ -4738,27 +4862,32 @@
       reflectedLight.addColorStop(0.28, "rgba(70,240,255,0)");
       reflectedLight.addColorStop(0.7, "rgba(234,63,255,0.07)");
       reflectedLight.addColorStop(1, "rgba(0,0,12,0.32)");
-    } else if (surfaceMaterialId === "ice") {
-      reflectedLight.addColorStop(0, "rgba(245,255,255,0.19)");
-      reflectedLight.addColorStop(0.24, "rgba(205,245,255,0.025)");
-      reflectedLight.addColorStop(0.76, "rgba(126,205,232,0.07)");
-      reflectedLight.addColorStop(1, "rgba(3,20,31,0.29)");
-    } else if (surfaceMaterialId === "gold") {
+    } else if (surfaceMaterialId === "amethyst") {
+      reflectedLight.addColorStop(0, "rgba(225,175,255,0.16)");
+      reflectedLight.addColorStop(0.24, "rgba(184,113,255,0.02)");
+      reflectedLight.addColorStop(0.76, "rgba(80,42,135,0.08)");
+      reflectedLight.addColorStop(1, "rgba(12,2,25,0.3)");
+    } else if (surfaceMaterialId === "eclipse") {
+      reflectedLight.addColorStop(0, "rgba(255,196,88,0.13)");
+      reflectedLight.addColorStop(0.27, "rgba(161,92,255,0.03)");
+      reflectedLight.addColorStop(0.7, "rgba(37,4,59,0.1)");
+      reflectedLight.addColorStop(1, "rgba(0,0,5,0.36)");
+    } else if (["gold", "solar-porcelain"].includes(surfaceMaterialId)) {
       reflectedLight.addColorStop(0, "rgba(255,226,102,0.15)");
       reflectedLight.addColorStop(0.3, "rgba(255,184,38,0.01)");
       reflectedLight.addColorStop(0.74, "rgba(72,35,0,0.08)");
       reflectedLight.addColorStop(1, "rgba(14,7,0,0.3)");
-    } else if (surfaceMaterialId === "amber") {
+    } else if (["amber", "copper"].includes(surfaceMaterialId)) {
       reflectedLight.addColorStop(0, "rgba(255,171,67,0.13)");
       reflectedLight.addColorStop(0.3, "rgba(255,108,20,0.01)");
       reflectedLight.addColorStop(0.74, "rgba(74,15,0,0.08)");
       reflectedLight.addColorStop(1, "rgba(17,3,0,0.3)");
-    } else if (surfaceMaterialId === "emerald") {
+    } else if (["emerald", "jade-mist"].includes(surfaceMaterialId)) {
       reflectedLight.addColorStop(0, "rgba(92,255,177,0.12)");
       reflectedLight.addColorStop(0.3, "rgba(37,222,139,0.01)");
       reflectedLight.addColorStop(0.74, "rgba(0,47,29,0.08)");
       reflectedLight.addColorStop(1, "rgba(0,13,8,0.3)");
-    } else if (surfaceMaterialId === "burgundy") {
+    } else if (["burgundy", "rose-quartz"].includes(surfaceMaterialId)) {
       reflectedLight.addColorStop(0, "rgba(255,100,135,0.12)");
       reflectedLight.addColorStop(0.3, "rgba(222,34,75,0.01)");
       reflectedLight.addColorStop(0.74, "rgba(61,0,14,0.08)");
@@ -4794,9 +4923,17 @@
         : artwork;
       const transitionChannels = colorChannels(surfaceTransition?.color || theme.primary).map((channel) => channel / 255);
       const blast = dateMapState.blackEightBlast;
+      const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
       const blastStrength = blast
-        ? Math.sin(clamp(blast.ageMs / blast.duration, 0, 1) * Math.PI)
+        ? Math.sin(blastProgress * Math.PI)
         : 0;
+      const blastInward = blast ? smoothStep(0.025, 0.3, blastProgress) : 1;
+      const blastWorldX = blast
+        ? blast.originX + (WORLD.width / 2 - blast.originX) * blastInward
+        : WORLD.width / 2;
+      const blastWorldY = blast
+        ? blast.originY + (WORLD.height / 2 - blast.originY) * blastInward
+        : WORLD.height / 2;
       const renderedSurface = surfaceRenderer.render({
         base: artwork,
         previousBase: previousArtwork,
@@ -4810,6 +4947,9 @@
         time: timestamp,
         energy: waterSurface.energy,
         blast: blastStrength,
+        blastProgress,
+        blastOriginX: clamp((blastWorldX - TABLE.left) / width, 0, 1),
+        blastOriginY: 1 - clamp((blastWorldY - TABLE.top) / height, 0, 1),
         transition: surfaceTransition ? {
           progress: transitionProgress,
           originX: clamp((surfaceTransition.originX - TABLE.left) / width, 0, 1),
@@ -4912,7 +5052,7 @@
         const traceGradient = Math.abs(pigment[index + 1] - pigment[index - 1])
           + Math.abs(pigment[index + waterSurface.width] - pigment[index - waterSurface.width]);
         let responseStrength = 0;
-        if (surfaceMaterialId === "lava") {
+        if (["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId)) {
           const fissureField = Math.abs(flowA * 0.48 + flowB * 0.34 + flowC * 0.18);
           const fissure = Math.pow(clamp(fissureField + surfaceHeight * 0.035, 0, 1), 8.5);
           const heat = clamp(traceValue * 0.96 + slope * 0.4 + Math.abs(surfaceHeight) * 0.12 + fissure * 0.34, 0, 1);
@@ -4921,7 +5061,7 @@
           green = 4 + diffuse * 3 + heat * 45 + moltenCore * 112 + specular * 14;
           blue = 3 + heat * 6 + moltenCore * 18;
           responseStrength = clamp(traceGradient * 3.4 + physicalSlope * 1.62 + traceValue * 0.12, 0, 1);
-        } else if (surfaceMaterialId === "galaxy") {
+        } else if (["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(surfaceMaterialId)) {
           const nebula = clamp(0.5 + flowA * 0.22 + flowB * 0.18 + flowC * 0.14, 0, 1);
           const wake = clamp(traceValue * 0.9 + slope * 0.34 + Math.abs(surfaceHeight) * 0.08, 0, 1);
           red = 3 + nebula * 17 + primaryR * wake * 0.43 + secondaryR * wake * 0.22;
@@ -4938,7 +5078,7 @@
           green = 8 + grid * 24 + primaryG * charge * (0.54 + pulse * 0.26) + specular * 45;
           blue = 24 + grid * 48 + primaryB * charge * 0.72 + secondaryB * charge * 0.24 + specular * 68;
           responseStrength = clamp(traceValue * 0.08 + traceGradient * 2.7 + physicalSlope * 1.92, 0, 1);
-        } else if (surfaceMaterialId === "ice") {
+        } else if (["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId)) {
           const crystal = Math.abs(flowA * 0.5 + flowB * 0.31 + flowC * 0.19 + surfaceHeight * 0.05);
           const facet = Math.pow(clamp(crystal, 0, 1), 7.4);
           const iceEdge = clamp(slope * 0.9 + Math.abs(surfaceHeight) * 0.09 + traceValue * 0.56, 0, 1);
@@ -4964,17 +5104,17 @@
         }
 
         const blastWave = 0.58 + Math.sin(spectralPhase) * 0.42;
-        const blastTint = surfaceMaterialId === "lava" ? [76, 26, 3]
-          : surfaceMaterialId === "galaxy" ? [34 + blastWave * 20, 38 + (1 - blastWave) * 26, 84]
+        const blastTint = ["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId) ? [76, 26, 3]
+          : ["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(surfaceMaterialId) ? [34 + blastWave * 20, 38 + (1 - blastWave) * 26, 84]
             : surfaceMaterialId === "circuit" ? [34 + (1 - blastWave) * 52, 78, 82 + blastWave * 28]
-              : surfaceMaterialId === "ice" ? [54, 82, 98]
+              : ["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId) ? [74, 46, 106]
                 : [42, 42, 38];
         pixels[offset] = clamp(red * eclipse + spectralStrength * blastTint[0], 0, 255);
         pixels[offset + 1] = clamp(green * eclipse + spectralStrength * blastTint[1], 0, 255);
         pixels[offset + 2] = clamp(blue * eclipse + spectralStrength * blastTint[2], 0, 255);
         const responseAlpha = surfaceMaterialId === "circuit" ? 180
-          : surfaceMaterialId === "lava" ? 220
-            : surfaceMaterialId === "ice" ? 168
+          : ["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId) ? 220
+            : ["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId) ? 168
               : surfaceMaterialId === "ink" ? 196
                 : 184;
         pixels[offset + 3] = clamp(
@@ -4996,15 +5136,15 @@
       context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
     } else {
       context.globalCompositeOperation = "screen";
-      if (surfaceMaterialId !== "circuit" && surfaceMaterialId !== "ice") {
-        context.globalAlpha = surfaceMaterialId === "lava" ? 0.16 : 0.13;
+      if (surfaceMaterialId !== "circuit" && surfaceMaterialId !== "amethyst") {
+        context.globalAlpha = ["lava", "crimson-storm", "copper"].includes(surfaceMaterialId) ? 0.16 : 0.13;
         context.filter = "blur(7px)";
         context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
         context.filter = "none";
       }
-      context.globalAlpha = surfaceMaterialId === "lava" ? 0.72
+      context.globalAlpha = ["lava", "crimson-storm", "copper"].includes(surfaceMaterialId) ? 0.72
         : surfaceMaterialId === "circuit" ? 0.48
-          : surfaceMaterialId === "ice" ? 0.44
+          : surfaceMaterialId === "amethyst" ? 0.44
             : 0.64;
       context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
     }
@@ -5056,43 +5196,23 @@
     const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
     let peak = 0;
     context.save();
-    context.lineCap = "round";
     context.globalCompositeOperation = "screen";
     const lightRails = rails.filter((rail) => rail.plugin.heartbeatRail?.kind === "cushion");
-    let globalIndex = 0;
     lightRails.forEach((rail) => {
-      const material = rail.plugin.heartbeatRail;
-      const horizontal = material.width >= material.height;
-      const length = horizontal ? material.width : material.height;
+      const railShape = rail.plugin.heartbeatRail;
+      const horizontal = railShape.width >= railShape.height;
+      const length = horizontal ? railShape.width : railShape.height;
       const segmentCount = Math.max(3, Math.ceil(length / RAIL_LED_SEGMENT_LENGTH));
-      const innerOffset = 2.4;
-      for (let segment = 0; segment < segmentCount; segment += 1, globalIndex += 1) {
-        const fromRatio = (segment + 0.12) / segmentCount;
-        const toRatio = (segment + 0.88) / segmentCount;
-        let from;
-        let to;
-        if (horizontal) {
-          const y = material.id === "top"
-            ? rail.position.y + material.height / 2 - innerOffset
-            : rail.position.y - material.height / 2 + innerOffset;
-          from = { x: rail.position.x - material.width / 2 + material.width * fromRatio, y };
-          to = { x: rail.position.x - material.width / 2 + material.width * toRatio, y };
-        } else {
-          const x = material.id.startsWith("left")
-            ? rail.position.x + material.width / 2 - innerOffset
-            : rail.position.x - material.width / 2 + innerOffset;
-          from = { x, y: rail.position.y - material.height / 2 + material.height * fromRatio };
-          to = { x, y: rail.position.y - material.height / 2 + material.height * toRatio };
-        }
-        const centerDistance = railDistanceForContact((from.x + to.x) / 2, (from.y + to.y) / 2);
-        let brightness = blast ? 0.012 : 0.052 + Math.min(4, dateMapState.activeStreak) * 0.012;
+      for (let segment = 0; segment < segmentCount; segment += 1) {
+        const centerRatio = (segment + 0.5) / segmentCount;
+        const center = horizontal
+          ? { x: rail.position.x - railShape.width / 2 + railShape.width * centerRatio, y: rail.position.y }
+          : { x: rail.position.x, y: rail.position.y - railShape.height / 2 + railShape.height * centerRatio };
+        const centerDistance = railDistanceForContact(center.x, center.y);
+        let brightness = 0;
         let red = baseColor[0];
         let green = baseColor[1];
         let blue = baseColor[2];
-        const pulseSpeed = surface.id === "circuit" ? 0.012
-          : surface.id === "galaxy" ? 0.0032
-            : surface.id === "ink" ? 0.002 : 0.0054;
-        brightness += Math.max(0, Math.sin(timestamp * pulseSpeed + globalIndex * 0.83)) * 0.024;
         dateMapState.railBursts.forEach((wave) => {
           const ageSeconds = wave.ageMs / 1000;
           const front = wave.speed * ageSeconds;
@@ -5124,7 +5244,7 @@
           );
           const chaseWave = Math.pow(clamp(1 - chaseDistance / 150, 0, 1), 2) * chase;
           const climax = smoothStep(0.68, 0.82, blastProgress) * (1 - smoothStep(0.9, 1, blastProgress));
-          brightness += pocketIgnition * 0.16 + chaseWave * 1.18 + climax * 0.88;
+          brightness += pocketIgnition * 0.08 + chaseWave * 1.18 + climax * 0.92;
           const spectral = centerDistance / perimeter * Math.PI * 2 + blastProgress * 15 + pocketIndex * 0.2;
           const blend = 0.5 + Math.sin(spectral * (surface.id === "circuit" ? 2.6 : 1.2)) * 0.5;
           red = baseColor[0] + (secondaryColor[0] - baseColor[0]) * blend;
@@ -5133,25 +5253,31 @@
         }
         brightness = clamp(brightness, 0, 1);
         peak = Math.max(peak, brightness);
+        if (brightness < 0.035) return;
         const color = `rgb(${Math.round(clamp(red, 0, 255))},${Math.round(clamp(green, 0, 255))},${Math.round(clamp(blue, 0, 255))})`;
-        if (brightness > 0.2) {
-          context.globalAlpha = brightness * 0.32;
-          context.strokeStyle = color;
-          context.lineWidth = 8 + brightness * 7;
-          context.beginPath();
-          context.moveTo(from.x, from.y);
-          context.lineTo(to.x, to.y);
-          context.stroke();
+        const segmentLength = length / segmentCount * 1.08;
+        const thickness = (horizontal ? railShape.height : railShape.width) * 0.92;
+        const gradient = horizontal
+          ? context.createLinearGradient(center.x - segmentLength / 2, center.y, center.x + segmentLength / 2, center.y)
+          : context.createLinearGradient(center.x, center.y - segmentLength / 2, center.x, center.y + segmentLength / 2);
+        const rgba = (alpha) => `rgba(${Math.round(red)},${Math.round(green)},${Math.round(blue)},${alpha})`;
+        gradient.addColorStop(0, rgba(0));
+        gradient.addColorStop(0.22, rgba(brightness * 0.34));
+        gradient.addColorStop(0.5, rgba(brightness * 0.9));
+        gradient.addColorStop(0.78, rgba(brightness * 0.34));
+        gradient.addColorStop(1, rgba(0));
+        context.globalAlpha = 1;
+        context.fillStyle = gradient;
+        context.shadowColor = color;
+        context.shadowBlur = 4 + brightness * 15;
+        if (horizontal) {
+          context.fillRect(center.x - segmentLength / 2, center.y - thickness / 2, segmentLength, thickness);
+        } else {
+          context.fillRect(center.x - thickness / 2, center.y - segmentLength / 2, thickness, segmentLength);
         }
-        context.globalAlpha = 0.14 + brightness * 0.86;
-        context.strokeStyle = color;
-        context.lineWidth = 2.2 + brightness * 3.2;
-        context.beginPath();
-        context.moveTo(from.x, from.y);
-        context.lineTo(to.x, to.y);
-        context.stroke();
       }
     });
+    context.shadowBlur = 0;
     dateMapState.railWavePeak = peak;
     context.restore();
   }
@@ -5182,7 +5308,7 @@
         context.arc(pocket.x, pocket.y, radius, start, end);
         context.stroke();
       }
-      if (["lava", "gold", "amber"].includes(surface.id)) {
+      if (["lava", "gold", "amber", "solar-porcelain", "copper", "crimson-storm"].includes(surface.id)) {
         context.globalAlpha = level * 0.58;
         context.strokeStyle = "#ff9a22";
         for (let tongue = 0; tongue < 8; tongue += 1) {
@@ -5193,7 +5319,7 @@
           context.lineTo(pocket.x + Math.cos(angle) * reach, pocket.y + Math.sin(angle) * reach);
           context.stroke();
         }
-      } else if (["galaxy", "emerald"].includes(surface.id)) {
+      } else if (["galaxy", "emerald", "abyss", "jade-mist", "eclipse"].includes(surface.id)) {
         context.globalAlpha = level * 0.5;
         context.strokeStyle = "#b17bff";
         context.lineWidth = 1.25;
@@ -5206,7 +5332,7 @@
         context.lineWidth = 1.2;
         roundRectPath(context, pocket.x - radius * 0.8, pocket.y - radius * 0.8, radius * 1.6, radius * 1.6, 3);
         context.stroke();
-      } else if (["ice", "burgundy"].includes(surface.id)) {
+      } else if (["amethyst", "burgundy", "rose-quartz"].includes(surface.id)) {
         context.globalAlpha = level * 0.54;
         context.strokeStyle = "#eaffff";
         context.lineWidth = 1.1;
@@ -5240,37 +5366,6 @@
         context.fillRect(pocket.x - glowRadius, pocket.y - glowRadius, glowRadius * 2, glowRadius * 2);
       }
     });
-    context.restore();
-  }
-
-  function drawMaterialFrameFinish() {
-    const surface = activeSurfaceMaterial();
-    const palettes = {
-      lava: ["#160503", "#a93a0b", "#ff9c2c"],
-      galaxy: ["#03081c", "#194e91", "#72ccff"],
-      circuit: ["#020718", "#0b7893", "#45efff"],
-      ice: ["#031425", "#286b92", "#c8f7ff"],
-      ink: ["#101916", "#3d655b", "#d8e4dc"]
-    };
-    const palette = palettes[surface.id] || palettes.lava;
-    const finish = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    finish.addColorStop(0, palette[2]);
-    finish.addColorStop(0.22, palette[0]);
-    finish.addColorStop(0.74, palette[1]);
-    finish.addColorStop(1, palette[2]);
-    context.save();
-    context.globalCompositeOperation = surface.id === "ink" ? "multiply" : "screen";
-    context.globalAlpha = surface.id === "lava" ? 0.2 : 0.15;
-    context.strokeStyle = finish;
-    context.lineWidth = 20;
-    roundRectPath(context, TABLE.left - 22, TABLE.top - 22, TABLE.right - TABLE.left + 44, TABLE.bottom - TABLE.top + 44, 17);
-    context.stroke();
-    context.globalCompositeOperation = "screen";
-    context.globalAlpha = 0.38;
-    context.strokeStyle = palette[2];
-    context.lineWidth = 1.2;
-    roundRectPath(context, TABLE.left - 16, TABLE.top - 16, TABLE.right - TABLE.left + 32, TABLE.bottom - TABLE.top + 32, 11);
-    context.stroke();
     context.restore();
   }
 
@@ -5743,7 +5838,7 @@
       const phase = node.seed + timestamp * 0.00034;
       const speedGain = clamp(node.speed / 24, 0.18, 1);
       context.save();
-      if (materialId === "lava") {
+      if (["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(materialId)) {
         const radius = 78 + speedGain * 78;
         const angle = node.angle + Math.sin(phase * 0.73) * 0.72;
         traceOrganicInfluencePath(node.x, node.y, radius, radius * 0.52, angle, node.seed, phase);
@@ -5763,7 +5858,7 @@
         context.globalCompositeOperation = "screen";
         context.fillStyle = heat;
         context.fillRect(node.x - radius, node.y - radius, radius * 2, radius * 2);
-      } else if (materialId === "galaxy") {
+      } else if (["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(materialId)) {
         const radius = 96 + speedGain * 94;
         context.beginPath();
         ellipsePath(context, node.x, node.y, radius, radius * 0.58, node.angle + phase * 0.08, 0, Math.PI * 2);
@@ -5794,7 +5889,7 @@
           offsetY: Math.cos(phase * 3.7) * 2,
           composite: "source-over"
         });
-      } else if (materialId === "ice") {
+      } else if (["amethyst", "burgundy", "rose-quartz"].includes(materialId)) {
         const radius = 82 + speedGain * 82;
         for (let facet = 0; facet < 4; facet += 1) {
           const facetAngle = node.seed + facet * 1.67;
@@ -5886,7 +5981,7 @@
     [...groupedTrails.entries()].forEach(([ballNumber, trails], groupIndex) => {
       influenceNodes(trails, ballNumber).forEach((node, nodeIndex) => {
         const phase = node.seed + timestamp * 0.00012;
-        if (materialId === "lava") {
+        if (["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(materialId)) {
           const centerX = node.x + node.normalX * Math.sin(phase * 1.7) * 10;
           const centerY = node.y + node.normalY * Math.sin(phase * 1.7) * 10;
           context.globalCompositeOperation = "screen";
@@ -5915,7 +6010,7 @@
           context.strokeStyle = groupIndex % 4 === 0 ? "#fff0a2" : "#ffad2e";
           context.lineWidth = 0.8 + node.alpha * 1.5;
           context.stroke();
-        } else if (materialId === "galaxy") {
+        } else if (["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(materialId)) {
           const centerX = node.x + node.normalX * (18 + Math.sin(phase) * 8);
           const centerY = node.y + node.normalY * (18 + Math.sin(phase) * 8);
           context.globalCompositeOperation = "screen";
@@ -5977,7 +6072,7 @@
           context.beginPath();
           context.arc(centerX, centerY, pulse, 0, Math.PI * 2);
           context.stroke();
-        } else if (materialId === "ice") {
+        } else if (["amethyst", "burgundy", "rose-quartz"].includes(materialId)) {
           const centerX = node.x + node.normalX * Math.sin(node.seed * 2.7) * 12;
           const centerY = node.y + node.normalY * Math.sin(node.seed * 2.7) * 12;
           context.globalCompositeOperation = "screen";
@@ -6255,154 +6350,38 @@
     const blast = dateMapState.blackEightBlast;
     if (!blast) return;
     const progress = clamp(blast.ageMs / blast.duration, 0, 1);
-    const attack = clamp(progress / 0.12, 0, 1);
-    const release = 1 - clamp((progress - 0.38) / 0.62, 0, 1);
+    const attack = smoothStep(0, 0.16, progress);
+    const release = 1 - smoothStep(0.82, 1, progress);
     const intensity = attack * release;
-    const inward = 1 - Math.pow(1 - clamp(progress / 0.11, 0, 1), 3);
+    const inward = smoothStep(0.025, 0.3, progress);
     const x = blast.originX + (WORLD.width / 2 - blast.originX) * inward;
     const y = blast.originY + (WORLD.height / 2 - blast.originY) * inward;
-    const materialId = activeSurfaceMaterial().id;
-    const profiles = {
-      lava: { colors: ["#fff0a3", "#ff9b20", "#ff3d08", "#8b0903"], void: "rgba(18,1,0,0.84)" },
-      galaxy: { colors: ["#f5fbff", "#75d9ff", "#8a65ff", "#f36bdc"], void: "rgba(0,0,12,0.9)" },
-      circuit: { colors: ["#e9ffff", "#34edff", "#755cff", "#f052ff"], void: "rgba(0,2,16,0.88)" },
-      ice: { colors: ["#ffffff", "#b8f6ff", "#58d8ff", "#187ec4"], void: "rgba(0,13,34,0.8)" },
-      ink: { colors: ["#f7f6ec", "#aab9b1", "#344841", "#070d0b"], void: "rgba(5,12,10,0.76)" }
-    };
-    const profile = profiles[materialId] || profiles.lava;
+    const success = blast.success !== false;
+    const palette = success
+      ? ["#fff9d7", "#ffbe4b", "#ad6cff", "#4b1a87"]
+      : ["#fff1e4", "#ff5b52", "#9f2f77", "#220613"];
     context.save();
-    const voidRadius = 40 + attack * 520;
-    const voidField = context.createRadialGradient(x, y, 0, x, y, voidRadius);
-    voidField.addColorStop(0, profile.void);
-    voidField.addColorStop(0.42, colorWithAlpha(profile.colors[3], 0.36 * intensity));
-    voidField.addColorStop(1, colorWithAlpha(profile.colors[3], 0));
-    context.globalAlpha = intensity;
-    context.fillStyle = voidField;
-    context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
-    context.globalCompositeOperation = materialId === "ink" ? "source-over" : "screen";
+    context.globalCompositeOperation = "screen";
+    const focusRadius = 70 + attack * 250;
+    const focus = context.createRadialGradient(x, y, 0, x, y, focusRadius);
+    focus.addColorStop(0, colorWithAlpha(palette[0], intensity * 0.12));
+    focus.addColorStop(0.16, colorWithAlpha(palette[1], intensity * 0.1));
+    focus.addColorStop(0.42, colorWithAlpha(palette[2], intensity * 0.055));
+    focus.addColorStop(1, colorWithAlpha(palette[3], 0));
+    context.fillStyle = focus;
+    context.fillRect(x - focusRadius, y - focusRadius, focusRadius * 2, focusRadius * 2);
 
-    if (materialId === "lava") {
-      const coreRadius = 46 + attack * 350;
-      const core = context.createRadialGradient(x, y, 0, x, y, coreRadius);
-      core.addColorStop(0, colorWithAlpha("#ffffff", 0.9 * intensity));
-      core.addColorStop(0.08, colorWithAlpha("#fff0a3", 0.78 * intensity));
-      core.addColorStop(0.3, colorWithAlpha("#ff4b08", 0.48 * intensity));
-      core.addColorStop(1, "rgba(255,38,0,0)");
-      context.fillStyle = core;
-      context.fillRect(x - coreRadius, y - coreRadius, coreRadius * 2, coreRadius * 2);
-      for (let ray = 0; ray < 24; ray += 1) {
-        const angle = ray / 24 * Math.PI * 2 + Math.sin(ray * 2.7) * 0.11;
-        const points = surfaceCrackPoints(seededSurfaceRandom(ray * 971 + 17), x, y, angle, attack * (220 + ray % 7 * 62), 6 + ray % 5, 0.48);
-        context.globalAlpha = intensity * (0.48 + ray % 3 * 0.13);
-        context.shadowColor = "#ff3208";
-        context.shadowBlur = 15;
-        context.strokeStyle = ray % 4 ? "#ff5b0c" : "#ffe98f";
-        context.lineWidth = ray % 4 ? 4.2 : 7.5;
-        strokeSurfacePolyline(context, points);
-      }
-    } else if (materialId === "galaxy") {
-      const core = context.createRadialGradient(x, y, 0, x, y, 110 + attack * 360);
-      core.addColorStop(0, "rgba(0,0,0,0.98)");
-      core.addColorStop(0.11, colorWithAlpha("#ffffff", 0.82 * intensity));
-      core.addColorStop(0.18, colorWithAlpha("#6fdcff", 0.52 * intensity));
-      core.addColorStop(0.5, colorWithAlpha("#9c63ff", 0.2 * intensity));
-      core.addColorStop(1, "rgba(0,0,0,0)");
-      context.fillStyle = core;
-      context.fillRect(x - 500, y - 500, 1000, 1000);
-      for (let orbit = 0; orbit < 9; orbit += 1) {
-        context.globalAlpha = intensity * (0.72 - orbit * 0.055);
-        context.strokeStyle = profile.colors[orbit % profile.colors.length];
-        context.lineWidth = 7 - orbit * 0.55;
-        context.shadowColor = context.strokeStyle;
-        context.shadowBlur = 16;
-        context.beginPath();
-        ellipsePath(context, x, y, 70 + attack * (100 + orbit * 45), 38 + attack * (55 + orbit * 24), progress * 2.4 + orbit * 0.43, 0, Math.PI * 2);
-        context.stroke();
-      }
-    } else if (materialId === "circuit") {
-      for (let ring = 0; ring < 8; ring += 1) {
-        const radius = 38 + attack * (70 + ring * 56);
-        context.globalAlpha = intensity * (0.72 - ring * 0.06);
-        context.strokeStyle = profile.colors[ring % profile.colors.length];
-        context.lineWidth = ring % 2 ? 1.2 : 3.2;
-        context.setLineDash(ring % 2 ? [6, 9] : [18, 5]);
-        context.lineDashOffset = -timestamp * (ring % 2 ? 0.05 : -0.035);
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
-        context.stroke();
-      }
-      context.setLineDash([]);
-      for (let ray = 0; ray < 18; ray += 1) {
-        const angle = ray / 18 * Math.PI * 2;
-        const length = attack * (240 + ray % 5 * 74);
-        const endX = x + Math.cos(angle) * length;
-        const endY = y + Math.sin(angle) * length;
-        context.globalAlpha = intensity * 0.58;
-        context.strokeStyle = profile.colors[ray % profile.colors.length];
-        context.lineWidth = 2.2;
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(endX, y);
-        context.lineTo(endX, endY);
-        context.stroke();
-      }
-    } else if (materialId === "ice") {
-      const core = context.createRadialGradient(x, y, 0, x, y, 70 + attack * 330);
-      core.addColorStop(0, colorWithAlpha("#ffffff", 0.82 * intensity));
-      core.addColorStop(0.26, colorWithAlpha("#75e6ff", 0.42 * intensity));
-      core.addColorStop(1, "rgba(50,194,255,0)");
-      context.fillStyle = core;
-      context.fillRect(x - 430, y - 430, 860, 860);
-      for (let shard = 0; shard < 30; shard += 1) {
-        const angle = shard / 30 * Math.PI * 2 + Math.sin(shard * 1.9) * 0.09;
-        const near = 24 + attack * 45;
-        const far = near + attack * (150 + shard % 8 * 42);
-        const spread = 0.018 + shard % 4 * 0.008;
-        context.globalAlpha = intensity * (0.28 + shard % 5 * 0.08);
-        context.fillStyle = shard % 3 ? "rgba(119,226,255,0.28)" : "rgba(244,255,255,0.64)";
-        context.beginPath();
-        context.moveTo(x + Math.cos(angle - spread) * near, y + Math.sin(angle - spread) * near);
-        context.lineTo(x + Math.cos(angle) * far, y + Math.sin(angle) * far);
-        context.lineTo(x + Math.cos(angle + spread) * near, y + Math.sin(angle + spread) * near);
-        context.closePath();
-        context.fill();
-      }
-    } else {
-      const bloomRadius = 55 + attack * 420;
-      const bloom = context.createRadialGradient(x, y, 0, x, y, bloomRadius);
-      bloom.addColorStop(0, `rgba(0, 0, 0, ${0.92 * intensity})`);
-      bloom.addColorStop(0.24, `rgba(7, 17, 14, ${0.68 * intensity})`);
-      bloom.addColorStop(0.62, `rgba(31, 49, 43, ${0.18 * intensity})`);
-      bloom.addColorStop(1, "rgba(0,0,0,0)");
-      context.fillStyle = bloom;
-      context.fillRect(x - bloomRadius, y - bloomRadius, bloomRadius * 2, bloomRadius * 2);
-      context.globalCompositeOperation = "multiply";
-      for (let stroke = 0; stroke < 17; stroke += 1) {
-        const angle = stroke / 17 * Math.PI * 2 + Math.sin(stroke * 2.1) * 0.18;
-        const reach = attack * (180 + stroke % 6 * 76);
-        context.globalAlpha = intensity * (0.18 + stroke % 4 * 0.07);
-        context.strokeStyle = stroke % 5 ? "#07110e" : "#4d625a";
-        context.lineWidth = 4 + stroke % 5 * 4.5;
-        context.beginPath();
-        context.moveTo(x, y);
-        context.quadraticCurveTo(x + Math.cos(angle + 0.42) * reach * 0.55, y + Math.sin(angle + 0.42) * reach * 0.55, x + Math.cos(angle) * reach, y + Math.sin(angle) * reach);
-        context.stroke();
-      }
+    const climax = smoothStep(0.42, 0.62, progress) * (1 - smoothStep(0.86, 1, progress));
+    if (climax > 0.01) {
+      const wash = context.createRadialGradient(WORLD.width / 2, WORLD.height / 2, 0, WORLD.width / 2, WORLD.height / 2, WORLD.height * 0.58);
+      wash.addColorStop(0, colorWithAlpha(palette[0], climax * 0.12));
+      wash.addColorStop(0.2, colorWithAlpha(palette[1], climax * 0.075));
+      wash.addColorStop(0.52, colorWithAlpha(palette[2], climax * 0.045));
+      wash.addColorStop(1, colorWithAlpha(palette[3], 0));
+      context.globalAlpha = 1;
+      context.fillStyle = wash;
+      context.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
     }
-    context.shadowBlur = 0;
-    POCKETS.forEach((pocket, index) => {
-      context.globalCompositeOperation = materialId === "ink" ? "source-over" : "screen";
-      context.globalAlpha = intensity * 0.42;
-      context.strokeStyle = profile.colors[index % profile.colors.length];
-      context.lineWidth = materialId === "ink" ? 5.5 : 2.6;
-      context.setLineDash(materialId === "circuit" ? [8, 7] : materialId === "ink" ? [] : [3, 9]);
-      context.lineDashOffset = -timestamp * 0.06;
-      context.beginPath();
-      context.moveTo(x, y);
-      context.quadraticCurveTo(WORLD.width / 2 + (index % 2 ? 120 : -120), WORLD.height / 2 + (index - 2.5) * 36, pocket.x, pocket.y);
-      context.stroke();
-    });
-    context.setLineDash([]);
     context.restore();
   }
 
@@ -6453,7 +6432,7 @@
   }
 
   function drawDateMapLayer(timestamp) {
-    const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
+    const refreshDue = timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
     if ((dateMapFrameDirty || refreshDue || !dateMapFrameCanvas) && !rebuildDateMapFrame(timestamp)) {
       drawDateMap(timestamp);
       return;
@@ -6829,6 +6808,176 @@
     context.restore();
   }
 
+  function drawCollisionBloom(feedback, alpha, radiusScale = 1.5) {
+    const radius = feedback.radius * radiusScale;
+    const bloom = context.createRadialGradient(0, 0, 0, 0, 0, radius);
+    bloom.addColorStop(0, colorWithAlpha(feedback.color, alpha * 0.34));
+    bloom.addColorStop(0.24, colorWithAlpha(feedback.secondary, alpha * 0.16));
+    bloom.addColorStop(0.62, colorWithAlpha(feedback.color, alpha * 0.045));
+    bloom.addColorStop(1, colorWithAlpha(feedback.secondary, 0));
+    context.fillStyle = bloom;
+    context.fillRect(-radius, -radius, radius * 2, radius * 2);
+  }
+
+  function drawMaterialCollisionFeedback(feedback) {
+    const progress = 1 - feedback.life;
+    const alpha = feedback.life * feedback.intensity;
+    const random = seededSurfaceRandom(Math.floor(feedback.seed * 100003));
+    const angle = Math.atan2(feedback.normalY, feedback.normalX);
+    context.save();
+    context.translate(feedback.x, feedback.y);
+    context.rotate(angle);
+
+    if (feedback.family === "ink") {
+      context.globalCompositeOperation = "multiply";
+      for (let wash = 0; wash < 7; wash += 1) {
+        const side = (random() - 0.5) * feedback.radius * 1.4;
+        const reach = feedback.radius * (0.7 + random() * 0.82);
+        const width = 7 + random() * 15;
+        const bloom = context.createRadialGradient(side, 0, 0, side, 0, reach);
+        bloom.addColorStop(0, `rgba(3,10,8,${alpha * (0.18 + random() * 0.14)})`);
+        bloom.addColorStop(0.48, `rgba(10,28,23,${alpha * 0.11})`);
+        bloom.addColorStop(1, "rgba(16,35,29,0)");
+        context.save();
+        context.translate(side, (random() - 0.5) * feedback.radius * 0.34);
+        context.rotate((random() - 0.5) * 1.4);
+        context.scale(1.35, width / Math.max(1, reach));
+        context.fillStyle = bloom;
+        context.fillRect(-reach, -reach, reach * 2, reach * 2);
+        context.restore();
+      }
+    } else if (feedback.family === "fluid") {
+      context.globalCompositeOperation = "screen";
+      drawCollisionBloom(feedback, alpha * 0.72, 1.72);
+      for (let lens = 0; lens < 5; lens += 1) {
+        const lensAngle = random() * Math.PI * 2;
+        const distance = feedback.radius * (0.36 + random() * 0.74);
+        const lensRadius = 2.5 + random() * 5.5;
+        context.globalAlpha = alpha * (0.16 + random() * 0.22);
+        context.fillStyle = lens % 2 ? feedback.secondary : feedback.color;
+        context.beginPath();
+        context.ellipse(
+          Math.cos(lensAngle) * distance,
+          Math.sin(lensAngle) * distance,
+          lensRadius * 1.8,
+          lensRadius * 0.72,
+          lensAngle,
+          0,
+          Math.PI * 2
+        );
+        context.fill();
+      }
+    } else if (feedback.family === "crystal") {
+      context.globalCompositeOperation = "screen";
+      drawCollisionBloom(feedback, alpha, 1.42);
+      for (let shard = 0; shard < 10; shard += 1) {
+        const shardAngle = random() * Math.PI * 2;
+        const near = feedback.radius * (0.08 + random() * 0.18);
+        const far = feedback.radius * (0.46 + random() * 0.72);
+        const spread = 0.06 + random() * 0.16;
+        context.globalAlpha = alpha * (0.12 + random() * 0.34);
+        context.fillStyle = shard % 3 ? feedback.color : feedback.secondary;
+        context.beginPath();
+        context.moveTo(Math.cos(shardAngle - spread) * near, Math.sin(shardAngle - spread) * near);
+        context.quadraticCurveTo(
+          Math.cos(shardAngle + spread * 0.3) * far * 0.62,
+          Math.sin(shardAngle + spread * 0.3) * far * 0.62,
+          Math.cos(shardAngle) * far,
+          Math.sin(shardAngle) * far
+        );
+        context.lineTo(Math.cos(shardAngle + spread) * near, Math.sin(shardAngle + spread) * near);
+        context.closePath();
+        context.fill();
+      }
+    } else if (feedback.family === "circuit") {
+      context.globalCompositeOperation = "screen";
+      context.lineCap = "round";
+      drawCollisionBloom(feedback, alpha, 1.35);
+      for (let branch = 0; branch < 6; branch += 1) {
+        const vertical = branch % 2;
+        const sign = branch < 3 ? -1 : 1;
+        const reach = feedback.radius * (0.5 + random() * 0.56);
+        const turn = feedback.radius * (0.2 + random() * 0.3);
+        context.globalAlpha = alpha * (0.24 + random() * 0.28);
+        context.strokeStyle = branch % 2 ? feedback.secondary : feedback.color;
+        context.shadowColor = context.strokeStyle;
+        context.shadowBlur = 7;
+        context.lineWidth = 4.2 + random() * 2.4;
+        context.beginPath();
+        context.moveTo(0, 0);
+        if (vertical) {
+          context.lineTo(sign * turn, 0);
+          context.quadraticCurveTo(sign * (turn + 5), 0, sign * (turn + 5), sign * 5);
+          context.lineTo(sign * (turn + 5), sign * reach);
+        } else {
+          context.lineTo(0, sign * turn);
+          context.quadraticCurveTo(0, sign * (turn + 5), sign * 5, sign * (turn + 5));
+          context.lineTo(sign * reach, sign * (turn + 5));
+        }
+        context.stroke();
+        context.globalAlpha *= 1.45;
+        context.shadowBlur = 2;
+        context.lineWidth = 1.1 + random() * 1.1;
+        context.stroke();
+        const nodeX = vertical ? sign * (turn + 5) : sign * reach;
+        const nodeY = vertical ? sign * reach : sign * (turn + 5);
+        context.save();
+        context.translate(nodeX, nodeY);
+        context.rotate(Math.PI / 4);
+        context.fillStyle = branch % 2 ? feedback.color : feedback.secondary;
+        context.fillRect(-2.8, -2.8, 5.6, 5.6);
+        context.restore();
+      }
+      context.shadowBlur = 0;
+    } else if (feedback.family === "eclipse") {
+      context.globalCompositeOperation = "screen";
+      drawCollisionBloom(feedback, alpha, 1.7);
+      for (let cloudIndex = 0; cloudIndex < 7; cloudIndex += 1) {
+        const cloudAngle = progress * 1.4 + cloudIndex * Math.PI * 2 / 7;
+        const distance = feedback.radius * (0.22 + cloudIndex % 3 * 0.18);
+        const cloudX = Math.cos(cloudAngle) * distance;
+        const cloudY = Math.sin(cloudAngle) * distance;
+        const cloudRadius = feedback.radius * (0.34 + cloudIndex % 2 * 0.18);
+        const cloud = context.createRadialGradient(cloudX, cloudY, 0, cloudX, cloudY, cloudRadius);
+        cloud.addColorStop(0, colorWithAlpha(cloudIndex % 2 ? feedback.secondary : feedback.color, alpha * 0.2));
+        cloud.addColorStop(0.46, colorWithAlpha(feedback.color, alpha * 0.07));
+        cloud.addColorStop(1, colorWithAlpha(feedback.secondary, 0));
+        context.save();
+        context.translate(cloudX, cloudY);
+        context.rotate(cloudAngle + Math.PI / 2);
+        context.scale(2.1, 0.58);
+        context.translate(-cloudX, -cloudY);
+        context.fillStyle = cloud;
+        context.fillRect(cloudX - cloudRadius, cloudY - cloudRadius, cloudRadius * 2, cloudRadius * 2);
+        context.restore();
+      }
+    } else {
+      context.globalCompositeOperation = "screen";
+      drawCollisionBloom(feedback, alpha * 0.78, 1.58);
+      for (let spark = 0; spark < 7; spark += 1) {
+        const sparkAngle = (random() - 0.5) * Math.PI * 1.6;
+        const distance = feedback.radius * (0.28 + random() * 0.82);
+        const sparkX = Math.cos(sparkAngle) * distance;
+        const sparkY = Math.sin(sparkAngle) * distance;
+        const sparkRadius = 2.4 + random() * 5.2;
+        const sparkColor = spark % 3 ? feedback.color : feedback.secondary;
+        const sparkGlow = context.createRadialGradient(sparkX, sparkY, 0, sparkX, sparkY, sparkRadius);
+        sparkGlow.addColorStop(0, colorWithAlpha("#fff7dc", alpha * (0.34 + random() * 0.24)));
+        sparkGlow.addColorStop(0.22, colorWithAlpha(sparkColor, alpha * 0.3));
+        sparkGlow.addColorStop(1, colorWithAlpha(sparkColor, 0));
+        context.save();
+        context.translate(sparkX, sparkY);
+        context.rotate(sparkAngle);
+        context.scale(2.2 + random(), 0.58 + random() * 0.24);
+        context.translate(-sparkX, -sparkY);
+        context.fillStyle = sparkGlow;
+        context.fillRect(sparkX - sparkRadius, sparkY - sparkRadius, sparkRadius * 2, sparkRadius * 2);
+        context.restore();
+      }
+    }
+    context.restore();
+  }
+
   function drawEffects() {
     context.save();
     particles.forEach((particle) => {
@@ -6846,46 +6995,7 @@
       context.arc(burst.x, burst.y, 14 + (1 - burst.life) * 35, 0, Math.PI * 2);
       context.stroke();
     });
-    collisionFeedbacks.forEach((feedback) => {
-      context.globalAlpha = feedback.life * feedback.intensity;
-      context.strokeStyle = feedback.color;
-      context.lineWidth = 1.2 + feedback.life * 2.2;
-      if (feedback.materialId === "circuit") {
-        context.strokeRect(feedback.x - feedback.radius, feedback.y - feedback.radius, feedback.radius * 2, feedback.radius * 2);
-        context.beginPath();
-        context.arc(feedback.x, feedback.y, feedback.radius * 0.58, 0, Math.PI * 2);
-        context.stroke();
-      } else if (feedback.materialId === "ice") {
-        for (let shard = 0; shard < 8; shard += 1) {
-          const angle = shard / 8 * Math.PI * 2 + feedback.radius * 0.02;
-          context.beginPath();
-          context.moveTo(feedback.x + Math.cos(angle) * feedback.radius * 0.24, feedback.y + Math.sin(angle) * feedback.radius * 0.24);
-          context.lineTo(feedback.x + Math.cos(angle) * feedback.radius, feedback.y + Math.sin(angle) * feedback.radius);
-          context.stroke();
-        }
-      } else if (feedback.materialId === "ink") {
-        context.globalCompositeOperation = "multiply";
-        context.fillStyle = "rgba(5, 16, 13, 0.18)";
-        context.beginPath();
-        context.arc(feedback.x, feedback.y, feedback.radius * 0.78, 0, Math.PI * 2);
-        context.fill();
-        context.globalCompositeOperation = "source-over";
-      } else {
-        context.beginPath();
-        context.arc(feedback.x, feedback.y, feedback.radius, 0, Math.PI * 2);
-        context.stroke();
-        if (feedback.materialId === "lava") {
-          context.globalAlpha *= 0.7;
-          for (let ray = 0; ray < 6; ray += 1) {
-            const angle = ray / 6 * Math.PI * 2;
-            context.beginPath();
-            context.moveTo(feedback.x + Math.cos(angle) * feedback.radius * 0.56, feedback.y + Math.sin(angle) * feedback.radius * 0.56);
-            context.lineTo(feedback.x + Math.cos(angle) * feedback.radius * 1.24, feedback.y + Math.sin(angle) * feedback.radius * 1.24);
-            context.stroke();
-          }
-        }
-      }
-    });
+    collisionFeedbacks.forEach(drawMaterialCollisionFeedback);
     context.restore();
   }
 
@@ -6996,19 +7106,8 @@
           x: (bodyA.position.x + bodyB.position.x) / 2,
           y: (bodyA.position.y + bodyB.position.y) / 2
         };
-        collisionFeedbacks.push({
-          x: contact.x,
-          y: contact.y,
-          radius: 4,
-          speed: 2.4 + Math.min(3.6, relative * 0.08),
-          life: 1,
-          intensity: clamp(relative / 16, 0.3, 1),
-          color: activeSurfaceMaterial().rail,
-          materialId: activeSurfaceMaterial().id
-        });
-        if (collisionFeedbacks.length > 24) collisionFeedbacks.splice(0, collisionFeedbacks.length - 24);
-        disturbWaterWorld(contact.x, contact.y, clamp(relative / 13, 0.28, 1.4), 18 + clamp(relative, 0, 24));
-        spawnParticles(contact.x, contact.y, "#d9ede4", Math.min(4, Math.ceil(relative / 4)));
+        spawnMaterialCollisionResponse(contact, normal, relative, [dataA.number, dataB.number]);
+        spawnParticles(contact.x, contact.y, activeSurfaceMaterial().rail, Math.min(6, Math.ceil(relative / 3.5)));
         screenShake = Math.max(screenShake, Math.min(2.8, relative * 0.06));
       }
       if (dataA && isRail(bodyB)) {

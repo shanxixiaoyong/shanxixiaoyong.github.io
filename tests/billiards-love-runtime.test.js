@@ -237,7 +237,7 @@ test("tracks cumulative roll and rotates numbered texture and highlights with it
   assert.doesNotMatch(source, /ball\.velocity\.x \* 0\.86/);
 });
 
-test("adds physical compression, expanding impact rings, particles, and collision audio", () => {
+test("adds physical compression, material impact feedback, particles, and collision audio", () => {
   assert.match(source, /function impactBall\(body, angle, relativeSpeed\)/);
   assert.match(source, /data\.compression = Math\.max/);
   assert.match(source, /data\.impactGlow = Math\.max/);
@@ -296,8 +296,11 @@ test("turns physical shots into persistent ball-color and pocket-effect state", 
   assert.match(source, /function drawPocketLightPorts\(timestamp\)/);
   assert.match(source, /function drawCushionLightResponse\(timestamp\)/);
   assert.match(source, /function drawDateMapLayer\(timestamp\)/);
-  assert.match(source, /const refreshDue = !pointerAim && timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
+  assert.match(source, /const refreshDue = timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS/);
+  assert.doesNotMatch(source, /const refreshDue = !pointerAim/);
   assert.match(source, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
+  assert.match(source, /if \(dateMapState\.blackEightBlast\) \{/);
+  assert.match(source, /setTimeout\(finishWhenReady, 120\)/);
   assert.doesNotMatch(source, /loadMaterialTexture\("assets\/billiards-scenes/);
   assert.match(source, /content\.getEnding\(grade\)/);
 });
@@ -331,16 +334,23 @@ test("uses a resettable stepped water surface as the active cloth renderer", () 
   );
 });
 
-test("drives nine ball-color materials and radial pocket transitions from one height field", () => {
+test("drives sixteen ball-specific materials and organic pocket transitions from one height field", () => {
   const surfaceSelection = implementationOf(source, "selectSurfaceMaterial");
   const disturbance = implementationOf(source, "disturbWaterWorld");
   const simulation = implementationOf(source, "stepWaterSimulation");
   const renderer = implementationOf(source, "renderWaterSurface");
   const rollingWake = implementationOf(source, "depositRollingWaterWake");
 
-  for (const id of ["ice", "gold", "galaxy", "lava", "circuit", "amber", "emerald", "burgundy", "ink"]) {
+  const materialIds = [
+    "ink", "gold", "galaxy", "lava", "circuit", "amber", "emerald", "burgundy",
+    "eclipse", "solar-porcelain", "abyss", "crimson-storm", "amethyst", "copper", "jade-mist", "rose-quartz"
+  ];
+  for (const id of materialIds) {
     assert.match(source, new RegExp(`id: "${id}"`));
-    assert.match(surfaceRendererSource, new RegExp(`${id}: \\d`));
+    assert.ok(
+      surfaceRendererSource.includes(`${id}:`) || surfaceRendererSource.includes(`"${id}":`),
+      `${id} should have a WebGL material index`
+    );
   }
   assert.match(source, /const SURFACE_MATERIALS = Object\.freeze\(\[/);
   assert.match(source, /const SURFACE_MATERIAL_BY_ID = Object\.freeze/);
@@ -362,16 +372,21 @@ test("drives nine ball-color materials and radial pocket transitions from one he
   assert.match(source, /function createSurfaceArtwork\(/);
   assert.match(source, /function drawSurfaceArtwork\(/);
   assert.match(source, /function drawSurfaceTexture\(/);
-  for (const id of ["lava", "gold", "galaxy", "ice", "amber", "emerald", "burgundy", "ink"]) {
-    assert.match(rollingWake, new RegExp(`material\\.id === "${id}"`));
-  }
+  assert.match(rollingWake, /\["lava", "crimson-storm"\]\.includes\(material\.id\)/);
+  assert.match(rollingWake, /\["galaxy", "abyss", "eclipse"\]\.includes\(material\.id\)/);
+  assert.match(rollingWake, /\["amethyst", "rose-quartz"\]\.includes\(material\.id\)/);
+  assert.match(source, /function collisionMaterialFamily\(/);
+  assert.match(source, /function spawnMaterialCollisionResponse\(/);
   assert.match(renderer, /previousBase: previousArtwork/);
   assert.match(renderer, /originX: clamp/);
   assert.match(renderer, /originY: 1 - clamp/);
   assert.match(surfaceRendererSource, /uniform sampler2D uPreviousBase;/);
   assert.match(surfaceRendererSource, /uniform float uTransitionProgress;/);
   assert.match(surfaceRendererSource, /float transitionDistance = length\(transitionDelta\)/);
-  assert.match(surfaceRendererSource, /color = mix\(previous, color, reveal\)/);
+  assert.match(surfaceRendererSource, /float boundaryNoise = sin\(transitionAngle/);
+  assert.match(surfaceRendererSource, /float echo = exp/);
+  assert.match(surfaceRendererSource, /color = mix\(previous, color, clamp\(reveal, 0\.0, 1\.0\)\)/);
+  assert.match(surfaceRendererSource, /float tendrilField = softNoise/);
 });
 
 test("turns rolling balls into water wakes and rail impacts into bidirectional perimeter waves", () => {
@@ -400,23 +415,32 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
   assert.match(activeRendering, /\bdrawCushionLightResponse\(timestamp/);
   assert.match(activeRendering, /\bdrawMaterialMotionTrails\(timestamp\)/);
   assert.match(materialInfluence, /const influenceNodes =/);
-  assert.match(materialInfluence, /materialId === "lava"/);
-  assert.match(materialInfluence, /materialId === "galaxy"/);
+  assert.match(materialInfluence, /\["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"\]\.includes\(materialId\)/);
+  assert.match(materialInfluence, /\["galaxy", "abyss", "emerald", "jade-mist", "eclipse"\]\.includes\(materialId\)/);
   assert.match(materialInfluence, /materialId === "circuit"/);
-  assert.match(materialInfluence, /materialId === "ice"/);
+  assert.match(materialInfluence, /\["amethyst", "burgundy", "rose-quartz"\]\.includes\(materialId\)/);
   assert.doesNotMatch(materialInfluence, /moveTo\(trail\.x1|lineTo\(trail\.x2|traceGroupedPath/);
+  assert.match(cushionLight, /let brightness = 0;/);
+  assert.doesNotMatch(cushionLight, /0\.052|globalIndex/);
 });
 
 test("choreographs the black-eight finale through physical cushions and visible pockets", () => {
   const activeTableRenderer = implementationOf(source, "drawDateMap");
   const activeFrameRenderer = implementationOf(source, "draw");
   const cushionLight = implementationOf(source, "drawCushionLightResponse");
+  const sceneLighting = implementationOf(source, "drawScenePortalLightingFrame");
 
   assert.match(activeTableRenderer, /if \(blackEightActive\) drawBlackEightBlast\(timestamp\)/);
   assert.match(activeFrameRenderer, /drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
   assert.match(cushionLight, /dateMapState\.blackEightBlast/);
   assert.match(cushionLight, /\bblastProgress\b/);
   assert.match(cushionLight, /rails\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.match(surfaceRendererSource, /uniform float uBlastProgress;/);
+  assert.match(surfaceRendererSource, /uniform vec2 uBlastOrigin;/);
+  assert.match(surfaceRendererSource, /float filaments = smoothstep/);
+  assert.match(surfaceRendererSource, /float violetFlow = smoothstep/);
+  assert.doesNotMatch(surfaceRendererSource, /float starSeed =/);
+  assert.doesNotMatch(sceneLighting, /roundRectPath\(context, TABLE\.left -/);
 });
 test("freezes full-screen cinematics and preserves the completed canvas without repainting under results", () => {
   assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
