@@ -8,8 +8,9 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
-const runtimeCacheVersion = "billiards-reference-surfaces-20260712n";
-const styleCacheVersion = "billiards-reference-surfaces-20260712n";
+const surfaceRenderer = read("assets/billiards-surface-renderer.js");
+const runtimeCacheVersion = "billiards-coupled-material-20260713b";
+const styleCacheVersion = "billiards-coupled-material-20260713b";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -95,6 +96,7 @@ test("loads the custom physics and local billiards runtime in exact order", () =
     "assets/billiards-love-rules.js",
     "assets/billiards-love-content.js",
     "assets/billiards-ball-renderer.js",
+    "assets/billiards-surface-renderer.js",
     "assets/billiards-love-game.js"
   ]);
 
@@ -106,6 +108,7 @@ test("loads the custom physics and local billiards runtime in exact order", () =
     `assets/billiards-love-rules.js?v=${runtimeCacheVersion}`,
     `assets/billiards-love-content.js?v=${runtimeCacheVersion}`,
     `assets/billiards-ball-renderer.js?v=${runtimeCacheVersion}`,
+    `assets/billiards-surface-renderer.js?v=${runtimeCacheVersion}`,
     `assets/billiards-love-game.js?v=${runtimeCacheVersion}`
   ]);
 });
@@ -158,6 +161,23 @@ test("uses a simulated water field without narrative scene photography", () => {
   assert.match(css, /radial-gradient\(circle at 72% 18%/);
   assert.doesNotMatch(html + css + game, /date-map-rose|portal-corner|portal-coffee|portal-late|portal-river|portal-last|portal-walk|proposal-dawn/);
   assert.doesNotMatch(html + css, /https?:\/\//);
+});
+
+test("couples the photographic cloth and rolling field inside one WebGL material pass", () => {
+  assert.match(surfaceRenderer, /getContext\?\.\("webgl2"/);
+  assert.match(surfaceRenderer, /uniform sampler2D uBase;/);
+  assert.match(surfaceRenderer, /uniform sampler2D uField;/);
+  assert.match(surfaceRenderer, /uniform vec2 uBaseTexel;/);
+  assert.match(surfaceRenderer, /gl\.texSubImage2D\(/);
+  assert.match(surfaceRenderer, /uv \+= heatFlow/);
+  assert.match(surfaceRenderer, /vec2 swirl = vec2\(-gradient\.y, gradient\.x\)/);
+  assert.match(surfaceRenderer, /float charge = smoothstep/);
+  assert.match(surfaceRenderer, /vec2 refractDirection = normalize/);
+  assert.match(surfaceRenderer, /color = mix\(center, wet/);
+  assert.doesNotMatch(surfaceRenderer, /float stars =|vec3 electric =|float facet =/);
+  assert.match(game, /function initializeSurfaceRenderer\(/);
+  assert.match(game, /surfaceRenderer\.render\(\{/);
+  assert.match(game, /surfaceRenderer \? "webgl2-displaced-texture" : "canvas-field-fallback"/);
 });
 
 test("offers five reference-matched persisted cinematic surface materials", () => {
@@ -391,7 +411,7 @@ test("integrates shot telemetry, persistent water and rail state, and pocket slo
   assert.match(game, /function stepWaterSimulation\(/);
   assert.match(game, /function renderWaterSurface\(/);
   assert.match(rollingUpdate, /depositRollingWaterWake\(ball, data, dx, dy, travel\)/);
-  assert.match(rollingWake, /disturbWaterWorld\(/);
+  assert.match(rollingWake, /disturbMaterialWorld\(/);
   assert.match(game, /function railDistanceForContact\(/);
   assert.match(game, /function railPositionFromDistance\(/);
   assert.match(railBurst, /railDistanceForContact\(/);

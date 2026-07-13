@@ -125,11 +125,13 @@ test("billiards pins the independent physics and ball renderer before the game r
     "assets/billiards-love-rules.js",
     "assets/billiards-love-content.js",
     "assets/billiards-ball-renderer.js",
+    "assets/billiards-surface-renderer.js",
     "assets/billiards-love-game.js"
   ]);
-  assert.equal(billiards.cacheVersion, "billiards-reference-surfaces-20260712n");
-  assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js"]);
+  assert.equal(billiards.cacheVersion, "billiards-coupled-material-20260713b");
+  assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js", "assets/billiards-surface-renderer.js"]);
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-ball-renderer.js"));
+  assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-surface-renderer.js"));
   assert.equal(gameContract.ACTIVE_PUBLIC_JS_FILES.includes("assets/billiards-ball-renderer.js"), false);
 });
 
@@ -227,15 +229,17 @@ test("site contract rejects hidden portal doors and retired lobby copy", () => {
 });
 
 test("site contract rejects reordered billiards layers and stale renderer cache versions", () => {
-  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-reference-surfaces-20260712n"></script>';
-  const game = '  <script src="assets/billiards-love-game.js?v=billiards-reference-surfaces-20260712n"></script>';
+  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-coupled-material-20260713b"></script>';
+  const surface = '  <script src="assets/billiards-surface-renderer.js?v=billiards-coupled-material-20260713b"></script>';
+  const game = '  <script src="assets/billiards-love-game.js?v=billiards-coupled-material-20260713b"></script>';
 
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
-    `${renderer}\n${game}`,
-    `${game}\n${renderer}`
+    `${renderer}\n${surface}\n${game}`,
+    `${game}\n${surface}\n${renderer}`
   ));
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     renderer,
-    renderer.replace("billiards-reference-surfaces-20260712n", "billiards-love-stale")
+    renderer.replace("billiards-coupled-material-20260713b", "billiards-love-stale")
   ));
+  assert.match(read("game-billiards-love.html"), new RegExp(`${surface.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*${game.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
 });

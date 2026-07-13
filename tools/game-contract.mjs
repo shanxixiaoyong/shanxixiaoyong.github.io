@@ -20,14 +20,15 @@ export const GAME_CONTRACTS = [
     file: BILLIARDS_GAME_PAGE,
     name: "幻彩桌球",
     portalAsset: "assets/portal/billiards-chroma-v1.jpg",
-    cacheVersion: "billiards-reference-surfaces-20260712n",
-    pendingFiles: ["assets/billiards-ball-renderer.js"],
+    cacheVersion: "billiards-coupled-material-20260713b",
+    pendingFiles: ["assets/billiards-ball-renderer.js", "assets/billiards-surface-renderer.js"],
     styles: ["assets/billiards-love.css"],
     scripts: [
       "assets/billiards-physics.js",
       "assets/billiards-love-rules.js",
       "assets/billiards-love-content.js",
       "assets/billiards-ball-renderer.js",
+      "assets/billiards-surface-renderer.js",
       "assets/billiards-love-game.js"
     ]
   },

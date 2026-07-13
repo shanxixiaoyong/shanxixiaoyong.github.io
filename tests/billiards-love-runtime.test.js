@@ -382,7 +382,7 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
   assert.match(rollingUpdate, /lastChromaTrailPoint/);
   assert.match(rollingUpdate, /\btravel\b/);
   assert.match(rollingUpdate, /ball\.speed/);
-  assert.match(rollingWake, /\bdisturbWaterWorld\(/);
+  assert.match(rollingWake, /\bdisturbMaterialWorld\(/);
   assert.match(source, /function railDistanceForContact\(/);
   assert.match(source, /function railPositionFromDistance\(/);
   assert.match(railBurst, /\brailDistanceForContact\(/);

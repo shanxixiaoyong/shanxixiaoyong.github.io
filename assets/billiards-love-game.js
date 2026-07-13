@@ -189,7 +189,7 @@
     Object.freeze({ id: "galaxy", label: "星河引力", icon: "星", rail: "#78cfff", damping: 0.988, disturbance: 0.86, radius: 1.14, wake: 0.92, tail: 1.72, railSpeed: 0.7, railWidth: 1.48, railGain: 1.08, traceDecay: 0.965, traceDiffuse: 0.032, traceDeposit: 0.22, trailLife: 3200 }),
     Object.freeze({ id: "circuit", label: "霓虹矩阵", icon: "脉", rail: "#39edff", damping: 0.974, disturbance: 0.78, radius: 0.72, wake: 1.04, tail: 0.92, railSpeed: 1.52, railWidth: 0.7, railGain: 1.3, traceDecay: 0.986, traceDiffuse: 0.01, traceDeposit: 0.28, trailLife: 2400 }),
     Object.freeze({ id: "ice", label: "极寒冰域", icon: "冰", rail: "#c9f7ff", damping: 0.994, disturbance: 0.94, radius: 0.64, wake: 0.88, tail: 0.72, railSpeed: 1.08, railWidth: 0.58, railGain: 1.18, traceDecay: 0.989, traceDiffuse: 0.006, traceDeposit: 0.16, trailLife: 3600 }),
-    Object.freeze({ id: "ink", label: "水墨山河", icon: "墨", rail: "#f0f0e8", damping: 0.971, disturbance: 0.54, radius: 1.28, wake: 0.56, tail: 1.34, railSpeed: 0.76, railWidth: 1.46, railGain: 0.94, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0, trailLife: 3300 })
+    Object.freeze({ id: "ink", label: "水墨山河", icon: "墨", rail: "#f0f0e8", damping: 0.971, disturbance: 0.68, radius: 1.42, wake: 0.78, tail: 1.48, railSpeed: 0.76, railWidth: 1.46, railGain: 0.94, traceDecay: 0.945, traceDiffuse: 0.048, traceDeposit: 0.52, trailLife: 3900 })
   ]);
   const SURFACE_MATERIAL_BY_ID = Object.freeze(Object.fromEntries(
     SURFACE_MATERIALS.map((material) => [material.id, material])
@@ -785,6 +785,8 @@
   let ballRendererCanvas = null;
   let ballRendererFailed = false;
   let ballRendererDirty = true;
+  let surfaceRenderer = null;
+  let surfaceRendererFailed = false;
 
   function motifForBall(number) {
     const source = content.BALL_DATE_MOTIFS;
@@ -4357,11 +4359,15 @@
     target.restore();
   }
 
-  function drawSurfaceArtwork(materialId) {
+  function surfaceArtworkFor(materialId) {
     if (!surfaceArtworkCache.has(materialId)) {
       surfaceArtworkCache.set(materialId, createSurfaceArtwork(materialId));
     }
-    const artwork = surfaceArtworkCache.get(materialId);
+    return surfaceArtworkCache.get(materialId);
+  }
+
+  function drawSurfaceArtwork(materialId) {
+    const artwork = surfaceArtworkFor(materialId);
     if (!artwork) return;
     const textureReady = Boolean(surfaceTextureCache.get(materialId)?.ready);
     const opacity = textureReady
@@ -4379,14 +4385,12 @@
     surfaceCanvas.width = WATER_GRID_WIDTH;
     surfaceCanvas.height = WATER_GRID_HEIGHT;
     const surfaceContext = typeof surfaceCanvas.getContext === "function"
-      ? surfaceCanvas.getContext("2d", { alpha: false })
+      ? surfaceCanvas.getContext("2d", { alpha: true })
       : null;
     const imageData = surfaceContext && typeof surfaceContext.createImageData === "function"
       ? surfaceContext.createImageData(WATER_GRID_WIDTH, WATER_GRID_HEIGHT)
       : null;
-    if (imageData) {
-      for (let offset = 3; offset < imageData.data.length; offset += 4) imageData.data[offset] = 255;
-    }
+    if (imageData) imageData.data.fill(0);
     return {
       width: WATER_GRID_WIDTH,
       height: WATER_GRID_HEIGHT,
@@ -4472,6 +4476,58 @@
     }
   }
 
+  function disturbMaterialWorld(worldX, worldY, amplitude, radiusXWorld, radiusYWorld, angle, phase = 0) {
+    const material = activeSurfaceMaterial();
+    const materialAmplitude = amplitude * material.disturbance;
+    const radiusX = Math.max(8, radiusXWorld * material.radius);
+    const radiusY = Math.max(8, radiusYWorld * material.radius);
+    const reach = Math.max(radiusX, radiusY);
+    if (!waterSurface || worldX < TABLE.left - reach || worldX > TABLE.right + reach
+      || worldY < TABLE.top - reach || worldY > TABLE.bottom + reach) return;
+    waterSurface.energy = Math.max(waterSurface.energy, Math.min(1, Math.abs(materialAmplitude) * 0.64));
+    dateMapState.waterEnergy = Math.max(dateMapState.waterEnergy || 0, waterSurface.energy);
+    dateMapFrameDirty = true;
+    if (!waterSurface.renderable) return;
+    const point = waterGridPoint(worldX, worldY);
+    const cellWidth = (TABLE.right - TABLE.left) / (waterSurface.width - 1);
+    const cellHeight = (TABLE.bottom - TABLE.top) / (waterSurface.height - 1);
+    const radiusCells = Math.ceil(reach / Math.min(cellWidth, cellHeight));
+    const minX = Math.max(1, Math.floor(point.x - radiusCells));
+    const maxX = Math.min(waterSurface.width - 2, Math.ceil(point.x + radiusCells));
+    const minY = Math.max(1, Math.floor(point.y - radiusCells));
+    const maxY = Math.min(waterSurface.height - 2, Math.ceil(point.y + radiusCells));
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        const worldDx = (x - point.x) * cellWidth;
+        const worldDy = (y - point.y) * cellHeight;
+        const localX = worldDx * cosine + worldDy * sine;
+        const localY = -worldDx * sine + worldDy * cosine;
+        const distanceRatio = Math.hypot(localX / radiusX, localY / radiusY);
+        if (distanceRatio >= 1) continue;
+        const baseFalloff = 0.5 + Math.cos(distanceRatio * Math.PI) * 0.5;
+        const grain = 0.78
+          + Math.sin(localX * 0.075 + phase) * 0.12
+          + Math.sin(localY * 0.11 - phase * 1.37) * 0.1;
+        const falloff = baseFalloff * clamp(grain, 0.54, 1);
+        const index = y * waterSurface.width + x;
+        waterSurface.current[index] = clamp(
+          waterSurface.current[index] + materialAmplitude * falloff,
+          -WATER_MAX_HEIGHT,
+          WATER_MAX_HEIGHT
+        );
+        if (material.traceDeposit > 0) {
+          waterSurface.pigment[index] = clamp(
+            waterSurface.pigment[index] + Math.abs(materialAmplitude) * falloff * material.traceDeposit,
+            0,
+            1
+          );
+        }
+      }
+    }
+  }
+
   function depositRollingWaterWake(ball, data, dx, dy, travel) {
     if (!waterSurface || travel < 0.18 || ball.speed < 0.12) return;
     const effectId = dateMapState.activeEffect?.id || "ripple";
@@ -4489,18 +4545,42 @@
     const normal = { x: -direction.y, y: direction.x };
     const speedRatio = clamp(ball.speed / 24, 0.12, 1);
     const amplitude = profile.amplitude * material.wake * (0.22 + speedRatio * 0.78);
-    const tailCount = Math.max(1, Math.round(profile.tail * material.tail));
-    disturbWaterWorld(ball.position.x, ball.position.y, amplitude, profile.radius);
-    for (let step = 1; step <= tailCount; step += 1) {
-      const tailDistance = step * (8 + speedRatio * 11);
-      const side = Math.sin((waterSurface.stepCount + step * 7 + data.number * 13) * 0.31)
-        * profile.spread * step;
-      disturbWaterWorld(
-        ball.position.x - direction.x * tailDistance + normal.x * side,
-        ball.position.y - direction.y * tailDistance + normal.y * side,
-        -amplitude * (0.36 / step),
-        profile.radius * (0.72 + step * 0.08)
-      );
+    const phase = waterSurface.stepCount * 0.23 + data.number * 1.71;
+    const cadence = material.id === "ice" ? 6 : material.id === "galaxy" ? 5 : material.id === "ink" ? 5 : 4;
+    if ((waterSurface.stepCount + data.number * 3) % cadence !== 0) return;
+    const heading = Math.atan2(direction.y, direction.x);
+    if (material.id === "circuit") {
+      const grid = 36;
+      const nodeX = Math.round((ball.position.x + normal.x * Math.sin(phase) * 26) / grid) * grid;
+      const nodeY = Math.round((ball.position.y + normal.y * Math.sin(phase) * 26) / grid) * grid;
+      disturbMaterialWorld(nodeX, nodeY, amplitude * 0.82, 74, 18, (waterSurface.stepCount % 2) * Math.PI / 2, phase);
+      disturbMaterialWorld(nodeX + normal.x * grid, nodeY + normal.y * grid, amplitude * 0.46, 44, 15, heading + Math.PI / 2, phase + 1.8);
+      disturbMaterialWorld(nodeX - direction.x * grid, nodeY - direction.y * grid, -amplitude * 0.3, 52, 14, heading, phase - 0.9);
+      return;
+    }
+    const side = Math.sin(phase * 0.74) * (material.id === "ink" ? 82 : material.id === "galaxy" ? 66 : 48);
+    const centerX = ball.position.x - direction.x * (24 + speedRatio * 30) + normal.x * side;
+    const centerY = ball.position.y - direction.y * (24 + speedRatio * 30) + normal.y * side;
+    if (material.id === "lava") {
+      const growthAngle = heading + Math.sin(phase * 0.83) * 1.18;
+      disturbMaterialWorld(centerX, centerY, amplitude * 0.76, 108, 25, growthAngle, phase);
+      disturbMaterialWorld(centerX + normal.x * 52, centerY + normal.y * 52, amplitude * 0.42, 72, 18, growthAngle + 1.05, phase + 2.1);
+      disturbMaterialWorld(centerX - normal.x * 39, centerY - normal.y * 39, -amplitude * 0.3, 66, 22, growthAngle - 0.72, phase - 1.4);
+    } else if (material.id === "galaxy") {
+      const orbitAngle = heading + Math.PI / 2 + Math.sin(phase * 0.57) * 0.7;
+      disturbMaterialWorld(centerX, centerY, amplitude * 0.62, 146, 58, orbitAngle, phase);
+      disturbMaterialWorld(centerX + normal.x * 74, centerY + normal.y * 74, -amplitude * 0.55, 118, 48, orbitAngle + 0.86, phase + 1.7);
+      disturbMaterialWorld(centerX - normal.x * 58, centerY - normal.y * 58, amplitude * 0.36, 96, 42, orbitAngle - 0.64, phase - 1.2);
+    } else if (material.id === "ice") {
+      const stressAngle = heading + Math.sin(phase * 1.13) * 1.46;
+      disturbMaterialWorld(centerX, centerY, amplitude * 0.7, 126, 19, stressAngle, phase);
+      disturbMaterialWorld(centerX + normal.x * 48, centerY + normal.y * 48, -amplitude * 0.5, 88, 16, stressAngle + 1.24, phase + 2.4);
+      disturbMaterialWorld(centerX - direction.x * 44, centerY - direction.y * 44, amplitude * 0.3, 76, 14, stressAngle - 0.92, phase - 1.7);
+    } else {
+      const brushAngle = heading + Math.PI / 2 + Math.sin(phase * 0.49) * 0.9;
+      disturbMaterialWorld(centerX, centerY, amplitude * 0.58, 174, 72, brushAngle, phase);
+      disturbMaterialWorld(centerX + normal.x * 86, centerY + normal.y * 86, amplitude * 0.34, 132, 54, brushAngle + 0.74, phase + 2.2);
+      disturbMaterialWorld(centerX - normal.x * 68, centerY - normal.y * 68, -amplitude * 0.2, 116, 48, brushAngle - 0.58, phase - 1.6);
     }
   }
 
@@ -4582,11 +4662,79 @@
       transitionState.progress * 1.34 + turbulentEdge);
   }
 
+  function drawSurfaceReflectedLight(surfaceMaterialId, width, height) {
+    const reflectedLight = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
+    if (surfaceMaterialId === "lava") {
+      reflectedLight.addColorStop(0, "rgba(255,111,24,0.1)");
+      reflectedLight.addColorStop(0.3, "rgba(255,72,8,0)");
+      reflectedLight.addColorStop(0.74, "rgba(35,2,0,0.08)");
+      reflectedLight.addColorStop(1, "rgba(0,0,0,0.34)");
+    } else if (surfaceMaterialId === "galaxy") {
+      reflectedLight.addColorStop(0, "rgba(122,194,255,0.1)");
+      reflectedLight.addColorStop(0.3, "rgba(122,194,255,0)");
+      reflectedLight.addColorStop(0.72, "rgba(229,98,255,0.055)");
+      reflectedLight.addColorStop(1, "rgba(0,0,15,0.3)");
+    } else if (surfaceMaterialId === "circuit") {
+      reflectedLight.addColorStop(0, "rgba(70,240,255,0.08)");
+      reflectedLight.addColorStop(0.28, "rgba(70,240,255,0)");
+      reflectedLight.addColorStop(0.7, "rgba(234,63,255,0.07)");
+      reflectedLight.addColorStop(1, "rgba(0,0,12,0.32)");
+    } else if (surfaceMaterialId === "ice") {
+      reflectedLight.addColorStop(0, "rgba(245,255,255,0.19)");
+      reflectedLight.addColorStop(0.24, "rgba(205,245,255,0.025)");
+      reflectedLight.addColorStop(0.76, "rgba(126,205,232,0.07)");
+      reflectedLight.addColorStop(1, "rgba(3,20,31,0.29)");
+    } else {
+      reflectedLight.addColorStop(0, "rgba(255,255,248,0.16)");
+      reflectedLight.addColorStop(0.28, "rgba(255,255,248,0)");
+      reflectedLight.addColorStop(0.74, "rgba(0,0,0,0.035)");
+      reflectedLight.addColorStop(1, "rgba(0,0,0,0.17)");
+    }
+    context.save();
+    context.globalCompositeOperation = "source-over";
+    context.globalAlpha = 1;
+    context.fillStyle = reflectedLight;
+    context.fillRect(TABLE.left, TABLE.top, width, height);
+    context.restore();
+  }
+
   function renderWaterSurface(timestamp) {
     const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
     const previousTheme = dateMapState.previousTheme || theme;
     const width = TABLE.right - TABLE.left;
     const height = TABLE.bottom - TABLE.top;
+    const surfaceMaterialId = activeSurfaceMaterial().id;
+    const artwork = surfaceArtworkFor(surfaceMaterialId);
+    if (surfaceRenderer && artwork) {
+      const blast = dateMapState.blackEightBlast;
+      const blastStrength = blast
+        ? Math.sin(clamp(blast.ageMs / blast.duration, 0, 1) * Math.PI)
+        : 0;
+      const renderedSurface = surfaceRenderer.render({
+        base: artwork,
+        materialId: surfaceMaterialId,
+        current: waterSurface.current,
+        pigment: waterSurface.pigment,
+        fieldWidth: waterSurface.width,
+        fieldHeight: waterSurface.height,
+        width,
+        height,
+        time: timestamp,
+        energy: waterSurface.energy,
+        blast: blastStrength
+      });
+      if (renderedSurface) {
+        context.save();
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.drawImage(renderedSurface, TABLE.left, TABLE.top, width, height);
+        context.restore();
+        drawSurfaceReflectedLight(surfaceMaterialId, width, height);
+        return;
+      }
+      surfaceRendererFailed = true;
+      surfaceRenderer = null;
+    }
     if (!waterSurface?.context || !waterSurface.imageData || typeof waterSurface.context.putImageData !== "function") {
       const fallback = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
       fallback.addColorStop(0, theme.deep);
@@ -4611,7 +4759,6 @@
       ? smoothStep(0.18, 0.46, blastProgress) * (1 - smoothStep(0.82, 1, blastProgress))
       : 0;
     const surfaceMaterial = activeSurfaceMaterial();
-    const surfaceMaterialId = surfaceMaterial.id;
     const specularGain = blast ? 104 : 66;
     const transition = dateMapState.themeTransition;
     const transitionState = transition ? {
@@ -4627,6 +4774,7 @@
         const surfaceHeight = current[index];
         const gradientX = current[index + 1] - current[index - 1];
         const gradientY = current[index + waterSurface.width] - current[index - waterSurface.width];
+        const physicalSlope = Math.hypot(gradientX, gradientY);
         const microX = Math.sin(x * 0.37 + Math.sin(y * 0.061 - time * 0.74) * 2.1 + time * 1.26) * 0.032
           + Math.cos((x - y) * 0.093 - time * 0.81) * 0.018;
         const microY = Math.cos(y * 0.29 + Math.sin(x * 0.052 + time * 0.67) * 2.4 - time * 1.08) * 0.03
@@ -4666,6 +4814,9 @@
         let blue;
 
         const traceValue = pigment[index];
+        const traceGradient = Math.abs(pigment[index + 1] - pigment[index - 1])
+          + Math.abs(pigment[index + waterSurface.width] - pigment[index - waterSurface.width]);
+        let responseStrength = 0;
         if (surfaceMaterialId === "lava") {
           const fissureField = Math.abs(flowA * 0.48 + flowB * 0.34 + flowC * 0.18);
           const fissure = Math.pow(clamp(fissureField + surfaceHeight * 0.035, 0, 1), 8.5);
@@ -4674,12 +4825,14 @@
           red = 8 + diffuse * 7 + heat * 190 + moltenCore * 82 + specular * 34;
           green = 4 + diffuse * 3 + heat * 45 + moltenCore * 112 + specular * 14;
           blue = 3 + heat * 6 + moltenCore * 18;
+          responseStrength = clamp(traceGradient * 3.4 + physicalSlope * 1.62 + traceValue * 0.12, 0, 1);
         } else if (surfaceMaterialId === "galaxy") {
           const nebula = clamp(0.5 + flowA * 0.22 + flowB * 0.18 + flowC * 0.14, 0, 1);
           const wake = clamp(traceValue * 0.9 + slope * 0.34 + Math.abs(surfaceHeight) * 0.08, 0, 1);
           red = 3 + nebula * 17 + primaryR * wake * 0.43 + secondaryR * wake * 0.22;
           green = 7 + nebula * 23 + primaryG * wake * 0.42 + secondaryG * wake * 0.18;
           blue = 24 + nebula * 46 + primaryB * wake * 0.55 + secondaryB * wake * 0.3;
+          responseStrength = clamp(traceValue * 0.46 + traceGradient * 1.12 + physicalSlope * 1.2 + Math.abs(surfaceHeight) * 0.12, 0, 1);
         } else if (surfaceMaterialId === "circuit") {
           const gridX = Math.pow(clamp(1 - Math.abs(x % 12 - 6) / 6, 0, 1), 18);
           const gridY = Math.pow(clamp(1 - Math.abs(y % 12 - 6) / 6, 0, 1), 18);
@@ -4689,6 +4842,7 @@
           red = 2 + grid * 8 + secondaryR * charge * 0.45 + specular * 22;
           green = 8 + grid * 24 + primaryG * charge * (0.54 + pulse * 0.26) + specular * 45;
           blue = 24 + grid * 48 + primaryB * charge * 0.72 + secondaryB * charge * 0.24 + specular * 68;
+          responseStrength = clamp(traceValue * 0.08 + traceGradient * 2.7 + physicalSlope * 1.92, 0, 1);
         } else if (surfaceMaterialId === "ice") {
           const crystal = Math.abs(flowA * 0.5 + flowB * 0.31 + flowC * 0.19 + surfaceHeight * 0.05);
           const facet = Math.pow(clamp(crystal, 0, 1), 7.4);
@@ -4696,11 +4850,11 @@
           red = 8 + diffuse * 20 + facet * 46 + iceEdge * 76 + specular * 108;
           green = 33 + diffuse * 32 + facet * 67 + iceEdge * 104 + specular * 132;
           blue = 65 + diffuse * 42 + facet * 92 + iceEdge * 138 + specular * 155;
+          responseStrength = clamp(traceGradient * 3.5 + physicalSlope * 2.24 + traceValue * 0.035, 0, 1);
         } else {
           const paperFiber = Math.sin(x * 1.31 + y * 0.17) * 1.8 + Math.sin(y * 0.83 - x * 0.09) * 1.1;
           const pigmentValue = traceValue;
-          const pigmentGradient = Math.abs(pigment[index + 1] - pigment[index - 1])
-            + Math.abs(pigment[index + waterSurface.width] - pigment[index - waterSurface.width]);
+          const pigmentGradient = traceGradient;
           const inkFlow = clamp(pigmentValue * (0.88 + flowC * 0.08)
             + Math.abs(surfaceHeight) * 0.022, 0, 1);
           const inkBody = smoothStep(0.075, 0.58, inkFlow);
@@ -4711,6 +4865,7 @@
           red = inkTone + wetEdge;
           green = inkTone + 5 + wetEdge;
           blue = inkTone + 1 + wetEdge * 0.82;
+          responseStrength = clamp(traceValue * 1.08 + physicalSlope * 0.86 + Math.abs(surfaceHeight) * 0.1, 0, 1);
         }
 
         const blastWave = 0.58 + Math.sin(spectralPhase) * 0.42;
@@ -4722,45 +4877,46 @@
         pixels[offset] = clamp(red * eclipse + spectralStrength * blastTint[0], 0, 255);
         pixels[offset + 1] = clamp(green * eclipse + spectralStrength * blastTint[1], 0, 255);
         pixels[offset + 2] = clamp(blue * eclipse + spectralStrength * blastTint[2], 0, 255);
-        pixels[offset + 3] = 255;
+        const responseAlpha = surfaceMaterialId === "circuit" ? 180
+          : surfaceMaterialId === "lava" ? 220
+            : surfaceMaterialId === "ice" ? 168
+              : surfaceMaterialId === "ink" ? 196
+                : 184;
+        pixels[offset + 3] = clamp(
+          smoothStep(0.025, surfaceMaterialId === "ink" ? 0.66 : 0.58, responseStrength) * responseAlpha
+            + spectralStrength * 235,
+          0,
+          255
+        );
       }
     }
     waterSurface.context.putImageData(waterSurface.imageData, 0, 0);
     context.save();
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
-    context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
     drawSurfaceArtwork(surfaceMaterialId);
-    const reflectedLight = context.createLinearGradient(TABLE.left, TABLE.top, TABLE.right, TABLE.bottom);
-    if (surfaceMaterialId === "lava") {
-      reflectedLight.addColorStop(0, "rgba(255,111,24,0.1)");
-      reflectedLight.addColorStop(0.3, "rgba(255,72,8,0)");
-      reflectedLight.addColorStop(0.74, "rgba(35,2,0,0.08)");
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.34)");
-    } else if (surfaceMaterialId === "galaxy") {
-      reflectedLight.addColorStop(0, "rgba(122,194,255,0.1)");
-      reflectedLight.addColorStop(0.3, "rgba(122,194,255,0)");
-      reflectedLight.addColorStop(0.72, "rgba(229,98,255,0.055)");
-      reflectedLight.addColorStop(1, "rgba(0,0,15,0.3)");
-    } else if (surfaceMaterialId === "circuit") {
-      reflectedLight.addColorStop(0, "rgba(70,240,255,0.08)");
-      reflectedLight.addColorStop(0.28, "rgba(70,240,255,0)");
-      reflectedLight.addColorStop(0.7, "rgba(234,63,255,0.07)");
-      reflectedLight.addColorStop(1, "rgba(0,0,12,0.32)");
-    } else if (surfaceMaterialId === "ice") {
-      reflectedLight.addColorStop(0, "rgba(245,255,255,0.19)");
-      reflectedLight.addColorStop(0.24, "rgba(205,245,255,0.025)");
-      reflectedLight.addColorStop(0.76, "rgba(126,205,232,0.07)");
-      reflectedLight.addColorStop(1, "rgba(3,20,31,0.29)");
+    if (surfaceMaterialId === "ink") {
+      context.globalCompositeOperation = "multiply";
+      context.globalAlpha = 0.72;
+      context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
     } else {
-      reflectedLight.addColorStop(0, "rgba(255,255,248,0.16)");
-      reflectedLight.addColorStop(0.28, "rgba(255,255,248,0)");
-      reflectedLight.addColorStop(0.74, "rgba(0,0,0,0.035)");
-      reflectedLight.addColorStop(1, "rgba(0,0,0,0.17)");
+      context.globalCompositeOperation = "screen";
+      if (surfaceMaterialId !== "circuit" && surfaceMaterialId !== "ice") {
+        context.globalAlpha = surfaceMaterialId === "lava" ? 0.16 : 0.13;
+        context.filter = "blur(7px)";
+        context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
+        context.filter = "none";
+      }
+      context.globalAlpha = surfaceMaterialId === "lava" ? 0.72
+        : surfaceMaterialId === "circuit" ? 0.48
+          : surfaceMaterialId === "ice" ? 0.44
+            : 0.64;
+      context.drawImage(waterSurface.canvas, TABLE.left, TABLE.top, width, height);
     }
-    context.fillStyle = reflectedLight;
-    context.fillRect(TABLE.left, TABLE.top, width, height);
+    context.globalCompositeOperation = "source-over";
+    context.globalAlpha = 1;
     context.restore();
+    drawSurfaceReflectedLight(surfaceMaterialId, width, height);
   }
 
   function railBounds() {
@@ -5390,7 +5546,214 @@
     context.restore();
   }
 
+  function collectSurfaceInfluences() {
+    const groups = new Map();
+    dateMapState.rollingTrails.forEach((trail) => {
+      if (trail.life < 0.035) return;
+      if (!groups.has(trail.ballNumber)) groups.set(trail.ballNumber, []);
+      groups.get(trail.ballNumber).push(trail);
+    });
+    const influences = [];
+    groups.forEach((trails, ballNumber) => {
+      const recent = trails.slice(-64);
+      const ratios = recent.length > 24 ? [0.24, 0.5, 0.74, 1]
+        : recent.length > 12 ? [0.36, 0.68, 1]
+          : [1];
+      [...new Set(ratios.map((ratio) => Math.max(0, Math.ceil(recent.length * ratio) - 1)))]
+        .forEach((index, nodeIndex) => {
+          const trail = recent[index];
+          const dx = trail.x2 - trail.x1;
+          const dy = trail.y2 - trail.y1;
+          const length = Math.max(0.001, Math.hypot(dx, dy));
+          const directionX = dx / length;
+          const directionY = dy / length;
+          const normalX = -directionY;
+          const normalY = directionX;
+          const seed = ballNumber * 1.713 + index * 0.619 + trail.bornAt * 0.00037;
+          const side = Math.sin(seed * 2.71 + nodeIndex * 1.9) * (18 + ballNumber % 4 * 5);
+          influences.push({
+            x: trail.x2 + normalX * side,
+            y: trail.y2 + normalY * side,
+            directionX,
+            directionY,
+            normalX,
+            normalY,
+            angle: Math.atan2(directionY, directionX),
+            alpha: clamp(trail.life, 0, 1) ** 1.16,
+            seed,
+            speed: trail.speed,
+            color: trail.color,
+            secondary: trail.secondary,
+            ballNumber
+          });
+        });
+    });
+    return influences
+      .sort((left, right) => right.alpha * (0.7 + right.speed * 0.02) - left.alpha * (0.7 + left.speed * 0.02))
+      .slice(0, 12);
+  }
+
+  function traceOrganicInfluencePath(centerX, centerY, radiusX, radiusY, angle, seed, phase) {
+    const points = [];
+    for (let index = 0; index < 14; index += 1) {
+      const theta = index / 14 * Math.PI * 2;
+      const noise = 0.82
+        + Math.sin(seed * 2.3 + index * 1.73 + phase) * 0.12
+        + Math.sin(seed * 0.91 - index * 2.17) * 0.06;
+      const localX = Math.cos(theta) * radiusX * noise;
+      const localY = Math.sin(theta) * radiusY * noise;
+      points.push({
+        x: centerX + localX * Math.cos(angle) - localY * Math.sin(angle),
+        y: centerY + localX * Math.sin(angle) + localY * Math.cos(angle)
+      });
+    }
+    context.beginPath();
+    context.moveTo(points[0].x, points[0].y);
+    points.slice(1).forEach((point) => context.lineTo(point.x, point.y));
+    context.closePath();
+  }
+
+  function drawSurfaceArtworkPatch(artwork, centerX, centerY, radius, options = {}) {
+    if (!artwork) return;
+    const tableWidth = TABLE.right - TABLE.left;
+    const tableHeight = TABLE.bottom - TABLE.top;
+    const margin = radius * 1.42;
+    const localLeft = clamp(centerX - TABLE.left - margin, 0, tableWidth);
+    const localTop = clamp(centerY - TABLE.top - margin, 0, tableHeight);
+    const localRight = clamp(centerX - TABLE.left + margin, 0, tableWidth);
+    const localBottom = clamp(centerY - TABLE.top + margin, 0, tableHeight);
+    const localWidth = localRight - localLeft;
+    const localHeight = localBottom - localTop;
+    if (localWidth <= 0 || localHeight <= 0) return;
+    const sourceX = localLeft / tableWidth * artwork.width;
+    const sourceY = localTop / tableHeight * artwork.height;
+    const sourceWidth = localWidth / tableWidth * artwork.width;
+    const sourceHeight = localHeight / tableHeight * artwork.height;
+    context.save();
+    context.globalAlpha = options.alpha ?? 0.5;
+    context.globalCompositeOperation = options.composite || "source-over";
+    context.filter = options.filter || "none";
+    context.translate(centerX, centerY);
+    context.rotate(options.rotation || 0);
+    context.scale(options.scale || 1, options.scaleY || options.scale || 1);
+    context.translate(-centerX, -centerY);
+    context.drawImage(
+      artwork,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      TABLE.left + localLeft + (options.offsetX || 0),
+      TABLE.top + localTop + (options.offsetY || 0),
+      localWidth,
+      localHeight
+    );
+    context.restore();
+  }
+
+  function drawMaterialDisplacementFields(timestamp, influences) {
+    const artwork = surfaceArtworkCache.get(activeSurfaceMaterial().id);
+    if (!artwork || !influences.length) return;
+    const materialId = activeSurfaceMaterial().id;
+    influences.forEach((node, index) => {
+      const phase = node.seed + timestamp * 0.00034;
+      const speedGain = clamp(node.speed / 24, 0.18, 1);
+      context.save();
+      if (materialId === "lava") {
+        const radius = 78 + speedGain * 78;
+        const angle = node.angle + Math.sin(phase * 0.73) * 0.72;
+        traceOrganicInfluencePath(node.x, node.y, radius, radius * 0.52, angle, node.seed, phase);
+        context.clip();
+        drawSurfaceArtworkPatch(artwork, node.x, node.y, radius, {
+          alpha: node.alpha * 0.66,
+          offsetX: node.normalX * Math.sin(phase * 2.1) * 8,
+          offsetY: node.normalY * Math.sin(phase * 2.1) * 8,
+          rotation: Math.sin(phase) * 0.026,
+          scale: 1.018 + speedGain * 0.018,
+          filter: "blur(1.3px)"
+        });
+        const heat = context.createRadialGradient(node.x, node.y, 2, node.x, node.y, radius);
+        heat.addColorStop(0, `rgba(255,218,96,${node.alpha * 0.14})`);
+        heat.addColorStop(0.44, `rgba(255,83,9,${node.alpha * 0.1})`);
+        heat.addColorStop(1, "rgba(255,32,0,0)");
+        context.globalCompositeOperation = "screen";
+        context.fillStyle = heat;
+        context.fillRect(node.x - radius, node.y - radius, radius * 2, radius * 2);
+      } else if (materialId === "galaxy") {
+        const radius = 96 + speedGain * 94;
+        context.beginPath();
+        ellipsePath(context, node.x, node.y, radius, radius * 0.58, node.angle + phase * 0.08, 0, Math.PI * 2);
+        context.clip();
+        drawSurfaceArtworkPatch(artwork, node.x, node.y, radius, {
+          alpha: node.alpha * 0.72,
+          rotation: Math.sin(phase * 0.61) * 0.055,
+          scale: 1.035 + speedGain * 0.03,
+          scaleY: 0.99 + speedGain * 0.016,
+          composite: "screen"
+        });
+      } else if (materialId === "circuit") {
+        const grid = 36;
+        const centerX = Math.round(node.x / grid) * grid;
+        const centerY = Math.round(node.y / grid) * grid;
+        const width = grid * (3 + (index + node.ballNumber) % 3);
+        const height = grid * (2 + (index + 1) % 2);
+        context.beginPath();
+        context.moveTo(centerX - width / 2, centerY - height / 2);
+        context.lineTo(centerX + width / 2, centerY - height / 2);
+        context.lineTo(centerX + width / 2, centerY + height / 2);
+        context.lineTo(centerX - width / 2, centerY + height / 2);
+        context.closePath();
+        context.clip();
+        drawSurfaceArtworkPatch(artwork, centerX, centerY, Math.max(width, height), {
+          alpha: node.alpha * 0.2,
+          offsetX: Math.sin(phase * 4.2) * 4,
+          offsetY: Math.cos(phase * 3.7) * 2,
+          composite: "source-over"
+        });
+      } else if (materialId === "ice") {
+        const radius = 82 + speedGain * 82;
+        for (let facet = 0; facet < 4; facet += 1) {
+          const facetAngle = node.seed + facet * 1.67;
+          const facetRadius = radius * (0.5 + facet * 0.13);
+          context.save();
+          context.beginPath();
+          context.moveTo(node.x, node.y);
+          context.lineTo(node.x + Math.cos(facetAngle - 0.31) * facetRadius, node.y + Math.sin(facetAngle - 0.31) * facetRadius);
+          context.lineTo(node.x + Math.cos(facetAngle + 0.42) * facetRadius * 1.18, node.y + Math.sin(facetAngle + 0.42) * facetRadius * 1.18);
+          context.closePath();
+          context.clip();
+          drawSurfaceArtworkPatch(artwork, node.x, node.y, radius, {
+            alpha: node.alpha * (0.2 + facet * 0.035),
+            offsetX: Math.cos(facetAngle) * (4 + facet * 1.5),
+            offsetY: Math.sin(facetAngle) * (4 + facet * 1.5),
+            scale: 1.008 + facet * 0.006,
+            composite: "source-over"
+          });
+          context.restore();
+        }
+      } else {
+        const radius = 112 + speedGain * 108;
+        const angle = node.angle + Math.PI / 2 + Math.sin(phase * 0.53) * 0.68;
+        context.translate(node.x, node.y);
+        context.rotate(angle);
+        context.scale(1, 0.56);
+        const wash = context.createRadialGradient(0, 0, 4, 0, 0, radius);
+        wash.addColorStop(0, `rgba(1,11,9,${node.alpha * 0.22})`);
+        wash.addColorStop(0.36, `rgba(5,26,21,${node.alpha * 0.13})`);
+        wash.addColorStop(0.72, `rgba(18,42,35,${node.alpha * 0.045})`);
+        wash.addColorStop(1, "rgba(20,44,36,0)");
+        context.globalCompositeOperation = "multiply";
+        context.fillStyle = wash;
+        context.fillRect(-radius, -radius, radius * 2, radius * 2);
+      }
+      context.restore();
+    });
+  }
+
   function drawMaterialMotionTrails(timestamp) {
+    if (surfaceRenderer) return;
+    const displacementInfluences = collectSurfaceInfluences();
+    drawMaterialDisplacementFields(timestamp, displacementInfluences);
     const materialId = activeSurfaceMaterial().id;
     const groupedTrails = new Map();
     dateMapState.rollingTrails.forEach((trail) => {
@@ -6183,6 +6546,24 @@
     }
   }
 
+  function initializeSurfaceRenderer() {
+    const factory = window.BilliardsSurfaceRenderer?.create;
+    if (typeof factory !== "function") return false;
+    try {
+      surfaceRenderer = factory({ document });
+      if (!surfaceRenderer || typeof surfaceRenderer.render !== "function") {
+        throw new Error("BilliardsSurfaceRenderer adapter is incomplete");
+      }
+      surfaceRendererFailed = false;
+      dateMapFrameDirty = true;
+      return true;
+    } catch {
+      surfaceRenderer = null;
+      surfaceRendererFailed = true;
+      return false;
+    }
+  }
+
   function syncBallRenderer(timestamp) {
     if (!ballRenderer) return false;
     const hasDynamicBall = Boolean(shotState || resolvingShot || balls.some((ball) => {
@@ -6681,6 +7062,7 @@
   });
 
   configurePortraitSurface();
+  initializeSurfaceRenderer();
   initializeBallRenderer();
   buildRails();
   buildTimeline();
@@ -6779,6 +7161,8 @@
             waterGridHeight: waterSurface?.height || 0,
             waterEnergy: dateMapState.waterEnergy,
             waterRenderer: "height-field-caustics",
+            surfaceRenderer: surfaceRenderer ? "webgl2-displaced-texture" : "canvas-field-fallback",
+            surfaceRendererFailed,
             surfaceMaterialId,
             surfaceMaterialLabel: activeSurfaceMaterial().label,
             surfaceMaterialCount: SURFACE_MATERIALS.length,
