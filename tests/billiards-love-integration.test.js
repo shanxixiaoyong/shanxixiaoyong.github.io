@@ -359,21 +359,30 @@ test("uses the active pocket identity for rolling trails and rail impacts", () =
   assert.ok(snapshot.presentation.dateMap.railBurstCount > 0, "an active lightning pocket should electrify the next cushion impact");
 });
 
-test("switches five persistent cinematic materials without changing the physical rack", () => {
-  const debug = bootRuntime();
-  const before = debug.snapshot();
-  const numbers = [...before.ballNumbers];
-  const materials = ["lava", "galaxy", "circuit", "ice", "ink"];
+test("maps standard ball colors to nine automatic materials without changing the physical rack", () => {
+  const cases = [
+    [1, "gold"], [2, "galaxy"], [3, "lava"], [4, "circuit"],
+    [5, "amber"], [6, "emerald"], [7, "burgundy"], [8, "ink"]
+  ];
 
-  for (const material of materials) {
-    assert.equal(debug.setSurfaceMaterial(material), true);
+  for (const [number, material] of cases) {
+    const debug = bootRuntime();
+    const before = debug.snapshot();
+    const numbers = [...before.ballNumbers];
+    debug.presentShot({
+      breakShot: true,
+      pottedNumbers: [number],
+      pottedDetails: [{
+        number,
+        pocketId: "top-left",
+        path: [{ x: 360, y: 510 }, { x: 79.316, y: 137.316 }]
+      }]
+    });
     const snapshot = debug.snapshot();
-    assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, material);
-    assert.equal(snapshot.presentation.dateMap.surfaceMaterialCount, materials.length);
+    assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, material, `ball ${number}`);
+    assert.equal(snapshot.presentation.dateMap.surfaceMaterialCount, 9);
     assert.deepEqual([...snapshot.ballNumbers], numbers);
   }
-  assert.equal(debug.setSurfaceMaterial("flat-gradient"), false);
-  assert.equal(debug.snapshot().presentation.dateMap.surfaceMaterialId, "ink");
 });
 
 test("allocates most pull travel to fine control in the useful middle-power range", () => {
@@ -697,6 +706,9 @@ test("keeps an object ball physical until its pocket animation completes, then s
   assert.equal(snapshot.shotPottedNumbers.includes(1), false, "settlement must wait for the visual descent");
   assert.equal(snapshot.runState.pottedNumbers.includes(1), false);
   assert.equal(snapshot.runState.shots, 0);
+  assert.equal(snapshot.presentation.dateMap.surfaceMaterialId, "gold");
+  assert.equal(snapshot.presentation.dateMap.surfaceTransitionTo, "gold");
+  assert.equal(snapshot.presentation.dateMap.routes, 1, "the pocket slow motion should start one color transition");
 
   snapshot = debug.step(10);
   ball = findBall(snapshot, 1);
@@ -720,6 +732,7 @@ test("keeps an object ball physical until its pocket animation completes, then s
   const settled = debug.step(7000);
   assert.equal(settled.runState.pottedNumbers.filter((number) => number === 1).length, 1);
   assert.equal(settled.runState.shots, 1);
+  assert.equal(settled.presentation.dateMap.routes, 1, "shot settlement must not restart the pocket transition");
   assert.equal(debug.step(600).runState.shots, 1);
 });
 

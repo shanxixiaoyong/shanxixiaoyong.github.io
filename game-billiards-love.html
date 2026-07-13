@@ -11,11 +11,11 @@
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" href="assets/billiards-textures/worsted-cloth.jpg" as="image">
   <link rel="preload" href="assets/billiards-textures/dark-walnut.jpg" as="image">
-  <link rel="preload" href="assets/billiards-surfaces/lava.jpg" as="image" fetchpriority="high">
-  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-coupled-material-20260713b">
+  <link rel="preload" href="assets/billiards-surfaces/ice.jpg" as="image" fetchpriority="high">
+  <link rel="stylesheet" href="assets/billiards-love.css?v=billiards-reactive-surfaces-20260713c">
 </head>
 <body class="heartbeat-billiards-page">
-  <main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技" data-stage="1" data-state="loading" data-shell-theme="chromatic" data-surface-material="lava">
+  <main class="hb-app" id="heartbeat-billiards" aria-label="幻彩桌球：十五球光谱竞技" data-stage="1" data-state="loading" data-shell-theme="chromatic" data-surface-material="ice">
     <div class="hb-backdrop" aria-hidden="true"></div>
     <div class="hb-stage-light" aria-hidden="true"></div>
     <div class="hb-scene-lens" id="hb-scene-lens" aria-hidden="true"><i></i><b></b></div>
@@ -39,16 +39,6 @@
       </div>
 
       <div class="hb-toolbar" aria-label="游戏设置">
-        <div class="hb-surface-control">
-          <button class="hb-icon-button" id="hb-surface-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="切换桌面材质，当前为熔岩裂境" title="桌面材质"><span id="hb-surface-icon" aria-hidden="true">焰</span></button>
-          <div class="hb-surface-menu" id="hb-surface-menu" role="menu" aria-label="桌面触感材质" hidden>
-            <button id="hb-surface-lava" type="button" role="menuitemradio" aria-checked="true" data-surface-material="lava" title="熔岩裂境"><i aria-hidden="true"></i><span>熔岩裂境</span></button>
-            <button id="hb-surface-galaxy" type="button" role="menuitemradio" aria-checked="false" data-surface-material="galaxy" title="星河引力"><i aria-hidden="true"></i><span>星河引力</span></button>
-            <button id="hb-surface-circuit" type="button" role="menuitemradio" aria-checked="false" data-surface-material="circuit" title="霓虹矩阵"><i aria-hidden="true"></i><span>霓虹矩阵</span></button>
-            <button id="hb-surface-ice" type="button" role="menuitemradio" aria-checked="false" data-surface-material="ice" title="极寒冰域"><i aria-hidden="true"></i><span>极寒冰域</span></button>
-            <button id="hb-surface-ink" type="button" role="menuitemradio" aria-checked="false" data-surface-material="ink" title="水墨山河"><i aria-hidden="true"></i><span>水墨山河</span></button>
-          </div>
-        </div>
         <button class="hb-icon-button" id="hb-sound" type="button" aria-pressed="true" aria-label="关闭声音" title="声音"><span aria-hidden="true">&#9834;</span></button>
         <button class="hb-icon-button" id="hb-aim-toggle" type="button" aria-pressed="true" aria-label="关闭瞄准辅助" title="瞄准辅助"><span aria-hidden="true">&#8982;</span></button>
       </div>
@@ -147,11 +137,11 @@
 
   </main>
 
-  <script src="assets/billiards-physics.js?v=billiards-coupled-material-20260713b"></script>
-  <script src="assets/billiards-love-rules.js?v=billiards-coupled-material-20260713b"></script>
-  <script src="assets/billiards-love-content.js?v=billiards-coupled-material-20260713b"></script>
-  <script src="assets/billiards-ball-renderer.js?v=billiards-coupled-material-20260713b"></script>
-  <script src="assets/billiards-surface-renderer.js?v=billiards-coupled-material-20260713b"></script>
-  <script src="assets/billiards-love-game.js?v=billiards-coupled-material-20260713b"></script>
+  <script src="assets/billiards-physics.js?v=billiards-reactive-surfaces-20260713c"></script>
+  <script src="assets/billiards-love-rules.js?v=billiards-reactive-surfaces-20260713c"></script>
+  <script src="assets/billiards-love-content.js?v=billiards-reactive-surfaces-20260713c"></script>
+  <script src="assets/billiards-ball-renderer.js?v=billiards-reactive-surfaces-20260713c"></script>
+  <script src="assets/billiards-surface-renderer.js?v=billiards-reactive-surfaces-20260713c"></script>
+  <script src="assets/billiards-love-game.js?v=billiards-reactive-surfaces-20260713c"></script>
 </body>
 </html>

@@ -128,7 +128,7 @@ test("billiards pins the independent physics and ball renderer before the game r
     "assets/billiards-surface-renderer.js",
     "assets/billiards-love-game.js"
   ]);
-  assert.equal(billiards.cacheVersion, "billiards-coupled-material-20260713b");
+  assert.equal(billiards.cacheVersion, "billiards-reactive-surfaces-20260713c");
   assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js", "assets/billiards-surface-renderer.js"]);
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-ball-renderer.js"));
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-surface-renderer.js"));
@@ -229,9 +229,9 @@ test("site contract rejects hidden portal doors and retired lobby copy", () => {
 });
 
 test("site contract rejects reordered billiards layers and stale renderer cache versions", () => {
-  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-coupled-material-20260713b"></script>';
-  const surface = '  <script src="assets/billiards-surface-renderer.js?v=billiards-coupled-material-20260713b"></script>';
-  const game = '  <script src="assets/billiards-love-game.js?v=billiards-coupled-material-20260713b"></script>';
+  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-reactive-surfaces-20260713c"></script>';
+  const surface = '  <script src="assets/billiards-surface-renderer.js?v=billiards-reactive-surfaces-20260713c"></script>';
+  const game = '  <script src="assets/billiards-love-game.js?v=billiards-reactive-surfaces-20260713c"></script>';
 
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     `${renderer}\n${surface}\n${game}`,
@@ -239,7 +239,7 @@ test("site contract rejects reordered billiards layers and stale renderer cache 
   ));
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     renderer,
-    renderer.replace("billiards-coupled-material-20260713b", "billiards-love-stale")
+    renderer.replace("billiards-reactive-surfaces-20260713c", "billiards-love-stale")
   ));
   assert.match(read("game-billiards-love.html"), new RegExp(`${surface.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*${game.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
 });

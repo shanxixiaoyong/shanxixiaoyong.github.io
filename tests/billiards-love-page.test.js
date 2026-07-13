@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-coupled-material-20260713b";
-const styleCacheVersion = "billiards-coupled-material-20260713b";
+const runtimeCacheVersion = "billiards-reactive-surfaces-20260713c";
+const styleCacheVersion = "billiards-reactive-surfaces-20260713c";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -65,13 +65,11 @@ test("opens directly into play without visible opening or pause UI", () => {
   const topbar = fragment(html, '<header class="hb-topbar">', "</header>");
   const topbarButtonIds = [...topbar.matchAll(/<button\b[^>]*\bid="([^"]+)"/g)].map((match) => match[1]);
 
-  assert.deepEqual(topbarButtonIds, [
-    "hb-surface-toggle", "hb-surface-lava", "hb-surface-galaxy", "hb-surface-circuit",
-    "hb-surface-ice", "hb-surface-ink", "hb-sound", "hb-aim-toggle"
-  ]);
-  for (const token of ["hb-back", "hb-stage-kicker", "hb-stage-title", "hb-interest-wrap", "hb-surface-toggle", "hb-sound", "hb-aim-toggle"]) {
+  assert.deepEqual(topbarButtonIds, ["hb-sound", "hb-aim-toggle"]);
+  for (const token of ["hb-back", "hb-stage-kicker", "hb-stage-title", "hb-interest-wrap", "hb-sound", "hb-aim-toggle"]) {
     assert.match(topbar, new RegExp(escapeRegExp(token)));
   }
+  assert.doesNotMatch(html, /hb-surface-(?:toggle|menu|lava|galaxy|circuit|ice|ink)/);
   assert.match(topbar, /class="hb-sr-only" id="hb-stage-targets"/);
   assert.match(topbar, />光效</);
   assert.match(topbar, /id="hb-interest">待机</);
@@ -142,6 +140,7 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
 
 test("uses a simulated water field without narrative scene photography", () => {
   const activeTableRenderer = implementationOf(game, "drawDateMap");
+  const activeFrameRenderer = implementationOf(game, "draw");
 
   assert.match(game, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
   assert.match(game, /const POCKET_VFX_PROFILES = Object\.freeze\(\{/);
@@ -150,9 +149,9 @@ test("uses a simulated water field without narrative scene photography", () => {
   assert.match(game, /function stepWaterSimulation\(/);
   assert.match(game, /function renderWaterSurface\(/);
   assert.match(activeTableRenderer, /renderWaterSurface\(timestamp\)/);
-  assert.match(game, /function drawRailLightStrip\(/);
-  assert.match(activeTableRenderer, /drawRailLightStrip\(timestamp\)/);
-  assert.match(activeTableRenderer, /drawPocketLightPorts\(timestamp\)/);
+  assert.match(game, /function drawCushionLightResponse\(/);
+  assert.match(activeFrameRenderer, /drawDateMapLayer\(timestamp\)[\s\S]*drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.doesNotMatch(activeTableRenderer, /drawCushionLightResponse|drawPocketLightPorts|drawLeatherPocket/);
   assert.doesNotMatch(
     activeTableRenderer,
     /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/
@@ -180,19 +179,21 @@ test("couples the photographic cloth and rolling field inside one WebGL material
   assert.match(game, /surfaceRenderer \? "webgl2-displaced-texture" : "canvas-field-fallback"/);
 });
 
-test("offers five reference-matched persisted cinematic surface materials", () => {
+test("automatically maps standard ball colors to nine reference-matched surface materials", () => {
   const expected = [
-    ["lava", "熔岩裂境"],
-    ["galaxy", "星河引力"],
-    ["circuit", "霓虹矩阵"],
-    ["ice", "极寒冰域"],
-    ["ink", "水墨山河"]
+    ["ice", "极光冰面"],
+    ["gold", "日冕流金"],
+    ["galaxy", "深空星河"],
+    ["lava", "熔岩脉冲"],
+    ["circuit", "星云电路"],
+    ["amber", "琥珀流体"],
+    ["emerald", "翡翠潮汐"],
+    ["burgundy", "酒红晶域"],
+    ["ink", "水墨日蚀"]
   ];
-  assert.match(html, /data-surface-material="lava"/);
-  assert.match(html, /id="hb-surface-menu"[^>]*role="menu"/);
+  assert.match(html, /data-surface-material="ice"/);
   for (const [id, label] of expected) {
     const texture = `assets/billiards-surfaces/${id}.jpg`;
-    assert.match(html, new RegExp(`id="hb-surface-${id}"[\\s\\S]*?data-surface-material="${id}"[\\s\\S]*?>${label}<`));
     assert.match(game, new RegExp(`id: "${id}", label: "${label}"`));
     assert.match(game, new RegExp(`${id}: "${escapeRegExp(texture)}"`));
     assert.match(css, new RegExp(`data-surface-material="${id}"`));
@@ -200,11 +201,23 @@ test("offers five reference-matched persisted cinematic surface materials", () =
     assert.equal(fs.existsSync(path.join(root, texture)), true, `${texture} should exist`);
     assert.ok(fs.statSync(path.join(root, texture)).size > 500 * 1024, `${texture} should retain high-detail raster data`);
   }
-  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/lava\.jpg" as="image" fetchpriority="high">/);
-  assert.match(game, /const SURFACE_KEY = "yl-chroma-surface-material-v2"/);
+  assert.match(html, /<link rel="preload" href="assets\/billiards-surfaces\/ice\.jpg" as="image" fetchpriority="high">/);
+  for (const mapping of [
+    /1: "gold", 9: "gold"/,
+    /2: "galaxy", 10: "galaxy"/,
+    /3: "lava", 11: "lava"/,
+    /4: "circuit", 12: "circuit"/,
+    /5: "amber", 13: "amber"/,
+    /6: "emerald", 14: "emerald"/,
+    /7: "burgundy", 15: "burgundy"/,
+    /8: "ink"/
+  ]) assert.match(game, mapping);
   assert.match(game, /const SURFACE_TEXTURE_SOURCES = Object\.freeze\(\{/);
   assert.match(game, /function selectSurfaceMaterial\(/);
-  assert.match(game, /writeStorage\(SURFACE_KEY, material\.id\)/);
+  assert.match(game, /function transitionSurfaceForBall\(/);
+  assert.match(game, /origin: \{ x: pocket\.captureX, y: pocket\.captureY \}/);
+  assert.doesNotMatch(game, /SURFACE_KEY|writeStorage\(SURFACE/);
+  assert.doesNotMatch(html + css, /hb-surface-(?:toggle|menu|option)/);
   assert.match(game, /materialId === "ink"/);
   assert.match(game, /function ensureSurfaceTexture\(/);
   assert.match(game, /function drawSurfaceTexture\(/);
@@ -216,8 +229,6 @@ test("offers five reference-matched persisted cinematic surface materials", () =
   assert.match(game, /paintIceArtwork/);
   assert.match(game, /paintInkArtwork/);
   assert.match(game, /waterSurface\.pigment/);
-  assert.match(css, /\.hb-surface-menu\[hidden\]/);
-  assert.doesNotMatch(css, /\.hb-surface-menu[\s\S]*?backdrop-filter/);
 });
 
 test("uses local premium cloth and walnut material textures", () => {
@@ -378,10 +389,11 @@ test("keeps table moments lightweight and lets misses pause rather than end the 
 test("integrates shot telemetry, persistent water and rail state, and pocket slow motion", () => {
   const tableStory = fragment(html, '<div class="hb-table-story"', "</div>\n        </div>");
   const activeTableRenderer = implementationOf(game, "drawDateMap");
+  const activeFrameRenderer = implementationOf(game, "draw");
   const rollingUpdate = implementationOf(game, "updateRollingState");
   const rollingWake = implementationOf(game, "depositRollingWaterWake");
   const railBurst = implementationOf(game, "spawnChromaRailBurst");
-  const railLightStrip = implementationOf(game, "drawRailLightStrip");
+  const cushionLight = implementationOf(game, "drawCushionLightResponse");
   for (const token of ["hb-table-reflection", "hb-pocket-focus"]) {
     assert.match(tableStory, new RegExp(token));
   }
@@ -413,18 +425,18 @@ test("integrates shot telemetry, persistent water and rail state, and pocket slo
   assert.match(rollingUpdate, /depositRollingWaterWake\(ball, data, dx, dy, travel\)/);
   assert.match(rollingWake, /disturbMaterialWorld\(/);
   assert.match(game, /function railDistanceForContact\(/);
-  assert.match(game, /function railPositionFromDistance\(/);
   assert.match(railBurst, /railDistanceForContact\(/);
-  assert.match(railLightStrip, /wave\.originS \+ front/);
-  assert.match(railLightStrip, /wave\.originS - front/);
-  assert.match(railLightStrip, /railPositionFromDistance\(/);
+  assert.match(cushionLight, /rails\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.match(cushionLight, /wave\.originS \+ front/);
+  assert.match(cushionLight, /wave\.originS - front/);
   assert.match(activeTableRenderer, /renderWaterSurface\(timestamp\)/);
+  assert.match(activeFrameRenderer, /drawDateMapLayer\(timestamp\)[\s\S]*drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)/);
   assert.doesNotMatch(
     activeTableRenderer,
     /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/
   );
   assert.match(game, /function drawPocketLightPorts\(timestamp\)/);
-  assert.match(game, /function drawBlackEightLedChoreography\(timestamp\)/);
+  assert.doesNotMatch(game, /function drawBlackEightLedChoreography\(/);
   assert.match(game, /function drawScenePortalLighting\(timestamp\)/);
   assert.match(game, /drawScenePortalLighting\(/);
   assert.match(game, /spawnChromaRailBurst\(bodyA, bodyB, collision, impactSpeed\)/);
@@ -496,11 +508,10 @@ test("keeps a compact result dock and reserves the largest effect for black 8", 
   assert.match(game, /function beginFinalDateMapReveal\(outcome\)/);
   assert.match(game, /dateMapState\.blackEightBlast = \{/);
   assert.match(game, /duration: success \? 4400 : 3200/);
-  const railLightStrip = implementationOf(game, "drawRailLightStrip");
-  const blackEight = implementationOf(game, "drawBlackEightLedChoreography");
-  assert.match(blackEight, /drawRailLightStrip\(timestamp\)/);
-  assert.match(blackEight, /drawPocketLightPorts\(timestamp\)/);
-  assert.match(railLightStrip, /dateMapState\.blackEightBlast/);
+  const cushionLight = implementationOf(game, "drawCushionLightResponse");
+  const activeFrameRenderer = implementationOf(game, "draw");
+  assert.match(activeFrameRenderer, /drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.match(cushionLight, /dateMapState\.blackEightBlast/);
   assert.match(game, /screenShake = Math\.max\(screenShake, success \? 7\.2 : 4\.2\)/);
   assert.match(game, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);
   const outcomes = fragment(game, "function processOutcomePerformances", "function finalizeShot");
