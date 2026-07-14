@@ -3187,15 +3187,15 @@
       context.fillStyle = gradient;
       roundRectPath(context, -material.width / 2, -material.height / 2, material.width, material.height, material.kind === "jaw" ? 5 : 8);
       context.fill();
-      context.strokeStyle = material.kind === "jaw" ? "rgba(168, 204, 234, 0.46)" : "rgba(188, 223, 255, 0.64)";
+      context.strokeStyle = material.kind === "jaw" ? "rgba(168, 183, 196, 0.34)" : "rgba(181, 197, 207, 0.38)";
       context.lineWidth = material.kind === "jaw" ? 1 : 1.35;
       roundRectPath(context, -material.width / 2 + 1, -material.height / 2 + 1, material.width - 2, material.height - 2, material.kind === "jaw" ? 4 : 7);
       context.stroke();
       if (material.kind === "cushion") {
-        context.strokeStyle = "rgba(199, 230, 255, 0.82)";
+        context.strokeStyle = "rgba(187, 203, 211, 0.38)";
         context.shadowColor = "rgba(0, 5, 12, 0.84)";
-        context.shadowBlur = 3;
-        context.lineWidth = 1.8;
+        context.shadowBlur = 2;
+        context.lineWidth = 1.35;
         context.beginPath();
         if (material.id === "top") {
           context.moveTo(-material.width / 2 + 9, material.height / 2 - 1.4);
@@ -5321,6 +5321,119 @@
     const blast = dateMapState.blackEightBlast;
     const blastProgress = blast ? clamp(blast.ageMs / blast.duration, 0, 1) : 0;
     let peak = 0;
+
+    const sampleLight = (centerDistance) => {
+      let brightness = 0;
+      let red = baseColor[0];
+      let green = baseColor[1];
+      let blue = baseColor[2];
+      let dominant = 0;
+      let whiteMix = 0;
+
+      dateMapState.railBursts.forEach((wave) => {
+        const ageSeconds = wave.ageMs / 1000;
+        const front = wave.speed * ageSeconds;
+        const clockwise = circularRailDistance(centerDistance, wave.originS + front, perimeter);
+        const counterClockwise = circularRailDistance(centerDistance, wave.originS - front, perimeter);
+        const distanceToFront = Math.min(clockwise, counterClockwise);
+        const width = Math.max(48, wave.width);
+        const frontShape = Math.exp(-Math.pow(distanceToFront / (width * 0.38), 2));
+        const originDistance = circularRailDistance(centerDistance, wave.originS, perimeter);
+        const wakeLag = front - originDistance;
+        const wakeShape = wakeLag > 0
+          ? Math.exp(-wakeLag / (width * 2.35)) * smoothStep(0, width * 0.36, wakeLag)
+          : 0;
+        const echoFront = Math.max(0, front - width * 0.86);
+        const echoClockwise = circularRailDistance(centerDistance, wave.originS + echoFront, perimeter);
+        const echoCounterClockwise = circularRailDistance(centerDistance, wave.originS - echoFront, perimeter);
+        const echoDistance = Math.min(echoClockwise, echoCounterClockwise);
+        const echoShape = Math.exp(-Math.pow(echoDistance / (width * 0.68), 2));
+        const waveLife = clamp(1 - wave.ageMs / wave.duration, 0, 1);
+        const travelPhase = timestamp * 0.0048 + centerDistance * 0.022 + wave.originS * 0.006;
+        const materialShimmer = 0.88 + Math.sin(travelPhase) * 0.12;
+        let headGain = 0.88;
+        let wakeGain = 0.34;
+        let echoGain = 0.18;
+        let spectralMix = 0.12 + echoShape * 0.28;
+
+        if (wave.effectId === "ripple") {
+          wakeGain = 0.48;
+          spectralMix += (0.5 + Math.sin(travelPhase * 0.72) * 0.5) * 0.18;
+        } else if (wave.effectId === "comet") {
+          headGain = 1.16;
+          wakeGain = 0.22;
+          whiteMix = Math.max(whiteMix, frontShape * 0.56);
+        } else if (wave.effectId === "prism") {
+          spectralMix += (0.5 + Math.sin(travelPhase * 1.42) * 0.5) * 0.42;
+          echoGain = 0.28;
+        } else if (wave.effectId === "pulse") {
+          const pulse = 0.74 + Math.sin(travelPhase * 1.8) * 0.26;
+          headGain *= pulse;
+          wakeGain = 0.42;
+        } else if (wave.effectId === "lightning") {
+          const flicker = 0.76 + Math.pow(Math.max(0, Math.sin(travelPhase * 2.7)), 3) * 0.42;
+          headGain = 1.24 * flicker;
+          wakeGain = 0.18;
+          whiteMix = Math.max(whiteMix, frontShape * 0.72);
+        } else if (wave.effectId === "aurora") {
+          headGain = 0.7;
+          wakeGain = 0.62;
+          spectralMix += (0.5 + Math.sin(travelPhase * 0.36) * 0.5) * 0.46;
+        }
+
+        const contribution = (frontShape * headGain + wakeShape * wakeGain + echoShape * echoGain)
+          * waveLife * (0.38 + wave.intensity * 0.78) * materialShimmer;
+        if (contribution > dominant) {
+          dominant = contribution;
+          const wavePrimary = wave.rgb || colorChannels(wave.color || surface.rail);
+          const waveSecondary = colorChannels(wave.secondary || surface.railSecondary || surface.rail);
+          red = wavePrimary[0] + (waveSecondary[0] - wavePrimary[0]) * spectralMix;
+          green = wavePrimary[1] + (waveSecondary[1] - wavePrimary[1]) * spectralMix;
+          blue = wavePrimary[2] + (waveSecondary[2] - wavePrimary[2]) * spectralMix;
+        }
+        brightness += contribution;
+      });
+
+      if (blast) {
+        const pocketIndex = Math.floor(blastProgress * 7.5);
+        const nearestPocketIndex = POCKETS.reduce((best, pocket, pocketPosition) => {
+          const pocketDistance = circularRailDistance(centerDistance, railDistanceForContact(pocket.x, pocket.y), perimeter);
+          return pocketDistance < best.distance ? { distance: pocketDistance, index: pocketPosition } : best;
+        }, { distance: Infinity, index: 0 }).index;
+        const pocketIgnition = smoothStep(nearestPocketIndex / 8, nearestPocketIndex / 8 + 0.1, blastProgress);
+        const chase = smoothStep(0.12, 0.3, blastProgress) * (1 - smoothStep(0.8, 0.94, blastProgress));
+        const chaseFront = (timestamp * 1.08 + blastProgress * perimeter * 2.8) % perimeter;
+        const chaseDistance = Math.min(
+          circularRailDistance(centerDistance, chaseFront, perimeter),
+          circularRailDistance(centerDistance, perimeter - chaseFront, perimeter)
+        );
+        const chaseWave = Math.exp(-Math.pow(chaseDistance / 92, 2)) * chase;
+        const counterFront = (perimeter * 0.5 - chaseFront + perimeter) % perimeter;
+        const counterDistance = circularRailDistance(centerDistance, counterFront, perimeter);
+        const counterWave = Math.exp(-Math.pow(counterDistance / 132, 2)) * chase * 0.7;
+        const climax = smoothStep(0.62, 0.78, blastProgress) * (1 - smoothStep(0.92, 1, blastProgress));
+        brightness += pocketIgnition * 0.1 + chaseWave * 1.34 + counterWave + climax * 0.88;
+        whiteMix = Math.max(whiteMix, chaseWave * 0.78 + climax * 0.32);
+        const spectral = centerDistance / perimeter * Math.PI * 2 + blastProgress * 18 + pocketIndex * 0.25;
+        const blend = 0.5 + Math.sin(spectral * (surface.id === "circuit" ? 2.6 : 1.2)) * 0.5;
+        red = baseColor[0] + (secondaryColor[0] - baseColor[0]) * blend;
+        green = baseColor[1] + (secondaryColor[1] - baseColor[1]) * blend;
+        blue = baseColor[2] + (secondaryColor[2] - baseColor[2]) * blend;
+      }
+
+      brightness = clamp(brightness, 0, 1);
+      peak = Math.max(peak, brightness);
+      return { brightness, red, green, blue, whiteMix: clamp(whiteMix, 0, 1) };
+    };
+
+    const rgba = (sample, alphaScale, core = false) => {
+      const mix = core ? sample.whiteMix * 0.72 + sample.brightness * 0.2 : sample.whiteMix * 0.18;
+      const red = Math.round(sample.red + (255 - sample.red) * mix);
+      const green = Math.round(sample.green + (255 - sample.green) * mix);
+      const blue = Math.round(sample.blue + (255 - sample.blue) * mix);
+      return `rgba(${red},${green},${blue},${sample.brightness * alphaScale})`;
+    };
+
     context.save();
     context.globalCompositeOperation = "screen";
     const lightRails = rails.filter((rail) => rail.plugin.heartbeatRail?.kind === "cushion");
@@ -5328,103 +5441,82 @@
       const railShape = rail.plugin.heartbeatRail;
       const horizontal = railShape.width >= railShape.height;
       const length = horizontal ? railShape.width : railShape.height;
-      const segmentCount = Math.max(3, Math.ceil(length / RAIL_LED_SEGMENT_LENGTH));
-      for (let segment = 0; segment < segmentCount; segment += 1) {
-        const centerRatio = (segment + 0.5) / segmentCount;
-        const center = horizontal
-          ? { x: rail.position.x - railShape.width / 2 + railShape.width * centerRatio, y: rail.position.y }
-          : { x: rail.position.x, y: rail.position.y - railShape.height / 2 + railShape.height * centerRatio };
-        const centerDistance = railDistanceForContact(center.x, center.y);
-        let brightness = 0;
-        let red = baseColor[0];
-        let green = baseColor[1];
-        let blue = baseColor[2];
-        dateMapState.railBursts.forEach((wave) => {
-          const ageSeconds = wave.ageMs / 1000;
-          const front = wave.speed * ageSeconds;
-          const clockwise = circularRailDistance(centerDistance, wave.originS + front, perimeter);
-          const counterClockwise = circularRailDistance(centerDistance, wave.originS - front, perimeter);
-          const distanceToFront = Math.min(clockwise, counterClockwise);
-          const waveShape = Math.pow(clamp(1 - distanceToFront / wave.width, 0, 1), 2);
-          const echoFront = Math.max(0, front - wave.width * 0.92);
-          const echoClockwise = circularRailDistance(centerDistance, wave.originS + echoFront, perimeter);
-          const echoCounterClockwise = circularRailDistance(centerDistance, wave.originS - echoFront, perimeter);
-          const echoDistance = Math.min(echoClockwise, echoCounterClockwise);
-          const echoShape = Math.pow(clamp(1 - echoDistance / (wave.width * 1.55), 0, 1), 3) * 0.34;
-          const waveLife = clamp(1 - wave.ageMs / wave.duration, 0, 1);
-          const contribution = (waveShape + echoShape) * waveLife * (0.42 + wave.intensity * 0.72);
-          if (contribution > brightness) {
-            const secondary = colorChannels(wave.secondary || wave.color);
-            const spectralMix = 0.16 + echoShape * 0.62;
-            red = wave.rgb[0] + (secondary[0] - wave.rgb[0]) * spectralMix;
-            green = wave.rgb[1] + (secondary[1] - wave.rgb[1]) * spectralMix;
-            blue = wave.rgb[2] + (secondary[2] - wave.rgb[2]) * spectralMix;
-          }
-          brightness += contribution;
-        });
-        if (blast) {
-          const pocketIndex = Math.floor(blastProgress * 7.5);
-          const nearestPocketIndex = POCKETS.reduce((best, pocket, pocketPosition) => {
-            const pocketDistance = circularRailDistance(centerDistance, railDistanceForContact(pocket.x, pocket.y), perimeter);
-            return pocketDistance < best.distance ? { distance: pocketDistance, index: pocketPosition } : best;
-          }, { distance: Infinity, index: 0 }).index;
-          const pocketIgnition = smoothStep(nearestPocketIndex / 8, nearestPocketIndex / 8 + 0.1, blastProgress);
-          const chase = smoothStep(0.18, 0.36, blastProgress) * (1 - smoothStep(0.78, 0.92, blastProgress));
-          const chaseFront = (timestamp * 0.8 + blastProgress * perimeter * 2.4) % perimeter;
-          const chaseDistance = Math.min(
-            circularRailDistance(centerDistance, chaseFront, perimeter),
-            circularRailDistance(centerDistance, perimeter - chaseFront, perimeter)
-          );
-          const chaseWave = Math.pow(clamp(1 - chaseDistance / 150, 0, 1), 2) * chase;
-          const climax = smoothStep(0.68, 0.82, blastProgress) * (1 - smoothStep(0.9, 1, blastProgress));
-          brightness += pocketIgnition * 0.08 + chaseWave * 1.18 + climax * 0.92;
-          const spectral = centerDistance / perimeter * Math.PI * 2 + blastProgress * 15 + pocketIndex * 0.2;
-          const blend = 0.5 + Math.sin(spectral * (surface.id === "circuit" ? 2.6 : 1.2)) * 0.5;
-          red = baseColor[0] + (secondaryColor[0] - baseColor[0]) * blend;
-          green = baseColor[1] + (secondaryColor[1] - baseColor[1]) * blend;
-          blue = baseColor[2] + (secondaryColor[2] - baseColor[2]) * blend;
-        }
-        brightness = clamp(brightness, 0, 1);
-        peak = Math.max(peak, brightness);
-        if (brightness < 0.035) return;
-        const color = `rgb(${Math.round(clamp(red, 0, 255))},${Math.round(clamp(green, 0, 255))},${Math.round(clamp(blue, 0, 255))})`;
-        const segmentLength = length / segmentCount * 1.22;
-        const thickness = (horizontal ? railShape.height : railShape.width) * 0.92;
-        const glowGradient = horizontal
-          ? context.createLinearGradient(center.x - segmentLength / 2, center.y, center.x + segmentLength / 2, center.y)
-          : context.createLinearGradient(center.x, center.y - segmentLength / 2, center.x, center.y + segmentLength / 2);
-        const rgba = (alpha) => `rgba(${Math.round(red)},${Math.round(green)},${Math.round(blue)},${alpha})`;
-        glowGradient.addColorStop(0, rgba(0));
-        glowGradient.addColorStop(0.18, rgba(brightness * 0.22));
-        glowGradient.addColorStop(0.5, rgba(brightness * 0.76));
-        glowGradient.addColorStop(0.82, rgba(brightness * 0.22));
-        glowGradient.addColorStop(1, rgba(0));
-        context.globalAlpha = 1;
-        context.fillStyle = glowGradient;
-        context.shadowColor = color;
-        context.shadowBlur = 8 + brightness * 24;
-        if (horizontal) {
-          context.fillRect(center.x - segmentLength / 2, center.y - thickness / 2, segmentLength, thickness);
-        } else {
-          context.fillRect(center.x - thickness / 2, center.y - segmentLength / 2, thickness, segmentLength);
-        }
-        const coreGradient = horizontal
-          ? context.createLinearGradient(center.x - segmentLength / 2, center.y, center.x + segmentLength / 2, center.y)
-          : context.createLinearGradient(center.x, center.y - segmentLength / 2, center.x, center.y + segmentLength / 2);
-        coreGradient.addColorStop(0, "rgba(255,255,255,0)");
-        coreGradient.addColorStop(0.36, rgba(brightness * 0.52));
-        coreGradient.addColorStop(0.5, `rgba(255,255,255,${brightness * 0.82})`);
-        coreGradient.addColorStop(0.64, rgba(brightness * 0.52));
-        coreGradient.addColorStop(1, "rgba(255,255,255,0)");
-        context.shadowBlur = 2 + brightness * 8;
-        context.fillStyle = coreGradient;
-        const coreThickness = Math.max(1.4, thickness * 0.22);
-        if (horizontal) {
-          context.fillRect(center.x - segmentLength / 2, center.y - coreThickness / 2, segmentLength, coreThickness);
-        } else {
-          context.fillRect(center.x - coreThickness / 2, center.y - segmentLength / 2, coreThickness, segmentLength);
-        }
+      const thickness = horizontal ? railShape.height : railShape.width;
+      const sampleCount = Math.max(10, Math.ceil(length / (RAIL_LED_SEGMENT_LENGTH * 2)));
+      const samples = [];
+      for (let sampleIndex = 0; sampleIndex <= sampleCount; sampleIndex += 1) {
+        const ratio = sampleIndex / sampleCount;
+        const point = horizontal
+          ? { x: rail.position.x - railShape.width / 2 + railShape.width * ratio, y: rail.position.y }
+          : { x: rail.position.x, y: rail.position.y - railShape.height / 2 + railShape.height * ratio };
+        samples.push({ ratio, ...sampleLight(railDistanceForContact(point.x, point.y)) });
       }
+      const railPeak = samples.reduce((highest, sample) => Math.max(highest, sample.brightness), 0);
+      if (railPeak < 0.025) return;
+
+      const wash = context.createLinearGradient(-length / 2, 0, length / 2, 0);
+      const halo = context.createLinearGradient(-length / 2, 0, length / 2, 0);
+      const core = context.createLinearGradient(-length / 2, 0, length / 2, 0);
+      samples.forEach((sample) => {
+        wash.addColorStop(sample.ratio, rgba(sample, 0.3));
+        halo.addColorStop(sample.ratio, rgba(sample, 0.62));
+        core.addColorStop(sample.ratio, rgba(sample, 0.94, true));
+      });
+
+      const railId = railShape.id || "";
+      const inwardSign = railId === "top" || railId.startsWith("right") ? 1 : -1;
+      const innerOffset = inwardSign * thickness * 0.34;
+      context.save();
+      context.translate(rail.position.x, rail.position.y);
+      if (!horizontal) context.rotate(Math.PI / 2);
+      context.beginPath();
+      context.rect(-length / 2, -thickness / 2, length, thickness);
+      context.clip();
+
+      context.fillStyle = wash;
+      context.fillRect(-length / 2, -thickness / 2, length, thickness);
+
+      context.strokeStyle = halo;
+      context.lineCap = "round";
+      context.lineWidth = thickness * 0.68;
+      context.shadowColor = surface.rail;
+      context.shadowBlur = 10 + railPeak * 22;
+      context.beginPath();
+      context.moveTo(-length / 2 + 7, innerOffset);
+      context.lineTo(length / 2 - 7, innerOffset);
+      context.stroke();
+
+      context.strokeStyle = core;
+      context.lineWidth = 1.25 + railPeak * 2.35;
+      context.shadowColor = surface.railSecondary || surface.rail;
+      context.shadowBlur = 4 + railPeak * 11;
+      context.beginPath();
+      context.moveTo(-length / 2 + 6, innerOffset);
+      context.lineTo(length / 2 - 6, innerOffset);
+      context.stroke();
+
+      context.globalAlpha = 0.34 + railPeak * 0.34;
+      context.strokeStyle = halo;
+      context.lineWidth = 0.7 + railPeak * 0.65;
+      context.shadowBlur = 0;
+      context.beginPath();
+      context.moveTo(-length / 2 + 9, innerOffset - inwardSign * 4.2);
+      context.lineTo(length / 2 - 9, innerOffset - inwardSign * 4.2);
+      context.stroke();
+      context.restore();
+    });
+
+    dateMapState.railBursts.forEach((wave) => {
+      const impactLife = clamp(1 - wave.ageMs / Math.min(620, wave.duration), 0, 1);
+      if (impactLife <= 0) return;
+      const radius = 13 + (1 - impactLife) * 34 + wave.intensity * 9;
+      const bloom = context.createRadialGradient(wave.x, wave.y, 0, wave.x, wave.y, radius);
+      bloom.addColorStop(0, colorWithAlpha("#ffffff", impactLife * 0.82));
+      bloom.addColorStop(0.18, colorWithAlpha(wave.secondary || wave.color, impactLife * 0.58));
+      bloom.addColorStop(0.56, colorWithAlpha(wave.color, impactLife * 0.2));
+      bloom.addColorStop(1, colorWithAlpha(wave.color, 0));
+      context.fillStyle = bloom;
+      context.fillRect(wave.x - radius, wave.y - radius, radius * 2, radius * 2);
     });
     context.shadowBlur = 0;
     dateMapState.railWavePeak = peak;

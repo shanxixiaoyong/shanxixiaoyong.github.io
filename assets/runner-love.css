@@ -422,9 +422,97 @@ a {
   backdrop-filter: blur(8px);
 }
 
+.run-state-line {
+  display: flex;
+  min-height: 22px;
+  margin-top: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.speed-state {
+  display: grid;
+  min-width: 92px;
+  grid-template-columns: auto auto minmax(36px, 68px);
+  gap: 5px;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 8px;
+}
+
+.speed-state > span {
+  color: var(--stage-accent);
+  font-size: 12px;
+  line-height: 1;
+  text-shadow: 0 0 9px var(--stage-accent);
+}
+
+.speed-state strong {
+  min-width: 2.4em;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.speed-state > i {
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.speed-state b {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0.08);
+  transform-origin: left;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.64), var(--stage-accent));
+  box-shadow: 0 0 8px var(--stage-accent);
+  transition: transform 260ms ease;
+}
+
+.powerup-rack {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.powerup-rack:empty {
+  display: none;
+}
+
+.powerup-chip {
+  display: grid;
+  min-width: 42px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--powerup-color, var(--stage-accent)) 55%, rgba(255, 255, 255, 0.22));
+  border-radius: 3px;
+  grid-template-columns: auto auto;
+  gap: 4px;
+  align-items: center;
+  background: color-mix(in srgb, var(--powerup-color, var(--stage-accent)) 14%, rgba(5, 10, 13, 0.72));
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--powerup-color, var(--stage-accent)) var(--powerup-progress, 100%), transparent);
+  color: #fff;
+  font-size: 8px;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+.powerup-chip i {
+  color: var(--powerup-color, var(--stage-accent));
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  text-shadow: 0 0 8px currentColor;
+}
+
 .run-telemetry {
   display: flex;
-  margin-top: 6px;
+  margin-top: 2px;
   justify-content: flex-end;
   gap: 16px;
   font-variant-numeric: tabular-nums;

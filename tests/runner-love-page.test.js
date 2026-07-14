@@ -25,7 +25,7 @@ test("publishes the standalone runner with ordered domain modules and one full-s
 
 test("renders a compact seven-stage journey HUD without exposing implementation requirements", () => {
   assert.equal((html.match(/<li(?: class="is-current")?>/g) || []).length, 7);
-  for (const token of ["data-condition", "data-progress", "data-combo", "data-cargo", "data-destination", "data-route-message", "data-arrival", "data-result"]) assert.ok(html.includes(token), token);
+  for (const token of ["data-condition", "data-progress", "data-combo", "data-cargo", "data-destination", "data-speed-state", "data-speed-label", "data-speed-fill", "data-powerup-rack", "data-route-message", "data-arrival", "data-result"]) assert.ok(html.includes(token), token);
   for (const forbidden of ["需求", "实现说明", "GitHub Pages", "调试 API", "子代理", "WebAudio"]) assert.equal(html.includes(forbidden), false, forbidden);
   for (const retired of ["data-performance", "data-handhold", "data-reveal", "data-companion"]) assert.equal(html.includes(retired), false, retired);
 });
@@ -58,7 +58,7 @@ test("uses local cinematic scene art, local 3D models, and a cache-consistent re
   const versions = [...html.matchAll(/runner-love-[^"?]+\?v=([^"']+)/g)].map((match) => match[1]);
   assert.ok(versions.length >= 5);
   assert.equal(new Set(versions).size, 1);
-  assert.equal(versions[0], "runner-love-rush-20260714c");
+  assert.equal(versions[0], "runner-love-rush-20260714d");
 });
 
 test("result and checkpoint surfaces preserve route stats and immediate replay", () => {

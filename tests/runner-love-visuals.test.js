@@ -96,3 +96,61 @@ test("uses adaptive quality telemetry and reuses entity meshes for a sustained m
   assert.match(source, /bucket\.length < 5/);
   assert.match(source, /if \(!SHARED_GEOMETRIES\.has\(item\)\) item\.dispose/);
 });
+
+test("accepts event and render-state powerup contracts with missing-field fallbacks", () => {
+  for (const event of ["powerup-start", "powerup-end", "shield-block", "story-world", "story-synergy"]) {
+    assert.ok(source.includes(`type === "${event}"`), event);
+  }
+  for (const powerup of ["magnet", "shield", "multiplier", "overdrive"]) {
+    assert.ok(source.includes(`${powerup}: { remaining: 0, duration: 0 }`), powerup);
+  }
+  for (const alias of ["attraction", "guard", "score-multiplier", "x2", "turbo"]) assert.ok(source.includes(`${alias.includes("-") ? `"${alias}"` : alias}:`), alias);
+  assert.match(source, /readPowerupSnapshot\(powerups, target\)/);
+  assert.match(source, /if \(powerups === undefined \|\| powerups === null\) return false/);
+  assert.match(source, /this\.syncPowerupState\(motion\.powerups, delta\)/);
+  assert.match(source, /detail\.duration \?\? detail\.remaining \?\? detail\.timeLeft/);
+});
+
+test("renders each powerup as a lane-readable persistent visual", () => {
+  for (const token of [
+    "createPowerupVisualRig", "magnetArcs", "magnetBend", "shieldShell", "shieldRings",
+    "afterimages", "scorePulses", "ground-speed-wave", "speedWaves", "edgeFlow"
+  ]) assert.ok(source.includes(token), token);
+  assert.match(source, /x = THREE\.MathUtils\.lerp\(baseX, this\.currentLaneX, magnetBend\)/);
+  assert.match(source, /this\.camera\.position\.z[\s\S]*this\.powerupStrengths\.overdrive \* 0\.42/);
+  assert.match(source, /this\.edgeLight\.intensity = 1\.75 \+ overdriveStrength/);
+  assert.match(source, /new THREE\.InstancedMesh\(speedWaveGeometry, speedWaveMaterial, 6\)/);
+  assert.match(source, /new THREE\.InstancedMesh\(edgeFlowGeometry, edgeFlowMaterial, 20\)/);
+});
+
+test("pools block impacts and does not allocate Three.js resources during powerup updates", () => {
+  assert.match(source, /const POWERUP_IMPACT_POOL_SIZE = 4/);
+  assert.match(source, /this\.powerupEffectPool\[this\.powerupEffectCursor % this\.powerupEffectPool\.length\]/);
+  assert.match(source, /new THREE\.InstancedMesh\(impactShardGeometry, shardMaterial, 12\)/);
+  assert.match(source, /slot\.group\.visible = false/);
+  const updateStart = source.indexOf("  updatePowerupVisuals(delta, time, speed, arriving) {");
+  const updateEnd = source.indexOf("\n  preloadBackdrops()", updateStart);
+  assert.ok(updateStart > 0 && updateEnd > updateStart);
+  assert.doesNotMatch(source.slice(updateStart, updateEnd), /new THREE\./);
+  assert.match(source, /powerupGeometryCache/);
+  assert.match(source, /SHARED_GEOMETRIES\.add\(geometry\)/);
+});
+
+test("turns story collection and synergy into local, short-lived scene reactions", () => {
+  for (const token of [
+    "triggerStoryWorld", "storyRoadPatches", "localWeather", "storyWorldInfluence",
+    "triggerStorySynergy", "synergyWaves", "synergyInfluence"
+  ]) assert.ok(source.includes(token), token);
+  assert.match(source, /new THREE\.PointLight\(accent, 0, 8, 2\)/);
+  assert.match(source, /world\.changeType \|\| interaction\.changeType \|\| gameplay\.effect/);
+  assert.match(source, /const character = interaction\.character/);
+  assert.match(source, /character\.immediateAction \|\| character\.action/);
+  assert.match(source, /this\.storyWorldState\.gesture === "surge"/);
+  assert.match(source, /this\.storyWorldInfluence > 0\.001/);
+  assert.match(source, /interaction\.duration \?\? world\.duration \?\? gameplay\.durationMs/);
+  assert.match(source, /this\.storyWorldState\.kind === "umbrella"/);
+  assert.match(source, /this\.rain\.material\.opacity \*= 1 - this\.storyWorldInfluence/);
+  assert.match(source, /this\.flash = Math\.max\(this\.flash, 0\.34\)/);
+  assert.match(source, /this\.shake = Math\.max\(this\.shake, 0\.24\)/);
+  assert.match(source, /this\.speedPulse = Math\.max\(this\.speedPulse, 1\.18\)/);
+});

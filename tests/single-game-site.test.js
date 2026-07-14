@@ -128,7 +128,7 @@ test("billiards pins the independent physics and ball renderer before the game r
     "assets/billiards-surface-renderer.js",
     "assets/billiards-love-game.js"
   ]);
-  assert.equal(billiards.cacheVersion, "billiards-performance-cache-20260713e");
+  assert.equal(billiards.cacheVersion, "billiards-performance-cache-20260714f");
   assert.deepEqual(billiards.pendingFiles, ["assets/billiards-ball-renderer.js", "assets/billiards-surface-renderer.js"]);
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-ball-renderer.js"));
   assert.ok(gameContract.PENDING_GAME_FILES.includes("assets/billiards-surface-renderer.js"));
@@ -146,7 +146,7 @@ test("runner publishes its local Three.js renderer and complete dependency graph
     "assets/runner-love-visuals.js",
     "assets/runner-love-game.js"
   ]);
-  assert.equal(runner.cacheVersion, "runner-love-rush-20260714c");
+  assert.equal(runner.cacheVersion, "runner-love-rush-20260714d");
   assert.equal(runner.pending, undefined);
   assert.deepEqual(runner.dependencies, [
     "assets/vendor/three-0.185.1.module.min.js",
@@ -230,9 +230,9 @@ test("site contract rejects hidden portal doors and retired lobby copy", () => {
 });
 
 test("site contract rejects reordered billiards layers and stale renderer cache versions", () => {
-  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-performance-cache-20260713e"></script>';
-  const surface = '  <script src="assets/billiards-surface-renderer.js?v=billiards-performance-cache-20260713e"></script>';
-  const game = '  <script src="assets/billiards-love-game.js?v=billiards-performance-cache-20260713e"></script>';
+  const renderer = '  <script src="assets/billiards-ball-renderer.js?v=billiards-performance-cache-20260714f"></script>';
+  const surface = '  <script src="assets/billiards-surface-renderer.js?v=billiards-performance-cache-20260714f"></script>';
+  const game = '  <script src="assets/billiards-love-game.js?v=billiards-performance-cache-20260714f"></script>';
 
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     `${renderer}\n${surface}\n${game}`,
@@ -240,7 +240,7 @@ test("site contract rejects reordered billiards layers and stale renderer cache 
   ));
   assertSiteValidatorRejectsMutation("game-billiards-love.html", (source) => source.replace(
     renderer,
-    renderer.replace("billiards-performance-cache-20260713e", "billiards-love-stale")
+    renderer.replace("billiards-performance-cache-20260714f", "billiards-love-stale")
   ));
   assert.match(read("game-billiards-love.html"), new RegExp(`${surface.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*${game.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
 });

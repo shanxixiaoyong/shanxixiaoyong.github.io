@@ -9,8 +9,8 @@ const html = read("game-billiards-love.html");
 const css = read("assets/billiards-love.css");
 const game = read("assets/billiards-love-game.js");
 const surfaceRenderer = read("assets/billiards-surface-renderer.js");
-const runtimeCacheVersion = "billiards-performance-cache-20260713e";
-const styleCacheVersion = "billiards-performance-cache-20260713e";
+const runtimeCacheVersion = "billiards-performance-cache-20260714f";
+const styleCacheVersion = "billiards-performance-cache-20260714f";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -485,10 +485,10 @@ test("shows a conic-gradient proportional power arc around the cue ball", () => 
   assert.doesNotMatch(game, /Math\.round\(aimPower \* 100\)|Math\.round\(pointerAim\.pullRatio \* 100\)/);
 });
 
-test("separates the physical cushion bands from the cloth with a brighter beveled face", () => {
+test("separates the physical cushion bands from the cloth with a neutral beveled face", () => {
   assert.match(game, /const tones = material\.kind === "jaw"/);
   assert.match(game, /\["#0c121c", "#536277", "#172230"\]/);
-  assert.match(game, /context\.strokeStyle = "rgba\(199, 230, 255, 0\.82\)"/);
+  assert.match(game, /context\.strokeStyle = "rgba\(187, 203, 211, 0\.38\)"/);
   assert.match(game, /material\.id === "top"/);
   assert.match(game, /material\.id\.startsWith\("left"\)/);
 });

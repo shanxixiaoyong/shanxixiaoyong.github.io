@@ -129,7 +129,7 @@ test("renders layered wood, wool, rubber, metal, leather, and deep pocket materi
   assert.doesNotMatch(source, /context\.setLineDash\(\[2, 3\]\)/);
   assert.match(source, /context\.shadowBlur = 12/);
   assert.match(source, /\["#0c121c", "#536277", "#172230"\]/);
-  assert.match(source, /context\.strokeStyle = "rgba\(199, 230, 255, 0\.82\)"/);
+  assert.match(source, /context\.strokeStyle = "rgba\(187, 203, 211, 0\.38\)"/);
   assert.doesNotMatch(source, /context\.translate\(pocket\.mouthX, pocket\.mouthY\)/);
   assert.doesNotMatch(source, /context\.scale\(0\.18, 1\)/);
   assert.match(source, /POCKETS\.forEach\(drawLeatherPocket\)/);
@@ -477,6 +477,23 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
   assert.doesNotMatch(materialInfluence, /moveTo\(trail\.x1|lineTo\(trail\.x2|traceGroupedPath/);
   assert.match(cushionLight, /let brightness = 0;/);
   assert.doesNotMatch(cushionLight, /0\.052|globalIndex/);
+});
+
+test("renders each physical cushion as one continuous material-matched light wave", () => {
+  const cushionLight = implementationOf(source, "renderCushionLightResponse");
+  const cushionRubber = implementationOf(source, "drawCushionRubber");
+
+  assert.match(cushionLight, /const sampleLight = \(centerDistance\) =>/);
+  assert.match(cushionLight, /const wakeShape = wakeLag > 0/);
+  assert.match(cushionLight, /const samples = \[\]/);
+  assert.match(cushionLight, /wash\.addColorStop\(sample\.ratio/);
+  assert.match(cushionLight, /halo\.addColorStop\(sample\.ratio/);
+  assert.match(cushionLight, /core\.addColorStop\(sample\.ratio/);
+  assert.match(cushionLight, /context\.rect\(-length \/ 2, -thickness \/ 2, length, thickness\);\s*context\.clip\(\);/);
+  assert.match(cushionLight, /context\.lineWidth = thickness \* 0\.68/);
+  assert.match(cushionLight, /const impactLife = clamp\(1 - wave\.ageMs/);
+  assert.doesNotMatch(cushionLight, /for \(let segment|segmentLength|setLineDash/);
+  assert.doesNotMatch(cushionRubber, /rgba\(199, 230, 255, 0\.82\)/);
 });
 
 test("choreographs the black-eight finale through physical cushions and visible pockets", () => {

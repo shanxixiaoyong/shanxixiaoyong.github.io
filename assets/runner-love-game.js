@@ -86,12 +86,22 @@
     Object.freeze({ barrier: "barrier", cart: "service-cart", gate: "signal-gate", train: "train" })
   ]);
 
+  const POWERUP_META = Object.freeze({
+    magnet: Object.freeze({ glyph: "◎", label: "牵引", color: "#66e5ff" }),
+    shield: Object.freeze({ glyph: "◇", label: "守护", color: "#9fffc8" }),
+    multiplier: Object.freeze({ glyph: "×2", label: "共振", color: "#ffd36b" }),
+    overdrive: Object.freeze({ glyph: "»", label: "奔赴", color: "#ff7f6b" })
+  });
+  const SPEED_LABELS = Object.freeze(["起跑", "加速", "疾行", "冲刺", "极速"]);
+
   const ui = {
     intro: $("[data-intro]"), result: $("[data-result]"), arrival: $("[data-arrival]"), toast: $("[data-toast]"),
     stageKicker: $("[data-stage-kicker]"), stageName: $("[data-stage-name]"), condition: $("[data-condition]"),
     conditionFill: $("[data-condition-fill]"), progress: $("[data-progress]"), progressFill: $("[data-progress-fill]"),
     combo: $("[data-combo]"), stageTrack: $("[data-stage-track]"), announcer: $("[data-announcer]"),
     savedRun: $("[data-saved-run]"), cargo: $("[data-cargo]"), destination: $("[data-destination]"),
+    speedState: $("[data-speed-state]"), speedLabel: $("[data-speed-label]"), speedFill: $("[data-speed-fill]"),
+    powerupRack: $("[data-powerup-rack]"),
     routeMessage: $("[data-route-message]"), routeCopy: $("[data-route-copy]"), routeTime: $("[data-route-time]"),
     arrivalKicker: $("[data-arrival-kicker]"), arrivalTitle: $("[data-arrival-title]"), arrivalCopy: $("[data-arrival-copy]"),
     grade: $("[data-grade]"), endingTitle: $("[data-ending-title]"), endingCopy: $("[data-ending-copy]"),
@@ -277,6 +287,9 @@
   let routePhase = -1;
   let flowEnergy = 0;
   let flowPeak = 0;
+  let storyEchoes = [];
+  let lastSpeedTier = -1;
+  let powerupHudSignature = "";
 
   function createMotion() {
     return engineApi.createEngine({
@@ -284,9 +297,9 @@
       duration: 3600,
       finaleSeconds: 0,
       manualStages: true,
-      startSpeed: 15.2,
-      maxSpeed: 29.5,
-      acceleration: 0.07,
+      startSpeed: 14.8,
+      maxSpeed: 31.5,
+      acceleration: 0.018,
       laneChangeDuration: 0.11,
       jumpDuration: 0.66,
       jumpHeight: 2,
@@ -387,6 +400,52 @@
     ui.cargo.hidden = items.length === 0;
   }
 
+  function updateRunFeedback() {
+    const speedTier = Math.max(0, Math.min(4, Math.trunc(Number(motion.state.speedTier) || 0)));
+    const speedProgress = motion.state.powerups?.overdrive?.active
+      ? 1
+      : Math.max(0.02, Math.min(1, Number(motion.state.speedProgress) || 0));
+    if (ui.speedState) ui.speedState.setAttribute("data-tier", String(speedTier));
+    if (ui.speedLabel) ui.speedLabel.textContent = SPEED_LABELS[speedTier];
+    if (ui.speedFill) ui.speedFill.style.transform = `scaleX(${speedProgress})`;
+
+    const activePowerups = Object.entries(motion.state.powerups || {})
+      .filter(([, powerup]) => powerup?.active && Number(powerup.remaining) > 0)
+      .map(([type, powerup]) => {
+        const remaining = Number(powerup.remaining) || 0;
+        const duration = Math.max(remaining, Number(powerup.duration) || remaining || 1);
+        return { type, remaining, progress: Math.max(0, Math.min(1, remaining / duration)) };
+      });
+    const signature = activePowerups.map(({ type, remaining }) => `${type}:${Math.ceil(remaining * 4)}`).join("|");
+    if (!ui.powerupRack || signature === powerupHudSignature) return;
+    powerupHudSignature = signature;
+    ui.powerupRack.innerHTML = "";
+    activePowerups.forEach(({ type, progress }) => {
+      const meta = POWERUP_META[type];
+      if (!meta) return;
+      const chip = document.createElement("span");
+      chip.className = "powerup-chip";
+      chip.style.setProperty("--powerup-color", meta.color);
+      chip.style.setProperty("--powerup-progress", `${Math.round(progress * 100)}%`);
+      chip.innerHTML = `<i>${meta.glyph}</i><b>${meta.label}</b>`;
+      ui.powerupRack.appendChild(chip);
+    });
+  }
+
+  function signalSpeedTier() {
+    const nextTier = Math.max(0, Math.min(4, Math.trunc(Number(motion.state.speedTier) || 0)));
+    if (motion.state.powerups?.overdrive?.active) return;
+    if (lastSpeedTier >= 0 && nextTier > lastSpeedTier && mode === "playing") {
+      const labels = ["", "城市节拍正在提速", "风景开始向后流动", "脚步进入冲刺节奏", "此刻只管向前"];
+      toast(labels[nextTier], 1250);
+      visualRuntime?.effect("energy", { lane: motion.state.lane, z: 1.4, speedTier: nextTier });
+      audio.powerup?.("overdrive", "sustain");
+      addFlow(5 + nextTier * 2);
+      haptic(nextTier >= 3 ? [7, 18, 9] : 7);
+    }
+    lastSpeedTier = nextTier;
+  }
+
   function updateRoutePhase(force = false) {
     const definition = rules.STAGES[currentStageIndex()];
     const progressRatio = runState.stage.progress / Math.max(1, definition.target);
@@ -447,6 +506,9 @@
     routePhase = -1;
     flowEnergy = 0;
     flowPeak = 0;
+    storyEchoes = [];
+    lastSpeedTier = -1;
+    powerupHudSignature = "";
     completionSaved = false;
     clearTimeout(routeMessageTimer);
     show(ui.routeMessage, false);
@@ -455,6 +517,7 @@
     show(ui.intro, true);
     visualRuntime?.clearCarry?.();
     updateHud();
+    updateRunFeedback();
     return snapshot();
   }
 
@@ -466,6 +529,7 @@
     show(ui.intro, false);
     show(ui.result, false);
     updateHud();
+    updateRunFeedback();
     syncCarryFromState();
     showRouteMessage(currentStage());
     announce(`${currentStage().destination}，出发`);
@@ -540,6 +604,7 @@
     [-1, 0, 1].forEach((lane, laneOffset) => {
       const itemId = itemIds[(patternCursor + laneOffset + stageIndex) % itemIds.length];
       const item = content.getItem(itemId);
+      const interactionProfile = content.getInteractionProfile(itemId);
       motion.spawn({
         type: "route-choice",
         lane,
@@ -559,7 +624,8 @@
           kind: item.kind,
           color: item.color,
           label: item.name,
-          line: item.line
+          line: item.line,
+          interactionProfile
         }
       });
     });
@@ -588,25 +654,37 @@
     const item = content.getItem(entity.itemId || entity.data?.itemId);
     const timing = Math.abs((beatClock % 0.78) - 0.39);
     const outcome = timing < 0.14 ? "perfect" : "good";
-    visualRuntime?.effect("story-pickup", { ...entity, item });
+    const interaction = content.resolveCollectionInteraction({
+      itemId: item.id,
+      collectedItemIds: runState.collectedItems,
+      combo: runState.combo + 1,
+      stageIndex: currentStageIndex()
+    });
+    const effect = interaction.gameplay.effect;
+    const duration = interaction.gameplay.durationMs / 1000;
+    const powerupOptions = { duration };
+    if (effect === "magnet") powerupOptions.laneRange = 1;
+    if (effect === "multiplier") powerupOptions.factor = interaction.gameplay.multiplier.scoreMultiplier;
+    if (effect === "overdrive") powerupOptions.speedBoost = Math.max(2.4, (interaction.gameplay.overdrive.speedMultiplier - 1) * 12);
+    const presentation = { ...interaction, item, lane: entity.lane, z: entity.z, duration };
+
+    motion.activatePowerup?.(effect, powerupOptions);
+    visualRuntime?.effect("story-pickup", { ...entity, item, interaction });
+    visualRuntime?.effect("story-world", presentation);
     visualRuntime?.carry?.(item);
     audio.cue(outcome, item.kind);
+    audio.interaction?.(interaction);
+    if (interaction.synergy.active.length) {
+      visualRuntime?.effect("story-synergy", presentation);
+      addFlow(12 + interaction.synergy.active.length * 4);
+      haptic([10, 20, 12, 28, 16]);
+    }
+    spawnInteractionTrail(effect, interaction.gameplay.strength);
+    scheduleStoryEchoes(interaction, item);
     addFlow(outcome === "perfect" ? 24 : 17);
     haptic(outcome === "perfect" ? [12, 22, 16] : 12);
-    const feedback = {
-      listen: "旋律接入奔跑节拍", photo: "快门定格这一秒", share: "顺手带上一起分享",
-      shelter: "雨幕从身侧分开", drink: "接住沿途的清凉", read: "书页随风翻开",
-      gift: "稳稳接进手中", unlock: "前方灯光逐盏亮起", remember: "这一刻被认真收好",
-      dance: "脚步踩中音乐重拍", carry: "带着它继续赶路", plan: "路线在眼前展开",
-      return: "熟悉的东西重新回到手里", offer: "递出的瞬间刚好被接住", toast: "杯沿轻碰，晚风正好",
-      feed: "街角的小家伙追了上来", write: "一句话被风认真收好", admit: "犹豫终于变成了答案",
-      detour: "临时改道却遇见新的风景", wander: "拐进一条从没走过的小路", light: "一盏灯提前为你亮起",
-      breakfast: "清晨的香气跟上脚步", cook: "把今晚需要的东西带齐", place: "它有了一个合适的位置",
-      "set-table": "两个人的位置都准备好了", explain: "散乱的话终于找到顺序", warm: "冷雨被一点暖意推开",
-      care: "被忽略的细节重新接上", wait: "步子慢下来，没有错过", trust: "不看提示也敢向前",
-      home: "远处那扇窗亮了起来", grow: "新的叶子在光里舒展开"
-    };
-    toast(`${item.name} · ${feedback[item.action] || "带着它继续向前"}`, 1550);
+    const synergyName = interaction.synergy.active[0]?.name;
+    toast(synergyName ? `${synergyName} · ${interaction.narrative.currentEvent}` : interaction.narrative.currentEvent, synergyName ? 2200 : 1850);
     applyMoment({
       outcome,
       kind: "story-item",
@@ -615,17 +693,85 @@
     });
   }
 
+  function spawnInteractionTrail(effect, strength) {
+    const count = effect === "magnet" ? 9 : effect === "multiplier" ? 8 : effect === "overdrive" ? 10 : 7;
+    const baseZ = 11;
+    for (let index = 0; index < count; index += 1) {
+      const lane = effect === "magnet"
+        ? [-1, 1, 0][index % 3]
+        : effect === "multiplier"
+          ? [-1, 0, 1, 0][index % 4]
+          : effect === "shield"
+            ? [motion.state.lane, motion.state.lane, -motion.state.lane || 1][index % 3]
+            : motion.state.lane;
+      motion.spawn({
+        type: "collectible",
+        lane,
+        z: baseZ + index * (effect === "overdrive" ? 2.45 : 2.9),
+        points: Math.round(5 + Number(strength || 0) * 7),
+        arc: effect === "magnet" ? Math.sin(index * 1.2) * 0.42 : effect === "multiplier" ? (index % 2) * 0.32 : 0,
+        data: { powerupTrail: effect }
+      });
+    }
+  }
+
+  function scheduleStoryEchoes(interaction, item) {
+    const lines = interaction.narrative.laterEchoes.filter(Boolean).slice(0, interaction.synergy.active.length ? 2 : 1);
+    lines.forEach((line, index) => {
+      storyEchoes.push({
+        atDistance: motion.state.distance + 46 + index * 28,
+        line,
+        item,
+        interaction
+      });
+    });
+    storyEchoes.sort((left, right) => left.atDistance - right.atDistance);
+    if (storyEchoes.length > 6) storyEchoes.splice(6);
+  }
+
+  function processStoryEchoes() {
+    if (!storyEchoes.length || motion.state.distance < storyEchoes[0].atDistance) return;
+    const echo = storyEchoes.shift();
+    const interaction = {
+      ...echo.interaction,
+      item: echo.item,
+      duration: 1.9,
+      world: { ...echo.interaction.world, intensity: Math.max(0.35, echo.interaction.world.intensity * 0.58) },
+      music: { ...echo.interaction.music, intensity: Math.max(0.3, echo.interaction.music.intensity * 0.52) },
+      synergy: { ...echo.interaction.synergy, active: [] }
+    };
+    visualRuntime?.effect("story-world", interaction);
+    audio.interaction?.(interaction);
+    toast(echo.line, 2100);
+    announce(echo.line);
+  }
+
   function handleMotionEvents(events) {
     events.forEach((event) => {
       if (event.type === "collect") {
         if (["story-item", "route-choice"].includes(event.entity.type)) collectStoryItem(event.entity);
         else if (event.entity.type === "collectible") {
-          addFlow(7 + Math.min(5, runState.combo));
+          const magnetPickup = event.source === "magnet";
+          addFlow((magnetPickup ? 10 : 7) + Math.min(5, runState.combo));
           motion.boost?.(0.7, 0.72);
-          visualRuntime?.effect("energy", event.entity);
+          visualRuntime?.effect("energy", { ...event.entity, source: event.source, multiplier: event.multiplier });
           audio.cue("energy");
+          if (magnetPickup) audio.powerup?.("magnet", "sustain");
+          if (event.multiplier > 1) audio.powerup?.("multiplier", "sustain");
           haptic(5);
         }
+      } else if (event.type === "powerup-start") {
+        visualRuntime?.effect("powerup-start", event);
+        audio.powerup?.(event.powerup, "start");
+      } else if (event.type === "powerup-end") {
+        visualRuntime?.effect("powerup-end", event);
+        audio.powerup?.(event.powerup, "end");
+      } else if (event.type === "shield-block") {
+        visualRuntime?.effect("shield-block", event);
+        audio.powerup?.("shield", "block");
+        addFlow(9);
+        haptic([18, 24, 9]);
+        toast("守护替你接住了这次碰撞", 1300);
       } else if (event.type === "collision") {
         visualRuntime?.effect("miss", event.entity);
         audio.cue("miss");
@@ -758,6 +904,9 @@
     beatClock = 0;
     flowEnergy = 0;
     flowPeak = 0;
+    storyEchoes = [];
+    lastSpeedTier = -1;
+    powerupHudSignature = "";
     visualRuntime?.clearCarry?.();
     syncCarryFromState();
     updateHud();
@@ -774,13 +923,12 @@
     beatClock += seconds;
     if (mode === "arrival") {
       arrivalElapsed = Math.min(arrivalDuration, arrivalElapsed + seconds);
-      audio.tick(seconds, 0, true, true, flowEnergy / 100);
+      audio.tick(seconds, 0, true, true, flowEnergy / 100, motion.state.speedTier);
       if (arrivalElapsed >= arrivalDuration) finishArrival();
       return;
     }
     if (mode !== "playing") return;
     flowEnergy = Math.max(0, flowEnergy - seconds * (flowEnergy > 72 ? 3.2 : 1.35));
-    audio.tick(seconds, motion.state.speed, true, false, flowEnergy / 100);
     spawnClock -= seconds;
     if (spawnClock <= 0) {
       const spawned = spawnPattern();
@@ -788,6 +936,13 @@
     }
     motion.step(seconds);
     handleMotionEvents(motion.drainEvents());
+    signalSpeedTier();
+    processStoryEchoes();
+    updateRunFeedback();
+    audio.tick(seconds, motion.state.speed, true, false, flowEnergy / 100, motion.state.speedTier);
+    Object.entries(motion.state.powerups || {}).forEach(([type, powerup]) => {
+      if (powerup?.active) audio.powerup?.(type, "sustain");
+    });
     if (mode === "playing") {
       syncMotionStage(false);
       advanceRulesTime(seconds);
@@ -938,6 +1093,11 @@
         action: motion.state.action,
         distance: motion.state.distance,
         speed: motion.state.speed,
+        score: motion.state.score,
+        collected: motion.state.collected,
+        speedProgress: motion.state.speedProgress,
+        speedTier: motion.state.speedTier,
+        powerups: clone(motion.state.powerups),
         stumbleTime: motion.state.stumbleTime,
         dodges: motion.state.dodges,
         nearMisses: motion.state.nearMisses,
@@ -956,6 +1116,7 @@
     step: debugStep,
     input,
     spawn: (spec) => motion.spawn(spec),
+    powerup: (type, options) => motion.activatePowerup(type, options),
     moment: applyMoment,
     beat: (outcome) => applyMoment({ outcome }),
     completeStage,

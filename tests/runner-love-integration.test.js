@@ -70,6 +70,31 @@ test("routes gameplay events into carried props, audiovisual feedback, and arriv
   assert.match(source, /audio\.cue\("arrival"/);
 });
 
+test("turns story collections into gameplay powerups, world changes, and later narrative echoes", () => {
+  assert.match(source, /content\.resolveCollectionInteraction/);
+  assert.match(source, /motion\.activatePowerup\?\./);
+  assert.match(source, /spawnInteractionTrail\(effect, interaction\.gameplay\.strength\)/);
+  assert.match(source, /scheduleStoryEchoes\(interaction, item\)/);
+  assert.match(source, /function processStoryEchoes\(\)/);
+  assert.match(source, /visualRuntime\?\.effect\("story-world"/);
+  assert.match(source, /visualRuntime\?\.effect\("story-synergy"/);
+  assert.match(source, /audio\.interaction\?\.\(interaction\)/);
+  for (const powerup of ["magnet", "shield", "multiplier", "overdrive"]) assert.ok(source.includes(`${powerup}: Object.freeze`), powerup);
+});
+
+test("surfaces progressive speed tiers and the active powerup lifecycle", () => {
+  assert.match(source, /acceleration:\s*0\.018/);
+  assert.match(source, /motion\.state\.speedProgress/);
+  assert.match(source, /motion\.state\.speedTier/);
+  assert.match(source, /function signalSpeedTier\(\)/);
+  assert.match(source, /if \(motion\.state\.powerups\?\.overdrive\?\.active\) return/);
+  assert.match(source, /function updateRunFeedback\(\)/);
+  assert.match(source, /event\.type === "powerup-start"/);
+  assert.match(source, /event\.type === "powerup-end"/);
+  assert.match(source, /event\.type === "shield-block"/);
+  assert.match(source, /audio\.tick\(seconds, motion\.state\.speed, true, false, flowEnergy \/ 100, motion\.state\.speedTier\)/);
+});
+
 test("provides local WebAudio, checksummed saves, adaptive resize, and BFCache lifecycle", () => {
   assert.match(source, /window\.RunnerLoveAudio\?\.create\?\.\(\)/);
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);

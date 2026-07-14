@@ -22,7 +22,7 @@ export const GAME_CONTRACTS = [
     name: "幻彩桌球",
     portalAsset: "assets/portal/billiards-chroma-portrait-hd.jpg",
     portalDesktopAsset: "assets/portal/billiards-chroma-hd.jpg",
-    cacheVersion: "billiards-performance-cache-20260713e",
+    cacheVersion: "billiards-performance-cache-20260714f",
     pendingFiles: ["assets/billiards-ball-renderer.js", "assets/billiards-surface-renderer.js"],
     styles: ["assets/billiards-love.css"],
     scripts: [
@@ -38,7 +38,7 @@ export const GAME_CONTRACTS = [
     file: RUNNER_GAME_PAGE,
     name: "心动跑酷",
     portalAsset: "assets/portal/heartbeat-runner-hd.jpg",
-    cacheVersion: "runner-love-rush-20260714c",
+    cacheVersion: "runner-love-rush-20260714d",
     styles: ["assets/runner-love.css"],
     scripts: [
       "assets/runner-love-rules.js",

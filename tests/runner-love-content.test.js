@@ -7,7 +7,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const Content = require("../assets/runner-love-content.js");
-const CATALOGS = ["STAGES", "STORY_ITEMS", "STAGE_ITEM_IDS", "ROUTE_SET_PIECES", "ARRIVAL_SCENES", "COLLECTIBLES", "OBSTACLES", "ROAD_MODULES", "STAGE_PERFORMANCES", "STAGE_ENDINGS"];
+const CATALOGS = ["STAGES", "STORY_ITEMS", "STAGE_ITEM_IDS", "ROUTE_SET_PIECES", "ARRIVAL_SCENES", "COLLECTIBLES", "OBSTACLES", "ROAD_MODULES", "STAGE_PERFORMANCES", "STAGE_ENDINGS", "GAMEPLAY_EFFECTS", "INTERACTION_COMBINATIONS"];
 
 function assertDeepFrozen(value, label) {
   if (typeof value === "function") return;
@@ -21,7 +21,56 @@ test("exports a complete deeply frozen seven-stage rendezvous journey", () => {
   assert.deepEqual(Content.STAGES.map((stage) => stage.destination), ["图书馆路口", "桥下书店", "旧城电影院", "河岸长椅", "亮灯的厨房", "河桥雨棚", "有灯的家"]);
   CATALOGS.forEach((key) => assert.ok(Content[key].length > 0, `${key} must not be empty`));
   assert.deepEqual(Object.keys(Content.FINAL_ENDINGS), ["S", "A", "B"]);
+  assert.equal(Object.keys(Content.INTERACTION_PROFILES).length, Content.STORY_ITEMS.length);
   assertDeepFrozen(Content, "Content");
+});
+
+test("gives every story item a concrete queryable six-dimensional interaction profile", () => {
+  const seenEffects = new Set();
+  const seenEvents = new Set();
+  assert.deepEqual(Object.keys(Content.INTERACTION_PROFILES), Content.STORY_ITEMS.map((item) => item.id));
+
+  Content.STORY_ITEMS.forEach((item) => {
+    const profile = Content.getInteractionProfile(item.id);
+    assert.strictEqual(profile, item.interactionProfile, item.id);
+    assert.strictEqual(profile, Content.INTERACTION_PROFILES[item.id], item.id);
+    assert.equal(profile.itemId, item.id);
+    assert.equal(profile.stage, item.stage);
+    assertDeepFrozen(profile, `profile.${item.id}`);
+
+    assert.ok(Content.GAMEPLAY_EFFECTS.includes(profile.gameplay.effect), item.id);
+    assert.equal(profile.gameplay.type, profile.gameplay.effect);
+    assert.ok(profile.gameplay.strength > 0 && profile.gameplay.strength <= 1, item.id);
+    assert.ok(profile.gameplay.durationMs >= 3000, item.id);
+    Content.GAMEPLAY_EFFECTS.forEach((effect) => {
+      const channel = profile.gameplay[effect];
+      assert.equal(channel.active, effect === profile.gameplay.effect, `${item.id}.${effect}`);
+      assert.equal(channel.strength, channel.active ? profile.gameplay.strength : 0, `${item.id}.${effect}`);
+      assert.equal(channel.durationMs, channel.active ? profile.gameplay.durationMs : 0, `${item.id}.${effect}`);
+    });
+
+    assert.ok(profile.world.changeType.length > 3, item.id);
+    assert.ok(profile.world.roadChange.length >= 12, item.id);
+    assert.ok(profile.world.environmentChange.length >= 12, item.id);
+    assert.ok(profile.music.layer.length > 3, item.id);
+    assert.ok(profile.music.timbre.length > 3, item.id);
+    assert.ok(profile.character.immediateAction.length >= 10, item.id);
+    assert.ok(profile.character.emotion.length >= 4, item.id);
+    assert.ok(profile.narrative.currentEvent.length >= 16, item.id);
+    assert.ok(profile.narrative.laterEcho.length >= 16, item.id);
+    assert.ok(profile.narrative.memoryTags.length >= 3, item.id);
+    assert.ok(profile.synergy.combinations.length >= 1, item.id);
+    profile.synergy.combinations.forEach((combination) => {
+      assert.ok(combination.withItemIds.length >= 1, `${item.id}.${combination.id}`);
+      combination.withItemIds.forEach((partnerId) => assert.ok(Content.INTERACTION_PROFILES[partnerId], partnerId));
+    });
+
+    seenEffects.add(profile.gameplay.effect);
+    seenEvents.add(profile.narrative.currentEvent);
+  });
+
+  assert.deepEqual([...seenEffects].sort(), [...Content.GAMEPLAY_EFFECTS].sort());
+  assert.equal(seenEvents.size, Content.STORY_ITEMS.length);
 });
 
 test("gives every stage a distinct route, destination performance, and at least five physical story items", () => {
@@ -74,17 +123,93 @@ test("selectors are deterministic and arrival details depend on carried items", 
   assert.equal(arrival.line, Content.getItem(arrival.itemId).line);
 });
 
+test("resolves collection context deterministically across all interaction dimensions", () => {
+  const baseline = Content.resolveCollectionInteraction({
+    itemId: "dropped-photo",
+    collectedItemIds: [],
+    combo: 0,
+    stageIndex: 0
+  });
+  const resolved = Content.resolveCollectionInteraction({
+    itemId: "dropped-photo",
+    collectedItemIds: ["framed-photo", "warm-can", "framed-photo"],
+    combo: 12,
+    stageIndex: 0
+  });
+  const reordered = Content.resolveCollectionInteraction({
+    itemId: "dropped-photo",
+    collectedItemIds: ["warm-can", "framed-photo"],
+    combo: 12,
+    stageIndex: 0
+  });
+
+  assert.deepEqual(resolved, reordered);
+  assertDeepFrozen(resolved, "resolved");
+  assert.equal(baseline.synergy.active.length, 0);
+  assert.equal(resolved.comboTier, "flow");
+  assert.equal(resolved.stageRelation, "current");
+  assert.equal(resolved.gameplay.effect, "magnet");
+  assert.ok(resolved.gameplay.strength > baseline.gameplay.strength);
+  assert.ok(resolved.gameplay.durationMs > baseline.gameplay.durationMs);
+  assert.deepEqual(resolved.synergy.active.map((entry) => entry.id), ["photo-home-arc"]);
+  assert.deepEqual(resolved.synergy.matchedItemIds, ["framed-photo"]);
+  assert.equal(resolved.world.synergyChanges[0].changeType, "memory-gallery");
+  assert.deepEqual(resolved.music.layers, ["memory-pulse", "photo-reprise"]);
+  assert.equal(resolved.character.synergyActions[0].emotion, "珍惜而笃定");
+  assert.ok(resolved.narrative.memoryTags.includes("照片回环"));
+  assert.equal(resolved.narrative.synergyEvents[0].id, "photo-home-arc");
+});
+
+test("activates every declared combination from either participating item", () => {
+  Content.INTERACTION_COMBINATIONS.forEach((combination) => {
+    assert.equal(combination.itemIds.length, 2, combination.id);
+    const [leftId, rightId] = combination.itemIds;
+    const left = Content.resolveCollectionInteraction({ itemId: leftId, collectedItemIds: [rightId], combo: 7, stageIndex: Content.getItem(leftId).stage - 1 });
+    const right = Content.resolveCollectionInteraction({ itemId: rightId, collectedItemIds: [leftId], combo: 7, stageIndex: Content.getItem(rightId).stage - 1 });
+    assert.ok(left.synergy.active.some((entry) => entry.id === combination.id), `${combination.id} left`);
+    assert.ok(right.synergy.active.some((entry) => entry.id === combination.id), `${combination.id} right`);
+    assert.ok(left.synergy.strengthBonus > 0, combination.id);
+    assert.ok(right.synergy.durationBonusMs > 0, combination.id);
+  });
+});
+
+test("uses bounded combo and stage context without mutating the base profile", () => {
+  const profile = Content.getInteractionProfile("paperback");
+  const snapshot = JSON.stringify(profile);
+  const current = Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: [], combo: 6, stageIndex: 1 });
+  const echo = Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: [], combo: 6, stageIndex: 6 });
+  const capped = Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: [], combo: 1000, stageIndex: 1 });
+  const capBoundary = Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: [], combo: 30, stageIndex: 1 });
+
+  assert.equal(current.comboTier, "linked");
+  assert.equal(current.stageRelation, "current");
+  assert.equal(echo.stageRelation, "echo");
+  assert.ok(current.gameplay.strength >= echo.gameplay.strength);
+  assert.equal(capped.gameplay.strength, capBoundary.gameplay.strength);
+  assert.equal(capped.gameplay.durationMs, capBoundary.gameplay.durationMs);
+  assert.equal(JSON.stringify(profile), snapshot);
+});
+
 test("lookups and selectors reject invalid input", () => {
   assert.strictEqual(Content.getStage(1), Content.STAGES[0]);
   assert.strictEqual(Content.getStage("toward-home"), Content.STAGES[6]);
   assert.strictEqual(Content.getCollectible(1), Content.COLLECTIBLES[0]);
   assert.throws(() => Content.getStage(8), RangeError);
   assert.throws(() => Content.getItem("missing"), RangeError);
+  assert.throws(() => Content.getInteractionProfile(null), TypeError);
+  assert.throws(() => Content.getInteractionProfile("missing"), RangeError);
   assert.throws(() => Content.getCollectible({}), TypeError);
   assert.throws(() => Content.getEnding("C"), RangeError);
   assert.throws(() => Content.selectStageItem({ stage: 1, seed: 0, excludeIds: "bad" }), TypeError);
   assert.throws(() => Content.selectStageItem({ stage: 1, seed: 0, excludeIds: Content.STAGE_ITEM_IDS[0] }), RangeError);
   assert.throws(() => Content.selectArrival({ stage: 8 }), RangeError);
+  assert.throws(() => Content.resolveCollectionInteraction(), TypeError);
+  assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: "record" }), TypeError);
+  assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: ["missing"] }), RangeError);
+  assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", combo: 1.5 }), TypeError);
+  assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", combo: -1 }), RangeError);
+  assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", stageIndex: "1" }), TypeError);
+  assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", stageIndex: 7 }), RangeError);
 });
 
 test("publishes the same deeply frozen API through browser UMD", () => {
@@ -95,4 +220,9 @@ test("publishes the same deeply frozen API through browser UMD", () => {
   assert.deepEqual(Object.keys(browser.window.RunnerLoveContent), Object.keys(Content));
   assert.equal(browser.window.RunnerLoveContent.STORY_ITEMS.length, Content.STORY_ITEMS.length);
   assert.ok(Object.isFrozen(browser.window.RunnerLoveContent.ARRIVAL_SCENES));
+  const profile = browser.window.RunnerLoveContent.getInteractionProfile("window-lamp");
+  const resolved = browser.window.RunnerLoveContent.resolveCollectionInteraction({ itemId: "window-lamp", collectedItemIds: ["riverside-lamp"], combo: 9, stageIndex: 6 });
+  assert.equal(profile.music.layer, "window-light");
+  assert.equal(resolved.synergy.active[0].id, "lights-toward-home");
+  assert.ok(Object.isFrozen(resolved.narrative.memoryTags));
 });

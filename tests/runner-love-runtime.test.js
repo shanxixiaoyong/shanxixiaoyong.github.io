@@ -92,7 +92,7 @@ test("boots the real runtime in intro mode with the long-form seven-stage state"
   assert.equal(state.runState.condition, 100);
   assert.equal(state.runState.stage.expectedSeconds, 180);
   assert.equal(state.motion.stage, RunnerLoveContent.STAGES[0].id);
-  assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "finishArrival", "input", "moment", "reset", "retry", "save", "snapshot", "spawn", "start", "step"].sort());
+  assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "finishArrival", "input", "moment", "powerup", "reset", "retry", "save", "snapshot", "spawn", "start", "step"].sort());
 });
 
 test("accepts swipe-equivalent actions through the fixed-step three-lane engine", () => {

@@ -7,6 +7,7 @@
 
   const LANES = Object.freeze([-1, 0, 1]);
   const ACTIONS = Object.freeze({ LEFT: "left", RIGHT: "right", JUMP: "jump", SLIDE: "slide" });
+  const POWERUP_TYPES = Object.freeze(["magnet", "shield", "multiplier", "overdrive"]);
   const DEFAULT_STAGES = Object.freeze([
     { id: "meet", from: 0, modules: ["campus", "crosswalk"] },
     { id: "together", from: 0.34, modules: ["park", "cafe"] },
@@ -18,6 +19,8 @@
     spawnAhead: 90, despawnBehind: 5, collisionDepth: 0.85,
     laneChangeDuration: 0.16, jumpDuration: 0.76, jumpHeight: 1.9, slideDuration: 0.64,
     stumbleDuration: 0.62, invulnerabilityDuration: 1.05, collisionSpeedLoss: 3.2,
+    magnetDuration: 6, shieldDuration: 8, multiplierDuration: 6, overdriveDuration: 2.5,
+    scoreMultiplier: 2, overdriveSpeed: 5, overdriveAcceleration: 10, speedEaseOut: 5.5,
     stages: DEFAULT_STAGES
   });
 
@@ -58,17 +61,34 @@
     if (!Number.isInteger(index) || index < 0 || index >= config.stages.length) throw new RangeError("unknown stage");
     return index;
   }
+  function createPowerups() {
+    return {
+      magnet: { active: false, remaining: 0, duration: 0, laneRange: 1 },
+      shield: { active: false, remaining: 0, duration: 0, charges: 0 },
+      multiplier: { active: false, remaining: 0, duration: 0, factor: 1 },
+      overdrive: { active: false, remaining: 0, duration: 0, speed: 0 }
+    };
+  }
+  function ensurePowerups(state) {
+    if (!state.powerups || typeof state.powerups !== "object") state.powerups = {};
+    const defaults = createPowerups();
+    for (const type of POWERUP_TYPES) {
+      if (!state.powerups[type] || typeof state.powerups[type] !== "object") state.powerups[type] = defaults[type];
+    }
+    return state.powerups;
+  }
   function createState(options) {
     const config = mergeConfig(options);
     const stage = config.stages[0] || { id: "run", modules: ["road"] };
     return {
       config, seed: options && options.seed !== undefined ? options.seed : "runner-love",
       randomState: hashSeed(options && options.seed), accumulator: 0, ticks: 0, elapsed: 0,
-      distance: 0, speed: config.startSpeed, lane: 0, laneFrom: 0, lanePosition: 0,
+      distance: 0, runProgress: 0, progress: 0, speed: config.startSpeed, speedProgress: 0, speedTier: 0,
+      lane: 0, laneFrom: 0, lanePosition: 0,
       laneChangeTime: config.laneChangeDuration, vertical: 0, action: "run",
       actionTime: 0, entities: [], nextEntityId: 1, events: [], inputQueue: [],
       score: 0, collected: 0, hits: 0, dodges: 0, nearMisses: 0,
-      boostSpeed: 0, boostTime: 0,
+      boostSpeed: 0, boostTime: 0, powerups: createPowerups(),
       stumbleTime: 0, invulnerableTime: 0, routeChoices: {}, stageIndex: 0, stage: stage.id,
       moduleIndex: -1, modules: [], nextModuleDistance: 0, finale: false, finished: false
     };
@@ -164,9 +184,21 @@
     if (entity.height < 0.42) return true;
     return state.action === "jump" && state.vertical >= Math.max(0.42, entity.height * 0.5);
   }
-  function collect(state, entity) {
-    entity.collected = true; entity.active = false; state.collected += 1; state.score += entity.points;
-    emit(state, "collect", { entity });
+  function scoreFactor(state) {
+    const multiplier = state.powerups?.multiplier;
+    return multiplier?.active ? clamp(Number(multiplier.factor) || 1, 1, 10) : 1;
+  }
+  function awardScore(state, points) {
+    const base = Number(points) || 0;
+    const multiplier = scoreFactor(state);
+    const awarded = base * multiplier;
+    state.score += awarded;
+    return { awarded, multiplier };
+  }
+  function collect(state, entity, source) {
+    entity.collected = true; entity.active = false; state.collected += 1;
+    const reward = awardScore(state, entity.points);
+    emit(state, "collect", { entity, points: reward.awarded, multiplier: reward.multiplier, source: source || "contact" });
     if (entity.choiceGroup) {
       state.routeChoices[entity.choiceGroup] = entity.choiceId || entity.itemId || entity.id;
       state.entities.forEach((candidate) => {
@@ -180,36 +212,70 @@
       });
     }
   }
+  function powerupEventDetail(type, effect, detail) {
+    return {
+      powerup: type, powerupType: type,
+      powerupState: { ...effect },
+      ...(detail || {})
+    };
+  }
+  function endPowerup(state, type, reason) {
+    const effect = ensurePowerups(state)[type];
+    if (!effect.active) return false;
+    effect.active = false; effect.remaining = 0;
+    if (type === "shield") effect.charges = 0;
+    if (type === "multiplier") effect.factor = 1;
+    if (type === "overdrive") effect.speed = 0;
+    emit(state, "powerup-end", powerupEventDetail(type, effect, { reason: reason || "expired" }));
+    return true;
+  }
+  function blockWithShield(state, entity) {
+    const shield = state.powerups?.shield;
+    if (!shield?.active || shield.charges <= 0) return false;
+    shield.charges -= 1;
+    emit(state, "shield-block", powerupEventDetail("shield", shield, { entity, remainingCharges: shield.charges }));
+    if (shield.charges <= 0) endPowerup(state, "shield", "consumed");
+    return true;
+  }
+  function magnetReaches(state, entity) {
+    const magnet = state.powerups?.magnet;
+    return entity.type === "collectible" && magnet?.active
+      && Math.abs(entity.lane - state.lane) <= clamp(Number(magnet.laneRange) || 0, 0, 1) + 1e-9;
+  }
   function resolveEntities(state, dz) {
     for (const entity of state.entities) {
       if (!entity.active) continue;
       const previous = entity.z; entity.z -= dz;
       const crossed = previous > state.config.collisionDepth && entity.z <= state.config.collisionDepth;
       const laneAligned = Math.abs(entity.lane - state.lanePosition) < 0.42;
-      if (crossed && laneAligned) {
-        if (entity.type === "obstacle") {
-          if (isAvoided(state, entity)) {
-            state.dodges += 1;
-            emit(state, "dodge", { entity, action: state.action });
-          } else if (state.invulnerableTime <= 0) {
+      const magnetCollect = crossed && magnetReaches(state, entity);
+      if (crossed && entity.type === "obstacle" && laneAligned) {
+        if (isAvoided(state, entity)) {
+          state.dodges += 1;
+          emit(state, "dodge", { entity, action: state.action });
+        } else if (state.invulnerableTime <= 0) {
+          if (!blockWithShield(state, entity)) {
             entity.hit = true;
             state.hits += 1;
             state.stumbleTime = state.config.stumbleDuration;
             state.invulnerableTime = state.config.invulnerabilityDuration;
             state.speed = Math.max(state.config.startSpeed * 0.72, state.speed - state.config.collisionSpeedLoss);
             emit(state, "collision", { entity });
-          } else {
-            emit(state, "protected", { entity });
           }
-          entity.active = false;
-        } else if (canCollect(state, entity)) collect(state, entity);
+        } else {
+          emit(state, "protected", { entity });
+        }
+        entity.active = false;
+      } else if (crossed && entity.type !== "obstacle"
+          && (magnetCollect || (laneAligned && canCollect(state, entity)))) {
+        collect(state, entity, magnetCollect && !laneAligned ? "magnet" : "contact");
       } else if (crossed && entity.type === "obstacle" && entity.rewardNearMiss
           && Math.abs(entity.lane - state.lanePosition) >= 0.42
           && Math.abs(entity.lane - state.lanePosition) <= 1.25 && !entity.nearMissed) {
         entity.nearMissed = true;
         state.nearMisses += 1;
-        state.score += 2;
-        emit(state, "near-miss", { entity });
+        const reward = awardScore(state, 2);
+        emit(state, "near-miss", { entity, points: reward.awarded, multiplier: reward.multiplier });
       }
       if (entity.z < -state.config.despawnBehind) {
         if ((entity.type === "story-item" || entity.type === "route-choice") && !entity.collected) {
@@ -235,6 +301,67 @@
     if (state.boostSpeed > 0) emit(state, "boost", { amount: state.boostSpeed, duration: state.boostTime });
     return state;
   }
+  function optionNumber(options, names, fallback) {
+    for (const name of names) {
+      if (options[name] !== undefined && Number.isFinite(Number(options[name]))) return Number(options[name]);
+    }
+    return fallback;
+  }
+  function activatePowerup(state, type, options) {
+    if (!POWERUP_TYPES.includes(type)) throw new RangeError("unknown powerup");
+    const settings = options && typeof options === "object" ? options : {};
+    const powerups = ensurePowerups(state);
+    const effect = powerups[type];
+    const configuredDuration = Number(state.config[`${type}Duration`]) || state.config.fixedStep;
+    const requestedDuration = optionNumber(settings, ["duration"], configuredDuration);
+    const duration = Math.max(state.config.fixedStep, requestedDuration);
+    const refreshed = effect.active;
+    effect.active = true;
+    effect.remaining = Math.max(Number(effect.remaining) || 0, duration);
+    effect.duration = effect.remaining;
+    if (type === "magnet") {
+      effect.laneRange = clamp(optionNumber(settings, ["laneRange", "range"], 1), 0, 1);
+    } else if (type === "shield") {
+      effect.charges = 1;
+    } else if (type === "multiplier") {
+      const factor = clamp(optionNumber(settings, ["factor", "multiplier", "value", "amount"], state.config.scoreMultiplier), 1, 10);
+      effect.factor = refreshed ? Math.max(Number(effect.factor) || 1, factor) : factor;
+    } else if (type === "overdrive") {
+      const speed = clamp(optionNumber(settings, ["speed", "speedBoost", "boost", "amount"], state.config.overdriveSpeed), 0, 12);
+      effect.speed = refreshed ? Math.max(Number(effect.speed) || 0, speed) : speed;
+    }
+    emit(state, "powerup-start", powerupEventDetail(type, effect, { duration: effect.remaining, refreshed }));
+    return state;
+  }
+  function updatePowerups(state, dt) {
+    const powerups = ensurePowerups(state);
+    for (const type of POWERUP_TYPES) {
+      const effect = powerups[type];
+      if (!effect.active) continue;
+      effect.remaining = Math.max(0, (Number(effect.remaining) || 0) - dt);
+      if (effect.remaining <= 1e-12) endPowerup(state, type, "expired");
+    }
+  }
+  function cruiseSpeedAt(state) {
+    const startSpeed = Number(state.config.startSpeed) || 0;
+    const maxSpeed = Math.max(startSpeed, Number(state.config.maxSpeed) || 0);
+    const acceleration = Math.max(0, Number(state.config.acceleration) || 0);
+    const distanceTime = state.distance / Math.max(1, Math.abs(startSpeed));
+    const paceTime = state.elapsed * 0.65 + distanceTime * 0.35;
+    return Math.min(maxSpeed, startSpeed + acceleration * paceTime);
+  }
+  function approach(value, target, amount) {
+    if (value < target) return Math.min(target, value + amount);
+    if (value > target) return Math.max(target, value - amount);
+    return target;
+  }
+  function updateSpeedMetrics(state) {
+    state.runProgress = stageIndexAt(state.config, state.elapsed).progress;
+    const span = Math.max(0, state.config.maxSpeed - state.config.startSpeed);
+    state.speedProgress = span > 1e-9 ? clamp((state.speed - state.config.startSpeed) / span, 0, 1) : 0;
+    state.progress = state.speedProgress;
+    state.speedTier = state.powerups?.overdrive?.active ? 4 : Math.min(4, Math.floor(state.speedProgress * 5));
+  }
   function fixedUpdate(state) {
     const dt = state.config.fixedStep;
     state.ticks += 1; state.elapsed = Math.min(state.config.duration, state.elapsed + dt);
@@ -255,12 +382,18 @@
       const stageInfo = stageIndexAt(state.config, state.elapsed);
       if (stageInfo.index !== state.stageIndex) syncStage(state, stageInfo.index);
     }
-    const cruiseSpeed = Math.min(state.config.maxSpeed, state.config.startSpeed + state.config.acceleration * state.elapsed);
-    const targetSpeed = Math.min(state.config.maxSpeed + 3.5, cruiseSpeed + (state.boostSpeed || 0));
+    const overdrive = state.powerups?.overdrive;
+    const overdriveSpeed = overdrive?.active ? Number(overdrive.speed) || 0 : 0;
+    const cruiseSpeed = cruiseSpeedAt(state);
+    const boostedSpeed = Math.min(state.config.maxSpeed + 3.5, cruiseSpeed + (state.boostSpeed || 0));
+    const targetSpeed = boostedSpeed + overdriveSpeed;
     const recovery = Math.max(1.1, state.config.acceleration * 2.4);
-    state.speed = Math.min(targetSpeed, state.speed + recovery * dt);
+    const rise = overdrive?.active ? Math.max(recovery, Number(state.config.overdriveAcceleration) || 0) : recovery;
+    const fall = Math.max(recovery, Number(state.config.speedEaseOut) || 0);
+    state.speed = approach(state.speed, targetSpeed, (state.speed < targetSpeed ? rise : fall) * dt);
     const dz = state.speed * dt; state.distance += dz;
     resolveEntities(state, dz); scheduleModules(state);
+    updatePowerups(state, dt); updateSpeedMetrics(state);
     if (state.elapsed >= state.config.duration) { state.finished = true; emit(state, "finish"); }
   }
   function step(state, delta, actions) {
@@ -286,9 +419,11 @@
     return { state, step: (delta, actions) => step(state, delta, actions), input: (action) => queueInput(state, action),
       syncStage: (stage) => syncStage(state, stage), seekStage: (stage) => seekStage(state, stage),
       boost: (amount, duration) => applyBoost(state, amount, duration),
+      activatePowerup: (type, options) => activatePowerup(state, type, options),
       spawn: (spec) => addEntity(state, spec), drainEvents: () => { const events = state.events.slice(); state.events = []; return events; } };
   }
 
-  return Object.freeze({ LANES, ACTIONS, DEFAULTS, DEFAULT_STAGES, createState, createEngine,
-    step, fixedUpdate, queueInput, addEntity, stageIndexAt, syncStage, seekStage, applyBoost, hashSeed });
+  return Object.freeze({ LANES, ACTIONS, POWERUP_TYPES, DEFAULTS, DEFAULT_STAGES, createState, createEngine,
+    step, fixedUpdate, queueInput, addEntity, stageIndexAt, syncStage, seekStage,
+    applyBoost, activatePowerup, hashSeed });
 });

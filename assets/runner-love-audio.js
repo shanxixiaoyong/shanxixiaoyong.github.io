@@ -28,6 +28,30 @@
     lamp: 830.61, cloth: 622.25, snack: 698.46, packet: 587.33
   });
 
+  const POWERUP_PROFILES = Object.freeze({
+    magnet: Object.freeze({ root: 392, wave: "triangle", start: Object.freeze([1, 1.5, 2.25]), sustain: Object.freeze([1.5, 2]), finish: 0.72, noise: 2380, pan: 0.62 }),
+    shield: Object.freeze({ root: 261.63, wave: "sine", start: Object.freeze([1, 2, 3]), sustain: Object.freeze([1, 1.5]), finish: 0.5, noise: 920, pan: 0.18 }),
+    multiplier: Object.freeze({ root: 523.25, wave: "square", start: Object.freeze([1, 1.25, 1.5]), sustain: Object.freeze([1.5, 2]), finish: 1.25, noise: 4100, pan: 0.46 }),
+    overdrive: Object.freeze({ root: 110, wave: "sawtooth", start: Object.freeze([1, 2, 4]), sustain: Object.freeze([2, 3]), finish: 0.42, noise: 5800, pan: 0.32 })
+  });
+
+  const MUSIC_PROFILES = Object.freeze({
+    warm: Object.freeze({ wave: "triangle", motif: Object.freeze([0, 4, 7, 11]), brightness: 1850, transpose: 0 }),
+    bright: Object.freeze({ wave: "sine", motif: Object.freeze([0, 7, 12, 16]), brightness: 4600, transpose: 12 }),
+    dreamy: Object.freeze({ wave: "sine", motif: Object.freeze([0, 2, 7, 9]), brightness: 2450, transpose: 12 }),
+    pulse: Object.freeze({ wave: "square", motif: Object.freeze([0, 5, 7, 12]), brightness: 3300, transpose: 0 }),
+    electric: Object.freeze({ wave: "sawtooth", motif: Object.freeze([0, 3, 7, 10]), brightness: 3900, transpose: 0 })
+  });
+
+  const OSCILLATOR_TYPES = Object.freeze(["sine", "triangle", "square", "sawtooth"]);
+  const MUSIC_PROFILE_ALIASES = Object.freeze({
+    acoustic: "warm", soft: "warm", gentle: "warm", guitar: "warm",
+    sparkle: "bright", bell: "bright", hopeful: "bright",
+    ambient: "dreamy", airy: "dreamy", memory: "dreamy",
+    rhythmic: "pulse", playful: "pulse", chiptune: "pulse",
+    neon: "electric", bold: "electric", synth: "electric"
+  });
+
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
   function midi(value) { return 440 * Math.pow(2, (value - 69) / 12); }
 
@@ -50,11 +74,29 @@
       this.condition = 100;
       this.combo = 0;
       this.flow = 0;
+      this.flowMix = 0;
       this.flowTier = 0;
       this.speed = 11;
+      this.targetSpeed = 11;
+      this.speedTier = 0;
+      this.speedTierMix = 0;
+      this.drive = 0;
+      this.tempoBpm = TEMPOS[0];
+      this.tempoTarget = TEMPOS[0];
+      this.percussionLevel = 0;
+      this.highFrequencyLevel = 0;
+      this.rhythmGainTarget = 0.62;
+      this.highGainTarget = 0.34;
+      this.flowGainTarget = null;
       this.arrival = false;
       this.stepClock = 0;
       this.stepSide = 1;
+      this.rhythm = null;
+      this.highs = null;
+      this.interactionMusic = null;
+      this.activePowerups = new Set();
+      this.powerupLastAt = Object.create(null);
+      this.powerupSteps = Object.create(null);
       this.ambientSource = null;
       this.ambientFilter = null;
       this.ambientGain = null;
@@ -80,6 +122,10 @@
       this.master.gain.value = 0.46;
       this.music = this.context.createGain();
       this.music.gain.value = 0.58;
+      this.rhythm = this.context.createGain();
+      this.rhythm.gain.value = 0.62;
+      this.highs = this.context.createGain();
+      this.highs.gain.value = 0.34;
       this.sfx = this.context.createGain();
       this.sfx.gain.value = 0.84;
       this.ambience = this.context.createGain();
@@ -92,6 +138,8 @@
       this.reverb.connect(reverbGain);
       reverbGain.connect(this.master);
 
+      this.rhythm.connect(this.music);
+      this.highs.connect(this.music);
       this.music.connect(this.master);
       this.sfx.connect(this.master);
       this.ambience.connect(this.master);
@@ -153,6 +201,7 @@
       this.stageNumber = clamp(Math.trunc(stageNumber) || 1, 1, 7);
       this.condition = clamp(Number(condition) || 0, 0, 100);
       this.combo = Math.max(0, Number(combo) || 0);
+      this.tempoTarget = TEMPOS[this.stageNumber - 1] + this.drive * 26;
       if (!this.context) return;
       const now = this.context.currentTime;
       const storm = this.stageNumber === 6;
@@ -168,8 +217,11 @@
       this.flowTier = nextTier;
       if (!this.context) return;
       const now = this.context.currentTime;
-      this.music?.gain.setTargetAtTime(0.46 + nextFlow * 0.18, now, 0.16);
-      this.ambience?.gain.setTargetAtTime(0.13 + nextFlow * 0.055, now, 0.24);
+      if (this.flowGainTarget === null || Math.abs(nextFlow - this.flowGainTarget) >= 0.002) {
+        this.flowGainTarget = nextFlow;
+        this.music?.gain.setTargetAtTime(0.46 + nextFlow * 0.18, now, 0.16);
+        this.ambience?.gain.setTargetAtTime(0.13 + nextFlow * 0.055, now, 0.24);
+      }
       if (nextTier > previousTier) {
         const chord = CHORDS[this.stageNumber - 1][this.bar % 4];
         const root = midi(chord[0] + (nextTier === 2 ? 12 : 0));
@@ -178,6 +230,113 @@
           this.tone(root * ratio, 0.28 + index * 0.09, 0.025 + nextTier * 0.012, index * 0.07, "triangle", (index - 1) * 0.38, root * ratio * 1.18);
         });
       }
+    }
+
+    normalizeSpeedTier(value, speed = this.targetSpeed) {
+      let tier = value;
+      if (tier && typeof tier === "object") tier = tier.level ?? tier.index ?? tier.tier ?? tier.name;
+      if (typeof tier === "string") {
+        const namedTiers = { calm: 0, cruise: 0, warm: 1, fast: 2, rush: 3, overdrive: 4 };
+        tier = namedTiers[tier.toLowerCase()];
+      }
+      if (!Number.isFinite(Number(tier))) {
+        const measuredSpeed = Number(speed) || 0;
+        tier = measuredSpeed >= 31 ? 4 : measuredSpeed >= 27 ? 3 : measuredSpeed >= 22 ? 2 : measuredSpeed >= 17 ? 1 : 0;
+      }
+      return clamp(Number(tier), 0, 4);
+    }
+
+    updateDrive(delta, speed, speedTier) {
+      const elapsed = clamp(Number(delta) || 1 / 60, 1 / 240, 0.25);
+      const blend = 1 - Math.exp(-elapsed / 0.42);
+      const tempoBlend = 1 - Math.exp(-elapsed / 0.58);
+      const measuredSpeed = clamp(Number(speed) || this.targetSpeed, 0, 42);
+      this.targetSpeed = measuredSpeed;
+      this.speedTier = this.normalizeSpeedTier(speedTier, measuredSpeed);
+      this.speed += (measuredSpeed - this.speed) * blend;
+      this.flowMix += (this.flow - this.flowMix) * blend;
+      this.speedTierMix += (this.speedTier / 4 - this.speedTierMix) * blend;
+
+      const speedMix = clamp((this.speed - 11) / 19, 0, 1);
+      const driveTarget = clamp(speedMix * 0.44 + this.flowMix * 0.34 + this.speedTierMix * 0.22, 0, 1);
+      this.drive += (driveTarget - this.drive) * blend;
+      const percussionTarget = clamp(0.16 + this.drive * 0.76 + this.speedTierMix * 0.08, 0, 1);
+      const highTarget = clamp(0.08 + this.drive * 0.66 + this.flowMix * 0.2 + this.speedTierMix * 0.06, 0, 1);
+      this.percussionLevel += (percussionTarget - this.percussionLevel) * blend;
+      this.highFrequencyLevel += (highTarget - this.highFrequencyLevel) * blend;
+
+      this.tempoTarget = TEMPOS[this.stageNumber - 1] + speedMix * 11 + this.flowMix * 8 + this.speedTierMix * 7;
+      this.tempoBpm += (this.tempoTarget - this.tempoBpm) * tempoBlend;
+      if (this.context) {
+        const now = this.context.currentTime;
+        const rhythmTarget = 0.54 + this.percussionLevel * 0.56;
+        const highTargetGain = 0.26 + this.highFrequencyLevel * 0.78;
+        if (Math.abs(rhythmTarget - this.rhythmGainTarget) >= 0.003) {
+          this.rhythmGainTarget = rhythmTarget;
+          this.rhythm?.gain.setTargetAtTime(rhythmTarget, now, 0.12);
+        }
+        if (Math.abs(highTargetGain - this.highGainTarget) >= 0.003) {
+          this.highGainTarget = highTargetGain;
+          this.highs?.gain.setTargetAtTime(highTargetGain, now, 0.16);
+        }
+      }
+    }
+
+    resolveMusicProfile(music) {
+      const value = music && typeof music === "object" && !Array.isArray(music) ? music : {};
+      const descriptors = [
+        value.layer, value.timbre,
+        ...(Array.isArray(value.layers) ? value.layers : []),
+        ...(Array.isArray(value.timbres) ? value.timbres : [])
+      ].filter(Boolean).map(String);
+      const requestedName = typeof music === "string"
+        ? music.toLowerCase()
+        : String(value.id || value.name || value.style || value.palette || descriptors.join("-") || "warm").toLowerCase();
+      const alias = MUSIC_PROFILE_ALIASES[requestedName] || requestedName;
+      const names = Object.keys(MUSIC_PROFILES);
+      let hash = 0;
+      for (let index = 0; index < requestedName.length; index += 1) hash = (hash * 31 + requestedName.charCodeAt(index)) >>> 0;
+      let profileName = alias;
+      if (!MUSIC_PROFILES[profileName]) {
+        if (/(distort|synth|sequenc|vinyl|analog)/.test(requestedName)) profileName = "electric";
+        else if (/(drum|percussion|woodblock|clap|bottle|brush|rhythm)/.test(requestedName)) profileName = "pulse";
+        else if (/(bell|marimba|celesta|vibraphone|kalimba|glass)/.test(requestedName)) profileName = "bright";
+        else if (/(piano|guitar|bass|brass|horn|clarinet)/.test(requestedName)) profileName = "warm";
+        else if (/(string|pad|tape|harmonica|oboe|airy)/.test(requestedName)) profileName = "dreamy";
+        else profileName = names[hash % names.length];
+      }
+      const base = MUSIC_PROFILES[profileName];
+      const requestedWave = value.wave || value.waveform || (OSCILLATOR_TYPES.includes(value.timbre) ? value.timbre : null);
+      const wave = OSCILLATOR_TYPES.includes(requestedWave) ? requestedWave : base.wave;
+      const requestedMotif = value.motif || value.melody || value.intervals || (Array.isArray(music) ? music : null);
+      const motif = Array.isArray(requestedMotif)
+        ? requestedMotif.map(Number).filter(Number.isFinite).slice(0, 8).map((note) => clamp(note, -24, 36))
+        : base.motif.map((note, index) => index === 0 || descriptors.length === 0 ? note : clamp(note + ((hash >>> (index * 2)) % 3) - 1, -24, 36));
+      const rawRoot = Number(value.rootFrequency ?? value.frequency ?? value.root);
+      const root = Number.isFinite(rawRoot) && rawRoot > 0 ? (rawRoot <= 127 ? midi(rawRoot) : clamp(rawRoot, 40, 4000)) : null;
+      const durationValue = Number(value.durationSeconds ?? value.duration ?? (Number(value.durationMs) / 1000));
+      const intensityValue = Number(value.intensity);
+      const intensity = Number.isFinite(intensityValue) ? clamp(intensityValue, 0, 1) : 0.6;
+      const transposeValue = Number(value.transpose);
+      const brightnessValue = Number(value.brightness ?? value.cutoff);
+      return {
+        name: profileName,
+        wave,
+        motif: motif.length ? motif : base.motif.slice(),
+        brightness: clamp(Number.isFinite(brightnessValue) && brightnessValue > 0 ? brightnessValue : base.brightness * (0.82 + intensity * 0.3), 600, 7200),
+        transpose: clamp(Number.isFinite(transposeValue) ? transposeValue : base.transpose, -24, 24),
+        duration: clamp(durationValue || 2.8, 0.5, 12),
+        intensity,
+        layers: descriptors,
+        root
+      };
+    }
+
+    currentMusicProfile(at = this.context?.currentTime || 0) {
+      if (!this.interactionMusic) return null;
+      if (at < this.interactionMusic.expiresAt) return this.interactionMusic;
+      if ((this.context?.currentTime || at) >= this.interactionMusic.expiresAt) this.interactionMusic = null;
+      return null;
     }
 
     duckMusic(target = 0.24, release = 0.55) {
@@ -201,7 +360,7 @@
       const horizon = this.context.currentTime + 0.16;
       while (this.nextStepAt < horizon) {
         this.scheduleStep(this.step, this.nextStepAt);
-        const tempo = this.arrival ? 88 : TEMPOS[this.stageNumber - 1] + this.flow * 8;
+        const tempo = this.arrival ? 88 : this.tempoBpm;
         this.nextStepAt += 60 / tempo / 4;
         this.step = (this.step + 1) % 16;
         if (this.step === 0) this.bar += 1;
@@ -212,6 +371,7 @@
       const stageIndex = this.stageNumber - 1;
       const progression = CHORDS[stageIndex];
       const chord = progression[this.bar % progression.length];
+      const interactionMusic = this.currentMusicProfile(at);
       if (this.arrival) {
         if (step === 0) this.pad(chord, at, 2.7, 0.052);
         if ([2, 6, 10, 14].includes(step)) this.pluck(midi(chord[(step / 4 | 0) % chord.length] + 12), at, 0.5, 0.026, 0.22);
@@ -219,43 +379,56 @@
         return;
       }
 
-      const intensity = clamp(0.38 + stageIndex * 0.07 + this.flow * 0.45 + Math.min(0.2, this.combo * 0.018), 0.35, 1);
+      const intensity = clamp(0.36 + stageIndex * 0.06 + this.drive * 0.48 + this.flowMix * 0.16 + Math.min(0.2, this.combo * 0.018), 0.35, 1);
       if (step === 0) this.pad(chord, at, 2.2, 0.027 + stageIndex * 0.0025);
-      if (step === 0 || step === 8 || (intensity > 0.78 && step === 10)) this.kick(at, 0.09 + intensity * 0.045);
+      if (step === 0 || step === 8 || (this.percussionLevel > 0.68 && step === 10)) this.kick(at, 0.09 + intensity * 0.045);
       if (step === 4 || step === 12) this.snare(at, 0.05 + intensity * 0.035);
-      if (this.flow > 0.72 && (step === 4 || step === 12)) this.kick(at, 0.055 + intensity * 0.028);
-      if (step % (intensity > 0.72 ? 1 : 2) === 0) this.hat(at, 0.012 + intensity * 0.012, step % 4 === 2);
+      if ((this.flowMix > 0.72 || this.percussionLevel > 0.76) && (step === 4 || step === 12)) this.kick(at, 0.055 + intensity * 0.028);
+      if (step % (this.percussionLevel > 0.46 ? 1 : 2) === 0) this.hat(at, 0.009 + intensity * 0.011 + this.highFrequencyLevel * 0.006, step % 4 === 2);
       if ([0, 3, 8, 11].includes(step)) {
         const rootOffset = step === 11 ? 7 : step === 3 ? 12 : 0;
         this.bass(midi(chord[0] - 24 + rootOffset), at, 0.28, 0.035 + intensity * 0.018);
       }
       if (this.stageNumber >= 2 && step % 2 === 0) {
         const noteIndex = (step / 2 + this.bar) % chord.length;
-        const octave = this.stageNumber >= 4 && step % 8 === 6 ? 24 : 12;
-        this.pluck(midi(chord[noteIndex] + octave), at, 0.24, 0.014 + intensity * 0.012, (step / 15) * 1.2 - 0.6);
+        const octave = (this.stageNumber >= 4 && step % 8 === 6 ? 24 : 12) + (interactionMusic?.transpose || 0);
+        this.pluck(
+          midi(chord[noteIndex] + octave), at, 0.24, (0.014 + intensity * 0.012) * (interactionMusic ? 0.78 + interactionMusic.intensity * 0.36 : 1), (step / 15) * 1.2 - 0.6,
+          interactionMusic?.wave || "triangle", interactionMusic?.brightness || 2600
+        );
       }
-      if (this.flow > 0.42 && step % 2 === 1) {
-        const motif = STAGE_MOTIFS[stageIndex];
-        const motifNote = chord[0] + 12 + motif[(step / 2 | 0) % motif.length];
-        this.pluck(midi(motifNote), at, 0.16, 0.009 + this.flow * 0.012, step % 4 === 1 ? -0.48 : 0.48);
+      if ((this.flowMix > 0.42 || this.highFrequencyLevel > 0.42 || interactionMusic) && step % 2 === 1) {
+        const motif = interactionMusic?.motif || STAGE_MOTIFS[stageIndex];
+        const motifNote = chord[0] + 12 + (interactionMusic?.transpose || 0) + motif[(step / 2 | 0) % motif.length];
+        this.pluck(
+          midi(motifNote), at, 0.16, 0.007 + this.highFrequencyLevel * 0.017 + (interactionMusic?.intensity || 0) * 0.004, step % 4 === 1 ? -0.48 : 0.48,
+          interactionMusic?.wave || "triangle", interactionMusic?.brightness || 3100, this.highs || this.music
+        );
       }
-      if (this.flow > 0.78 && (step === 6 || step === 14)) {
-        this.pad(chord.map((note) => note + 12), at, 0.34, 0.018 + this.flow * 0.008);
+      if (this.flowMix > 0.78 && (step === 6 || step === 14)) {
+        this.pad(chord.map((note) => note + 12), at, 0.34, 0.018 + this.flowMix * 0.008);
       }
-      if (this.flow > 0.62 && [5, 13].includes(step)) this.bell(midi(chord[2] + 24), at, 0.36, 0.012 + this.flow * 0.012);
+      if ((this.flowMix > 0.62 || this.highFrequencyLevel > 0.7) && [5, 13].includes(step)) {
+        this.bell(midi(chord[2] + 24), at, 0.36, 0.01 + this.highFrequencyLevel * 0.016, this.highs || this.music);
+      }
+      if (interactionMusic?.synergy && (step === 2 || step === 10)) {
+        const harmonyNote = chord[1] + 24 + interactionMusic.transpose;
+        this.pluck(midi(harmonyNote), at, 0.38, 0.014 + interactionMusic.intensity * 0.01, step === 2 ? -0.32 : 0.32, "sine", interactionMusic.brightness, this.highs || this.music);
+      }
     }
 
-    connectVoice(node, gain, pan, wet = 0) {
+    connectVoice(node, gain, pan, wet = 0, output = this.music) {
+      const destination = output || this.music;
       if (this.context.createStereoPanner) {
         const panner = this.context.createStereoPanner();
         panner.pan.value = clamp(pan || 0, -1, 1);
         node.connect(gain);
         gain.connect(panner);
-        panner.connect(this.music);
+        panner.connect(destination);
         if (wet > 0) panner.connect(this.reverb);
       } else {
         node.connect(gain);
-        gain.connect(this.music);
+        gain.connect(destination);
         if (wet > 0) gain.connect(this.reverb);
       }
     }
@@ -297,19 +470,19 @@
       oscillator.stop(at + duration + 0.02);
     }
 
-    pluck(frequency, at, duration, volume, pan = 0) {
+    pluck(frequency, at, duration, volume, pan = 0, type = "triangle", brightness = 2600, output = this.music) {
       const oscillator = this.context.createOscillator();
       const filter = this.context.createBiquadFilter();
       const gain = this.context.createGain();
-      oscillator.type = "triangle";
+      oscillator.type = OSCILLATOR_TYPES.includes(type) ? type : "triangle";
       oscillator.frequency.value = frequency;
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(2600, at);
+      filter.frequency.setValueAtTime(clamp(brightness, 600, 7200), at);
       filter.frequency.exponentialRampToValueAtTime(620, at + duration);
       gain.gain.setValueAtTime(volume, at);
       gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
       oscillator.connect(filter);
-      this.connectVoice(filter, gain, pan, 0.2);
+      this.connectVoice(filter, gain, pan, 0.2, output);
       oscillator.start(at);
       oscillator.stop(at + duration + 0.02);
     }
@@ -339,7 +512,7 @@
       gain.gain.setValueAtTime(volume, at);
       gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.2);
       oscillator.connect(gain);
-      gain.connect(this.music);
+      gain.connect(this.rhythm || this.music);
       oscillator.start(at);
       oscillator.stop(at + 0.22);
     }
@@ -367,12 +540,13 @@
     }
 
     snare(at, volume) {
-      this.noiseHit(at, 0.16, 1850, volume, "bandpass");
-      this.pluck(174, at, 0.1, volume * 0.22, 0);
+      const output = this.rhythm || this.music;
+      this.noiseHit(at, 0.16, 1850, volume, "bandpass", output);
+      this.pluck(174, at, 0.1, volume * 0.22, 0, "triangle", 1600, output);
     }
 
     hat(at, volume, open) {
-      this.noiseHit(at, open ? 0.12 : 0.045, 7600, volume, "highpass", this.music, (this.step % 4 < 2 ? -0.25 : 0.25));
+      this.noiseHit(at, open ? 0.12 : 0.045, 7600, volume, "highpass", this.highs || this.music, (this.step % 4 < 2 ? -0.25 : 0.25));
     }
 
     tone(frequency, duration, volume, delay = 0, type = "sine", pan = 0, glideTo = null) {
@@ -411,6 +585,111 @@
         this.noiseHit(at, 0.34, 620, 0.105, "bandpass", this.sfx);
         this.tone(190, 0.26, 0.032, 0, "triangle", 0, 82);
       }
+    }
+
+    powerup(type, phase = "start") {
+      const typeAliases = { boost: "overdrive", turbo: "overdrive", double: "multiplier", "2x": "multiplier" };
+      const powerupType = typeAliases[String(type || "").toLowerCase()] || String(type || "").toLowerCase();
+      const profile = POWERUP_PROFILES[powerupType];
+      if (!profile || !this.context || !this.sfx) return false;
+      const phaseAliases = {
+        activate: "start", activated: "start", enable: "start", enabled: "start",
+        active: "sustain", loop: "sustain", tick: "sustain",
+        stop: "end", expire: "end", expired: "end", disable: "end",
+        blocked: "block", hit: "block", absorb: "block", absorbed: "block"
+      };
+      const powerupPhase = phaseAliases[String(phase || "start").toLowerCase()] || String(phase || "start").toLowerCase();
+      if (!["start", "sustain", "end", "block"].includes(powerupPhase)) return false;
+
+      const at = this.context.currentTime;
+      const pulseStep = this.powerupSteps[powerupType] || 0;
+      if (powerupPhase === "sustain") {
+        const minimumGap = powerupType === "overdrive" ? 0.14 : powerupType === "magnet" ? 0.22 : 0.34;
+        if (at - (this.powerupLastAt[powerupType] ?? -Infinity) < minimumGap) return false;
+        this.powerupLastAt[powerupType] = at;
+        this.powerupSteps[powerupType] = pulseStep + 1;
+      }
+
+      if (powerupPhase === "start") {
+        this.activePowerups.add(powerupType);
+        this.powerupSteps[powerupType] = 0;
+        this.powerupLastAt[powerupType] = -Infinity;
+        this.noiseHit(at, powerupType === "overdrive" ? 0.5 : 0.28, profile.noise, powerupType === "overdrive" ? 0.09 : 0.055, "highpass", this.sfx);
+        profile.start.forEach((ratio, index) => {
+          const pan = (index - 1) * profile.pan;
+          this.tone(profile.root * ratio, 0.2 + index * 0.07, 0.04 + index * 0.008, index * 0.055, profile.wave, pan, profile.root * ratio * (1.08 + index * 0.025));
+        });
+        if (powerupType === "shield") this.bell(profile.root * 2, at + 0.04, 0.85, 0.045, this.sfx);
+        return true;
+      }
+
+      if (powerupPhase === "sustain") {
+        const ratio = profile.sustain[pulseStep % profile.sustain.length];
+        const pan = pulseStep % 2 ? profile.pan : -profile.pan;
+        this.tone(profile.root * ratio, powerupType === "overdrive" ? 0.12 : 0.18, powerupType === "overdrive" ? 0.035 : 0.026, 0, profile.wave, pan, profile.root * ratio * (powerupType === "magnet" ? 1.16 : 1.03));
+        if (powerupType === "magnet") this.noiseHit(at, 0.16, profile.noise + (pulseStep % 3) * 420, 0.026, "bandpass", this.sfx, pan);
+        if (powerupType === "shield") this.bell(profile.root * (pulseStep % 2 ? 2 : 1.5), at, 0.34, 0.018, this.sfx);
+        if (powerupType === "multiplier") this.tone(profile.root * ratio * 1.25, 0.13, 0.018, 0.045, "sine", -pan);
+        if (powerupType === "overdrive") this.noiseHit(at, 0.1, profile.noise, 0.036, "highpass", this.sfx, pan);
+        return true;
+      }
+
+      if (powerupPhase === "block") {
+        this.duckMusic(powerupType === "shield" ? 0.31 : 0.25, 0.28);
+        this.noiseHit(at, powerupType === "shield" ? 0.42 : 0.25, profile.noise * 0.72, powerupType === "shield" ? 0.15 : 0.09, "bandpass", this.sfx);
+        this.tone(profile.root * 2, 0.3, 0.07, 0, profile.wave, -profile.pan, profile.root * profile.finish);
+        this.tone(profile.root * 2.03, 0.22, 0.045, 0.025, "sine", profile.pan, profile.root * 1.02);
+        if (powerupType === "shield") this.bell(profile.root * 3, at, 0.72, 0.06, this.sfx);
+        return true;
+      }
+
+      this.activePowerups.delete(powerupType);
+      this.noiseHit(at, 0.24, profile.noise * 0.55, 0.038, powerupType === "overdrive" ? "lowpass" : "bandpass", this.sfx);
+      this.tone(profile.root * profile.start[profile.start.length - 1], 0.36, 0.045, 0, profile.wave, 0, profile.root * profile.finish);
+      return true;
+    }
+
+    hasSynergy(value) {
+      if (Array.isArray(value)) return value.length > 0;
+      if (!value || typeof value !== "object") return Boolean(value);
+      const active = value.active ?? value.enabled;
+      if (Array.isArray(active)) return active.length > 0;
+      if (active !== undefined) return Boolean(active);
+      return Number(value.value ?? value.level ?? value.strengthBonus ?? value.durationBonusMs ?? 0) > 0;
+    }
+
+    interaction(result) {
+      const interactionResult = result && typeof result === "object" ? result : { music: result };
+      const music = interactionResult.profile?.music ?? interactionResult.item?.profile?.music ?? interactionResult.music;
+      if (music == null || !this.context || !this.sfx) return false;
+      const profile = this.resolveMusicProfile(music);
+      const synergyValue = interactionResult.synergy ?? interactionResult.profile?.synergy ?? interactionResult.bonus?.synergy;
+      const synergy = this.hasSynergy(synergyValue)
+        || Boolean(music?.synergyAccents?.length)
+        || Boolean(interactionResult.tags?.includes?.("synergy"));
+      const gameplay = interactionResult.gameplay ?? interactionResult.profile?.gameplay ?? interactionResult.item?.profile?.gameplay;
+      const requestedDuration = interactionResult.durationSeconds
+        ?? interactionResult.duration
+        ?? (Number.isFinite(Number(interactionResult.durationMs)) ? Number(interactionResult.durationMs) / 1000 : undefined)
+        ?? (Number.isFinite(Number(gameplay?.durationMs)) ? Number(gameplay.durationMs) / 1000 : undefined);
+      const resultDuration = Number(requestedDuration);
+      const duration = clamp(resultDuration || profile.duration, 0.5, 12);
+      const at = this.context.currentTime;
+      this.interactionMusic = { ...profile, synergy, expiresAt: at + duration };
+
+      const chord = CHORDS[this.stageNumber - 1][this.bar % 4];
+      const root = profile.root || midi(chord[0] + 12 + profile.transpose);
+      profile.motif.slice(0, 3).forEach((interval, index) => {
+        const frequency = root * Math.pow(2, interval / 12);
+        this.tone(frequency, 0.24 + index * 0.05, 0.022 + profile.intensity * 0.018, index * 0.065, profile.wave, (index - 1) * 0.32, frequency * 1.04);
+      });
+      this.noiseHit(at, 0.24, profile.brightness, 0.016 + profile.intensity * 0.018, "highpass", this.sfx);
+      if (synergy) {
+        const harmony = chord.map((note) => note + 12 + profile.transpose);
+        this.pad(harmony, at + 0.035, 0.92, 0.038 + profile.intensity * 0.022);
+        harmony.forEach((note, index) => this.bell(midi(note + 12), at + index * 0.045, 0.76, 0.019 + profile.intensity * 0.014, this.sfx));
+      }
+      return true;
     }
 
     cue(name, kind) {
@@ -458,17 +737,29 @@
       }
     }
 
-    tick(delta, speed, active, arrival, flow = this.flow) {
+    tick(delta, speed, active = true, arrival = false, flow = this.flow, speedTier) {
+      if (speed && typeof speed === "object") {
+        const frame = speed;
+        speed = frame.speed ?? this.targetSpeed;
+        active = frame.active ?? active;
+        arrival = frame.arrival ?? arrival;
+        flow = frame.flow ?? flow;
+        speedTier = frame.speedTier ?? frame.tier ?? speedTier;
+      }
+      if (flow && typeof flow === "object") {
+        speedTier = flow.speedTier ?? flow.tier ?? speedTier;
+        flow = flow.flow ?? flow.value ?? this.flow;
+      }
       if (!this.context || !active) return;
-      this.speed = Number(speed) || this.speed;
       this.setFlow(flow);
       this.setArrival(arrival);
-      this.stepClock -= delta;
+      this.updateDrive(delta, arrival ? this.targetSpeed : speed, speedTier);
+      this.stepClock -= Number(delta) || 0;
       if (!arrival && this.stepClock <= 0) {
         this.stepSide *= -1;
         const at = this.context.currentTime;
-        this.noiseHit(at, 0.055, 210 + Math.min(130, this.speed * 4), 0.035, "bandpass", this.sfx, this.stepSide * 0.22);
-        this.stepClock = Math.max(0.17, 0.33 - this.speed * 0.005);
+        this.noiseHit(at, 0.055, 210 + Math.min(150, this.speed * 4.4), 0.03 + this.percussionLevel * 0.012, "bandpass", this.sfx, this.stepSide * 0.22);
+        this.stepClock = Math.max(0.15, 0.34 - this.speed * 0.0062);
       }
     }
 
@@ -497,9 +788,11 @@
       if (this.schedulerId) globalThis.clearInterval(this.schedulerId);
       this.schedulerId = 0;
       this.ambientSource?.stop?.();
+      this.activePowerups.clear();
+      this.interactionMusic = null;
       this.context?.close?.();
     }
   }
 
-  return Object.freeze({ PulseRunAudio, create: () => new PulseRunAudio(), CHORDS, TEMPOS });
+  return Object.freeze({ PulseRunAudio, create: () => new PulseRunAudio(), CHORDS, TEMPOS, POWERUP_PROFILES, MUSIC_PROFILES });
 });

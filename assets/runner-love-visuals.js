@@ -184,6 +184,85 @@ const DISTRICT_CITY_LAYOUTS = Object.freeze([
   Object.freeze({ sources: [9, 10, 11, 12], counts: [7, 7, 6, 12], minHeight: 8.4, heightRange: 7.6, offset: 7.9, spacing: 8.4 }),
   Object.freeze({ sources: [1, 3, 5, 8], counts: [6, 6, 5, 10], minHeight: 6.8, heightRange: 6.4, offset: 8, spacing: 8.8 })
 ]);
+const POWERUP_TYPES = Object.freeze(["magnet", "shield", "multiplier", "overdrive"]);
+const POWERUP_ALIASES = Object.freeze({
+  magnet: "magnet",
+  magnetic: "magnet",
+  attraction: "magnet",
+  shield: "shield",
+  guard: "shield",
+  barrier: "shield",
+  multiplier: "multiplier",
+  multiply: "multiplier",
+  "score-multiplier": "multiplier",
+  "score_multiplier": "multiplier",
+  x2: "multiplier",
+  overdrive: "overdrive",
+  boost: "overdrive",
+  turbo: "overdrive",
+  rush: "overdrive"
+});
+const POWERUP_COLORS = Object.freeze({
+  magnet: 0x69e8ff,
+  shield: 0x8fdcff,
+  multiplier: 0xff79a8,
+  overdrive: 0xffd166
+});
+const POWERUP_IMPACT_POOL_SIZE = 4;
+
+function normalizePowerup(value) {
+  const candidate = value && typeof value === "object"
+    ? value.powerup ?? value.type ?? value.id ?? value.kind ?? value.name
+    : value;
+  if (candidate === undefined || candidate === null) return null;
+  return POWERUP_ALIASES[String(candidate).trim().toLowerCase()] || null;
+}
+
+function powerupDuration(value, fallback = 6) {
+  const duration = Number(value);
+  if (!Number.isFinite(duration) || duration <= 0) return fallback;
+  return clamp(duration > 100 ? duration / 1000 : duration, 0.1, 60);
+}
+
+function powerupValueActive(value) {
+  if (value && typeof value === "object") {
+    if (value.active !== undefined) return Boolean(value.active);
+    if (value.enabled !== undefined) return Boolean(value.enabled);
+    if (value.remaining !== undefined) return Number(value.remaining) > 0;
+    if (value.timeLeft !== undefined) return Number(value.timeLeft) > 0;
+    return true;
+  }
+  if (typeof value === "number") return value > 0;
+  return Boolean(value);
+}
+
+function readPowerupSnapshot(powerups, target) {
+  POWERUP_TYPES.forEach((type) => { target[type] = false; });
+  if (powerups === undefined || powerups === null) return false;
+  const apply = (candidate, value = true) => {
+    const type = normalizePowerup(candidate);
+    if (type && powerupValueActive(value)) target[type] = true;
+  };
+  if (Array.isArray(powerups)) {
+    powerups.forEach((entry) => apply(entry, entry));
+    return true;
+  }
+  if (typeof powerups === "string") {
+    apply(powerups);
+    return true;
+  }
+  if (typeof powerups !== "object") return true;
+  apply(powerups, powerups);
+  if (Array.isArray(powerups.active)) powerups.active.forEach((entry) => apply(entry, entry));
+  for (const key in powerups) {
+    if (key === "active") continue;
+    const value = powerups[key];
+    const directType = normalizePowerup(key);
+    if (directType) target[directType] = powerupValueActive(value);
+    else if (value && typeof value === "object") apply(value, value);
+  }
+  return true;
+}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -1424,6 +1503,232 @@ function mesh(geometry, meshMaterial, castShadow = false, receiveShadow = false)
   item.castShadow = castShadow;
   item.receiveShadow = receiveShadow;
   return item;
+}
+
+const powerupGeometryCache = new Map();
+
+function powerupGeometry(key, factory) {
+  if (powerupGeometryCache.has(key)) return powerupGeometryCache.get(key);
+  const geometry = factory();
+  SHARED_GEOMETRIES.add(geometry);
+  powerupGeometryCache.set(key, geometry);
+  return geometry;
+}
+
+function powerupMaterial(color, opacity = 0) {
+  return new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+}
+
+function createPowerupVisualRig(particleTexture, accent) {
+  const root = new THREE.Group();
+  root.name = "powerupVisualRig";
+  root.userData.sharedTexture = particleTexture;
+
+  const arcGeometry = powerupGeometry("magnet-arc", () => new THREE.TorusGeometry(1, 0.026, 6, 44, Math.PI * 1.48));
+  const magnetMaterial = powerupMaterial(POWERUP_COLORS.magnet);
+  const magnet = new THREE.Group();
+  const magnetArcs = [];
+  for (let index = 0; index < 3; index += 1) {
+    const arc = mesh(arcGeometry, magnetMaterial);
+    arc.scale.set(0.72 + index * 0.25, 1.04 + index * 0.31, 1);
+    arc.rotation.z = -Math.PI * 0.74 + index * 0.08;
+    arc.renderOrder = 4;
+    magnet.add(arc);
+    magnetArcs.push(arc);
+  }
+  magnet.visible = false;
+  root.add(magnet);
+
+  const shield = new THREE.Group();
+  const shieldMaterial = powerupMaterial(POWERUP_COLORS.shield);
+  shieldMaterial.side = THREE.BackSide;
+  const shieldShell = mesh(
+    powerupGeometry("shield-shell", () => new THREE.SphereGeometry(1, 20, 14)),
+    shieldMaterial
+  );
+  shieldShell.position.y = 1.35;
+  shieldShell.scale.set(0.84, 1.42, 0.68);
+  shieldShell.renderOrder = 3;
+  const shieldRingMaterial = powerupMaterial(0xd9f7ff);
+  const shieldRingGeometry = powerupGeometry("shield-ring", () => new THREE.TorusGeometry(0.82, 0.022, 6, 36));
+  const shieldRings = [0.52, 1.44].map((height, index) => {
+    const ring = mesh(shieldRingGeometry, shieldRingMaterial);
+    ring.position.y = height;
+    ring.rotation.x = Math.PI / 2 + (index ? -0.18 : 0.16);
+    ring.scale.z = 0.76;
+    shield.add(ring);
+    return ring;
+  });
+  shield.add(shieldShell);
+  shield.visible = false;
+  root.add(shield);
+
+  const afterimageGeometry = powerupGeometry("runner-afterimage", () => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([
+      0, 0.08, 0, 0, 1.78, 0,
+      0, 1.78, 0, -0.36, 1.35, 0,
+      0, 1.78, 0, 0.36, 1.35, 0,
+      0, 1.15, 0, -0.3, 0.2, 0,
+      0, 1.15, 0, 0.3, 0.2, 0,
+      -0.22, 2.05, 0, 0.22, 2.05, 0,
+      -0.22, 2.05, 0, 0, 2.34, 0,
+      0.22, 2.05, 0, 0, 2.34, 0
+    ]), 3));
+    return geometry;
+  });
+  const multiplier = new THREE.Group();
+  const afterimages = [0, 1].map((index) => {
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: index ? accent : POWERUP_COLORS.multiplier,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false
+    });
+    const afterimage = new THREE.LineSegments(afterimageGeometry, lineMaterial);
+    afterimage.renderOrder = 2;
+    multiplier.add(afterimage);
+    return afterimage;
+  });
+  const scorePulseMaterial = powerupMaterial(POWERUP_COLORS.multiplier);
+  const scorePulseGeometry = powerupGeometry("score-pulse", () => new THREE.TorusGeometry(0.62, 0.024, 6, 36));
+  const scorePulses = [0, 1].map((index) => {
+    const pulse = mesh(scorePulseGeometry, scorePulseMaterial);
+    pulse.position.y = 1.24;
+    pulse.rotation.x = Math.PI / 2 + index * 0.36;
+    multiplier.add(pulse);
+    return pulse;
+  });
+  multiplier.visible = false;
+  root.add(multiplier);
+
+  const overdrive = new THREE.Group();
+  const speedWaveMaterial = powerupMaterial(POWERUP_COLORS.overdrive);
+  const speedWaveGeometry = powerupGeometry("ground-speed-wave", () => new THREE.RingGeometry(0.76, 0.84, 30, 1, 0.18, Math.PI * 1.64));
+  const speedWaves = new THREE.InstancedMesh(speedWaveGeometry, speedWaveMaterial, 6);
+  speedWaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  speedWaves.frustumCulled = false;
+  speedWaves.count = 0;
+  overdrive.add(speedWaves);
+  const edgeFlowMaterial = powerupMaterial(0xfff0a1);
+  const edgeFlowGeometry = powerupGeometry("edge-flow", () => new THREE.BoxGeometry(0.075, 0.018, 1.18));
+  const edgeFlow = new THREE.InstancedMesh(edgeFlowGeometry, edgeFlowMaterial, 20);
+  edgeFlow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  edgeFlow.frustumCulled = false;
+  edgeFlow.count = 0;
+  overdrive.add(edgeFlow);
+  overdrive.visible = false;
+  root.add(overdrive);
+
+  const storyWorld = new THREE.Group();
+  const storyRoadMaterial = powerupMaterial(accent);
+  const storyRoadGeometry = powerupGeometry("story-road-patch", () => new THREE.RingGeometry(0.54, 0.63, 28));
+  const storyRoadPatches = new THREE.InstancedMesh(storyRoadGeometry, storyRoadMaterial, 5);
+  storyRoadPatches.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  storyRoadPatches.frustumCulled = false;
+  storyRoadPatches.count = 0;
+  storyWorld.add(storyRoadPatches);
+  const localWeatherPositions = new Float32Array(36 * 3);
+  for (let index = 0; index < 36; index += 1) {
+    const angle = index * 2.39996;
+    const radius = 0.35 + (index % 9) * 0.16;
+    localWeatherPositions[index * 3] = Math.cos(angle) * radius;
+    localWeatherPositions[index * 3 + 1] = 0.18 + (index % 12) * 0.19;
+    localWeatherPositions[index * 3 + 2] = Math.sin(angle) * radius * 0.72;
+  }
+  const localWeatherGeometry = new THREE.BufferGeometry();
+  localWeatherGeometry.setAttribute("position", new THREE.BufferAttribute(localWeatherPositions, 3));
+  const localWeatherMaterial = new THREE.PointsMaterial({
+    map: particleTexture,
+    color: accent,
+    size: 0.13,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  });
+  const localWeather = new THREE.Points(localWeatherGeometry, localWeatherMaterial);
+  localWeather.frustumCulled = false;
+  storyWorld.add(localWeather);
+  const storyLight = new THREE.PointLight(accent, 0, 8, 2);
+  storyLight.position.y = 1.25;
+  storyWorld.add(storyLight);
+  storyWorld.visible = false;
+  root.add(storyWorld);
+
+  const synergy = new THREE.Group();
+  const synergyMaterials = [powerupMaterial(accent), powerupMaterial(0xffffff)];
+  const synergyGeometry = powerupGeometry("synergy-wave", () => new THREE.TorusGeometry(0.72, 0.035, 7, 42));
+  const synergyWaves = synergyMaterials.map((waveMaterial, index) => {
+    const wave = mesh(synergyGeometry, waveMaterial);
+    wave.position.y = index ? 1.36 : 0.05;
+    wave.rotation.x = Math.PI / 2 + index * 0.42;
+    synergy.add(wave);
+    return wave;
+  });
+  const synergyLight = new THREE.PointLight(accent, 0, 12, 2);
+  synergyLight.position.y = 1.4;
+  synergy.add(synergyLight);
+  synergy.visible = false;
+  root.add(synergy);
+
+  const impactRippleGeometry = powerupGeometry("shield-impact-ripple", () => new THREE.TorusGeometry(0.46, 0.035, 7, 36));
+  const impactShardGeometry = powerupGeometry("shield-impact-shard", () => new THREE.TetrahedronGeometry(0.09, 0));
+  const impacts = [];
+  for (let slotIndex = 0; slotIndex < POWERUP_IMPACT_POOL_SIZE; slotIndex += 1) {
+    const group = new THREE.Group();
+    const rippleMaterial = powerupMaterial(POWERUP_COLORS.shield);
+    const ripple = mesh(impactRippleGeometry, rippleMaterial);
+    ripple.rotation.x = Math.PI / 2;
+    group.add(ripple);
+    const shardMaterial = powerupMaterial(0xdff9ff);
+    const shards = new THREE.InstancedMesh(impactShardGeometry, shardMaterial, 12);
+    shards.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    shards.frustumCulled = false;
+    shards.count = 0;
+    group.add(shards);
+    group.visible = false;
+    root.add(group);
+    impacts.push({
+      group,
+      ripple,
+      shards,
+      life: 0,
+      duration: 0.56,
+      positions: new Float32Array(12 * 3),
+      velocities: new Float32Array(12 * 3)
+    });
+  }
+
+  return {
+    root,
+    magnet: { group: magnet, arcs: magnetArcs, material: magnetMaterial },
+    shield: { group: shield, shell: shieldShell, shellMaterial: shieldMaterial, rings: shieldRings, ringMaterial: shieldRingMaterial },
+    multiplier: { group: multiplier, afterimages, scorePulses, scorePulseMaterial },
+    overdrive: { group: overdrive, speedWaves, speedWaveMaterial, edgeFlow, edgeFlowMaterial },
+    storyWorld: { group: storyWorld, roadPatches: storyRoadPatches, roadMaterial: storyRoadMaterial, localWeather, localWeatherMaterial, light: storyLight },
+    synergy: { group: synergy, waves: synergyWaves, materials: synergyMaterials, light: synergyLight },
+    impacts,
+    scratch: {
+      matrix: new THREE.Matrix4(),
+      position: new THREE.Vector3(),
+      quaternion: new THREE.Quaternion(),
+      scale: new THREE.Vector3(),
+      euler: new THREE.Euler(),
+      color: new THREE.Color()
+    }
+  };
 }
 
 function createTree(accent) {
@@ -3191,6 +3496,24 @@ class CinematicRunnerRenderer {
     this.camera.add(this.flashSprite);
 
     this.buildWeather();
+    this.powerupStrengths = { magnet: 0, shield: 0, multiplier: 0, overdrive: 0 };
+    this.powerupTargets = { magnet: 0, shield: 0, multiplier: 0, overdrive: 0 };
+    this.powerupSnapshot = { magnet: false, shield: false, multiplier: false, overdrive: false };
+    this.powerupEvents = {
+      magnet: { remaining: 0, duration: 0 },
+      shield: { remaining: 0, duration: 0 },
+      multiplier: { remaining: 0, duration: 0 },
+      overdrive: { remaining: 0, duration: 0 }
+    };
+    this.powerupVisuals = createPowerupVisualRig(this.particleTexture, STAGE_CONFIGS[0].accent);
+    this.powerupEffectPool = this.powerupVisuals.impacts;
+    this.powerupEffectCursor = 0;
+    this.scorePulse = 0;
+    this.storyWorldInfluence = 0;
+    this.synergyInfluence = 0;
+    this.storyWorldState = { life: 0, duration: 0, elapsed: 0, intensity: 1, kind: "", gesture: "focus", emotion: "", color: STAGE_CONFIGS[0].accent };
+    this.synergyState = { life: 0, duration: 0, elapsed: 0, intensity: 1, color: STAGE_CONFIGS[0].accent };
+    this.scene.add(this.powerupVisuals.root);
     this.preloadBackdrops();
     this.setStage(0, true);
     this.modelLoader = new GLTFLoader();
@@ -3504,6 +3827,334 @@ class CinematicRunnerRenderer {
     this.scene.add(this.speedStreaks);
   }
 
+  setPowerupAccent(config) {
+    const visuals = this.powerupVisuals;
+    if (!visuals) return;
+    visuals.magnet.material.color.setHex(POWERUP_COLORS.magnet);
+    visuals.shield.shellMaterial.color.setHex(POWERUP_COLORS.shield);
+    visuals.shield.ringMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xe9fbff), 0.78));
+    visuals.multiplier.afterimages[0].material.color.setHex(POWERUP_COLORS.multiplier);
+    visuals.multiplier.afterimages[1].material.color.setHex(config.accent);
+    visuals.multiplier.scorePulseMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(POWERUP_COLORS.multiplier), 0.58));
+    visuals.overdrive.speedWaveMaterial.color.setHex(POWERUP_COLORS.overdrive);
+    visuals.overdrive.edgeFlowMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xfff0a1), 0.68));
+    visuals.storyWorld.roadMaterial.color.setHex(config.accent);
+    visuals.storyWorld.localWeatherMaterial.color.setHex(config.accent);
+    visuals.storyWorld.light.color.setHex(config.accent);
+    visuals.synergy.materials[0].color.setHex(config.accent);
+    visuals.synergy.light.color.setHex(config.accent);
+  }
+
+  syncPowerupState(powerups, delta) {
+    const hasSnapshot = readPowerupSnapshot(powerups, this.powerupSnapshot);
+    POWERUP_TYPES.forEach((type) => {
+      const eventState = this.powerupEvents[type];
+      eventState.remaining = Math.max(0, eventState.remaining - delta);
+      const active = eventState.remaining > 0 || (hasSnapshot && this.powerupSnapshot[type]);
+      this.powerupTargets[type] = active ? 1 : 0;
+      this.powerupStrengths[type] = damp(this.powerupStrengths[type], this.powerupTargets[type], active ? 15 : 8, delta);
+    });
+  }
+
+  startPowerup(detail = {}) {
+    const type = normalizePowerup(detail.powerup ?? detail);
+    if (!type) return;
+    const duration = powerupDuration(detail.duration ?? detail.remaining ?? detail.timeLeft, 6);
+    const eventState = this.powerupEvents[type];
+    eventState.duration = duration;
+    eventState.remaining = Math.max(eventState.remaining, duration);
+    this.powerupTargets[type] = 1;
+    this.powerupStrengths[type] = Math.max(this.powerupStrengths[type], 0.2);
+    if (type === "shield") {
+      this.flash = Math.max(this.flash, 0.12);
+      this.flashMaterial.color.setHex(POWERUP_COLORS.shield);
+    } else if (type === "multiplier") {
+      this.scorePulse = 1;
+    } else if (type === "overdrive") {
+      this.speedPulse = Math.max(this.speedPulse, 1.1);
+    }
+  }
+
+  endPowerup(detail = {}) {
+    const type = normalizePowerup(detail.powerup ?? detail);
+    if (!type) return;
+    this.powerupEvents[type].remaining = 0;
+    this.powerupTargets[type] = 0;
+  }
+
+  triggerShieldBlock(detail = {}) {
+    const slot = this.powerupEffectPool[this.powerupEffectCursor % this.powerupEffectPool.length];
+    this.powerupEffectCursor += 1;
+    const lane = Number(detail.lane ?? detail.entity?.lane);
+    const sourceZ = Number(detail.z ?? detail.entity?.z);
+    const effectX = Number.isFinite(lane) ? lane * LANE_WIDTH : this.currentLaneX;
+    const effectZ = Number.isFinite(sourceZ)
+      ? PLAYER_Z + (COLLISION_Z - sourceZ) * WORLD_Z_SCALE
+      : PLAYER_Z - 0.12;
+    slot.life = slot.duration;
+    slot.group.visible = true;
+    slot.group.position.set(effectX, 1.18, effectZ);
+    slot.ripple.rotation.set(0, 0, Number(detail.side) * 0.12 || 0);
+    slot.ripple.scale.setScalar(0.72);
+    slot.ripple.material.opacity = 0.92;
+    slot.shards.count = 12;
+    slot.shards.material.opacity = 0.84;
+    for (let index = 0; index < 12; index += 1) {
+      const angle = index / 12 * Math.PI * 2 + (index % 2) * 0.22;
+      const offset = index * 3;
+      slot.positions[offset] = 0;
+      slot.positions[offset + 1] = 0;
+      slot.positions[offset + 2] = 0;
+      slot.velocities[offset] = Math.cos(angle) * (0.85 + (index % 3) * 0.18);
+      slot.velocities[offset + 1] = Math.sin(angle) * 0.72 + 0.28;
+      slot.velocities[offset + 2] = 0.28 + (index % 4) * 0.11;
+    }
+    this.powerupStrengths.shield = Math.max(this.powerupStrengths.shield, 0.72);
+    this.shake = Math.max(this.shake, 0.2);
+    this.flash = Math.max(this.flash, 0.16);
+    this.flashMaterial.color.setHex(POWERUP_COLORS.shield);
+  }
+
+  triggerStoryWorld(interaction = {}) {
+    const item = interaction.item || interaction.storyItem || interaction.collectible || interaction;
+    const world = interaction.world && typeof interaction.world === "object" ? interaction.world : {};
+    const gameplay = interaction.gameplay && typeof interaction.gameplay === "object" ? interaction.gameplay : {};
+    const character = interaction.character && typeof interaction.character === "object" ? interaction.character : {};
+    const gameplayPowerup = normalizePowerup(gameplay.effect);
+    const semanticKind = String(item?.kind || world.changeType || interaction.changeType || gameplay.effect || "memory").toLowerCase();
+    let kind = semanticKind;
+    if (/rain|shelter|canopy|storm|steam|cocoa/.test(semanticKind)) kind = "umbrella";
+    else if (/petal|flower|green|growth|plant|bloom/.test(semanticKind)) kind = "plant";
+    else if (/groove|record|concert|rhythm|credit/.test(semanticKind)) kind = "record";
+    else if (/light|beacon|door|key|guard|homeward/.test(semanticKind)) kind = "lamp";
+    const config = STAGE_CONFIGS[this.stageIndex];
+    const color = storyPropColor(item, POWERUP_COLORS[gameplayPowerup] || config.accent);
+    const lane = Number(interaction.lane ?? item?.lane);
+    const sourceZ = Number(interaction.z ?? item?.z);
+    const group = this.powerupVisuals.storyWorld.group;
+    group.position.set(
+      Number.isFinite(lane) ? lane * LANE_WIDTH : this.currentLaneX,
+      0,
+      Number.isFinite(sourceZ) ? PLAYER_Z + (COLLISION_Z - sourceZ) * WORLD_Z_SCALE : PLAYER_Z - 4.2
+    );
+    const state = this.storyWorldState;
+    state.duration = powerupDuration(interaction.duration ?? world.duration ?? gameplay.durationMs, 2.8);
+    state.life = state.duration;
+    state.elapsed = 0;
+    state.intensity = clamp(Math.max(Number(world.intensity) || 0, Number(character.intensity) || 0, Number(interaction.intensity) || 0.3), 0.3, 1);
+    state.kind = kind;
+    const characterCue = `${character.immediateAction || character.action || ""} ${character.emotion || ""}`;
+    state.gesture = /冲刺|加快|快速|重拍|长步|连续变线/.test(characterCue)
+      ? "surge"
+      : /护住|稳住|托住|抱稳|握紧|贴近|压低|挡雨/.test(characterCue)
+        ? "protect"
+        : /递出|抬高|举起|展开|伸手|指向/.test(characterCue)
+          ? "reach"
+          : /侧身|换手|绕开|切入|转弯|调整/.test(characterCue)
+            ? "weave"
+            : "focus";
+    state.emotion = String(character.emotion || "");
+    state.color = color;
+    this.powerupVisuals.storyWorld.roadMaterial.color.setHex(color);
+    this.powerupVisuals.storyWorld.localWeatherMaterial.color.setHex(color);
+    this.powerupVisuals.storyWorld.light.color.setHex(color);
+    this.itemPulse = { kind, color, life: state.duration, duration: state.duration };
+  }
+
+  triggerStorySynergy(interaction = {}) {
+    const item = interaction.item || interaction.storyItem || interaction;
+    const world = interaction.world && typeof interaction.world === "object" ? interaction.world : {};
+    const gameplayPowerup = normalizePowerup(interaction.gameplay?.effect);
+    const config = STAGE_CONFIGS[this.stageIndex];
+    const color = storyPropColor(item, POWERUP_COLORS[gameplayPowerup] || config.accent);
+    const lane = Number(interaction.lane ?? item?.lane);
+    const sourceZ = Number(interaction.z ?? item?.z);
+    const group = this.powerupVisuals.synergy.group;
+    group.position.set(
+      Number.isFinite(lane) ? lane * LANE_WIDTH : this.currentLaneX,
+      0,
+      Number.isFinite(sourceZ) ? PLAYER_Z + (COLLISION_Z - sourceZ) * WORLD_Z_SCALE : PLAYER_Z - 2.2
+    );
+    const state = this.synergyState;
+    state.duration = powerupDuration(interaction.duration, 0.82);
+    state.life = state.duration;
+    state.elapsed = 0;
+    state.intensity = clamp((Number(world.intensity) || 0.7) + Math.min(0.2, (world.synergyChanges?.length || 0) * 0.05), 0.4, 1);
+    state.color = color;
+    this.powerupVisuals.synergy.materials[0].color.setHex(color);
+    this.powerupVisuals.synergy.light.color.setHex(color);
+    this.flash = Math.max(this.flash, 0.34);
+    this.flashMaterial.color.setHex(color);
+    this.shake = Math.max(this.shake, 0.24);
+    this.speedPulse = Math.max(this.speedPulse, 1.18);
+    this.scorePulse = 1;
+  }
+
+  updatePowerupVisuals(delta, time, speed, arriving) {
+    const visuals = this.powerupVisuals;
+    const scratch = visuals.scratch;
+    const enabled = arriving ? 0 : 1;
+    const magnetStrength = this.powerupStrengths.magnet * enabled;
+    const shieldStrength = this.powerupStrengths.shield * enabled;
+    const multiplierStrength = this.powerupStrengths.multiplier * enabled;
+    const overdriveStrength = this.powerupStrengths.overdrive * enabled;
+
+    const magnetActive = magnetStrength > 0.01;
+    visuals.magnet.group.visible = magnetActive;
+    if (magnetActive) {
+      visuals.magnet.group.position.set(this.currentLaneX, 1.05, PLAYER_Z - 0.16);
+      visuals.magnet.material.opacity = magnetStrength * (0.18 + Math.sin(time * 8) * 0.035);
+      visuals.magnet.arcs.forEach((arc, index) => {
+        arc.rotation.z = -Math.PI * 0.74 + index * 0.08 + Math.sin(time * 2.8 + index) * 0.09;
+        arc.rotation.y = Math.sin(time * 3.4 + index * 0.8) * 0.12;
+      });
+    }
+
+    const shieldActive = shieldStrength > 0.01;
+    visuals.shield.group.visible = shieldActive;
+    if (shieldActive) {
+      visuals.shield.group.position.set(this.currentLaneX, 0, PLAYER_Z - 0.02);
+      const shieldPulse = 1 + Math.sin(time * 5.4) * 0.018 * shieldStrength;
+      visuals.shield.shell.scale.set(0.84 * shieldPulse, 1.42 * shieldPulse, 0.68 * shieldPulse);
+      visuals.shield.shellMaterial.opacity = shieldStrength * 0.12;
+      visuals.shield.ringMaterial.opacity = shieldStrength * (0.28 + Math.sin(time * 7.2) * 0.055);
+      visuals.shield.rings.forEach((ring, index) => {
+        ring.rotation.z = time * (index ? -0.72 : 0.82);
+      });
+    }
+
+    this.scorePulse = Math.max(0, this.scorePulse - delta * 2.5);
+    const multiplierActive = multiplierStrength > 0.01;
+    visuals.multiplier.group.visible = multiplierActive;
+    if (multiplierActive) {
+      visuals.multiplier.afterimages.forEach((afterimage, index) => {
+        afterimage.position.set(
+          this.currentLaneX - this.lateralVelocity * (0.045 + index * 0.035),
+          0.04 + index * 0.025,
+          PLAYER_Z + 0.32 + index * 0.32
+        );
+        afterimage.scale.setScalar(1 + index * 0.035);
+        afterimage.material.opacity = multiplierStrength * (index ? 0.13 : 0.22) * (0.82 + Math.sin(time * 9 - index) * 0.18);
+      });
+      const scoreBeat = 1 - ((time * 2.25) % 1);
+      const scoreStrength = Math.max(this.scorePulse, scoreBeat * 0.58) * multiplierStrength;
+      visuals.multiplier.scorePulseMaterial.opacity = scoreStrength * 0.34;
+      visuals.multiplier.scorePulses.forEach((pulse, index) => {
+        pulse.position.set(this.currentLaneX, 1.1 + index * 0.28, PLAYER_Z + 0.08 + index * 0.08);
+        pulse.scale.setScalar(0.64 + (1 - scoreBeat) * (1.15 + index * 0.3));
+        pulse.rotation.z = time * (index ? -0.9 : 1.1);
+      });
+    }
+
+    const overdriveActive = overdriveStrength > 0.01;
+    visuals.overdrive.group.visible = overdriveActive;
+    visuals.overdrive.speedWaveMaterial.opacity = overdriveStrength * 0.24;
+    visuals.overdrive.edgeFlowMaterial.opacity = overdriveStrength * 0.62;
+    visuals.overdrive.speedWaves.count = overdriveActive ? 6 : 0;
+    visuals.overdrive.edgeFlow.count = overdriveActive ? 20 : 0;
+    if (overdriveActive) {
+      scratch.euler.set(-Math.PI / 2, 0, 0);
+      scratch.quaternion.setFromEuler(scratch.euler);
+      for (let index = 0; index < 6; index += 1) {
+        const travel = (time * Math.max(speed, 10) * 1.55 + index * 5.7) % 34;
+        scratch.position.set(0, 0.035, -27 + travel);
+        scratch.scale.set(3.2 + index * 0.08, 1.22 + overdriveStrength * 0.35, 1);
+        scratch.matrix.compose(scratch.position, scratch.quaternion, scratch.scale);
+        visuals.overdrive.speedWaves.setMatrixAt(index, scratch.matrix);
+      }
+      visuals.overdrive.speedWaves.instanceMatrix.needsUpdate = true;
+      scratch.quaternion.identity();
+      for (let index = 0; index < 20; index += 1) {
+        const row = Math.floor(index / 2);
+        const travel = (time * Math.max(speed, 10) * 2.05 + row * 3.8) % 38;
+        scratch.position.set(index % 2 ? 4.18 : -4.18, 0.045, -30 + travel);
+        scratch.scale.set(1, 1, 1 + overdriveStrength * 1.8);
+        scratch.matrix.compose(scratch.position, scratch.quaternion, scratch.scale);
+        visuals.overdrive.edgeFlow.setMatrixAt(index, scratch.matrix);
+      }
+      visuals.overdrive.edgeFlow.instanceMatrix.needsUpdate = true;
+    }
+
+    const storyState = this.storyWorldState;
+    storyState.life = Math.max(0, storyState.life - delta);
+    storyState.elapsed += storyState.life > 0 ? delta : 0;
+    const storyEnvelope = storyState.life > 0
+      ? clamp(storyState.elapsed / 0.2, 0, 1) * clamp(storyState.life / 0.7, 0, 1) * storyState.intensity
+      : 0;
+    this.storyWorldInfluence = storyEnvelope;
+    const storyActive = storyEnvelope > 0.001 && !arriving;
+    visuals.storyWorld.group.visible = storyActive;
+    visuals.storyWorld.roadPatches.count = storyActive ? 5 : 0;
+    visuals.storyWorld.roadMaterial.opacity = storyEnvelope * 0.32;
+    if (storyActive) {
+      scratch.euler.set(-Math.PI / 2, 0, 0);
+      scratch.quaternion.setFromEuler(scratch.euler);
+      for (let index = 0; index < 5; index += 1) {
+        const pulse = (storyState.elapsed * 1.8 + index * 0.19) % 1;
+        scratch.position.set((index - 2) * 0.28, 0.04, (index - 2) * 1.18);
+        scratch.scale.setScalar(0.72 + pulse * 2.35);
+        scratch.matrix.compose(scratch.position, scratch.quaternion, scratch.scale);
+        visuals.storyWorld.roadPatches.setMatrixAt(index, scratch.matrix);
+      }
+      visuals.storyWorld.roadPatches.instanceMatrix.needsUpdate = true;
+    }
+    visuals.storyWorld.localWeatherMaterial.opacity = storyEnvelope * (storyState.kind === "umbrella" ? 0.16 : 0.58);
+    visuals.storyWorld.localWeather.rotation.y = time * (storyState.kind === "record" ? 1.2 : 0.34);
+    visuals.storyWorld.localWeather.position.y = Math.sin(time * 2.6) * 0.12;
+    visuals.storyWorld.light.intensity = storyEnvelope * 11;
+
+    const synergyState = this.synergyState;
+    synergyState.life = Math.max(0, synergyState.life - delta);
+    synergyState.elapsed += synergyState.life > 0 ? delta : 0;
+    const synergyEnvelope = synergyState.life > 0
+      ? clamp(synergyState.elapsed / 0.09, 0, 1) * clamp(synergyState.life / 0.38, 0, 1) * synergyState.intensity
+      : 0;
+    this.synergyInfluence = synergyEnvelope;
+    const synergyActive = synergyEnvelope > 0.001 && !arriving;
+    visuals.synergy.group.visible = synergyActive;
+    if (synergyActive) {
+      visuals.synergy.waves.forEach((wave, index) => {
+        const progress = clamp(synergyState.elapsed / synergyState.duration, 0, 1);
+        wave.scale.setScalar(0.58 + progress * (index ? 3.8 : 5.2));
+        wave.rotation.z = time * (index ? -2.2 : 1.7);
+        wave.material.opacity = synergyEnvelope * (index ? 0.5 : 0.72);
+      });
+    }
+    visuals.synergy.light.intensity = synergyEnvelope * 22;
+
+    this.powerupEffectPool.forEach((slot, slotIndex) => {
+      if (slot.life <= 0) return;
+      slot.life = Math.max(0, slot.life - delta);
+      const progress = 1 - slot.life / slot.duration;
+      slot.ripple.scale.setScalar(0.72 + progress * 3.2);
+      slot.ripple.material.opacity = (1 - progress) * 0.92;
+      slot.shards.material.opacity = (1 - progress) * 0.84;
+      for (let index = 0; index < 12; index += 1) {
+        const offset = index * 3;
+        slot.positions[offset] += slot.velocities[offset] * delta;
+        slot.positions[offset + 1] += slot.velocities[offset + 1] * delta;
+        slot.positions[offset + 2] += slot.velocities[offset + 2] * delta;
+        slot.velocities[offset + 1] -= delta * 1.4;
+        scratch.position.fromArray(slot.positions, offset);
+        scratch.euler.set(time * 5 + index, time * 3.2 + index * 0.7, slotIndex * 0.4 + index);
+        scratch.quaternion.setFromEuler(scratch.euler);
+        scratch.scale.setScalar(Math.max(0.01, (1 - progress) * (0.76 + (index % 3) * 0.12)));
+        scratch.matrix.compose(scratch.position, scratch.quaternion, scratch.scale);
+        slot.shards.setMatrixAt(index, scratch.matrix);
+      }
+      slot.shards.instanceMatrix.needsUpdate = true;
+      if (slot.life <= 0) {
+        slot.group.visible = false;
+        slot.shards.count = 0;
+      }
+    });
+
+    const config = STAGE_CONFIGS[this.stageIndex];
+    const baseEnvironment = ["neon", "rain", "storm", "starlight"].includes(config.weather) ? 0.9 : 0.72;
+    this.scene.environmentIntensity = baseEnvironment + overdriveStrength * 0.08 + storyEnvelope * 0.1 + synergyEnvelope * 0.18;
+    this.edgeLight.intensity = 1.75 + overdriveStrength * 3.6 + synergyEnvelope * 2.4;
+  }
+
   preloadBackdrops() {
     STAGE_CONFIGS.forEach((config, index) => {
       this.textureLoader.load(config.asset, (texture) => {
@@ -3634,6 +4285,7 @@ class CinematicRunnerRenderer {
     this.collectibleBatches.hearts.material.emissive.setHex(tokenColor);
     this.collectibleBatches.glows.material.color.setHex(collectibleColor);
     this.collectibleBatches.pickupTrail.material.color.setHex(collectibleColor);
+    this.setPowerupAccent(config);
     this.skyDome.userData.uniforms.topColor.value.setHex(config.skyTop);
     this.skyDome.userData.uniforms.bottomColor.value.setHex(config.skyBottom);
     this.skyDome.userData.uniforms.accentColor.value.setHex(config.accent);
@@ -3750,11 +4402,23 @@ class CinematicRunnerRenderer {
       if (!entity.active) return;
       if (entity.type === "collectible") {
         if (collectibleCount >= batches.capacity) return;
-        const x = entity.lane * LANE_WIDTH;
-        const z = PLAYER_Z + (COLLISION_Z - entity.z) * WORLD_Z_SCALE;
-        const y = 1.12 + (Number(entity.height) || 0) + Math.sin(time * 4.5 + entity.id) * 0.1;
+        const baseX = (Number(entity.lane) || 0) * LANE_WIDTH;
+        let x = baseX;
+        let z = PLAYER_Z + (COLLISION_Z - (Number(entity.z) || 0)) * WORLD_Z_SCALE;
+        let y = 1.12 + (Number(entity.height) || 0) + Math.sin(time * 4.5 + entity.id) * 0.1;
+        const magnetReach = clamp((z + 13.5) / (PLAYER_Z + 13.5), 0, 1);
+        const magnetBend = (this.powerupStrengths?.magnet || 0) * magnetReach * magnetReach * (3 - 2 * magnetReach);
+        if (magnetBend > 0.001) {
+          x = THREE.MathUtils.lerp(baseX, this.currentLaneX, magnetBend);
+          y += Math.sin(magnetReach * Math.PI) * 0.86 * this.powerupStrengths.magnet + magnetBend * 0.12;
+          z += magnetBend * 0.42;
+        }
         this.collectiblePosition.set(x, y, z);
-        this.collectibleEuler.set(0, Math.sin(time * 1.7 + entity.id) * 0.18, Math.sin(time * 1.2 + entity.id) * 0.08);
+        this.collectibleEuler.set(
+          0,
+          Math.sin(time * 1.7 + entity.id) * 0.18,
+          Math.sin(time * 1.2 + entity.id) * 0.08 + (this.currentLaneX - baseX) * magnetBend * 0.09
+        );
         this.collectibleQuaternion.setFromEuler(this.collectibleEuler);
         this.collectibleMatrix.compose(this.collectiblePosition, this.collectibleQuaternion, this.collectibleScale);
         batches.rims.setMatrixAt(collectibleCount, this.collectibleMatrix);
@@ -3843,8 +4507,10 @@ class CinematicRunnerRenderer {
     batches.glows.geometry.setDrawRange(0, collectibleCount);
     batches.glows.geometry.attributes.position.needsUpdate = true;
     batches.glows.material.opacity = 0.32 + Math.sin(time * 4.8) * 0.07;
+    batches.glows.material.size = 0.36 + (this.powerupStrengths?.magnet || 0) * 0.08;
     batches.pickupTrail.geometry.setDrawRange(0, collectibleCount * 2);
     batches.pickupTrail.geometry.attributes.position.needsUpdate = true;
+    batches.pickupTrail.material.size = 0.14 + (this.powerupStrengths?.magnet || 0) * 0.07;
     this.storyFocusTarget = storyFocusTarget;
     this.entityObjects.forEach((object, id) => {
       if (activeIds.has(id)) return;
@@ -3879,10 +4545,21 @@ class CinematicRunnerRenderer {
     this.ambientParticles.material.size = config.weather === "starlight" ? 0.2 : 0.11;
     this.ambientParticles.rotation.y = time * 0.012;
     this.ambientParticles.position.y = Math.sin(time * 0.24) * 0.28;
-    const streakTarget = clamp((speed - 11) / 15 + combo * 0.022 + this.speedPulse * 0.32 + this.flow * 0.5, 0, 0.74);
+    const streakTarget = clamp(
+      (speed - 11) / 15 + combo * 0.022 + this.speedPulse * 0.32 + this.flow * 0.5 + this.powerupStrengths.overdrive * 0.56,
+      0,
+      0.9
+    );
     this.speedStreaks.material.opacity = damp(this.speedStreaks.material.opacity, streakTarget, 5, delta);
-    this.speedStreaks.scale.z = 1 + this.flow * 1.4;
+    this.speedStreaks.scale.z = 1 + this.flow * 1.4 + this.powerupStrengths.overdrive * 1.1;
     this.speedStreaks.position.z = (time * speed * 0.85) % 8;
+    if (this.storyWorldInfluence > 0) {
+      if (this.storyWorldState.kind === "umbrella") this.rain.material.opacity *= 1 - this.storyWorldInfluence * 0.76;
+      this.ambientParticles.material.opacity = Math.min(0.82, this.ambientParticles.material.opacity + this.storyWorldInfluence * 0.2);
+      if (["flower", "plant"].includes(this.storyWorldState.kind)) {
+        this.ambientParticles.material.size = Math.max(this.ambientParticles.material.size, 0.2 + this.storyWorldInfluence * 0.08);
+      }
+    }
   }
 
   updateDistrictWorld(delta, time, distance, speed) {
@@ -4112,6 +4789,27 @@ class CinematicRunnerRenderer {
   }
 
   effect(type, detail = {}) {
+    if (!detail || typeof detail !== "object") detail = {};
+    if (type === "powerup-start") {
+      this.startPowerup(detail);
+      return;
+    }
+    if (type === "powerup-end") {
+      this.endPowerup(detail);
+      return;
+    }
+    if (type === "shield-block") {
+      this.triggerShieldBlock(detail);
+      return;
+    }
+    if (type === "story-world") {
+      this.triggerStoryWorld(detail);
+      return;
+    }
+    if (type === "story-synergy") {
+      this.triggerStorySynergy(detail);
+      return;
+    }
     if (type === "miss") {
       this.shake = Math.max(this.shake, 0.82);
       this.flash = Math.max(this.flash, 0.34);
@@ -4128,6 +4826,9 @@ class CinematicRunnerRenderer {
     }
     if (type === "story-pickup") this.spawnPickupSequence(detail);
     if (type === "energy") this.speedPulse = Math.max(this.speedPulse, 0.36);
+    if (this.powerupStrengths.multiplier > 0.05 && ["perfect", "energy", "story-pickup", "dodge"].includes(type)) {
+      this.scorePulse = 1;
+    }
     if (type === "near-miss") {
       this.shake = Math.max(this.shake, 0.26);
       this.speedPulse = Math.max(this.speedPulse, 1);
@@ -4208,6 +4909,7 @@ class CinematicRunnerRenderer {
     const runState = frame.runState || {};
     const speed = Number(motion.speed) || 10.5;
     const distance = Number(motion.distance) || 0;
+    this.syncPowerupState(motion.powerups, delta);
     const introDistance = frame.mode === "intro" ? time * 5.2 : 0;
     this.currentDistance = distance + introDistance;
     this.syncRoad(this.currentDistance);
@@ -4252,6 +4954,7 @@ class CinematicRunnerRenderer {
     this.landingRing.position.x = this.currentLaneX;
     this.landingRing.scale.setScalar(0.7 + landingProgress * 2.5);
     this.landingRing.material.opacity = this.landingPulse * 0.72;
+    this.updatePowerupVisuals(delta, time, speed, arriving);
 
     const config = STAGE_CONFIGS[this.stageIndex];
     this.companion.visible = arriving;
@@ -4304,6 +5007,25 @@ class CinematicRunnerRenderer {
       this.player.rotation.y = damp(this.player.rotation.y, 0, 8, delta);
     }
 
+    if (!arriving && this.storyWorldInfluence > 0.001) {
+      const gestureStrength = this.storyWorldInfluence;
+      const gestureBeat = Math.sin(time * (this.storyWorldState.gesture === "surge" ? 11 : 5.6));
+      if (this.storyWorldState.gesture === "surge") {
+        this.player.rotation.x -= gestureStrength * 0.095;
+        this.player.rotation.z += gestureBeat * gestureStrength * 0.025;
+      } else if (this.storyWorldState.gesture === "protect") {
+        this.player.rotation.x += gestureStrength * 0.045;
+        this.player.rotation.z -= gestureStrength * 0.055;
+      } else if (this.storyWorldState.gesture === "reach") {
+        this.player.rotation.y += gestureStrength * 0.09;
+        this.player.rotation.z += gestureBeat * gestureStrength * 0.035;
+      } else if (this.storyWorldState.gesture === "weave") {
+        this.player.rotation.z += gestureBeat * gestureStrength * 0.075;
+      } else {
+        this.player.rotation.x -= gestureStrength * 0.025;
+      }
+    }
+
     if (this.carriedItems.length) {
       const transfer = clamp((arrivalProgress - 0.34) / 0.34, 0, 1);
       const transferEase = transfer * transfer * (3 - transfer * 2);
@@ -4324,17 +5046,25 @@ class CinematicRunnerRenderer {
     const shakeY = Math.sin(time * 67) * this.shake * 0.055;
     this.camera.position.x = damp(this.camera.position.x, cameraTargetX, arriving ? 2.8 : 6, delta) + shakeX;
     this.camera.position.y = damp(this.camera.position.y, arriving ? 3.78 + cameraBob : 5.16 + cameraBob - (motion.action === "slide" ? 0.2 : 0) - this.flow * 0.08, arriving ? 3.2 : 9, delta) + shakeY;
-    this.camera.position.z = damp(this.camera.position.z, arriving ? 8.4 : motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28, arriving ? 2.8 : 6.5, delta);
+    this.camera.position.z = damp(
+      this.camera.position.z,
+      arriving ? 8.4 : motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28 - this.powerupStrengths.overdrive * 0.42,
+      arriving ? 2.8 : 6.5,
+      delta
+    );
     this.camera.fov = damp(
       this.camera.fov,
-      arriving ? 52 : 58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6 + this.storyFocus * 1.35,
+      arriving
+        ? 52
+        : 58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6
+          + this.storyFocus * 1.35 + this.powerupStrengths.overdrive * 1.8 + this.synergyInfluence * 1.2,
       arriving ? 3 : 6,
       delta
     );
     this.camera.updateProjectionMatrix();
     if (arriving) this.camera.lookAt(0.02, 1.38, -0.72);
     else {
-      this.camera.lookAt(this.currentLaneX * 0.34, 0.62, -15.8 - this.flow * 3.2);
+      this.camera.lookAt(this.currentLaneX * 0.34, 0.62, -15.8 - this.flow * 3.2 - this.powerupStrengths.overdrive * 1.4);
       this.camera.rotation.z += clamp(-this.lateralVelocity * (0.018 + this.flow * 0.012), -0.075, 0.075);
     }
     this.shake = Math.max(0, this.shake - delta * 2.8);
@@ -4346,11 +5076,17 @@ class CinematicRunnerRenderer {
     this.scene.fog.color.lerp(this.targetFog, 1 - Math.exp(-2.2 * delta));
     this.scene.fog.density = damp(this.scene.fog.density, this.targetFogDensity, 2.5, delta);
     const itemPulseStrength = this.itemPulse ? clamp(this.itemPulse.life / this.itemPulse.duration, 0, 1) : 0;
-    this.renderer.toneMappingExposure = damp(this.renderer.toneMappingExposure, this.targetExposure + this.flow * 0.08 + itemPulseStrength * 0.045, 2.8, delta);
-    this.keyLight.intensity = arriving ? 2.35 : config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : 3.15;
+    this.renderer.toneMappingExposure = damp(
+      this.renderer.toneMappingExposure,
+      this.targetExposure + this.flow * 0.08 + itemPulseStrength * 0.045 + this.synergyInfluence * 0.12,
+      2.8,
+      delta
+    );
+    this.keyLight.intensity = (arriving ? 2.35 : config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : 3.15) + this.synergyInfluence * 4.5;
     this.warmLight.intensity = arriving
       ? 7.5
-      : (this.stageIndex >= 3 ? 21 : 14) + this.flow * 8 + itemPulseStrength * 12 + this.storyFocus * 6;
+      : (this.stageIndex >= 3 ? 21 : 14) + this.flow * 8 + itemPulseStrength * 12 + this.storyFocus * 6
+        + this.storyWorldInfluence * 6 + this.synergyInfluence * 8;
     if (this.itemPulse) this.warmLight.color.lerp(new THREE.Color(this.itemPulse.color), 1 - Math.exp(-8 * delta));
     else this.warmLight.color.lerp(new THREE.Color(config.accent), 1 - Math.exp(-4 * delta));
     this.runnerFillLight.intensity = arriving ? 4.8 : 8.5 + this.flow * 4.5;
@@ -4425,6 +5161,10 @@ class CinematicRunnerRenderer {
       pickupSequences: this.pickupSequences.length,
       flow: this.flow,
       storyFocus: this.storyFocus,
+      powerups: { ...this.powerupStrengths },
+      storyWorld: this.storyWorldInfluence,
+      synergy: this.synergyInfluence,
+      pooledPowerupEffects: this.powerupEffectPool.filter((slot) => slot.life > 0).length,
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,
       rainOpacity: this.rain.material.opacity,
@@ -4448,6 +5188,8 @@ class CinematicRunnerRenderer {
     this.pickupSequences.length = 0;
     this.entityObjects.forEach((object) => disposeObject(object));
     this.entityPool.forEach((bucket) => bucket.forEach((object) => disposeObject(object)));
+    this.scene.remove(this.powerupVisuals.root);
+    disposeObject(this.powerupVisuals.root);
     this.renderer.dispose();
     this.roadTexture.dispose();
     this.platformTexture.dispose();
