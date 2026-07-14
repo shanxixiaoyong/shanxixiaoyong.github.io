@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "assets/runner-love-visuals.js"), "utf8");
@@ -11,6 +12,20 @@ const modulePath = path.join(root, "assets/vendor/three-0.185.1.module.min.js");
 const corePath = path.join(root, "assets/vendor/three.core.min.js");
 const moduleSource = fs.readFileSync(modulePath, "utf8");
 const content = require("../assets/runner-love-content.js");
+
+function sourceBlock(startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.ok(start >= 0, `missing source marker: ${startMarker}`);
+  assert.ok(end > start, `missing source marker: ${endMarker}`);
+  return source.slice(start, end);
+}
+
+function frozenConstant(name, nextName) {
+  const declaration = sourceBlock(`const ${name} = `, `\n\nconst ${nextName}`);
+  const expression = declaration.slice(declaration.indexOf("=") + 1).trim().replace(/;$/, "");
+  return vm.runInNewContext(expression);
+}
 
 test("vendors the complete local Three.js r185 module graph with its license", () => {
   assert.equal(fs.existsSync(modulePath), true);
@@ -60,7 +75,7 @@ test("gives every chapter a distinct world, road, obstacle, particle, and depth 
   assert.match(source, /const STAGE_OBSTACLE_PALETTES = Object\.freeze\(\[/);
   assert.match(source, /function stageObstacleSurfaceTexture\(/);
   assert.match(source, /function addObstacleContactShadow\(/);
-  assert.match(source, /this\.roadTextures = STAGE_CONFIGS\.map\(\(_, stageIndex\) => makeRoadTexture\(stageIndex\)\)/);
+  assert.match(source, /this\.roadTextures = STAGE_CONFIGS\.map\(\(\) => \[null, null, null\]\)/);
   assert.equal(content.STAGE_BLUEPRINTS.length, 7);
   content.STAGE_BLUEPRINTS.forEach((stage) => {
     assert.ok(stage.world.sceneMood && stage.world.timeWeather && stage.world.colorPalette, stage.id);
@@ -117,7 +132,7 @@ test("ships local city runners and a batched CC0 city instead of flat 2D runners
 
 test("directs all twenty-one acts as unique spaces rather than palette swaps", () => {
   const start = source.indexOf("const ACT_VISUAL_DIRECTIONS");
-  const end = source.indexOf("const RELATIONSHIP_MODES", start);
+  const end = source.indexOf("const THEMED_ROUTE_MODULES", start);
   const block = source.slice(start, end);
   const expectedActs = content.STAGE_BLUEPRINTS.flatMap((stage) => stage.segments.map((segment) => segment.id));
   const ids = [...block.matchAll(/id: "([^"]+)"/g)].map((match) => match[1]);
@@ -136,6 +151,103 @@ test("directs all twenty-one acts as unique spaces rather than palette swaps", (
     assert.ok(source.includes(semantic), authoredGoal);
   }
   assert.match(source, /this\.canvas\.setAttribute\("data-route-topology", profile\.topology\)/);
+});
+
+test("defines a unique seven-by-three themed route contract instead of palette-swapping acts", () => {
+  const stages = frozenConstant("THEMED_ROUTE_MODULES", "PHASE_TRACKSIDE_PROPS");
+  assert.equal(stages.length, 7);
+  stages.forEach((phases, stageIndex) => assert.equal(phases.length, 3, `stage ${stageIndex + 1}`));
+
+  const modules = stages.flat();
+  assert.equal(modules.length, 21);
+  modules.forEach((route) => {
+    for (const field of ["id", "surface", "motif", "shoulder"]) {
+      assert.equal(typeof route[field], "string", `${route.id || "route"}.${field}`);
+      assert.ok(route[field].length > 0, `${route.id || "route"}.${field}`);
+    }
+    assert.equal(typeof route.rail, "boolean", `${route.id}.rail`);
+  });
+
+  assert.equal(new Set(modules.map((route) => route.id)).size, 21);
+  assert.equal(new Set(modules.map((route) => route.surface)).size, 21);
+  assert.equal(new Set(modules.map((route) => route.motif)).size, 21);
+  assert.equal(new Set(modules.map((route) => `${route.surface}|${route.motif}|${route.shoulder}`)).size, 21);
+
+  const texturePainter = sourceBlock("function paintRoutePhaseTexture(", "\nfunction makeRoadTexture(");
+  for (const primitive of ["strokeRect", "bezierCurveTo", "ellipse", "arc", "fillRect"]) {
+    assert.ok(texturePainter.includes(primitive), primitive);
+  }
+  for (let stageIndex = 0; stageIndex < 7; stageIndex += 1) {
+    assert.match(texturePainter, new RegExp(`stageIndex === ${stageIndex}`));
+  }
+});
+
+test("lazily builds and selects all twenty-one phase road textures within a bounded cache", () => {
+  const textureFactory = sourceBlock("function makeRoadTexture(", "\nfunction makePlatformTexture(");
+  assert.match(textureFactory, /paintRoutePhaseTexture\(context, width, height, stageIndex, phaseIndex, highlight\)/);
+  assert.match(source, /this\.roadTextures = STAGE_CONFIGS\.map\(\(\) => \[null, null, null\]\)/);
+  assert.match(source, /ensureRoadTexture\(stageIndex, phaseIndex\)/);
+  assert.match(source, /prepareRoadTextures\(stageIndex\)/);
+  assert.match(source, /texture\.dispose\(\)/);
+  assert.match(source, /textures\[phaseIndex\] = null/);
+  assert.match(source, /this\.roadTexture = this\.roadTextures\[0\]\[0\]/);
+
+  const setStage = sourceBlock("  setStage(index, immediate = false, explicitStage = null) {", "\n  setStageContent(");
+  const setRoutePhase = sourceBlock("  setRoutePhase(value, phaseContent = null) {", "\n  setDirectorAct(");
+  assert.match(setStage, /this\.prepareRoadTextures\(this\.stageIndex\)/);
+  assert.match(setStage, /this\.roadTexture = this\.ensureRoadTexture\(this\.stageIndex, this\.routePhase\)/);
+  assert.match(setRoutePhase, /this\.roadTexture = this\.ensureRoadTexture\(this\.stageIndex, nextPhase\)/);
+  assert.match(setRoutePhase, /this\.roadMaterial\.map = this\.roadTexture/);
+  assert.match(setRoutePhase, /this\.roadMaterial\.needsUpdate = true/);
+});
+
+test("compiles themed road batches on act changes without cycle-boundary uploads", () => {
+  const stages = frozenConstant("THEMED_ROUTE_MODULES", "PHASE_TRACKSIDE_PROPS");
+  const railActs = Array.from(stages.flat().filter((route) => route.rail), (route) => route.id);
+  assert.deepEqual(railActs, ["station-braid", "last-train-platform", "dawn-platform"]);
+
+  const updateRoadBatches = sourceBlock("  updateRoadBatches(", "\n  rebuildDecor(");
+  assert.match(updateRoadBatches, /updateRoadBatches\(roadCycle = 0\)/);
+  assert.match(updateRoadBatches, /routeModuleAt\(stageIndex, phaseIndex, serial\)/);
+  for (const field of ["center", "widthScale", "walkScale", "variant"]) {
+    assert.match(updateRoadBatches, new RegExp(`module\\.${field}`));
+  }
+
+  const syncRoad = sourceBlock("  syncRoad(distance) {", "\n  resetEntityPoolForStage(");
+  assert.match(syncRoad, /if \(roadCycle !== this\.roadCycle\)/);
+  assert.match(syncRoad, /this\.roadCycle = roadCycle/);
+  assert.doesNotMatch(syncRoad, /this\.updateRoadBatches\(roadCycle\)/);
+  assert.match(syncRoad, /data-road-module-cycle/);
+  assert.match(syncRoad, /routeModuleAt\(this\.stageIndex, this\.routePhase/);
+  assert.match(source, /batch\.instanceMatrix\.setUsage\(THREE\.DynamicDrawUsage\)/);
+
+  const qualityVisibility = sourceBlock("  syncQualityVisibility(arriving = false) {", "\n  updateRelationshipPresence(");
+  for (const block of [qualityVisibility, syncRoad]) {
+    assert.match(block, /routeModuleAt\(this\.stageIndex, this\.routePhase/);
+    assert.match(block, /\.rail/);
+    assert.doesNotMatch(block, /routeStyle\s*===\s*"(?:metro|terminal)"/);
+  }
+  assert.match(qualityVisibility, /this\.roadBatches\.rails\.visible = !arriving && railRoute/);
+});
+
+test("selects genuinely different trackside prop sets for every route phase", () => {
+  const stages = frozenConstant("PHASE_TRACKSIDE_PROPS", "ROUTE_VARIATION_ORDER");
+  assert.equal(stages.length, 7);
+  stages.forEach((phases, stageIndex) => {
+    assert.equal(phases.length, 3, `stage ${stageIndex + 1}`);
+    phases.forEach((props, phaseIndex) => {
+      assert.ok(props.length >= 3, `stage ${stageIndex + 1} phase ${phaseIndex + 1}`);
+      props.forEach((prop) => assert.equal(typeof prop, "string"));
+    });
+    const propSets = phases.map((props) => Array.from(props).sort().join("|"));
+    assert.equal(new Set(propSets).size, 3, `stage ${stageIndex + 1}`);
+  });
+
+  const rebuildDecor = sourceBlock("  rebuildDecor() {", "\n  buildWeather(");
+  assert.match(rebuildDecor, /PHASE_TRACKSIDE_PROPS\[this\.stageIndex\](?:\?\.)?\[phase\]/);
+  assert.match(rebuildDecor, /createProp\(type, config\.accent/);
+  const setRoutePhase = sourceBlock("  setRoutePhase(value, phaseContent = null) {", "\n  setDirectorAct(");
+  assert.match(setRoutePhase, /this\.rebuildDecor\(\)/);
 });
 
 test("accepts director commands as persistent visual state with duplicate protection", () => {

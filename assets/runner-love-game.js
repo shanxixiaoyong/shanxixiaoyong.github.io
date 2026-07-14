@@ -1913,6 +1913,38 @@
     save: persist
   });
 
+  const visualAuditParams = typeof URLSearchParams === "function" && typeof location === "object"
+    ? new URLSearchParams(location.search)
+    : null;
+  const visualAuditEnabled = Boolean(visualAuditParams
+    && ["localhost", "127.0.0.1"].includes(location.hostname)
+    && visualAuditParams.has("visual-stage"));
+  if (visualAuditEnabled) {
+    const auditStage = Math.max(0, Math.min(content.STAGES.length - 1, Number(visualAuditParams.get("visual-stage")) - 1 || 0));
+    const auditPhase = Math.max(0, Math.min(2, Number(visualAuditParams.get("visual-phase")) - 1 || 0));
+    setTimeout(() => {
+      reset(false);
+      start();
+      finishStageIntro();
+      for (let stageIndex = 0; stageIndex < auditStage; stageIndex += 1) {
+        completeStage("perfect");
+        finishArrivalDebug();
+        finishStageIntroDebug();
+      }
+      const definition = rules.STAGES[currentStageIndex()];
+      const phases = getStageExperience(currentStageIndex()).blueprint?.segments || getStageExperience(currentStageIndex()).phases;
+      const threshold = auditPhase === 0 ? 0 : Number(phases[auditPhase]?.progress?.[0]) || auditPhase / 3;
+      const desiredProgress = Math.ceil(definition.target * threshold);
+      while (runState.status === "playing" && runState.stage.progress < desiredProgress) {
+        const itemIds = content.STAGE_ITEM_IDS[currentStageIndex()];
+        const itemId = itemIds[runState.stage.progress % itemIds.length];
+        applyMoment({ outcome: "perfect", kind: "story-item", itemId, choiceId: `visual-audit-${runState.stage.progress}` });
+      }
+      root?.setAttribute("data-visual-audit", `${auditStage + 1}-${auditPhase + 1}`);
+      render();
+    }, 60);
+  }
+
   const saved = safeLoad();
   if (saved?.run?.status === "playing") show(ui.savedRun, true);
   configureCanvas();

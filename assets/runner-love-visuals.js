@@ -379,6 +379,108 @@ const ACT_VISUAL_DIRECTIONS = Object.freeze([
   ])
 ]);
 
+const THEMED_ROUTE_MODULES = Object.freeze([
+  Object.freeze([
+    Object.freeze({ id: "camphor-arcade", surface: "rain-darkened-campus-stone", motif: "stone", shoulder: "arcade", rail: false, width: 0.96, curve: 0.16, walk: 0.86 }),
+    Object.freeze({ id: "sunshower-garden", surface: "root-broken-garden-path", motif: "leaf", shoulder: "garden", rail: false, width: 1.04, curve: 0.34, walk: 0.92 }),
+    Object.freeze({ id: "library-crossing", surface: "library-crosswalk-plaza", motif: "crossing", shoulder: "campus", rail: false, width: 1.12, curve: 0.08, walk: 1.08 })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "mist-levee-boardwalk", surface: "river-timber-boardwalk", motif: "boardwalk", shoulder: "river", rail: false, width: 0.92, curve: 0.42, walk: 0.76 }),
+    Object.freeze({ id: "record-alley-groove", surface: "record-shop-groove-stone", motif: "groove", shoulder: "storefront", rail: false, width: 1.02, curve: 0.25, walk: 0.9 }),
+    Object.freeze({ id: "bookstore-threshold", surface: "book-spine-threshold-paving", motif: "bookspine", shoulder: "bookstore", rail: false, width: 1.1, curve: 0.09, walk: 1.04 })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "station-braid", surface: "wet-metro-track-bed", motif: "rail", shoulder: "platform", rail: true, width: 0.92, curve: 0.14, walk: 1.05 }),
+    Object.freeze({ id: "last-train-platform", surface: "tactile-platform-arc", motif: "tactile", shoulder: "platform", rail: true, width: 1, curve: 0.32, walk: 1.12 }),
+    Object.freeze({ id: "cinema-marquee", surface: "cinema-neon-forecourt", motif: "marquee", shoulder: "cinema", rail: false, width: 1.14, curve: 0.08, walk: 1.08 })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "market-cobble-run", surface: "lantern-market-cobble", motif: "cobble", shoulder: "stalls", rail: false, width: 0.94, curve: 0.4, walk: 0.82 }),
+    Object.freeze({ id: "music-square-pulse", surface: "music-square-inlay", motif: "pulse", shoulder: "stage", rail: false, width: 1.06, curve: 0.2, walk: 0.98 }),
+    Object.freeze({ id: "quiet-river-promenade", surface: "moonlit-river-promenade", motif: "wave", shoulder: "river", rail: false, width: 0.9, curve: 0.3, walk: 0.78 })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "breakfast-shop-lane", surface: "breakfast-shop-checker", motif: "checker", shoulder: "shop", rail: false, width: 0.98, curve: 0.28, walk: 0.92 }),
+    Object.freeze({ id: "morning-market-grid", surface: "morning-market-tile-grid", motif: "grid", shoulder: "market", rail: false, width: 1.1, curve: 0.12, walk: 1.02 }),
+    Object.freeze({ id: "home-stairway", surface: "residential-step-paving", motif: "steps", shoulder: "homes", rail: false, width: 0.92, curve: 0.42, walk: 0.8 })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "flyover-drain-line", surface: "flooded-flyover-steel", motif: "drain", shoulder: "truss", rail: false, width: 0.92, curve: 0.32, walk: 0.72 }),
+    Object.freeze({ id: "storm-detour-deck", surface: "storm-detour-boardwalk", motif: "detour", shoulder: "warning", rail: false, width: 1.04, curve: 0.44, walk: 0.88 }),
+    Object.freeze({ id: "shelter-dry-funnel", surface: "shelter-dry-stone", motif: "dryline", shoulder: "shelter", rail: false, width: 1.12, curve: 0.1, walk: 1.06 })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "dawn-platform", surface: "dawn-tactile-platform", motif: "terminal", shoulder: "terminal", rail: true, width: 1, curve: 0.14, walk: 1.12 }),
+    Object.freeze({ id: "memory-material-street", surface: "six-memory-material-bands", motif: "memory", shoulder: "promenade", rail: false, width: 1.08, curve: 0.3, walk: 0.96 }),
+    Object.freeze({ id: "home-threshold", surface: "warm-home-threshold", motif: "threshold", shoulder: "home", rail: false, width: 1.16, curve: 0.06, walk: 1.1 })
+  ])
+]);
+
+const PHASE_TRACKSIDE_PROPS = Object.freeze([
+  Object.freeze([Object.freeze(["campus", "tree", "lamp"]), Object.freeze(["tree", "shelter", "lamp"]), Object.freeze(["campus", "signal", "lamp"])]),
+  Object.freeze([Object.freeze(["railing", "bench", "tree"]), Object.freeze(["bookstore", "lamp", "bench"]), Object.freeze(["bookstore", "shelter", "railing"])]),
+  Object.freeze([Object.freeze(["station", "signal", "neon-sign"]), Object.freeze(["station", "shelter", "neon-sign"]), Object.freeze(["cinema", "neon-sign", "lamp"])]),
+  Object.freeze([Object.freeze(["market", "lamp", "shelter"]), Object.freeze(["market", "neon-sign", "lamp"]), Object.freeze(["railing", "bench", "lamp"])]),
+  Object.freeze([Object.freeze(["market", "home", "lamp"]), Object.freeze(["market", "tree", "bench"]), Object.freeze(["home", "tree", "lamp"])]),
+  Object.freeze([Object.freeze(["maintenance", "warning", "signal"]), Object.freeze(["warning", "shelter", "railing"]), Object.freeze(["shelter", "lamp", "railing"])]),
+  Object.freeze([Object.freeze(["terminal", "station", "signal"]), Object.freeze(["home", "lamp", "tree"]), Object.freeze(["home", "lamp", "bench"])])
+]);
+
+const ROUTE_VARIATION_ORDER = Object.freeze([0, 4, 1, 7, 3, 9, 2, 11, 5, 8, 6, 10]);
+
+function routeModuleAt(stageIndex, phaseIndex, serial = 0) {
+  const safeStage = clamp(Math.trunc(Number(stageIndex) || 0), 0, THEMED_ROUTE_MODULES.length - 1);
+  const safePhase = clamp(Math.trunc(Number(phaseIndex) || 0), 0, 2);
+  const base = THEMED_ROUTE_MODULES[safeStage][safePhase];
+  const safeSerial = Math.max(0, Math.trunc(Number(serial) || 0));
+  const variant = ROUTE_VARIATION_ORDER[(safeSerial + safeStage * 5 + safePhase * 3) % ROUTE_VARIATION_ORDER.length];
+  const widthOffset = ((variant % 5) - 2) * 0.014;
+  const center = Math.sin((safeSerial + 1) * 0.72 + safeStage * 0.61 + safePhase) * base.curve;
+  return {
+    ...base,
+    serial: safeSerial,
+    variant,
+    center,
+    widthScale: clamp(base.width + widthOffset, 0.88, 1.18),
+    walkScale: clamp(base.walk + ((variant % 3) - 1) * 0.035, 0.68, 1.18)
+  };
+}
+
+function routeShoulderTone(module, fallback) {
+  const tones = {
+    arcade: 0x4b463f, garden: 0x435543, campus: 0x625e52,
+    river: 0x38535a, storefront: 0x55463d, bookstore: 0x68533f,
+    platform: 0x343b4d, cinema: 0x3b2747, stalls: 0x6c4138,
+    stage: 0x322c48, shop: 0x6a5845, market: 0x56614b,
+    homes: 0x625b50, truss: 0x364451, warning: 0x554f49,
+    shelter: 0x4d5658, terminal: 0x3e4b64, promenade: 0x4f5060,
+    home: 0x715c49
+  };
+  return tones[module?.shoulder] || fallback;
+}
+
+function routeAccentTone(module, fallback) {
+  const tones = {
+    stone: 0xb9d7c5, leaf: 0xc9dc86, crossing: 0xf3c778,
+    boardwalk: 0xd8b778, groove: 0x79d5c9, bookspine: 0xe6b46f,
+    rail: 0x4ee2f0, tactile: 0xf3cc58, marquee: 0xff70c7,
+    cobble: 0xf0a05f, pulse: 0xff6da9, wave: 0x77d3e0,
+    checker: 0xe9be72, grid: 0xb8d38a, steps: 0xe4c38d,
+    drain: 0x8bc9d9, detour: 0xe5b45d, dryline: 0xe1c486,
+    terminal: 0xf1c55d, memory: 0xe2a5ce, threshold: 0xf2ce8b
+  };
+  return tones[module?.motif] || fallback;
+}
+
+const ROUTE_LANE_MARK_MOTIFS = new Set(["stone", "crossing", "checker", "grid", "drain", "dryline", "memory"]);
+const ROUTE_PATCH_MOTIFS = new Set(["stone", "leaf", "cobble", "checker", "grid", "steps", "drain", "detour"]);
+const ROUTE_PLANTED_SHOULDERS = new Set(["arcade", "garden", "campus", "bookstore", "shop", "market", "homes", "home"]);
+const ROUTE_LIT_SHOULDERS = new Set(["river", "platform", "cinema", "stalls", "stage", "truss", "warning", "shelter", "terminal", "promenade"]);
+const ROUTE_MOTIF_INSTANCES = new Set(["leaf", "groove", "cobble", "pulse", "wave", "tactile", "terminal", "memory"]);
+const ROUTE_UTILITY_MOTIFS = new Set(["stone", "checker", "grid", "drain"]);
+const ROUTE_DRAIN_MOTIFS = new Set(["stone", "leaf", "drain", "detour", "dryline"]);
+
 const RELATIONSHIP_MODES = Object.freeze({
   absent: Object.freeze({ visible: false, lane: 0, z: -9, action: "run", weight: "none" }),
   "parallel-left": Object.freeze({ visible: true, lane: -1, z: -5.8, action: "run", weight: "none" }),
@@ -1900,17 +2002,243 @@ function updateRunnerFootTrail(points, player, time, speed, delta) {
   points.material.opacity = damp(points.material.opacity, clamp((speed - 9) / 18, 0.22, 0.62), 5, delta);
 }
 
-function makeRoadTexture(stageIndex = 0) {
+function paintRoutePhaseTexture(context, width, height, stageIndex, phaseIndex, highlight) {
+  context.save();
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  const pale = "rgba(238,244,235,.17)";
+  const dark = "rgba(9,16,18,.2)";
+  const accent = `${highlight}46`;
+  if (stageIndex === 0 && phaseIndex === 0) {
+    for (let y = 0; y < height; y += 58) {
+      context.strokeStyle = pale;
+      context.lineWidth = 2;
+      context.strokeRect(y % 116 ? -30 : 0, y, width + 30, 54);
+    }
+    [82, 430].forEach((x) => {
+      const shade = context.createLinearGradient(x - 52, 0, x + 52, 0);
+      shade.addColorStop(0, "rgba(4,11,12,0)");
+      shade.addColorStop(0.5, "rgba(4,11,12,.2)");
+      shade.addColorStop(1, "rgba(4,11,12,0)");
+      context.fillStyle = shade;
+      context.fillRect(x - 52, 0, 104, height);
+    });
+  } else if (stageIndex === 0 && phaseIndex === 1) {
+    context.strokeStyle = "rgba(217,237,187,.22)";
+    context.lineWidth = 8;
+    for (let line = 0; line < 5; line += 1) {
+      context.beginPath();
+      context.moveTo(-20, 70 + line * 98);
+      context.bezierCurveTo(130 + line * 16, 10 + line * 92, 300 - line * 13, 145 + line * 78, 540, 42 + line * 103);
+      context.stroke();
+    }
+    context.fillStyle = "rgba(238,247,208,.13)";
+    for (let index = 0; index < 22; index += 1) {
+      context.beginPath();
+      context.ellipse((index * 83) % width, (index * 137) % height, 15 + index % 4 * 5, 7 + index % 3 * 3, index * 0.48, 0, Math.PI * 2);
+      context.fill();
+    }
+  } else if (stageIndex === 0) {
+    context.fillStyle = "rgba(239,239,218,.24)";
+    for (let row = 0; row < 9; row += 1) context.fillRect(36, 26 + row * 58, width - 72, 24);
+    context.strokeStyle = accent;
+    context.lineWidth = 8;
+    context.strokeRect(18, 12, width - 36, height - 24);
+  } else if (stageIndex === 1 && phaseIndex === 0) {
+    for (let y = 0; y < height; y += 30) {
+      context.fillStyle = y % 60 ? "rgba(226,213,174,.16)" : dark;
+      context.fillRect(0, y, width, 3);
+      context.fillStyle = "rgba(15,39,39,.18)";
+      context.fillRect((y / 30 % 4) * 128, y, 3, 30);
+    }
+    context.strokeStyle = accent;
+    context.lineWidth = 5;
+    context.strokeRect(20, 0, width - 40, height);
+  } else if (stageIndex === 1 && phaseIndex === 1) {
+    context.strokeStyle = "rgba(35,57,53,.32)";
+    for (let radius = 44; radius < 280; radius += 24) {
+      context.lineWidth = radius % 48 ? 2 : 4;
+      context.beginPath();
+      context.arc(width * 0.52, height * 0.48, radius, 0, Math.PI * 2);
+      context.stroke();
+    }
+    context.strokeStyle = accent;
+    context.lineWidth = 4;
+    context.beginPath();
+    context.arc(width * 0.52, height * 0.48, 108, 0.15, Math.PI * 1.76);
+    context.stroke();
+  } else if (stageIndex === 1) {
+    const spineColors = ["rgba(234,194,137,.2)", "rgba(119,177,171,.18)", "rgba(184,111,98,.17)"];
+    for (let group = 0; group < 6; group += 1) {
+      for (let spine = 0; spine < 7; spine += 1) {
+        context.fillStyle = spineColors[(group + spine) % spineColors.length];
+        context.fillRect(20 + spine * 68 + group % 2 * 16, group * 86 + 8, 34 + spine % 3 * 7, 68);
+      }
+    }
+    context.fillStyle = "rgba(244,226,184,.21)";
+    context.fillRect(0, height - 48, width, 48);
+  } else if (stageIndex === 2 && phaseIndex === 0) {
+    [92, 164, 256, 348, 420].forEach((x, index) => {
+      context.fillStyle = index === 2 ? "rgba(242,112,211,.24)" : "rgba(67,222,244,.2)";
+      context.fillRect(x - 4, 0, 8, height);
+    });
+    for (let y = 0; y < height; y += 44) {
+      context.fillStyle = "rgba(188,218,229,.2)";
+      context.fillRect(44, y, width - 88, 4);
+    }
+  } else if (stageIndex === 2 && phaseIndex === 1) {
+    context.fillStyle = "rgba(255,211,90,.24)";
+    for (let y = 0; y < height; y += 42) {
+      for (let x = 36; x < width - 20; x += 28) {
+        context.beginPath();
+        context.arc(x, y + 20, 4.2, 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+    context.strokeStyle = accent;
+    context.lineWidth = 5;
+    context.strokeRect(28, 0, width - 56, height);
+  } else if (stageIndex === 2) {
+    context.strokeStyle = accent;
+    context.lineWidth = 7;
+    for (let ray = 0; ray < 9; ray += 1) {
+      context.beginPath();
+      context.moveTo(width / 2, height + 20);
+      context.lineTo(-80 + ray * 84, 0);
+      context.stroke();
+    }
+    context.fillStyle = "rgba(255,238,195,.17)";
+    for (let y = 28; y < height; y += 86) context.fillRect(40, y, width - 80, 26);
+  } else if (stageIndex === 3 && phaseIndex === 0) {
+    for (let row = 0; row < 12; row += 1) {
+      for (let column = -1; column < 8; column += 1) {
+        context.strokeStyle = row % 2 ? "rgba(240,180,126,.2)" : "rgba(171,111,105,.17)";
+        context.lineWidth = 3;
+        context.beginPath();
+        context.ellipse(column * 74 + row % 2 * 38, row * 46, 39, 23, 0, 0, Math.PI * 2);
+        context.stroke();
+      }
+    }
+  } else if (stageIndex === 3 && phaseIndex === 1) {
+    for (let bar = 0; bar < 17; bar += 1) {
+      const barHeight = 70 + (bar * 47 % 190);
+      context.fillStyle = bar % 3 === 0 ? "rgba(255,112,167,.24)" : bar % 3 === 1 ? "rgba(87,222,231,.2)" : "rgba(255,201,102,.18)";
+      context.fillRect(12 + bar * 30, height / 2 - barHeight / 2, 16, barHeight);
+    }
+    context.strokeStyle = accent;
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(width / 2, height / 2, 188, 0, Math.PI * 2);
+    context.stroke();
+  } else if (stageIndex === 3) {
+    context.strokeStyle = "rgba(131,191,219,.24)";
+    context.lineWidth = 7;
+    for (let wave = 0; wave < 7; wave += 1) {
+      context.beginPath();
+      context.moveTo(-20, 34 + wave * 78);
+      context.bezierCurveTo(140, -28 + wave * 82, 354, 116 + wave * 70, 540, 30 + wave * 78);
+      context.stroke();
+    }
+  } else if (stageIndex === 4 && phaseIndex === 0) {
+    for (let y = 0; y < height; y += 64) {
+      for (let x = 0; x < width; x += 64) {
+        context.fillStyle = (x + y) / 64 % 2 ? "rgba(230,194,132,.15)" : "rgba(43,69,54,.15)";
+        context.fillRect(x, y, 60, 60);
+      }
+    }
+  } else if (stageIndex === 4 && phaseIndex === 1) {
+    context.strokeStyle = "rgba(219,202,150,.18)";
+    context.lineWidth = 3;
+    for (let x = 0; x < width; x += 72) context.strokeRect(x, 0, 68, height);
+    for (let y = 0; y < height; y += 72) context.strokeRect(0, y, width, 68);
+    context.fillStyle = accent;
+    for (let index = 0; index < 12; index += 1) context.fillRect((index * 101) % width, (index * 163) % height, 54, 18);
+  } else if (stageIndex === 4) {
+    for (let step = 0; step < 9; step += 1) {
+      context.fillStyle = step % 2 ? "rgba(30,45,39,.2)" : "rgba(224,196,153,.16)";
+      context.fillRect(18 + step * 4, step * 58, width - 36 - step * 8, 48);
+    }
+    context.strokeStyle = accent;
+    context.lineWidth = 8;
+    context.strokeRect(76, height - 116, width - 152, 104);
+  } else if (stageIndex === 5 && phaseIndex === 0) {
+    context.strokeStyle = "rgba(170,205,220,.22)";
+    context.lineWidth = 4;
+    for (let y = 0; y < height; y += 68) context.strokeRect(8, y + 4, width - 16, 58);
+    context.fillStyle = "rgba(12,25,35,.34)";
+    [92, 420].forEach((x) => context.fillRect(x, 0, 22, height));
+  } else if (stageIndex === 5 && phaseIndex === 1) {
+    context.strokeStyle = "rgba(220,190,127,.22)";
+    context.lineWidth = 9;
+    for (let line = -6; line < 12; line += 1) {
+      context.beginPath();
+      context.moveTo(line * 64, 0);
+      context.lineTo(line * 64 + 310, height);
+      context.stroke();
+    }
+    context.fillStyle = "rgba(255,111,88,.2)";
+    for (let y = 20; y < height; y += 116) context.fillRect(42, y, width - 84, 16);
+  } else if (stageIndex === 5) {
+    const dry = context.createLinearGradient(0, 0, width, 0);
+    dry.addColorStop(0, "rgba(197,218,226,.04)");
+    dry.addColorStop(0.35, "rgba(236,215,167,.2)");
+    dry.addColorStop(0.65, "rgba(236,215,167,.2)");
+    dry.addColorStop(1, "rgba(197,218,226,.04)");
+    context.fillStyle = dry;
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = accent;
+    context.lineWidth = 5;
+    context.strokeRect(146, 0, width - 292, height);
+  } else if (stageIndex === 6 && phaseIndex === 0) {
+    context.fillStyle = "rgba(246,202,92,.22)";
+    [58, 454].forEach((x) => context.fillRect(x, 0, 12, height));
+    for (let y = 0; y < height; y += 48) {
+      context.fillStyle = "rgba(212,226,238,.14)";
+      context.fillRect(0, y, width, 4);
+      for (let x = 28; x < width; x += 32) {
+        context.beginPath();
+        context.arc(x, y + 18, 3.2, 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+  } else if (stageIndex === 6 && phaseIndex === 1) {
+    const bandColors = ["rgba(104,167,198,.16)", "rgba(217,157,194,.15)", "rgba(232,194,115,.16)", "rgba(107,186,159,.15)", "rgba(159,131,204,.15)", "rgba(224,128,107,.14)"];
+    bandColors.forEach((color, index) => {
+      context.fillStyle = color;
+      context.fillRect(0, index * height / bandColors.length, width, height / bandColors.length - 5);
+    });
+    context.strokeStyle = accent;
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(24, height - 38);
+    context.bezierCurveTo(140, 372, 344, 190, width - 24, 28);
+    context.stroke();
+  } else {
+    const warmth = context.createRadialGradient(width / 2, height, 18, width / 2, height, width * 0.72);
+    warmth.addColorStop(0, "rgba(255,214,140,.28)");
+    warmth.addColorStop(1, "rgba(255,214,140,0)");
+    context.fillStyle = warmth;
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = "rgba(244,220,173,.23)";
+    context.lineWidth = 8;
+    context.strokeRect(74, 24, width - 148, height - 48);
+    context.fillStyle = accent;
+    context.fillRect(118, height - 70, width - 236, 26);
+  }
+  context.restore();
+}
+
+function makeRoadTexture(stageIndex = 0, phaseIndex = 0) {
   const palettes = [
-    ["#304343", "#536965", "#9bb9ae"],
-    ["#5c655f", "#7b857c", "#c2cab8"],
-    ["#151b32", "#293557", "#58dce5"],
-    ["#3f3342", "#665060", "#d98867"],
-    ["#46544b", "#667263", "#b7a77e"],
-    ["#273442", "#425366", "#8bb8c5"],
-    ["#3d4961", "#68738a", "#d9b478"]
+    [["#394d49", "#61706a", "#bad0c1"], ["#405644", "#6a7962", "#d1d7a9"], ["#5a5b56", "#7c7c72", "#e0ca91"]],
+    [["#65523f", "#8a7658", "#d4b979"], ["#3f4945", "#68716a", "#b8d4ca"], ["#6a5944", "#947a58", "#e5c48b"]],
+    [["#121a31", "#283755", "#4ce1ef"], ["#202842", "#3e4967", "#f1c857"], ["#30203e", "#593560", "#ff78c8"]],
+    [["#4c3438", "#704e4e", "#ed9a64"], ["#27243d", "#4e3e61", "#fb639c"], ["#253748", "#42596b", "#78c7d9"]],
+    [["#685641", "#8a7557", "#e2bf7c"], ["#485443", "#6c765e", "#b8ca83"], ["#55544e", "#77746a", "#e0bf83"]],
+    [["#273541", "#415362", "#89c4d4"], ["#41474c", "#62686a", "#e1b35e"], ["#4a5355", "#707878", "#d8bd82"]],
+    [["#34445f", "#536784", "#f2c45f"], ["#4b4b5c", "#6d6875", "#e6a6cf"], ["#655345", "#8a725a", "#f0cd88"]]
   ];
-  const [base, mid, highlight] = palettes[stageIndex] || palettes[0];
+  const [base, mid, highlight] = palettes[stageIndex]?.[phaseIndex] || palettes[0][0];
   const texture = canvasTexture(512, 512, (context, width, height) => {
     const ground = context.createLinearGradient(0, 0, width, 0);
     ground.addColorStop(0, base);
@@ -1918,7 +2246,7 @@ function makeRoadTexture(stageIndex = 0) {
     ground.addColorStop(1, base);
     context.fillStyle = ground;
     context.fillRect(0, 0, width, height);
-    let seed = 971 + stageIndex * 547;
+    let seed = 971 + stageIndex * 547 + phaseIndex * 911;
     for (let index = 0; index < 5600; index += 1) {
       seed = (seed * 48271) % 2147483647;
       const x = seed % width;
@@ -2012,6 +2340,7 @@ function makeRoadTexture(stageIndex = 0) {
         context.fillRect(x, 0, 7, height);
       });
     }
+    paintRoutePhaseTexture(context, width, height, stageIndex, phaseIndex, highlight);
     const centerSheen = context.createLinearGradient(0, 0, width, 0);
     centerSheen.addColorStop(0, "rgba(0,0,0,.16)");
     centerSheen.addColorStop(0.5, `${highlight}24`);
@@ -2021,7 +2350,7 @@ function makeRoadTexture(stageIndex = 0) {
   });
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1.25, 3.5);
+  texture.repeat.set(1.08, 1.18);
   return texture;
 }
 
@@ -3191,57 +3520,185 @@ function createRepeatedRoadDetail(geometry, detailMaterial, count, compose) {
   return batch;
 }
 
-function createStageRoadProfile(config, stageIndex) {
+function createStageRoadProfile(config, stageIndex, phaseIndex = 0) {
   const root = new THREE.Group();
-  const accentMaterial = material(config.accent, { emissive: config.accent, emissiveIntensity: stageIndex === 2 ? 1.8 : 0.38, roughness: 0.34, transparent: true, opacity: 0.72 });
-  const surfaceMaterial = material(config.theme.landmark, { roughness: [0.22, 0.82, 0.28, 0.9, 0.94, 0.42, 0.58][stageIndex], metalness: stageIndex === 5 || stageIndex === 6 ? 0.56 : 0.08 });
+  const route = THEMED_ROUTE_MODULES[stageIndex]?.[phaseIndex] || THEMED_ROUTE_MODULES[0][0];
+  const accent = routeAccentTone(route, config.accent);
+  const accentMaterial = material(accent, {
+    emissive: accent,
+    emissiveIntensity: ["rail", "marquee", "pulse", "terminal"].includes(route.motif) ? 1.65 : 0.46,
+    roughness: 0.34,
+    transparent: true,
+    opacity: 0.76
+  });
+  const surfaceMaterial = material(routeShoulderTone(route, config.theme.landmark), {
+    roughness: ["boardwalk", "bookspine", "checker", "steps", "threshold"].includes(route.motif) ? 0.84 : 0.58,
+    metalness: ["rail", "drain", "terminal"].includes(route.motif) ? 0.48 : 0.08
+  });
+  const insetMaterial = material(new THREE.Color(config.theme.shadow).lerp(new THREE.Color(accent), 0.12).getHex(), {
+    roughness: 0.72,
+    metalness: ["rail", "drain", "terminal"].includes(route.motif) ? 0.42 : 0.06
+  });
   const down = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
-  if (stageIndex === 0) {
-    root.add(createRepeatedRoadDetail(new THREE.CircleGeometry(0.46, 18), accentMaterial, 22, (index, position, quaternion, scale) => {
-      position.set((index % 3 - 1) * LANE_WIDTH + ((index * 7) % 5 - 2) * 0.13, 0.055, 4 - index * 8.2);
+  const add = (geometry, detailMaterial, count, compose) => root.add(createRepeatedRoadDetail(geometry, detailMaterial, count, compose));
+  const laneX = (index) => (index % 3 - 1) * LANE_WIDTH;
+  const rowZ = (index, columns, spacing, start = 5) => start - Math.floor(index / columns) * spacing;
+
+  if (route.motif === "stone") {
+    add(new THREE.CircleGeometry(0.44, 18), accentMaterial, 34, (index, position, quaternion, scale) => {
+      position.set(laneX(index) + ((index * 7) % 5 - 2) * 0.16, 0.055, rowZ(index, 3, 8.1));
       quaternion.copy(down);
-      scale.set(0.72 + index % 4 * 0.16, 0.48 + index % 3 * 0.12, 1);
-    }));
-  } else if (stageIndex === 1) {
-    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(1.35, 0.035, 0.16), surfaceMaterial, 96, (index, position, quaternion, scale) => {
-      position.set((index % 2 ? 1 : -1) * 5.22, 0.3, 6 - Math.floor(index / 2) * 4.05);
+      scale.set(0.6 + index % 4 * 0.16, 0.34 + index % 3 * 0.13, 1);
+    });
+  } else if (route.motif === "leaf") {
+    add(new THREE.TorusGeometry(0.72, 0.035, 5, 24, Math.PI * 1.35), surfaceMaterial, 32, (index, position, quaternion, scale) => {
+      position.set(laneX(index) + (index % 2 ? 0.38 : -0.38), 0.052, rowZ(index, 3, 7.4));
+      quaternion.copy(down);
+      scale.set(0.8 + index % 4 * 0.18, 0.5 + index % 3 * 0.16, 1);
+    });
+    add(new THREE.CircleGeometry(0.16, 12), accentMaterial, 42, (index, position, quaternion, scale) => {
+      position.set(laneX(index) + Math.sin(index * 1.7) * 0.52, 0.058, rowZ(index, 3, 5.9, 2));
+      quaternion.copy(down);
+      scale.set(1.7, 0.62, 1);
+    });
+  } else if (route.motif === "crossing") {
+    add(new THREE.BoxGeometry(7.6, 0.026, 0.42), surfaceMaterial, 30, (index, position, quaternion, scale) => {
+      const crossing = Math.floor(index / 6);
+      position.set(0, 0.058, 3 - crossing * 38 - index % 6 * 0.74);
+      quaternion.identity();
+      scale.set(1 - crossing % 2 * 0.08, 1, 1);
+    });
+  } else if (route.motif === "boardwalk") {
+    add(new THREE.BoxGeometry(8.25, 0.03, 0.12), surfaceMaterial, 82, (index, position, quaternion, scale) => {
+      position.set(0, 0.052, 6 - index * 2.38);
+      quaternion.identity();
+      scale.set(0.96 - index % 4 * 0.018, 1, 1);
+    });
+  } else if (route.motif === "groove") {
+    add(new THREE.RingGeometry(0.62, 0.7, 28), insetMaterial, 42, (index, position, quaternion, scale) => {
+      position.set(laneX(index), 0.055, rowZ(index, 3, 6.9));
+      quaternion.copy(down);
+      const size = 0.78 + index % 5 * 0.2;
+      scale.set(size, size, 1);
+    });
+  } else if (route.motif === "bookspine") {
+    add(new THREE.BoxGeometry(1.54, 0.026, 0.7), surfaceMaterial, 72, (index, position, quaternion, scale) => {
+      position.set(laneX(index) + (index % 3 - 1) * 0.08, 0.056, rowZ(index, 3, 7.2));
+      quaternion.identity();
+      scale.set(0.72 + index % 4 * 0.11, 1, 0.72 + index % 3 * 0.2);
+    });
+    add(new THREE.BoxGeometry(0.12, 0.029, 0.88), accentMaterial, 36, (index, position, quaternion, scale) => {
+      position.set(laneX(index) - 0.72, 0.06, rowZ(index, 3, 14.4));
+      quaternion.identity();
+      scale.set(1, 1, 0.72 + index % 4 * 0.16);
+    });
+  } else if (route.motif === "rail") {
+    add(new THREE.CylinderGeometry(0.11, 0.11, 0.024, 16), accentMaterial, 54, (index, position, quaternion, scale) => {
+      position.set(laneX(index), 0.225, rowZ(index, 3, 9.8));
+      quaternion.identity();
+      scale.set(1 + index % 3 * 0.24, 1, 1 + index % 3 * 0.24);
+    });
+  } else if (route.motif === "tactile") {
+    add(new THREE.SphereGeometry(0.09, 8, 5), accentMaterial, 108, (index, position, quaternion, scale) => {
+      const side = index % 2 ? 1 : -1;
+      const row = Math.floor(index / 2);
+      position.set(side * (ROAD_WIDTH * 0.46 - row % 3 * 0.24), 0.245, 5 - row * 3.65);
+      quaternion.identity();
+      scale.set(1, 0.42, 1);
+    });
+  } else if (route.motif === "marquee") {
+    add(new THREE.BoxGeometry(0.09, 0.026, 4.8), accentMaterial, 42, (index, position, quaternion, scale) => {
+      position.set(laneX(index), 0.058, rowZ(index, 3, 13.2));
+      quaternion.setFromEuler(new THREE.Euler(0, (index % 3 - 1) * 0.34, 0));
+      scale.set(1, 1, 0.72 + index % 4 * 0.14);
+    });
+  } else if (route.motif === "cobble") {
+    add(new THREE.CylinderGeometry(0.42, 0.42, 0.026, 6), surfaceMaterial, 126, (index, position, quaternion, scale) => {
+      const row = Math.floor(index / 7);
+      position.set(-3.15 + index % 7 * 1.05 + row % 2 * 0.5, 0.05, 5 - row * 5.3);
+      quaternion.identity();
+      scale.set(1, 1, 1.28);
+    });
+  } else if (route.motif === "pulse") {
+    add(new THREE.BoxGeometry(0.36, 0.028, 1), accentMaterial, 90, (index, position, quaternion, scale) => {
+      const row = Math.floor(index / 9);
+      position.set(-3.3 + index % 9 * 0.82, 0.058, 4 - row * 18.4);
+      quaternion.identity();
+      scale.set(0.72 + index % 3 * 0.22, 1, 0.45 + (index * 5 % 9) * 0.22);
+    });
+  } else if (route.motif === "wave") {
+    add(new THREE.RingGeometry(0.46, 0.55, 30, 1, 0.28, Math.PI * 1.46), accentMaterial, 48, (index, position, quaternion, scale) => {
+      position.set(laneX(index) + Math.sin(index * 0.8) * 0.25, 0.058, rowZ(index, 3, 6.5));
+      quaternion.copy(down);
+      const size = 1.1 + index % 5 * 0.32;
+      scale.set(size * 1.55, size, 1);
+    });
+  } else if (route.motif === "checker") {
+    add(new THREE.BoxGeometry(1.05, 0.025, 1.05), surfaceMaterial, 126, (index, position, quaternion, scale) => {
+      const row = Math.floor(index / 7);
+      position.set(-3.15 + index % 7 * 1.05, 0.054, 5 - row * 5.35);
+      quaternion.identity();
+      const visible = (index + row) % 2 ? 1 : 0.12;
+      scale.set(visible, 1, visible);
+    });
+  } else if (route.motif === "grid") {
+    add(new THREE.BoxGeometry(8.1, 0.024, 0.07), surfaceMaterial, 44, (index, position, quaternion, scale) => {
+      position.set(0, 0.054, 5 - index * 4.5);
+      quaternion.identity();
+      scale.set(0.94, 1, 1);
+    });
+    add(new THREE.BoxGeometry(0.07, 0.026, 192), accentMaterial, 8, (index, position, quaternion, scale) => {
+      position.set(-3.5 + index, 0.056, -90);
       quaternion.identity();
       scale.set(1, 1, 1);
-    }));
-  } else if (stageIndex === 2) {
-    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(1.55, 0.026, 0.32), accentMaterial, 54, (index, position, quaternion, scale) => {
-      position.set((index % 3 - 1) * LANE_WIDTH, 0.255, 5 - Math.floor(index / 3) * 10.4);
+    });
+  } else if (route.motif === "steps") {
+    add(new THREE.BoxGeometry(8.05, 0.035, 0.36), surfaceMaterial, 54, (index, position, quaternion, scale) => {
+      position.set(0, 0.052 + index % 3 * 0.007, 5 - index * 3.58);
       quaternion.identity();
-      scale.set(index % 2 ? 0.55 : 1, 1, 1);
-    }));
-  } else if (stageIndex === 3) {
-    root.add(createRepeatedRoadDetail(new THREE.CylinderGeometry(0.43, 0.43, 0.025, 6), surfaceMaterial, 84, (index, position, quaternion, scale) => {
-      const row = Math.floor(index / 7);
-      position.set(-3.2 + index % 7 * 1.05 + (row % 2) * 0.45, 0.045, 5 - row * 4.8);
+      scale.set(1 - index % 6 * 0.035, 1, 1);
+    });
+  } else if (route.motif === "drain") {
+    add(new THREE.BoxGeometry(8.05, 0.026, 0.1), insetMaterial, 72, (index, position, quaternion, scale) => {
+      position.set(0, 0.056, 5 - index * 2.68);
       quaternion.identity();
-      scale.set(1, 1, 1.35);
-    }));
-  } else if (stageIndex === 4) {
-    root.add(createRepeatedRoadDetail(createRoadPatchGeometry(), surfaceMaterial, 38, (index, position, quaternion, scale) => {
-      position.set((index % 3 - 1) * LANE_WIDTH + (index % 2 ? 0.22 : -0.18), 0.052, 4 - index * 5.1);
-      quaternion.copy(down);
-      scale.set(0.8 + index % 4 * 0.14, 0.72 + index % 3 * 0.2, 1);
-    }));
-  } else if (stageIndex === 5) {
-    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(8.35, 0.035, 0.16), surfaceMaterial, 28, (index, position, quaternion, scale) => {
-      position.set(0, 0.07, 5 - index * 7.1);
+      scale.set(index % 5 ? 0.9 : 1, 1, 1);
+    });
+  } else if (route.motif === "detour") {
+    add(new THREE.BoxGeometry(1.45, 0.028, 0.18), accentMaterial, 90, (index, position, quaternion, scale) => {
+      position.set(laneX(index), 0.058, rowZ(index, 3, 6.2));
+      quaternion.setFromEuler(new THREE.Euler(0, index % 2 ? 0.58 : -0.58, 0));
+      scale.set(1.1 + index % 3 * 0.18, 1, 1);
+    });
+  } else if (route.motif === "dryline") {
+    add(new THREE.BoxGeometry(3.05, 0.024, 2.25), surfaceMaterial, 74, (index, position, quaternion, scale) => {
+      position.set((index % 2 ? 1 : -1) * 1.55, 0.056, rowZ(index, 2, 5.25));
       quaternion.identity();
-      scale.set(1, 1, index % 4 === 0 ? 2.2 : 1);
-    }));
+      scale.set(0.9 + index % 4 * 0.04, 1, 0.92);
+    });
+  } else if (route.motif === "terminal") {
+    add(new THREE.BoxGeometry(1.72, 0.026, 0.28), accentMaterial, 72, (index, position, quaternion, scale) => {
+      position.set(laneX(index), 0.235, rowZ(index, 3, 8.1));
+      quaternion.identity();
+      scale.set(index % 2 ? 0.58 : 1, 1, 1);
+    });
+  } else if (route.motif === "memory") {
+    add(new THREE.BoxGeometry(7.9, 0.027, 1.15), surfaceMaterial, 54, (index, position, quaternion, scale) => {
+      position.set(0, 0.056, 5 - index * 3.58);
+      quaternion.identity();
+      scale.set(0.92 - index % 6 * 0.035, 1, 0.72 + index % 3 * 0.14);
+    });
   } else {
-    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(1.85, 0.026, 0.24), accentMaterial, 60, (index, position, quaternion, scale) => {
-      position.set((index % 3 - 1) * LANE_WIDTH, 0.255, 5 - Math.floor(index / 3) * 8.7);
+    add(new THREE.BoxGeometry(7.9, 0.028, 0.22), accentMaterial, 48, (index, position, quaternion, scale) => {
+      position.set(0, 0.058, 5 - index * 4.05);
       quaternion.identity();
-      scale.set(index % 2 ? 0.62 : 1, 1, 1);
-    }));
+      scale.set(1 - index % 6 * 0.08, 1, 1);
+    });
   }
-  root.name = `road-profile-${config.world.road.geometry}`;
+  root.name = `road-profile-${route.id}`;
   root.userData.roadGeometry = config.world.road.geometry;
+  root.userData.routeModuleId = route.id;
+  root.userData.routeSurfaceFamily = route.surface;
   return root;
 }
 
@@ -5220,8 +5677,9 @@ class CinematicRunnerRenderer {
     this.scene.add(this.skyDome, ...this.metroDistricts, ...this.ambientTrains);
 
     this.textureLoader = new THREE.TextureLoader();
-    this.roadTextures = STAGE_CONFIGS.map((_, stageIndex) => makeRoadTexture(stageIndex));
-    this.roadTexture = this.roadTextures[0];
+    this.roadTextures = STAGE_CONFIGS.map(() => [null, null, null]);
+    this.roadTextures[0] = [0, 1, 2].map((phaseIndex) => makeRoadTexture(0, phaseIndex));
+    this.roadTexture = this.roadTextures[0][0];
     this.platformTexture = makePlatformTexture();
     this.particleTexture = makeParticleTexture();
     this.stageTextures = Array(STAGE_CONFIGS.length).fill(null);
@@ -5302,6 +5760,22 @@ class CinematicRunnerRenderer {
       opacity: 0.52,
       roughness: 0.72
     });
+    this.routeBandMaterial = material(STAGE_CONFIGS[0].accent, {
+      emissive: STAGE_CONFIGS[0].accent,
+      emissiveIntensity: 0.34,
+      transparent: true,
+      opacity: 0.46,
+      roughness: 0.56,
+      metalness: 0.12
+    });
+    this.routeMotifMaterial = material(0xdceadf, {
+      emissive: STAGE_CONFIGS[0].accent,
+      emissiveIntensity: 0.18,
+      transparent: true,
+      opacity: 0.32,
+      roughness: 0.68,
+      metalness: 0.08
+    });
     this.roadInsetMaterial = material(0x263238, { roughness: 0.32, metalness: 0.58 });
     this.roadPatchMaterial = material(0x435154, { roughness: 0.94, transparent: true, opacity: 0.34 });
     this.roadUtilityMaterial = material(0x29383c, { roughness: 0.38, metalness: 0.54 });
@@ -5321,6 +5795,9 @@ class CinematicRunnerRenderer {
 
     this.roadSegments = [];
     this.roadGroup = new THREE.Group();
+    this.roadBatchTransform = new THREE.Matrix4();
+    this.roadBatchScale = new THREE.Vector3();
+    this.roadBatchList = [];
     this.scene.add(this.roadGroup);
     this.buildRoad();
 
@@ -5394,14 +5871,15 @@ class CinematicRunnerRenderer {
       this.scene.add(world);
       return world;
     });
-    this.stageRoadProfiles = this.stageVisualConfigs.map((config, index) => {
-      const profile = createStageRoadProfile(config, index);
+    this.stageRoadProfiles = this.stageVisualConfigs.map((config, stageIndex) => [0, 1, 2].map((phaseIndex) => {
+      const profile = createStageRoadProfile(config, stageIndex, phaseIndex);
       profile.visible = false;
       this.roadBaseGroup.add(profile);
       return profile;
-    });
+    }));
     this.activeStageWorld = this.stageWorlds[0];
     this.routePhase = 0;
+    this.roadCycle = -1;
     this.phaseContentRef = null;
     this.poolGeneration = 0;
     this.viewFrustum = new THREE.Frustum();
@@ -5646,10 +6124,13 @@ class CinematicRunnerRenderer {
       edgePosts: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.055, 0.075, 0.72, 8), this.streetFurnitureMaterial, SEGMENT_COUNT * 8),
       edgePostLights: new THREE.InstancedMesh(new THREE.SphereGeometry(0.095, 8, 6), this.streetGlowMaterial, SEGMENT_COUNT * 8),
       planterBases: new THREE.InstancedMesh(new THREE.BoxGeometry(0.72, 0.5, 0.92), this.streetPlanterMaterial, SEGMENT_COUNT * 4),
-      planterLeaves: new THREE.InstancedMesh(createFoliageClusterGeometry(), this.streetFoliageMaterial, SEGMENT_COUNT * 4)
+      planterLeaves: new THREE.InstancedMesh(createFoliageClusterGeometry(), this.streetFoliageMaterial, SEGMENT_COUNT * 4),
+      themeBands: new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.025, 1), this.routeBandMaterial, SEGMENT_COUNT * 6),
+      themeMotifs: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.42, 0.026, 10), this.routeMotifMaterial, SEGMENT_COUNT * 6)
     };
-    Object.values(this.roadBatches).forEach((batch) => {
-      batch.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+    this.roadBatchList = Object.values(this.roadBatches);
+    this.roadBatchList.forEach((batch) => {
+      batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       batch.castShadow = false;
       batch.receiveShadow = true;
       batch.frustumCulled = false;
@@ -5667,97 +6148,239 @@ class CinematicRunnerRenderer {
     this.updateRoadBatches();
   }
 
-  updateRoadBatches() {
-    const transform = new THREE.Matrix4();
+  updateRoadBatches(roadCycle = 0) {
+    const transform = this.roadBatchTransform;
+    const scale = this.roadBatchScale;
+    const stageIndex = clamp(Math.trunc(Number(this.stageIndex) || 0), 0, THEMED_ROUTE_MODULES.length - 1);
+    const phaseIndex = clamp(Math.trunc(Number(this.routePhase) || 0), 0, 2);
+    const hide = (batch, index) => {
+      transform.makeScale(0.001, 0.001, 0.001);
+      batch.setMatrixAt(index, transform);
+    };
+    let railRoute = false;
     this.roadSegments.forEach((segment, segmentIndex) => {
+      const serial = segmentIndex;
+      const module = routeModuleAt(stageIndex, phaseIndex, serial);
       const z = 7 - segmentIndex * SEGMENT_LENGTH;
-      transform.makeTranslation(0, -0.08, z);
+      const roadWidth = ROAD_WIDTH * module.widthScale;
+      const roadHalfWidth = roadWidth / 2;
+      const walkWidth = 2.45 * module.walkScale;
+      const center = module.center * clamp(segmentIndex / 3, 0, 1);
+      railRoute ||= module.rail;
+      segment.userData.routeModule = module;
+
+      transform.makeScale(module.widthScale, 1, 0.992);
+      transform.setPosition(center, -0.08, z);
       this.roadBatches.ballast.setMatrixAt(segmentIndex, transform);
+
       let sleeperOffset = segmentIndex * 42;
       [-1, 0, 1].forEach((lane) => {
         for (let row = 0; row < 14; row += 1) {
-          transform.makeTranslation(lane * LANE_WIDTH, 0.065, z - 7.45 + row * 1.14);
-          this.roadBatches.sleepers.setMatrixAt(sleeperOffset, transform);
+          if (module.rail) {
+            transform.makeTranslation(lane * LANE_WIDTH + center * 0.3, 0.065, z - 7.45 + row * 1.14);
+            this.roadBatches.sleepers.setMatrixAt(sleeperOffset, transform);
+          } else hide(this.roadBatches.sleepers, sleeperOffset);
           sleeperOffset += 1;
         }
       });
       let railOffset = segmentIndex * 6;
       [-1, 0, 1].forEach((lane) => {
         [-0.53, 0.53].forEach((railX) => {
-          transform.makeTranslation(lane * LANE_WIDTH + railX, 0.155, z);
-          this.roadBatches.rails.setMatrixAt(railOffset, transform);
+          if (module.rail) {
+            transform.makeTranslation(lane * LANE_WIDTH + railX + center * 0.3, 0.155, z);
+            this.roadBatches.rails.setMatrixAt(railOffset, transform);
+          } else hide(this.roadBatches.rails, railOffset);
           railOffset += 1;
         });
       });
       [-1, 0, 1].forEach((lane, laneIndex) => {
-        transform.makeTranslation(lane * LANE_WIDTH + 0.82, 0.12, z);
-        this.roadBatches.thirdRails.setMatrixAt(segmentIndex * 3 + laneIndex, transform);
+        const index = segmentIndex * 3 + laneIndex;
+        if (module.rail) {
+          transform.makeTranslation(lane * LANE_WIDTH + 0.82 + center * 0.3, 0.12, z);
+          this.roadBatches.thirdRails.setMatrixAt(index, transform);
+        } else hide(this.roadBatches.thirdRails, index);
       });
+
       [-1, 1].forEach((side, sideIndex) => {
-        transform.makeTranslation(side * 5.7, 0.1, z);
+        let sideWalkScale = module.walkScale;
+        if (module.shoulder === "river") sideWalkScale *= side > 0 ? 0.46 : 1.12;
+        else if (["storefront", "bookstore", "cinema", "shop", "market", "homes", "home"].includes(module.shoulder)) sideWalkScale *= sideIndex === module.variant % 2 ? 1.14 : 0.76;
+        else if (["truss", "warning"].includes(module.shoulder)) sideWalkScale *= 0.62;
+        const sideWalkWidth = 2.45 * sideWalkScale;
+        const walkX = center + side * (roadHalfWidth + sideWalkWidth / 2 - 0.1);
+        transform.makeScale(sideWalkScale, module.shoulder === "platform" || module.shoulder === "terminal" ? 1.18 : 0.92, 0.99);
+        transform.setPosition(walkX, module.shoulder === "platform" || module.shoulder === "terminal" ? 0.13 : 0.08, z);
         this.roadBatches.walks.setMatrixAt(segmentIndex * 2 + sideIndex, transform);
-        transform.makeTranslation(side * 4.46, 0.3, z);
+        transform.makeScale(1, 1, 0.99);
+        transform.setPosition(center + side * (roadHalfWidth + 0.035), 0.285, z);
         this.roadBatches.safetyLines.setMatrixAt(segmentIndex * 2 + sideIndex, transform);
       });
+
       [-LANE_WIDTH / 2, LANE_WIDTH / 2].forEach((x, boundaryIndex) => {
         for (let row = 0; row < 12; row += 1) {
-          transform.makeTranslation(x, 0.048, z - 7.25 + row * 1.32);
-          this.roadBatches.laneGuides.setMatrixAt(segmentIndex * 24 + boundaryIndex * 12 + row, transform);
+          const index = segmentIndex * 24 + boundaryIndex * 12 + row;
+          if (!module.rail && ROUTE_LANE_MARK_MOTIFS.has(module.motif) && (row + module.variant) % 3 !== 1) {
+            transform.makeTranslation(x + center * 0.18, 0.048, z - 7.25 + row * 1.32);
+            this.roadBatches.laneGuides.setMatrixAt(index, transform);
+          } else hide(this.roadBatches.laneGuides, index);
         }
       });
+
       [-1, 0, 1].forEach((lane, laneIndex) => {
         for (let row = 0; row < 4; row += 1) {
-          transform.makeTranslation(lane * LANE_WIDTH, 0.046, z - 6.1 + row * 4.05 + ((segmentIndex + laneIndex) % 2) * 0.28);
-          this.roadBatches.laneTicks.setMatrixAt(segmentIndex * 12 + laneIndex * 4 + row, transform);
+          const index = segmentIndex * 12 + laneIndex * 4 + row;
+          if (!module.rail && ROUTE_LANE_MARK_MOTIFS.has(module.motif) && (module.variant + row + laneIndex) % 2 === 0) {
+            transform.makeScale(0.78 + module.variant % 3 * 0.08, 1, 1);
+            transform.setPosition(lane * LANE_WIDTH + center * 0.2, 0.046, z - 6.1 + row * 4.05 + ((serial + laneIndex) % 2) * 0.28);
+            this.roadBatches.laneTicks.setMatrixAt(index, transform);
+          } else hide(this.roadBatches.laneTicks, index);
         }
         for (let row = 0; row < 3; row += 1) {
-          const patchX = lane * LANE_WIDTH + (((segmentIndex + row + laneIndex) % 3) - 1) * 0.34;
-          const patchZ = z - 5.7 + row * 5.15 + laneIndex * 0.42;
-          transform.makeRotationY(((segmentIndex * 3 + laneIndex + row) % 5 - 2) * 0.075);
-          transform.setPosition(patchX, 0.034, patchZ);
-          this.roadBatches.roadPatches.setMatrixAt(segmentIndex * 9 + laneIndex * 3 + row, transform);
+          const index = segmentIndex * 9 + laneIndex * 3 + row;
+          if (!module.rail && ROUTE_PATCH_MOTIFS.has(module.motif) && (row + laneIndex + module.variant) % 3 !== 1) {
+            const patchX = lane * LANE_WIDTH + center * 0.3 + (((serial + row + laneIndex) % 3) - 1) * 0.34;
+            const patchZ = z - 5.7 + row * 5.15 + laneIndex * 0.42;
+            transform.makeRotationY(((serial * 3 + laneIndex + row) % 5 - 2) * 0.075);
+            transform.scale(scale.set(0.82 + module.variant % 3 * 0.08, 1, 0.86 + row * 0.05));
+            transform.setPosition(patchX, 0.034, patchZ);
+            this.roadBatches.roadPatches.setMatrixAt(index, transform);
+          } else hide(this.roadBatches.roadPatches, index);
         }
-        if ((segmentIndex + laneIndex) % 3 === 0) {
-          transform.makeTranslation(lane * LANE_WIDTH + (laneIndex - 1) * 0.28, 0.052, z + 3.2 - laneIndex * 4.35);
-        } else {
-          transform.makeScale(0, 0, 0);
-        }
-        this.roadBatches.manholes.setMatrixAt(segmentIndex * 3 + laneIndex, transform);
+        const utilityIndex = segmentIndex * 3 + laneIndex;
+        if (!module.rail && ROUTE_UTILITY_MOTIFS.has(module.motif) && (serial + laneIndex) % 4 === 0) {
+          transform.makeTranslation(lane * LANE_WIDTH + center * 0.22, 0.052, z + 3.2 - laneIndex * 4.35);
+          this.roadBatches.manholes.setMatrixAt(utilityIndex, transform);
+        } else hide(this.roadBatches.manholes, utilityIndex);
       });
+
       for (let row = 0; row < 5; row += 1) {
-        if (segmentIndex % 3 === 1) transform.makeTranslation(0, 0.052, z - 1.45 + row * 0.72);
-        else transform.makeScale(0, 0, 0);
-        this.roadBatches.crosswalks.setMatrixAt(segmentIndex * 5 + row, transform);
+        const index = segmentIndex * 5 + row;
+        const crossing = module.motif === "crossing" || module.motif === "threshold" && serial % 3 === 0;
+        if (crossing) {
+          transform.makeScale(module.widthScale * 0.9, 1, module.motif === "threshold" ? 0.68 : 1);
+          transform.setPosition(center, 0.052, z - 1.45 + row * (module.motif === "threshold" ? 0.92 : 0.72));
+          this.roadBatches.crosswalks.setMatrixAt(index, transform);
+        } else hide(this.roadBatches.crosswalks, index);
       }
+
       [-1, 1].forEach((side, sideIndex) => {
         for (let row = 0; row < 2; row += 1) {
-          transform.makeTranslation(side * 4.05, 0.046, z - 4.3 + row * 8.5 + (segmentIndex % 2) * 0.8);
-          this.roadBatches.drains.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
+          const index = segmentIndex * 4 + sideIndex * 2 + row;
+          if (!module.rail && ROUTE_DRAIN_MOTIFS.has(module.motif)) {
+            transform.makeScale(module.motif === "drain" ? 1.35 : 0.9, 1, module.motif === "drain" ? 1.5 : 1);
+            transform.setPosition(center + side * (roadHalfWidth - 0.35), 0.046, z - 4.3 + row * 8.5 + serial % 2 * 0.8);
+            this.roadBatches.drains.setMatrixAt(index, transform);
+          } else hide(this.roadBatches.drains, index);
         }
         for (let row = 0; row < 4; row += 1) {
+          const postIndex = segmentIndex * 8 + sideIndex * 4 + row;
           const postZ = z - 6 + row * 4.15 + sideIndex * 0.5;
-          transform.makeTranslation(side * 4.56, 0.54, postZ);
-          this.roadBatches.edgePosts.setMatrixAt(segmentIndex * 8 + sideIndex * 4 + row, transform);
-          transform.makeTranslation(side * 4.56, 0.92, postZ);
-          this.roadBatches.edgePostLights.setMatrixAt(segmentIndex * 8 + sideIndex * 4 + row, transform);
+          const postVisible = ROUTE_LIT_SHOULDERS.has(module.shoulder) || (row + serial + sideIndex) % 3 === 0;
+          if (postVisible) {
+            const postX = center + side * (roadHalfWidth + Math.max(0.18, walkWidth - 0.38));
+            transform.makeTranslation(postX, 0.54, postZ);
+            this.roadBatches.edgePosts.setMatrixAt(postIndex, transform);
+            transform.makeScale(module.shoulder === "stage" || module.shoulder === "cinema" ? 1.35 : 1, 1, 1);
+            transform.setPosition(postX, 0.92, postZ);
+            this.roadBatches.edgePostLights.setMatrixAt(postIndex, transform);
+          } else {
+            hide(this.roadBatches.edgePosts, postIndex);
+            hide(this.roadBatches.edgePostLights, postIndex);
+          }
         }
         for (let row = 0; row < 2; row += 1) {
+          const index = segmentIndex * 4 + sideIndex * 2 + row;
           const planterZ = z - 5.15 + row * 9.7 + sideIndex * 1.1;
-          const planterVisible = (segmentIndex + row * 2 + sideIndex) % 3 !== 1;
-          if (planterVisible) transform.makeTranslation(side * (5.14 + row * 0.12), 0.54, planterZ);
-          else transform.makeScale(0, 0, 0);
-          this.roadBatches.planterBases.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
+          const planterVisible = ROUTE_PLANTED_SHOULDERS.has(module.shoulder) && (serial + row * 2 + sideIndex) % 3 !== 1;
+          const planterX = center + side * (roadHalfWidth + walkWidth - 0.18 + row * 0.08);
           if (planterVisible) {
-            transform.makeScale(0.84 + (segmentIndex + row) % 3 * 0.08, 0.92 + sideIndex * 0.07, 0.84 + row * 0.08);
-            transform.setPosition(side * (5.14 + row * 0.12), 1.15, planterZ);
-          } else transform.makeScale(0, 0, 0);
-          this.roadBatches.planterLeaves.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
+            transform.makeTranslation(planterX, 0.54, planterZ);
+            this.roadBatches.planterBases.setMatrixAt(index, transform);
+            transform.makeScale(0.84 + (serial + row) % 3 * 0.08, 0.92 + sideIndex * 0.07, 0.84 + row * 0.08);
+            transform.setPosition(planterX, 1.15, planterZ);
+            this.roadBatches.planterLeaves.setMatrixAt(index, transform);
+          } else {
+            hide(this.roadBatches.planterBases, index);
+            hide(this.roadBatches.planterLeaves, index);
+          }
         }
       });
+
+      for (let row = 0; row < 6; row += 1) {
+        const index = segmentIndex * 6 + row;
+        const bandZ = z - 6.4 + row * 2.55;
+        let bandX = center;
+        let bandY = 0.058;
+        let bandWidth = roadWidth * 0.84;
+        let bandDepth = 0.055;
+        let bandRotation = 0;
+        if (["stone", "leaf", "cobble"].includes(module.motif)) {
+          bandX += (row % 3 - 1) * LANE_WIDTH;
+          bandWidth = 1.45 + (module.variant + row) % 3 * 0.34;
+          bandDepth = module.motif === "cobble" ? 0.42 : 0.11;
+          bandRotation = (row % 3 - 1) * (module.motif === "leaf" ? 0.32 : 0.08);
+        } else if (["bookspine", "pulse", "checker"].includes(module.motif)) {
+          bandX += (row % 3 - 1) * LANE_WIDTH;
+          bandWidth = module.motif === "pulse" ? 0.34 + row % 2 * 0.22 : 1.85;
+          bandDepth = module.motif === "bookspine" ? 0.78 + row % 3 * 0.28 : 0.48 + row % 2 * 0.34;
+        } else if (["tactile", "terminal"].includes(module.motif)) {
+          bandX += (row % 2 ? 1 : -1) * (roadHalfWidth - 0.42);
+          bandWidth = 0.18;
+          bandDepth = 1.85;
+        } else if (module.motif === "marquee") {
+          bandWidth = roadWidth * 0.62;
+          bandDepth = 0.055;
+          bandRotation = (row - 2.5) * 0.13;
+        } else if (["boardwalk", "detour", "steps", "memory"].includes(module.motif)) {
+          bandWidth = roadWidth * (module.motif === "memory" ? 0.94 - row * 0.035 : 0.96);
+          bandDepth = module.motif === "steps" ? 0.3 : 0.065;
+          bandRotation = module.motif === "detour" ? (row % 2 ? 0.16 : -0.16) : 0;
+          bandY += module.motif === "steps" ? row * 0.004 : 0;
+        } else if (["drain", "dryline"].includes(module.motif)) {
+          bandX += module.motif === "drain" ? (row % 2 ? 1 : -1) * (roadHalfWidth - 0.52) : 0;
+          bandWidth = module.motif === "drain" ? 0.42 : roadWidth * 0.36;
+          bandDepth = module.motif === "drain" ? 1.3 : 0.12;
+        } else if (module.motif === "grid") {
+          bandWidth = row % 2 ? 0.12 : roadWidth * 0.9;
+          bandDepth = row % 2 ? 2.25 : 0.1;
+          bandX += row % 2 ? (row - 2.5) * 1.45 : 0;
+        } else if (module.motif === "threshold") {
+          bandWidth = roadWidth * (0.88 - row * 0.075);
+          bandDepth = 0.18;
+        } else if (module.motif === "rail") {
+          bandX += (row % 3 - 1) * LANE_WIDTH;
+          bandWidth = 1.4;
+          bandDepth = 0.055;
+        } else {
+          bandWidth = roadWidth * 0.72;
+          bandDepth = 0.07;
+          bandRotation = (row % 2 ? 1 : -1) * 0.08;
+        }
+        transform.makeRotationY(bandRotation);
+        transform.scale(scale.set(bandWidth, 1, bandDepth));
+        transform.setPosition(bandX, bandY, bandZ);
+        this.roadBatches.themeBands.setMatrixAt(index, transform);
+
+        const motifVisible = ROUTE_MOTIF_INSTANCES.has(module.motif);
+        if (motifVisible) {
+          const motifScale = module.motif === "groove" ? 0.72 + row * 0.2 : module.motif === "wave" ? 0.5 + row % 3 * 0.28 : 0.3 + (module.variant + row) % 4 * 0.11;
+          const motifX = module.motif === "tactile" || module.motif === "terminal"
+            ? center + (row % 2 ? 1 : -1) * (roadHalfWidth - 0.45)
+            : center + (row % 3 - 1) * LANE_WIDTH + Math.sin(serial + row) * 0.22;
+          transform.makeScale(module.motif === "wave" ? motifScale * 2.4 : motifScale, 1, module.motif === "groove" ? motifScale : motifScale * 0.62);
+          transform.setPosition(motifX, 0.066, bandZ + 0.64);
+          this.roadBatches.themeMotifs.setMatrixAt(index, transform);
+        } else hide(this.roadBatches.themeMotifs, index);
+      }
     });
-    Object.values(this.roadBatches).forEach((batch) => {
+    this.roadBatchList.forEach((batch) => {
       batch.instanceMatrix.needsUpdate = true;
     });
+    const activeModule = routeModuleAt(stageIndex, phaseIndex, 0);
+    this.canvas.setAttribute("data-road-module", activeModule.id);
+    this.canvas.setAttribute("data-road-surface-family", activeModule.surface);
+    this.canvas.setAttribute("data-road-module-cycle", String(Math.max(0, roadCycle)));
+    this.canvas.setAttribute("data-road-rail", String(railRoute));
   }
 
   rebuildDecor() {
@@ -5769,6 +6392,8 @@ class CinematicRunnerRenderer {
       segment.remove(oldDecor);
       disposeObject(oldDecor);
       const decor = new THREE.Group();
+      const module = routeModuleAt(this.stageIndex, phase, index);
+      decor.name = `route-${module.id}-${module.variant}`;
       const spanningType = config.props.find((type) => type === "tunnel" || type === "terminal" || type === "overpass");
       if (!preserveCenterSightline && index < 10 && spanningType && index % 7 === 3) {
         const spanning = createProp(spanningType, config.accent, index + this.stageIndex);
@@ -5777,9 +6402,11 @@ class CinematicRunnerRenderer {
         decor.add(spanning);
       }
       if (index < 10) {
-        const tracksideProps = STAGE_TRACKSIDE_PROPS[this.stageIndex] || STAGE_TRACKSIDE_PROPS[0];
+        const tracksideProps = PHASE_TRACKSIDE_PROPS[this.stageIndex]?.[phase]
+          || STAGE_TRACKSIDE_PROPS[this.stageIndex]
+          || STAGE_TRACKSIDE_PROPS[0];
         [-1, 1].forEach((side, sideIndex) => {
-          const type = tracksideProps[(index + sideIndex * 2 + phase) % tracksideProps.length];
+          const type = tracksideProps[(module.variant + index + sideIndex * 2) % tracksideProps.length];
           const prop = createProp(type, config.accent, index * 7 + sideIndex * 3 + this.stageIndex + phase * 11);
           const compact = ["lamp", "signal", "tree", "bench", "warning"].includes(type);
           prop.scale.setScalar((compact ? 0.86 : 0.74 + (index % 3) * 0.035) * (preserveCenterSightline ? 0.82 : 1));
@@ -5813,6 +6440,8 @@ class CinematicRunnerRenderer {
       decor.userData.minZ = bounds.isEmpty() ? 0 : bounds.min.z;
       decor.userData.maxZ = bounds.isEmpty() ? 0 : bounds.max.z;
       decor.userData.trackClearance = true;
+      decor.userData.routeModuleId = module.id;
+      decor.userData.routeSurfaceFamily = module.surface;
       segment.add(decor);
       segment.userData.decor = decor;
     });
@@ -6442,6 +7071,35 @@ class CinematicRunnerRenderer {
     this.backdropBlend = 0;
   }
 
+  ensureRoadTexture(stageIndex, phaseIndex) {
+    const safeStage = clamp(Math.trunc(Number(stageIndex) || 0), 0, STAGE_CONFIGS.length - 1);
+    const safePhase = clamp(Math.trunc(Number(phaseIndex) || 0), 0, 2);
+    if (!this.roadTextures[safeStage][safePhase]) {
+      this.roadTextures[safeStage][safePhase] = makeRoadTexture(safeStage, safePhase);
+    }
+    return this.roadTextures[safeStage][safePhase];
+  }
+
+  prepareRoadTextures(stageIndex) {
+    const safeStage = clamp(Math.trunc(Number(stageIndex) || 0), 0, STAGE_CONFIGS.length - 1);
+    [0, 1, 2].forEach((phaseIndex) => this.ensureRoadTexture(safeStage, phaseIndex));
+    this.roadTextures.forEach((textures, textureStage) => textures.forEach((texture, phaseIndex) => {
+      const keepCurrentStage = textureStage === safeStage;
+      const keepNextPreview = textureStage === safeStage + 1 && phaseIndex === 0;
+      if (texture && !keepCurrentStage && !keepNextPreview) {
+        texture.dispose();
+        textures[phaseIndex] = null;
+      }
+    }));
+    const nextStage = safeStage + 1;
+    if (nextStage >= STAGE_CONFIGS.length || this.roadTextures[nextStage][0]) return;
+    const preload = () => {
+      if (!this.disposed && this.stageIndex === safeStage) this.ensureRoadTexture(nextStage, 0);
+    };
+    if (typeof requestIdleCallback === "function") requestIdleCallback(preload, { timeout: 1200 });
+    else setTimeout(preload, 80);
+  }
+
   setStage(index, immediate = false, explicitStage = null) {
     const nextIndex = clamp(Math.trunc(index), 0, STAGE_CONFIGS.length - 1);
     const stageChanged = nextIndex !== this.stageIndex;
@@ -6464,15 +7122,15 @@ class CinematicRunnerRenderer {
     this.stageConfig = config;
     if (structuredContentChanged) {
       const previousWorld = this.stageWorlds[this.stageIndex];
-      const previousRoadProfile = this.stageRoadProfiles[this.stageIndex];
+      const previousRoadProfiles = this.stageRoadProfiles[this.stageIndex];
       this.scene.remove(previousWorld);
-      this.roadBaseGroup.remove(previousRoadProfile);
+      previousRoadProfiles.forEach((profile) => this.roadBaseGroup.remove(profile));
       disposeObject(previousWorld);
-      disposeObject(previousRoadProfile);
+      previousRoadProfiles.forEach(disposeObject);
       this.stageWorlds[this.stageIndex] = createStageWorld(config, this.stageIndex);
-      this.stageRoadProfiles[this.stageIndex] = createStageRoadProfile(config, this.stageIndex);
+      this.stageRoadProfiles[this.stageIndex] = [0, 1, 2].map((phaseIndex) => createStageRoadProfile(config, this.stageIndex, phaseIndex));
       this.scene.add(this.stageWorlds[this.stageIndex]);
-      this.roadBaseGroup.add(this.stageRoadProfiles[this.stageIndex]);
+      this.roadBaseGroup.add(...this.stageRoadProfiles[this.stageIndex]);
       this.worldParticleTextures[this.stageIndex]?.dispose();
       this.worldParticleTextures[this.stageIndex] = makeWorldParticleTexture(config.world.particles.kind, config.accent);
     }
@@ -6494,16 +7152,20 @@ class CinematicRunnerRenderer {
     this.warmLight.position.copy(this.warmLightBasePosition);
     const wetStage = ["after-rain", "rain", "storm"].includes(config.weather);
     const surfaceSettings = ROAD_SURFACE_SETTINGS[config.world.road.material] || ROAD_SURFACE_SETTINGS[wetStage ? "wet-asphalt" : "dry-asphalt"];
-    this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.08));
-    this.roadTexture = this.roadTextures[this.stageIndex];
+    const activeRoute = routeModuleAt(this.stageIndex, this.routePhase, 0);
+    const routeAccent = routeAccentTone(activeRoute, config.accent);
+    const shoulderTone = routeShoulderTone(activeRoute, config.curb);
+    this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.78));
+    this.prepareRoadTextures(this.stageIndex);
+    this.roadTexture = this.ensureRoadTexture(this.stageIndex, this.routePhase);
     this.roadMaterial.map = this.roadTexture;
     this.roadMaterial.needsUpdate = true;
     this.roadMaterial.roughness = clamp(Number(config.world.road.roughness) || surfaceSettings.roughness, 0.08, 1);
     this.roadMaterial.metalness = clamp(Number(config.world.road.metalness) || surfaceSettings.metalness, 0, 0.9);
     this.roadMaterial.clearcoat = clamp(Number(config.world.road.clearcoat) || surfaceSettings.clearcoat, 0, 1);
     this.roadMaterial.clearcoatRoughness = clamp(Number(config.world.road.clearcoatRoughness) || surfaceSettings.clearcoatRoughness, 0.05, 1);
-    this.curbMaterial.color.setHex(config.curb);
-    this.platformMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(config.road), 0.62).multiplyScalar(0.82));
+    this.curbMaterial.color.copy(new THREE.Color(shoulderTone).lerp(new THREE.Color(routeAccent), 0.08));
+    this.platformMaterial.color.copy(new THREE.Color(shoulderTone).lerp(new THREE.Color(0xffffff), 0.12));
     this.sleeperMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0x4c3428), 0.38).multiplyScalar(0.72));
     this.railMaterial.emissive.copy(new THREE.Color(config.accent).multiplyScalar(0.055));
     this.railMaterial.emissiveIntensity = 0.42;
@@ -6516,6 +7178,10 @@ class CinematicRunnerRenderer {
     this.laneGuideMaterial.emissive.setHex(config.accent);
     this.roadMarkMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(0xffffff), 0.55));
     this.roadMarkMaterial.emissive.copy(new THREE.Color(config.accent).multiplyScalar(0.22));
+    this.routeBandMaterial.color.copy(new THREE.Color(routeAccent).lerp(new THREE.Color(config.theme.landmark), 0.28));
+    this.routeBandMaterial.emissive.setHex(routeAccent);
+    this.routeMotifMaterial.color.copy(new THREE.Color(routeAccent).lerp(new THREE.Color(0xffffff), 0.44));
+    this.routeMotifMaterial.emissive.copy(new THREE.Color(routeAccent).multiplyScalar(0.58));
     this.roadInsetMaterial.color.copy(new THREE.Color(config.road).multiplyScalar(0.48));
     this.roadPatchMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(config.ground), 0.36).multiplyScalar(0.8));
     this.roadUtilityMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(config.curb), 0.42).multiplyScalar(0.62));
@@ -6525,7 +7191,7 @@ class CinematicRunnerRenderer {
     this.streetPlanterMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(config.ground), 0.74));
     this.streetFoliageMaterial.color.copy(new THREE.Color(0x638f67).lerp(new THREE.Color(config.accent), 0.1));
     this.groundMaterial.color.setHex(config.ground);
-    const railRoute = config.routeStyle === "metro" || config.routeStyle === "terminal";
+    const railRoute = activeRoute.rail;
     if (this.roadBatches) {
       this.roadBatches.sleepers.visible = railRoute;
       this.roadBatches.rails.visible = railRoute;
@@ -6537,6 +7203,8 @@ class CinematicRunnerRenderer {
       this.roadBatches.roadPatches.visible = !railRoute;
       this.roadBatches.manholes.visible = !railRoute;
       this.roadBatches.walks.visible = true;
+      this.roadBatches.themeBands.visible = true;
+      this.roadBatches.themeMotifs.visible = true;
     }
     this.ambientParticles.material.color.setHex(config.accent);
     this.ambientParticles.material.map = this.worldParticleTextures[this.stageIndex] || this.particleTexture;
@@ -6562,7 +7230,9 @@ class CinematicRunnerRenderer {
     this.scene.environmentIntensity = clamp(Number(config.world.lighting.environmentIntensity) || (["neon", "rain", "storm", "starlight"].includes(config.weather) ? 0.9 : 0.72), 0.35, 1.3);
     this.runnerFillLight.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xffffff), 0.74));
     this.stageWorlds.forEach((world, worldIndex) => { world.visible = worldIndex === this.stageIndex; });
-    this.stageRoadProfiles.forEach((profile, profileIndex) => { profile.visible = profileIndex === this.stageIndex; });
+    this.stageRoadProfiles.forEach((profiles, profileStageIndex) => profiles.forEach((profile, profilePhaseIndex) => {
+      profile.visible = profileStageIndex === this.stageIndex && profilePhaseIndex === this.routePhase;
+    }));
     this.activeStageWorld = this.stageWorlds[this.stageIndex];
     const activeDistricts = this.premiumDistricts || this.metroDistricts;
     this.metroDistricts.forEach((district, districtIndex) => {
@@ -6583,6 +7253,7 @@ class CinematicRunnerRenderer {
       train.position.x = (trainIndex ? 1 : -1) * 7.15;
     });
     this.activateBackdrop(this.stageIndex, immediate);
+    this.updateRoadBatches(0);
     this.rebuildDecor();
     this.canvas.setAttribute("data-world-scene", config.world.scene);
     this.canvas.setAttribute("data-road-geometry", config.world.road.geometry);
@@ -6611,6 +7282,19 @@ class CinematicRunnerRenderer {
     this.routePhase = nextPhase;
     this.phaseContentRef = phaseContent || this.phaseContentRef;
     const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
+    this.roadTexture = this.ensureRoadTexture(this.stageIndex, nextPhase);
+    this.roadMaterial.map = this.roadTexture;
+    this.roadMaterial.needsUpdate = true;
+    const activeRoute = routeModuleAt(this.stageIndex, nextPhase, 0);
+    const routeAccent = routeAccentTone(activeRoute, config.accent);
+    const shoulderTone = routeShoulderTone(activeRoute, config.curb);
+    this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.78));
+    this.curbMaterial.color.copy(new THREE.Color(shoulderTone).lerp(new THREE.Color(routeAccent), 0.08));
+    this.platformMaterial.color.copy(new THREE.Color(shoulderTone).lerp(new THREE.Color(0xffffff), 0.12));
+    this.routeBandMaterial.color.copy(new THREE.Color(routeAccent).lerp(new THREE.Color(config.theme.landmark), 0.28));
+    this.routeBandMaterial.emissive.setHex(routeAccent);
+    this.routeMotifMaterial.color.copy(new THREE.Color(routeAccent).lerp(new THREE.Color(0xffffff), 0.44));
+    this.routeMotifMaterial.emissive.copy(new THREE.Color(routeAccent).multiplyScalar(0.58));
     const visual = objectValue(this.phaseContentRef?.visual);
     const materialKey = ROAD_SURFACE_SETTINGS[visual.roadMaterialKey]
       ? visual.roadMaterialKey
@@ -6624,6 +7308,9 @@ class CinematicRunnerRenderer {
     this.laneGuideMaterial.opacity = 0.6 + nextPhase * 0.08;
     this.laneGuideMaterial.emissiveIntensity = 0.24 + nextPhase * 0.13;
     this.roadMarkMaterial.opacity = 0.46 + nextPhase * 0.08;
+    this.routeBandMaterial.opacity = 0.42 + nextPhase * 0.05;
+    this.routeBandMaterial.emissiveIntensity = 0.28 + nextPhase * 0.13;
+    this.routeMotifMaterial.opacity = 0.28 + nextPhase * 0.045;
     this.collectibleBatches.hearts.geometry = createPhaseTokenGeometry(this.stageIndex, nextPhase);
     const collectibleKey = visual.collectibleVisualKey || config.visual?.collectibleVisualKeys?.[nextPhase] || "stage-token";
     const phaseStyle = collectibleVisualStyle(collectibleKey, this.stageIndex, nextPhase);
@@ -6632,8 +7319,13 @@ class CinematicRunnerRenderer {
     this.canvas.setAttribute("data-route-phase", String(nextPhase + 1));
     this.canvas.setAttribute("data-phase-world", visual.worldKey || this.phaseContentRef?.id || `phase-${nextPhase + 1}`);
     this.canvas.setAttribute("data-collectible-style", collectibleKey);
+    this.stageRoadProfiles.forEach((profiles, profileStageIndex) => profiles.forEach((profile, profilePhaseIndex) => {
+      profile.visible = profileStageIndex === this.stageIndex && profilePhaseIndex === nextPhase;
+    }));
+    this.updateRoadBatches(0);
     this.rebuildDecor();
     this.setDirectorAct(this.stageIndex, nextPhase, this.phaseContentRef, true);
+    this.syncQualityVisibility(Boolean(this.arrivalData));
   }
 
   setDirectorAct(stageIndex, actIndex, phaseContent = null, immediate = false) {
@@ -6659,7 +7351,11 @@ class CinematicRunnerRenderer {
     state.accentTarget.setHex((this.stageConfig || STAGE_CONFIGS[state.stageIndex]).accent);
     configureDirectorVisualRig(this.directorVisualRig, profile, state.accentTarget.getHex());
     this.configureRelationshipPresence({ mode: profile.relation }, true);
-    this.roadMaterial.color.copy(new THREE.Color((this.stageConfig || STAGE_CONFIGS[state.stageIndex]).road).lerp(this.directorScratchColor.setHex(profile.tint), profile.tintMix * 0.34));
+    const config = this.stageConfig || STAGE_CONFIGS[state.stageIndex];
+    const activeRoute = routeModuleAt(state.stageIndex, state.actIndex, 0);
+    const neutralRoad = new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.78);
+    this.roadMaterial.color.copy(neutralRoad.lerp(this.directorScratchColor.setHex(profile.tint), profile.tintMix * 0.1));
+    this.platformMaterial.color.copy(new THREE.Color(routeShoulderTone(activeRoute, config.curb)).lerp(new THREE.Color(0xffffff), 0.12));
     this.canvas.setAttribute("data-director-act", profile.id);
     this.canvas.setAttribute("data-route-topology", profile.topology);
     this.canvas.setAttribute("data-visible-goal", profile.goal);
@@ -6815,7 +7511,8 @@ class CinematicRunnerRenderer {
     }
     const districtSet = usePremium ? this.premiumDistricts : this.metroDistricts;
     this.metroSkyline = districtSet?.[this.stageIndex] || this.metroDistricts[this.stageIndex];
-    const railRoute = this.stageConfig?.routeStyle === "metro" || this.stageConfig?.routeStyle === "terminal";
+    const activeRoute = routeModuleAt(this.stageIndex, this.routePhase, 0);
+    const railRoute = activeRoute.rail;
     const layers = this.activeStageWorld?.userData.layers || [];
     const visibleWorldLayers = railRoute && profile.key === "performance" ? 1 : profile.worldLayers;
     for (let index = 0; index < layers.length; index += 1) {
@@ -6829,16 +7526,18 @@ class CinematicRunnerRenderer {
       this.roadBatches.rails.visible = !arriving && railRoute;
       this.roadBatches.thirdRails.visible = !arriving && railRoute && detail > 0;
       this.roadBatches.safetyLines.visible = !arriving && !railRoute;
-      this.roadBatches.laneGuides.visible = !arriving && !railRoute;
-      this.roadBatches.laneTicks.visible = !arriving && !railRoute && detail > 0;
-      this.roadBatches.crosswalks.visible = !arriving && !railRoute && detail > 0;
-      this.roadBatches.drains.visible = !arriving && !railRoute && detail > 1;
-      this.roadBatches.roadPatches.visible = !arriving && !railRoute && detail > 0;
-      this.roadBatches.manholes.visible = !arriving && !railRoute && detail > 1;
+      this.roadBatches.laneGuides.visible = !arriving && !railRoute && ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.laneTicks.visible = !arriving && !railRoute && detail > 0 && ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.crosswalks.visible = !arriving && !railRoute && detail > 0 && ["crossing", "threshold"].includes(activeRoute.motif);
+      this.roadBatches.drains.visible = !arriving && !railRoute && detail > 1 && ROUTE_DRAIN_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.roadPatches.visible = !arriving && !railRoute && detail > 0 && ROUTE_PATCH_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.manholes.visible = !arriving && !railRoute && detail > 1 && ROUTE_UTILITY_MOTIFS.has(activeRoute.motif);
       this.roadBatches.edgePosts.visible = !arriving && detail > 0;
       this.roadBatches.edgePostLights.visible = !arriving && detail > 0;
-      this.roadBatches.planterBases.visible = !arriving && detail > 0;
-      this.roadBatches.planterLeaves.visible = !arriving && detail > 0;
+      this.roadBatches.planterBases.visible = !arriving && detail > 0 && ROUTE_PLANTED_SHOULDERS.has(activeRoute.shoulder);
+      this.roadBatches.planterLeaves.visible = !arriving && detail > 0 && ROUTE_PLANTED_SHOULDERS.has(activeRoute.shoulder);
+      this.roadBatches.themeBands.visible = !arriving;
+      this.roadBatches.themeMotifs.visible = !arriving && detail > 0 && ROUTE_MOTIF_INSTANCES.has(activeRoute.motif);
     }
     this.canvas.setAttribute("data-secondary-world-layers", String(visibleWorldLayers));
     this.canvas.setAttribute("data-mobile-shadows", String(Boolean(profile.shadows)));
@@ -6992,14 +7691,23 @@ class CinematicRunnerRenderer {
   }
 
   syncRoad(distance) {
-    const offset = (distance * WORLD_Z_SCALE) % SEGMENT_LENGTH;
+    const worldDistance = Math.max(0, distance * WORLD_Z_SCALE);
+    const roadCycle = Math.floor(worldDistance / SEGMENT_LENGTH);
+    const offset = worldDistance % SEGMENT_LENGTH;
     const decorStride = this.qualityProfile?.decorStride ?? 2;
-    const railRoute = this.stageConfig?.routeStyle === "metro" || this.stageConfig?.routeStyle === "terminal";
-    const effectiveDecorStride = railRoute && this.qualityProfile?.key === "performance"
-      ? Math.max(7, decorStride)
+    const railRoute = routeModuleAt(this.stageIndex, this.routePhase, 0).rail;
+    const performanceRouteStride = this.qualityProfile?.key === "performance" && this.stageIndex === 3
+      ? Math.max(5, decorStride)
       : decorStride;
+    const effectiveDecorStride = railRoute && this.qualityProfile?.key === "performance"
+      ? Math.max(7, performanceRouteStride)
+      : performanceRouteStride;
     const cadence = this.directorState?.act?.cadence || 4;
     const cadenceStride = Math.max(1, Math.round(cadence / 2.2));
+    if (roadCycle !== this.roadCycle) {
+      this.roadCycle = roadCycle;
+      this.canvas.setAttribute("data-road-module-cycle", String(roadCycle));
+    }
     this.roadBaseGroup.position.z = offset;
     for (let index = 0; index < this.roadSegments.length; index += 1) {
       const segment = this.roadSegments[index];
@@ -8179,7 +8887,7 @@ class CinematicRunnerRenderer {
     for (let index = 0; index < this.loadedCitySources.length; index += 1) disposeObject(this.loadedCitySources[index]);
     this.loadedCitySources.length = 0;
     const detachedTextures = [
-      ...this.roadTextures,
+      ...this.roadTextures.flat(),
       this.platformTexture,
       this.particleTexture,
       this.environmentTexture,
