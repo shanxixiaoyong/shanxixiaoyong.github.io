@@ -8,6 +8,7 @@
   const year = document.querySelector("[data-portal-year]");
   const labels = doors.map((door) => door.querySelector(".portal-door-copy strong")?.textContent.trim() || "");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const desktopGallery = window.matchMedia("(min-width: 760px)");
   let activeIndex = 0;
   let frame = 0;
 
@@ -17,6 +18,14 @@
   function setActive(index) {
     const nextIndex = Math.max(0, Math.min(doors.length - 1, index));
     activeIndex = nextIndex;
+    doors.forEach((door, doorIndex) => {
+      const current = doorIndex === nextIndex;
+      door.classList.toggle("is-active", current);
+      if (current) door.setAttribute("aria-current", "true");
+      else door.removeAttribute("aria-current");
+    });
+    const accent = doors[nextIndex].dataset.portalAccent;
+    if (accent) document.documentElement.style.setProperty("--portal-active", accent);
     if (currentNumber) currentNumber.textContent = String(nextIndex + 1).padStart(2, "0");
     if (currentName) currentName.textContent = labels[nextIndex];
     if (nextName) nextName.textContent = labels[(nextIndex + 1) % labels.length];
@@ -45,7 +54,13 @@
   }
 
   function scrollToDoor(index) {
-    const door = doors[Math.max(0, Math.min(doors.length - 1, index))];
+    const nextIndex = Math.max(0, Math.min(doors.length - 1, index));
+    const door = doors[nextIndex];
+    if (desktopGallery.matches) {
+      setActive(nextIndex);
+      door.focus({ preventScroll: true });
+      return;
+    }
     const railBounds = rail.getBoundingClientRect();
     const doorBounds = door.getBoundingClientRect();
     const centeredLeft = rail.scrollLeft
@@ -55,7 +70,7 @@
       left: Math.max(0, centeredLeft),
       behavior: reducedMotion.matches ? "auto" : "smooth"
     });
-    setActive(index);
+    setActive(nextIndex);
   }
 
   rail.addEventListener("scroll", scheduleMeasure, { passive: true });
@@ -68,6 +83,11 @@
   });
 
   doors.forEach((door) => {
+    door.addEventListener("pointerenter", (event) => {
+      if (event.pointerType === "touch" || !desktopGallery.matches) return;
+      setActive(Number(door.dataset.portalIndex));
+    });
+    door.addEventListener("focus", () => setActive(Number(door.dataset.portalIndex)));
     door.addEventListener("pointermove", (event) => {
       if (event.pointerType === "touch") return;
       const bounds = door.getBoundingClientRect();

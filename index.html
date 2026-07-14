@@ -6,7 +6,7 @@
   <title>刘勇 / Yong Liu - 个人天地</title>
   <meta name="description" content="刘勇 / Yong Liu 的个人天地：学术主页、知识库、工具箱与三款独立的心动游戏。">
   <meta name="author" content="Yong Liu">
-  <meta name="theme-color" content="#0b0d0d">
+  <meta name="theme-color" content="#101210">
   <meta property="og:title" content="刘勇 / Yong Liu - 个人天地">
   <meta property="og:description" content="Academic work, knowledge, tools, and three independent Heartbeat games by Yong Liu.">
   <meta property="og:type" content="website">
@@ -15,8 +15,8 @@
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="shortcut icon" href="favicon.ico?v=yl-20260630">
   <link rel="preload" as="image" href="assets/portal/academic-workspace.webp" fetchpriority="high">
-  <link rel="stylesheet" href="assets/portal.css?v=portal-20260711b">
-  <script src="assets/portal.js?v=portal-20260711b" defer></script>
+  <link rel="stylesheet" href="assets/portal.css?v=portal-gallery-20260714a">
+  <script src="assets/portal.js?v=portal-gallery-20260714a" defer></script>
 </head>
 <body class="portal-page">
   <a class="portal-skip" href="#main">Skip to content</a>
@@ -24,7 +24,7 @@
   <header class="portal-header">
     <a class="portal-brand" href="index.html" aria-label="刘勇的个人天地首页">
       <span class="portal-brand-mark">YL</span>
-      <span class="portal-brand-name">Yong Liu</span>
+      <span class="portal-brand-name"><b>Yong Liu</b><small>Personal Archive</small></span>
     </a>
     <nav class="portal-external" aria-label="公开资料">
       <a href="https://github.com/shanxixiaoyong" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
@@ -34,90 +34,99 @@
 
   <main class="portal-main" id="main">
     <section class="portal-intro" aria-labelledby="portal-title">
-      <div>
+      <div class="portal-identity">
         <p class="portal-kicker">Personal Space · Xi'an</p>
-        <h1 id="portal-title">刘勇 <span>/ Yong Liu</span></h1>
+        <h1 id="portal-title">Yong Liu <span>刘勇</span></h1>
       </div>
-      <p class="portal-lead">研究、知识、工具，以及三种可以直接开始的游戏。</p>
+      <div class="portal-intro-side">
+        <p class="portal-lead">记录研究工作、知识积累与日常创作，也保留一些值得反复游玩的灵感实验。</p>
+        <p class="portal-index-note"><span>Research</span><span>Notes</span><span>Tools</span><span>Play</span></p>
+      </div>
     </section>
 
     <section class="portal-stage" aria-label="内容入口">
       <div class="portal-rail" data-portal-rail tabindex="0" role="region" aria-roledescription="carousel" aria-label="个人天地内容入口">
-        <a class="portal-door portal-academic" href="home.html" data-portal-index="0">
+        <a class="portal-door portal-academic" href="home.html" data-portal-index="0" data-portal-accent="#a9c6b5">
           <img src="assets/portal/academic-workspace.webp" width="1024" height="1536" alt="" fetchpriority="high" draggable="false">
           <span class="portal-door-tint" aria-hidden="true"></span>
-          <span class="portal-door-head"><b>01</b><em>Academic</em></span>
+          <span class="portal-door-head"><b>01</b><em>Academic / Profile</em></span>
           <span class="portal-door-copy">
             <small>Research &amp; Profile</small>
             <strong>个人主页</strong>
-            <span>从医学影像到智能感知，查看论文、专利与研究轨迹。</span>
-            <i>进入 <span aria-hidden="true">↗</span></i>
+            <span>从医学影像到智能感知，查看论文、专利、教育经历与研究轨迹。</span>
+            <i>Explore <span aria-hidden="true">↗</span></i>
           </span>
         </a>
 
-        <a class="portal-door portal-knowledge" href="knowledge.html" data-portal-index="1">
+        <a class="portal-door portal-knowledge" href="knowledge.html" data-portal-index="1" data-portal-accent="#d0ae69">
           <img src="assets/portal/knowledge-archive.webp" width="1024" height="1536" alt="" loading="lazy" draggable="false">
           <span class="portal-door-tint" aria-hidden="true"></span>
-          <span class="portal-door-head"><b>02</b><em>Knowledge</em></span>
+          <span class="portal-door-head"><b>02</b><em>Knowledge / Notes</em></span>
           <span class="portal-door-copy">
             <small>Notes &amp; Maps</small>
             <strong>个人知识库</strong>
-            <span>研究方法、阅读笔记与长期积累。</span>
-            <i>进入 <span aria-hidden="true">↗</span></i>
+            <span>从 Obsidian 延伸出的研究方法、阅读笔记与主题地图。</span>
+            <i>Browse <span aria-hidden="true">↗</span></i>
           </span>
         </a>
 
-        <a class="portal-door portal-tools" href="tools.html" data-portal-index="2">
+        <a class="portal-door portal-tools" href="tools.html" data-portal-index="2" data-portal-accent="#8fc2b5">
           <img src="assets/portal/tool-workbench.webp" width="1024" height="1536" alt="" loading="lazy" draggable="false">
           <span class="portal-door-tint" aria-hidden="true"></span>
-          <span class="portal-door-head"><b>03</b><em>Utility</em></span>
+          <span class="portal-door-head"><b>03</b><em>Utility / Workshop</em></span>
           <span class="portal-door-copy">
             <small>Everyday Workbench</small>
             <strong>小工具箱</strong>
-            <span>写作、计时、换算与整理。</span>
-            <i>进入 <span aria-hidden="true">↗</span></i>
+            <span>为写作、计时、换算与整理制作的轻量工具。</span>
+            <i>Open <span aria-hidden="true">↗</span></i>
           </span>
         </a>
 
-        <a class="portal-door portal-game" href="game-2048.html" data-portal-index="3">
-          <img src="assets/portal/heartbeat-2048.png" width="393" height="852" alt="" loading="lazy" draggable="false">
+        <a class="portal-door portal-game" href="game-2048.html" data-portal-index="3" data-portal-accent="#e594a7">
+          <picture class="portal-media">
+            <source media="(min-width: 760px)" srcset="assets/portal/heartbeat-2048-hd.jpg">
+            <img src="assets/portal/heartbeat-2048-portrait-hd.jpg" width="720" height="1440" alt="" loading="lazy" draggable="false">
+          </picture>
           <span class="portal-door-tint" aria-hidden="true"></span>
-          <span class="portal-door-head"><b>04</b><em>Play</em></span>
+          <span class="portal-door-head"><b>04</b><em>Play / Story</em></span>
           <span class="portal-door-copy">
             <small>Love Timeline</small>
             <strong>心动2048</strong>
-            <span>沿着 5×5 棋盘，把每一次靠近合成一段完整故事。</span>
-            <i>开始 <span aria-hidden="true">↗</span></i>
+            <span>在 5×5 棋盘上合成关系阶段，等待下一次新故事的出现。</span>
+            <i>Play <span aria-hidden="true">↗</span></i>
           </span>
         </a>
 
-        <a class="portal-door portal-billiards" href="game-billiards-love.html" data-portal-index="4">
-          <img src="assets/portal/billiards-chroma-v1.jpg" width="393" height="852" alt="" loading="lazy" draggable="false">
+        <a class="portal-door portal-billiards" href="game-billiards-love.html" data-portal-index="4" data-portal-accent="#70bed2">
+          <picture class="portal-media">
+            <source media="(min-width: 760px)" srcset="assets/portal/billiards-chroma-hd.jpg">
+            <img src="assets/portal/billiards-chroma-portrait-hd.jpg" width="720" height="1440" alt="" loading="lazy" draggable="false">
+          </picture>
           <span class="portal-door-tint" aria-hidden="true"></span>
-          <span class="portal-door-head"><b>05</b><em>Spectrum Play</em></span>
+          <span class="portal-door-head"><b>05</b><em>Play / Spectrum</em></span>
           <span class="portal-door-copy">
             <small>Chromatic Break</small>
             <strong>幻彩桌球</strong>
-            <span>球色重构桌布，六袋改写轨迹，以黑 8 引爆全谱终局。</span>
-            <i>开始 <span aria-hidden="true">↗</span></i>
+            <span>每颗球改写桌布材质与滚动特效，以黑 8 完成全谱终局。</span>
+            <i>Play <span aria-hidden="true">↗</span></i>
           </span>
         </a>
 
-        <a class="portal-door portal-runner" href="game-runner-love.html" data-portal-index="5">
+        <a class="portal-door portal-runner" href="game-runner-love.html" data-portal-index="5" data-portal-accent="#ef9b6f">
           <img src="assets/portal/heartbeat-runner.png" width="393" height="852" alt="" loading="lazy" draggable="false">
           <span class="portal-door-tint" aria-hidden="true"></span>
-          <span class="portal-door-head"><b>06</b><em>Heartbeat Run</em></span>
+          <span class="portal-door-head"><b>06</b><em>Play / Journey</em></span>
           <span class="portal-door-copy">
             <small>Run Into Love</small>
             <strong>心动跑酷</strong>
-            <span>越过沿途阻碍，在加速的心跳里奔向下一次相遇。</span>
-            <i>开始 <span aria-hidden="true">↗</span></i>
+            <span>穿过七段城市旅程，在不断变化的道路上追随一段心动轨迹。</span>
+            <i>Play <span aria-hidden="true">↗</span></i>
           </span>
         </a>
       </div>
 
       <div class="portal-progress" aria-label="入口进度">
-        <span class="portal-progress-current"><b data-portal-current>01</b><em data-portal-current-name>个人主页</em></span>
+        <span class="portal-progress-current"><b data-portal-current>01</b><em data-portal-current-name>个人主页</em><small>/ 06</small></span>
         <span class="portal-progress-line" aria-hidden="true"><i data-portal-progress></i></span>
         <span class="portal-progress-next"><small>Next</small><b data-portal-next>个人知识库</b></span>
       </div>
