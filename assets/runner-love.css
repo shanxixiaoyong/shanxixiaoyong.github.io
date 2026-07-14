@@ -51,12 +51,8 @@ a {
 
 .runner-phone {
   position: relative;
-  width: min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 9 / 16));
-  height: min(
-    calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)),
-    calc((100vw - env(safe-area-inset-left) - env(safe-area-inset-right)) * 16 / 9)
-  );
-  aspect-ratio: 9 / 16;
+  width: 100%;
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow: hidden;
   isolation: isolate;
   background: #17201e url("runner-scenes/01-encounter.jpg") center / cover no-repeat;
@@ -88,7 +84,8 @@ a {
 }
 
 .runner-atmosphere,
-.runner-vignette {
+.runner-vignette,
+.runner-speed-aura {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -115,10 +112,50 @@ a {
   z-index: 2;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 120px 90px rgba(3, 6, 7, 0.34),
-    inset 0 -150px 110px rgba(2, 5, 6, 0.4),
-    inset 50px 0 70px rgba(2, 5, 6, 0.14),
-    inset -50px 0 70px rgba(2, 5, 6, 0.14);
+    inset 0 84px 64px rgba(3, 6, 7, 0.2),
+    inset 0 -120px 90px rgba(2, 5, 6, 0.28),
+    inset 34px 0 54px rgba(2, 5, 6, 0.12),
+    inset -34px 0 54px rgba(2, 5, 6, 0.12);
+}
+
+.runner-speed-aura {
+  z-index: 3;
+  overflow: hidden;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 360ms ease;
+}
+
+.runner-speed-aura::before,
+.runner-speed-aura::after {
+  position: absolute;
+  top: 22%;
+  bottom: -8%;
+  width: 25%;
+  content: "";
+  opacity: 0.42;
+  background: repeating-linear-gradient(
+    169deg,
+    transparent 0 20px,
+    color-mix(in srgb, var(--stage-accent) 62%, white) 22px,
+    transparent 24px 43px
+  );
+  filter: blur(0.6px);
+  animation: speed-stream 620ms linear infinite;
+}
+
+.runner-speed-aura::before {
+  left: -10%;
+  transform: perspective(300px) rotateY(28deg);
+}
+
+.runner-speed-aura::after {
+  right: -10%;
+  transform: perspective(300px) rotateY(-28deg) scaleX(-1);
+}
+
+.runner-shell[data-state="playing"] .runner-speed-aura {
+  opacity: var(--speed-aura-opacity, 0.3);
 }
 
 .icon-button {
@@ -144,9 +181,9 @@ a {
   left: 0;
   display: grid;
   width: 100%;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 34px 1fr 34px;
   align-items: center;
-  padding: max(12px, env(safe-area-inset-top)) 14px 7px;
+  padding: max(10px, env(safe-area-inset-top)) 12px 5px;
   color: #fff;
   pointer-events: none;
 }
@@ -173,7 +210,7 @@ a {
 .stage-heading span {
   display: block;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -183,26 +220,31 @@ a {
   margin-top: 2px;
   color: #fffdf8;
   font-family: Georgia, "Songti SC", serif;
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
 .runner-hud {
   position: absolute;
   z-index: 5;
-  top: max(62px, calc(env(safe-area-inset-top) + 52px));
+  top: max(56px, calc(env(safe-area-inset-top) + 46px));
   left: 0;
   width: 100%;
-  padding: 0 15px;
+  padding: 0 12px;
   color: #fff;
   pointer-events: none;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.84);
 }
 
+.runner-shell[data-state="playing"] .runner-hud {
+  opacity: 0.94;
+}
+
 .stage-track {
   display: grid;
-  margin: 0;
+  width: 62%;
+  margin: 0 auto;
   padding: 0;
   grid-template-columns: repeat(7, 1fr);
   list-style: none;
@@ -217,11 +259,11 @@ a {
 
 .stage-track li::before {
   position: absolute;
-  top: 4px;
+  top: 3px;
   right: 50%;
   left: -50%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.18);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
   content: "";
 }
 
@@ -233,20 +275,20 @@ a {
   position: relative;
   z-index: 1;
   display: block;
-  width: 9px;
-  height: 9px;
-  margin: 0 auto 4px;
+  width: 8px;
+  height: 8px;
+  margin: 0 auto;
   border: 1px solid currentColor;
   border-radius: 50%;
   background: rgba(18, 24, 25, 0.72);
 }
 
 .stage-track span {
-  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  font-size: 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  clip: rect(0, 0, 0, 0);
 }
 
 .stage-track .is-done,
@@ -265,9 +307,9 @@ a {
 
 .hud-meters {
   display: grid;
-  margin-top: 9px;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 10px;
+  margin-top: 8px;
+  grid-template-columns: minmax(76px, 0.82fr) minmax(76px, 1fr) auto;
+  gap: 8px;
   align-items: center;
 }
 
@@ -278,7 +320,7 @@ a {
   grid-template-columns: auto auto 1fr;
   gap: 5px;
   align-items: center;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .stage-meter {
@@ -293,9 +335,10 @@ a {
 
 .heart-meter > div,
 .stage-meter > div {
-  height: 3px;
+  height: 4px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .heart-meter i,
@@ -319,13 +362,13 @@ a {
   min-width: 28px;
   color: var(--stage-accent);
   font-family: Georgia, serif;
-  font-size: 17px;
+  font-size: 16px;
   text-align: right;
 }
 
 .run-telemetry {
   display: flex;
-  margin-top: 8px;
+  margin-top: 6px;
   justify-content: flex-end;
   gap: 16px;
   font-variant-numeric: tabular-nums;
@@ -348,29 +391,27 @@ a {
   min-width: 3.6ch;
   color: #fffdf8;
   font-family: Georgia, serif;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   text-align: right;
 }
 
 .runner-toast {
   position: absolute;
   z-index: 7;
-  top: 25%;
+  top: 21%;
   left: 50%;
   width: max-content;
   max-width: 78%;
-  padding: 8px 13px;
+  padding: 4px 10px;
   transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 3px;
-  background: rgba(8, 13, 14, 0.64);
+  border: 0;
+  background: linear-gradient(90deg, transparent, rgba(5, 11, 14, 0.64), transparent);
   color: #fff;
   font-size: 11px;
   text-align: center;
   text-shadow: 0 2px 8px #000;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(10px);
+  text-shadow: 0 2px 9px #000, 0 0 16px var(--stage-accent);
 }
 
 .gesture-cue {
@@ -391,7 +432,7 @@ a {
 }
 
 .runner-shell[data-state="playing"] .gesture-cue {
-  opacity: 0.42;
+  opacity: 0.26;
 }
 
 .gesture-cue span:first-child { grid-column: 2; }
@@ -660,21 +701,12 @@ a {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-aspect-ratio: 9 / 16) {
-  .runner-phone {
-    width: 100vw;
-    height: calc(100vw * 16 / 9);
-  }
+@keyframes speed-stream {
+  from { background-position: 0 -72px; }
+  to { background-position: 0 72px; }
 }
 
-@media (min-aspect-ratio: 9 / 16) {
-  .runner-phone {
-    width: calc(100dvh * 9 / 16);
-    height: 100dvh;
-  }
-}
-
-@media (min-width: 700px) {
+@media (min-width: 900px) and (min-aspect-ratio: 3 / 4) {
   .runner-shell {
     padding: 18px;
   }
@@ -682,6 +714,7 @@ a {
   .runner-phone {
     width: calc((100dvh - 36px) * 9 / 16);
     height: calc(100dvh - 36px);
+    aspect-ratio: 9 / 16;
     border-radius: 6px;
   }
 }

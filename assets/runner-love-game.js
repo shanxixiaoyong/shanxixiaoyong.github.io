@@ -141,35 +141,83 @@
   };
 
   class HeartbeatAudio {
-    constructor() { this.context = null; this.baseGain = null; this.warmGain = null; this.futureGain = null; this.started = false; }
+    constructor() {
+      this.context = null; this.master = null; this.baseGain = null; this.warmGain = null; this.futureGain = null;
+      this.noiseBuffer = null; this.started = false; this.stepClock = 0; this.musicClock = 0; this.stepSide = 1; this.stageNumber = 1;
+    }
     start() {
       if (this.started) { if (this.context && this.context.state === "suspended") this.context.resume(); return; }
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       this.context = new AudioContext();
-      const master = this.context.createGain(); master.gain.value = 0.15; master.connect(this.context.destination);
+      const compressor = this.context.createDynamicsCompressor();
+      compressor.threshold.value = -18; compressor.knee.value = 12; compressor.ratio.value = 5; compressor.attack.value = 0.006; compressor.release.value = 0.22;
+      this.master = this.context.createGain(); this.master.gain.value = 0.14; this.master.connect(compressor); compressor.connect(this.context.destination);
       this.baseGain = this.context.createGain(); this.warmGain = this.context.createGain(); this.futureGain = this.context.createGain();
-      [this.baseGain, this.warmGain, this.futureGain].forEach((gain) => gain.connect(master));
-      this.baseGain.gain.value = 0.52; this.warmGain.gain.value = 0.08; this.futureGain.gain.value = 0;
+      const ambienceFilter = this.context.createBiquadFilter(); ambienceFilter.type = "lowpass"; ambienceFilter.frequency.value = 520; ambienceFilter.Q.value = 0.7;
+      [this.baseGain, this.warmGain, this.futureGain].forEach((gain) => gain.connect(ambienceFilter));
+      ambienceFilter.connect(this.master);
+      this.baseGain.gain.value = 0.12; this.warmGain.gain.value = 0.025; this.futureGain.gain.value = 0;
       [[110, this.baseGain, "sine"], [164.81, this.warmGain, "triangle"], [220, this.futureGain, "sine"]].forEach(([frequency, gain, type]) => {
         const oscillator = this.context.createOscillator(); oscillator.type = type; oscillator.frequency.value = frequency;
         oscillator.connect(gain); oscillator.start();
       });
+      this.noiseBuffer = this.context.createBuffer(1, Math.ceil(this.context.sampleRate * 0.28), this.context.sampleRate);
+      const noise = this.noiseBuffer.getChannelData(0);
+      for (let index = 0; index < noise.length; index += 1) noise[index] = (Math.random() * 2 - 1) * (1 - index / noise.length);
       this.started = true;
     }
     setStage(stageNumber, heartbeat) {
       if (!this.context) return;
+      this.stageNumber = stageNumber;
       const at = this.context.currentTime;
-      this.warmGain.gain.setTargetAtTime(0.05 + stageNumber * 0.025, at, 0.45);
-      this.futureGain.gain.setTargetAtTime(stageNumber >= 5 ? 0.11 + heartbeat / 900 : 0, at, 0.6);
+      this.warmGain.gain.setTargetAtTime(0.018 + stageNumber * 0.008, at, 0.45);
+      this.futureGain.gain.setTargetAtTime(stageNumber >= 5 ? 0.025 + heartbeat / 4000 : 0, at, 0.6);
+    }
+    noise(duration, frequency, volume, delay = 0, pan = 0) {
+      if (!this.context || !this.noiseBuffer || !this.master) return;
+      const source = this.context.createBufferSource(); const filter = this.context.createBiquadFilter(); const gain = this.context.createGain();
+      const startAt = this.context.currentTime + delay;
+      source.buffer = this.noiseBuffer; filter.type = "bandpass"; filter.frequency.value = frequency; filter.Q.value = 0.82;
+      gain.gain.setValueAtTime(Math.max(0.001, volume), startAt); gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+      source.connect(filter); filter.connect(gain);
+      if (this.context.createStereoPanner) { const panner = this.context.createStereoPanner(); panner.pan.value = pan; gain.connect(panner); panner.connect(this.master); }
+      else gain.connect(this.master);
+      source.start(startAt); source.stop(startAt + duration + 0.02);
+    }
+    action(name) {
+      if (!this.context) return;
+      if (name === "left" || name === "right") this.noise(0.16, 860, 0.045, 0, name === "left" ? -0.42 : 0.42);
+      else if (name === "jump") { this.noise(0.22, 1180, 0.055); this.cue("jump"); }
+      else if (name === "slide") this.noise(0.28, 420, 0.075);
+    }
+    tick(delta, speed, active) {
+      if (!this.context || !active) return;
+      this.stepClock -= delta; this.musicClock -= delta;
+      if (this.stepClock <= 0) {
+        this.stepSide *= -1;
+        this.noise(0.075, 150 + Math.min(100, speed * 4), 0.032, 0, this.stepSide * 0.18);
+        this.stepClock = Math.max(0.19, 0.34 - speed * 0.0052);
+      }
+      if (this.musicClock <= 0) {
+        const notes = [261.63, 329.63, 392, 493.88];
+        const note = notes[(Math.floor(this.context.currentTime * 2) + this.stageNumber) % notes.length] * (this.stageNumber >= 6 ? 1.5 : 1);
+        const oscillator = this.context.createOscillator(); const filter = this.context.createBiquadFilter(); const gain = this.context.createGain();
+        const at = this.context.currentTime;
+        oscillator.type = "triangle"; oscillator.frequency.setValueAtTime(note, at);
+        filter.type = "lowpass"; filter.frequency.setValueAtTime(1800, at); filter.frequency.exponentialRampToValueAtTime(520, at + 0.24);
+        gain.gain.setValueAtTime(0.018, at); gain.gain.exponentialRampToValueAtTime(0.001, at + 0.28);
+        oscillator.connect(filter); filter.connect(gain); gain.connect(this.master); oscillator.start(at); oscillator.stop(at + 0.3);
+        this.musicClock = 0.42;
+      }
     }
     cue(name) {
       if (!this.context) return;
       const profiles = {
-        collect: [659.25, 0.12, "sine", 0.08], good: [523.25, 0.16, "triangle", 0.075],
-        perfect: [880, 0.22, "sine", 0.11], dodge: [392, 0.14, "triangle", 0.065],
-        miss: [98, 0.28, "sawtooth", 0.1], stage: [523.25, 0.48, "sine", 0.12],
-        hold: [392, 0.3, "sine", 0.09], reveal: [1046.5, 0.52, "sine", 0.1]
+        collect: [659.25, 0.12, "sine", 0.07], good: [523.25, 0.16, "triangle", 0.065], jump: [392, 0.12, "sine", 0.045],
+        perfect: [880, 0.22, "sine", 0.095], dodge: [392, 0.14, "triangle", 0.06],
+        miss: [98, 0.28, "sawtooth", 0.085], stage: [523.25, 0.48, "sine", 0.1],
+        hold: [392, 0.3, "sine", 0.075], reveal: [1046.5, 0.52, "sine", 0.085]
       };
       const [frequency, duration, type, volume] = profiles[name] || [330, 0.16, "sine", 0.07];
       const playTone = (pitch, delay, level) => {
@@ -178,9 +226,10 @@
         oscillator.frequency.setValueAtTime(pitch, startAt); oscillator.type = type;
         gain.gain.setValueAtTime(Math.max(0.001, level), startAt);
         gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
-        oscillator.connect(gain); gain.connect(this.context.destination); oscillator.start(startAt); oscillator.stop(startAt + duration + 0.02);
+        oscillator.connect(gain); gain.connect(this.master); oscillator.start(startAt); oscillator.stop(startAt + duration + 0.02);
       };
       playTone(frequency, 0, volume);
+      if (name === "miss") this.noise(0.22, 130, 0.09);
       if (name === "perfect" || name === "stage" || name === "reveal") playTone(frequency * 1.5, 0.055, volume * 0.58);
     }
     toggle() { this.start(); if (!this.context) return false; if (this.context.state === "running") this.context.suspend(); else this.context.resume(); return this.context.state !== "running"; }
@@ -230,7 +279,17 @@
   }
 
   function createMotion() {
-    return engineApi.createEngine({ seed: "heart-run-2026", duration: 720, finaleSeconds: 20, startSpeed: 11.5, maxSpeed: 22, acceleration: 0.02,
+    return engineApi.createEngine({
+      seed: "heart-run-2026",
+      duration: 720,
+      finaleSeconds: 20,
+      startSpeed: 13.2,
+      maxSpeed: 26.5,
+      acceleration: 0.034,
+      laneChangeDuration: 0.14,
+      jumpDuration: 0.72,
+      jumpHeight: 2,
+      slideDuration: 0.58,
       stages: content.STAGES.map((stage, index) => ({ id: stage.id, from: index === 6 ? 1 : index / 7, modules: content.ROAD_MODULES.map((item) => item.id) })) });
   }
   function safeLoad() {
@@ -288,7 +347,7 @@
     syncMotionStage(false);
     mode = "playing"; show(ui.intro, false); updateHud(); announce(`${currentStage().name}，开始`);
   }
-  function input(action) { if (mode === "playing") { motion.input(action); audio.start(); return true; } return false; }
+  function input(action) { if (mode === "playing") { motion.input(action); audio.start(); audio.action(action); return true; } return false; }
   function spawnPattern() {
     if (mode !== "playing") return false;
     const activeAhead = motion.state.entities.filter((entity) => entity.active && entity.z > 8);
@@ -426,6 +485,7 @@
   function update(seconds, now) {
     visualTime += seconds; beatClock += seconds; updateHold(now);
     if (mode !== "playing") return;
+    audio.tick(seconds, motion.state.speed, true);
     spawnClock -= seconds;
     if (!motion.state.finale && currentStageIndex() < 6 && spawnClock <= 0) {
       spawnPattern();
@@ -438,6 +498,7 @@
 
   function render() {
     root?.setAttribute("data-state", mode);
+    root?.style?.setProperty?.("--speed-aura-opacity", String(Math.min(0.52, 0.2 + Math.max(0, motion.state.speed - 13) * 0.022)));
     const visual = ensureVisualRuntime();
     if (!visual) return;
     visual.render({

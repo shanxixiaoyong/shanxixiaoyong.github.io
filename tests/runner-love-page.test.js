@@ -29,6 +29,13 @@ test("renders a seven-stage HUD and complete in-game overlays without requiremen
   for (const forbidden of ["需求", "实现说明", "GitHub Pages", "调试 API", "WebAudio"]) assert.equal(html.includes(forbidden), false, forbidden);
 });
 
+test("keeps the arcade HUD compact so the 3D route remains the primary mobile surface", () => {
+  assert.match(css, /\.stage-track span\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?clip:/);
+  assert.match(css, /\.runner-shell\[data-state="playing"\] \.runner-hud/);
+  assert.match(css, /\.runner-speed-aura/);
+  assert.match(html, /class="runner-speed-aura"/);
+});
+
 test("keeps a stable portrait stage with mobile safe areas, desktop centering and reduced motion", () => {
   assert.match(css, /aspect-ratio:\s*9 \/ 16/);
   assert.match(css, /place-items:\s*center/);

@@ -1,0 +1,11 @@
+Runner models and motion library
+================================
+
+Assets: Casual2.glb, Casual.glb and Character.glb
+Packs: Ultimate Modular Men, Modular Women and Cyberpunk Game Kit
+Creator: Quaternius (laulhet@gmail.com)
+Source: https://quaternius.com/
+License: Creative Commons CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The source pack is published for personal and commercial use under CC0.
