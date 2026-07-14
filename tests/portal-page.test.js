@@ -32,7 +32,7 @@ test("homepage exposes six distinct full-bleed destinations", () => {
     { href: "tools.html", index: 2, asset: "assets/portal/tool-workbench.webp" },
     { href: "game-2048.html", index: 3, asset: "assets/portal/heartbeat-2048-portrait-hd.jpg" },
     { href: "game-billiards-love.html", index: 4, asset: "assets/portal/billiards-chroma-portrait-hd.jpg" },
-    { href: "game-runner-love.html", index: 5, asset: "assets/portal/heartbeat-runner.png" }
+    { href: "game-runner-love.html", index: 5, asset: "assets/portal/heartbeat-runner-hd.jpg" }
   ]);
   assert.equal(html.includes("data-portal-dot"), false, "progress must not ship hidden dead controls");
   for (const title of ["心动2048", "幻彩桌球", "心动跑酷"]) {

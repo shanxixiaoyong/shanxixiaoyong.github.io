@@ -90,7 +90,7 @@ const required = [
   "assets/portal/heartbeat-2048-hd.jpg",
   "assets/portal/billiards-chroma-portrait-hd.jpg",
   "assets/portal/billiards-chroma-hd.jpg",
-  "assets/portal/heartbeat-runner.png",
+  "assets/portal/heartbeat-runner-hd.jpg",
   "assets/games.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
