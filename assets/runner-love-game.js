@@ -21,6 +21,110 @@
     "assets/love-scenes/rain-night.webp",
     "assets/love-scenes/starlight-vow.webp"
   ]);
+  const RUNNER_PATTERNS = Object.freeze([
+    Object.freeze({ id: "coin-ribbon", minStage: 0, entities: [
+      { type: "collectible", lane: 0, z: 0 }, { type: "collectible", lane: 0, z: 6 },
+      { type: "collectible", lane: -1, z: 12 }, { type: "collectible", lane: -1, z: 18 },
+      { type: "collectible", lane: 0, z: 24 }, { type: "collectible", lane: 1, z: 30 }
+    ] }),
+    Object.freeze({ id: "barrier-arc", minStage: 0, entities: [
+      { type: "collectible", lane: 0, z: 0 }, { type: "collectible", lane: 0, z: 6, height: 0.55 },
+      { type: "obstacle", lane: 0, z: 12, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: 0, z: 13, height: 1.15, arc: 1 },
+      { type: "collectible", lane: 0, z: 19, height: 0.55 }, { type: "collectible", lane: 0, z: 25 }
+    ] }),
+    Object.freeze({ id: "lane-slalom", minStage: 0, entities: [
+      { type: "collectible", lane: -1, z: 0 }, { type: "collectible", lane: 0, z: 6 },
+      { type: "collectible", lane: 1, z: 12 },
+      { type: "obstacle", lane: 0, z: 18, avoid: "switch", subtype: "service-cart", rewardNearMiss: true },
+      { type: "collectible", lane: 1, z: 19 }, { type: "collectible", lane: 0, z: 25 },
+      { type: "collectible", lane: -1, z: 31 }
+    ] }),
+    Object.freeze({ id: "split-lights", minStage: 0, entities: [
+      { type: "collectible", lane: 0, z: 0 }, { type: "collectible", lane: 0, z: 6 },
+      { type: "obstacle", lane: -1, z: 13, avoid: "switch", subtype: "barrier" },
+      { type: "obstacle", lane: 1, z: 13, avoid: "switch", subtype: "barrier" },
+      { type: "collectible", lane: 0, z: 14 }, { type: "collectible", lane: 0, z: 20 },
+      { type: "obstacle", lane: 0, z: 27, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 0, z: 29 }
+    ] }),
+    Object.freeze({ id: "hurdle-switch", minStage: 0, entities: [
+      { type: "collectible", lane: 0, z: 0 }, { type: "collectible", lane: 0, z: 6, height: 0.52 },
+      { type: "obstacle", lane: 0, z: 12, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: 0, z: 13, height: 1.12, arc: 1 },
+      { type: "collectible", lane: 1, z: 20 },
+      { type: "obstacle", lane: 1, z: 27, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: -1, z: 28 }, { type: "collectible", lane: -1, z: 34 }
+    ] }),
+    Object.freeze({ id: "signal-duck", minStage: 1, entities: [
+      { type: "collectible", lane: 1, z: 0 }, { type: "collectible", lane: 1, z: 6 },
+      { type: "obstacle", lane: 1, z: 13, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 1, z: 15 }, { type: "collectible", lane: 1, z: 21 },
+      { type: "collectible", lane: 0, z: 28 }
+    ] }),
+    Object.freeze({ id: "platform-weave", minStage: 1, entities: [
+      { type: "collectible", lane: -1, z: 0 }, { type: "collectible", lane: 0, z: 6 },
+      { type: "obstacle", lane: -1, z: 12, avoid: "switch", subtype: "service-cart", rewardNearMiss: true },
+      { type: "collectible", lane: 1, z: 15 }, { type: "collectible", lane: 0, z: 22 },
+      { type: "obstacle", lane: 1, z: 29, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: 0, z: 31 }
+    ] }),
+    Object.freeze({ id: "gate-cascade", minStage: 1, entities: [
+      { type: "collectible", lane: -1, z: 0 }, { type: "collectible", lane: -1, z: 6 },
+      { type: "obstacle", lane: -1, z: 12, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 0, z: 16 },
+      { type: "obstacle", lane: 0, z: 22, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 1, z: 26 },
+      { type: "obstacle", lane: 1, z: 32, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 0, z: 35 }
+    ] }),
+    Object.freeze({ id: "train-switchback", minStage: 1, entities: [
+      { type: "collectible", lane: -1, z: 0 }, { type: "collectible", lane: -1, z: 6 },
+      { type: "obstacle", lane: 1, z: 14, avoid: "switch", subtype: "train", variant: 1, rewardNearMiss: true },
+      { type: "collectible", lane: -1, z: 15 }, { type: "collectible", lane: 0, z: 21 },
+      { type: "obstacle", lane: -1, z: 29, avoid: "switch", subtype: "train", variant: 2, rewardNearMiss: true },
+      { type: "collectible", lane: 1, z: 30 }, { type: "collectible", lane: 1, z: 36 }
+    ] }),
+    Object.freeze({ id: "double-train", minStage: 2, entities: [
+      { type: "collectible", lane: 1, z: 0 }, { type: "collectible", lane: 1, z: 6 },
+      { type: "obstacle", lane: -1, z: 15, avoid: "switch", subtype: "train", variant: 0, rewardNearMiss: true },
+      { type: "obstacle", lane: 0, z: 15, avoid: "switch", subtype: "train", variant: 1, rewardNearMiss: true },
+      { type: "collectible", lane: 1, z: 15 }, { type: "collectible", lane: 1, z: 22 },
+      { type: "collectible", lane: 0, z: 31 }
+    ] }),
+    Object.freeze({ id: "maintenance-dance", minStage: 2, entities: [
+      { type: "collectible", lane: 1, z: 0 }, { type: "collectible", lane: 0, z: 6 },
+      { type: "obstacle", lane: 1, z: 13, avoid: "switch", subtype: "service-cart", rewardNearMiss: true },
+      { type: "collectible", lane: -1, z: 14 },
+      { type: "obstacle", lane: -1, z: 22, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: 0, z: 24 },
+      { type: "obstacle", lane: 0, z: 31, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 1, z: 34 }
+    ] }),
+    Object.freeze({ id: "crossing-rhythm", minStage: 3, entities: [
+      { type: "collectible", lane: -1, z: 0 }, { type: "collectible", lane: -1, z: 6 },
+      { type: "obstacle", lane: -1, z: 13, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: 0, z: 17 }, { type: "collectible", lane: 1, z: 23 },
+      { type: "obstacle", lane: 1, z: 30, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 1, z: 32 }
+    ] }),
+    Object.freeze({ id: "maintenance-gap", minStage: 4, entities: [
+      { type: "collectible", lane: 0, z: 0 }, { type: "collectible", lane: 1, z: 6 },
+      { type: "obstacle", lane: 0, z: 14, avoid: "switch", subtype: "train", variant: 2, rewardNearMiss: true },
+      { type: "obstacle", lane: -1, z: 14, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 1, z: 15 }, { type: "collectible", lane: 1, z: 22 },
+      { type: "obstacle", lane: 1, z: 30, avoid: "jump", subtype: "barrier" },
+      { type: "collectible", lane: 1, z: 31, height: 1.05 }
+    ] }),
+    Object.freeze({ id: "rush-hour", minStage: 5, entities: [
+      { type: "collectible", lane: 0, z: 0 }, { type: "collectible", lane: -1, z: 6 },
+      { type: "obstacle", lane: 0, z: 13, avoid: "switch", subtype: "train", variant: 3, rewardNearMiss: true },
+      { type: "obstacle", lane: 1, z: 13, avoid: "switch", subtype: "train", variant: 4, rewardNearMiss: true },
+      { type: "collectible", lane: -1, z: 15 }, { type: "collectible", lane: 0, z: 23 },
+      { type: "obstacle", lane: 0, z: 30, avoid: "slide", subtype: "signal-gate" },
+      { type: "collectible", lane: 0, z: 32 }
+    ] })
+  ]);
   const ui = {
     intro: $("[data-intro]"), performance: $("[data-performance]"), handhold: $("[data-handhold]"),
     reveal: $("[data-reveal]"), result: $("[data-result]"), toast: $("[data-toast]"),
@@ -32,6 +136,7 @@
     revealTitle: $("[data-reveal-title]"), revealCopy: $("[data-reveal-copy]"), revealStep: $("[data-reveal-step]"), revealNext: $("[data-reveal-next]"), grade: $("[data-grade]"),
     endingTitle: $("[data-ending-title]"), endingCopy: $("[data-ending-copy]"), holdFill: $("[data-hold-fill]"),
     completion: $("[data-stat-completion]"), accuracy: $("[data-stat-accuracy]"), resultHeartbeat: $("[data-stat-heartbeat]"),
+    score: $("[data-score]"), distance: $("[data-distance]"),
     newGamePlus: $("[data-new-game-plus]"), newGameClue: $("[data-new-game-clue]"), stampCount: $("[data-stamp-count]"), retry: $("[data-retry]")
   };
 
@@ -60,11 +165,23 @@
     }
     cue(name) {
       if (!this.context) return;
-      const frequencies = { collect: 660, perfect: 880, miss: 110, stage: 523.25, hold: 392, reveal: 1046.5 };
-      const oscillator = this.context.createOscillator(); const gain = this.context.createGain();
-      oscillator.frequency.value = frequencies[name] || 330; oscillator.type = name === "miss" ? "sawtooth" : "sine";
-      gain.gain.setValueAtTime(0.12, this.context.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + 0.22);
-      oscillator.connect(gain); gain.connect(this.context.destination); oscillator.start(); oscillator.stop(this.context.currentTime + 0.24);
+      const profiles = {
+        collect: [659.25, 0.12, "sine", 0.08], good: [523.25, 0.16, "triangle", 0.075],
+        perfect: [880, 0.22, "sine", 0.11], dodge: [392, 0.14, "triangle", 0.065],
+        miss: [98, 0.28, "sawtooth", 0.1], stage: [523.25, 0.48, "sine", 0.12],
+        hold: [392, 0.3, "sine", 0.09], reveal: [1046.5, 0.52, "sine", 0.1]
+      };
+      const [frequency, duration, type, volume] = profiles[name] || [330, 0.16, "sine", 0.07];
+      const playTone = (pitch, delay, level) => {
+        const oscillator = this.context.createOscillator(); const gain = this.context.createGain();
+        const startAt = this.context.currentTime + delay;
+        oscillator.frequency.setValueAtTime(pitch, startAt); oscillator.type = type;
+        gain.gain.setValueAtTime(Math.max(0.001, level), startAt);
+        gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+        oscillator.connect(gain); gain.connect(this.context.destination); oscillator.start(startAt); oscillator.stop(startAt + duration + 0.02);
+      };
+      playTone(frequency, 0, volume);
+      if (name === "perfect" || name === "stage" || name === "reveal") playTone(frequency * 1.5, 0.055, volume * 0.58);
     }
     toggle() { this.start(); if (!this.context) return false; if (this.context.state === "running") this.context.suspend(); else this.context.resume(); return this.context.state !== "running"; }
     suspend() { if (this.context && this.context.state === "running") this.context.suspend(); }
@@ -79,6 +196,7 @@
   let lastFrameAt = performance.now();
   let frameHandle = 0;
   let spawnClock = 0;
+  let patternCursor = 0;
   let beatClock = 0;
   let visualTime = 0;
   let toastTimer = 0;
@@ -112,7 +230,7 @@
   }
 
   function createMotion() {
-    return engineApi.createEngine({ seed: "heart-run-2026", duration: 720, finaleSeconds: 20, startSpeed: 10.5, maxSpeed: 17,
+    return engineApi.createEngine({ seed: "heart-run-2026", duration: 720, finaleSeconds: 20, startSpeed: 11.5, maxSpeed: 22, acceleration: 0.02,
       stages: content.STAGES.map((stage, index) => ({ id: stage.id, from: index === 6 ? 1 : index / 7, modules: content.ROAD_MODULES.map((item) => item.id) })) });
   }
   function safeLoad() {
@@ -162,7 +280,7 @@
   }
   function reset(newGamePlus) {
     runState = rules.createRunState({ newGamePlus: Boolean(newGamePlus) }); motion = createMotion(); mode = "intro"; pausedStage = null;
-    spawnClock = 0; beatClock = 0; holdProgress = 0; completionSaved = false; [ui.performance, ui.handhold, ui.reveal, ui.result].forEach((node) => show(node, false));
+    spawnClock = 0; patternCursor = 0; beatClock = 0; holdProgress = 0; completionSaved = false; [ui.performance, ui.handhold, ui.reveal, ui.result].forEach((node) => show(node, false));
     show(ui.intro, true); updateHud(); return snapshot();
   }
   function start(saved) {
@@ -172,12 +290,33 @@
   }
   function input(action) { if (mode === "playing") { motion.input(action); audio.start(); return true; } return false; }
   function spawnPattern() {
-    if (mode !== "playing" || motion.state.entities.filter((entity) => entity.active && entity.z > 8).length > 7) return;
-    const lane = ((motion.state.ticks + currentStageIndex() * 2) % 3) - 1;
-    motion.spawn({ type: "collectible", lane, z: 54, points: 1, data: content.COLLECTIBLES[currentStageIndex()].id });
-    motion.spawn({ type: "collectible", lane, z: 62, points: 1 });
-    if (!motion.state.finale && currentStageIndex() < 6 && runState.stage.progress > 1) motion.spawn({ type: "obstacle", lane: lane === 1 ? 0 : lane + 1, z: 69, avoid: (motion.state.ticks % 2 ? "jump" : "slide") });
-    if (currentStageIndex() >= 1 && runState.stage.progress % 4 === 2) motion.spawn({ type: "companion-cue", lane, z: 46, cue: motion.state.ticks % 2 ? "jump" : "slide" });
+    if (mode !== "playing") return false;
+    const activeAhead = motion.state.entities.filter((entity) => entity.active && entity.z > 8);
+    if (activeAhead.length > 28) return false;
+    const farthest = activeAhead.reduce((maximum, entity) => Math.max(maximum, entity.z), 0);
+    if (farthest > 58) return false;
+    const stageIndex = currentStageIndex();
+    const candidates = RUNNER_PATTERNS.filter((pattern) => pattern.minStage <= stageIndex);
+    const pattern = candidates[(patternCursor + stageIndex * 2) % candidates.length];
+    const baseZ = Math.max(34, farthest + 12);
+    pattern.entities.forEach((spec, row) => {
+      if (motion.state.finale && spec.type === "obstacle") return;
+      motion.spawn({
+        ...spec,
+        z: baseZ + spec.z,
+        row,
+        patternId: pattern.id,
+        points: spec.type === "collectible" ? 1 : spec.points,
+        data: spec.type === "collectible" ? content.COLLECTIBLES[stageIndex].id : spec.data
+      });
+    });
+    if (stageIndex >= 1 && patternCursor % 3 === 1) {
+      const cue = patternCursor % 2 ? "jump" : "slide";
+      const cueLane = pattern.entities.find((item) => item.type === "collectible")?.lane ?? 0;
+      motion.spawn({ type: "companion-cue", lane: cueLane, z: baseZ - 7, cue, patternId: pattern.id });
+    }
+    patternCursor += 1;
+    return true;
   }
   function applyOutcome(outcome) {
     if (runState.status !== "playing") return;
@@ -193,6 +332,9 @@
         const timing = Math.abs((beatClock % 0.72) - 0.36); const outcome = timing < 0.16 ? "perfect" : "good";
         visualRuntime?.effect(outcome, event.entity); applyOutcome(outcome);
       } else if (event.type === "collision") { visualRuntime?.effect("miss", event.entity); applyOutcome("miss"); }
+      else if (event.type === "dodge") { visualRuntime?.effect("dodge", event.entity); toast(event.action === "slide" ? "低身穿越" : "飞跃障碍", 620); audio.cue("dodge"); }
+      else if (event.type === "near-miss") { visualRuntime?.effect("near-miss", event.entity); toast("惊险擦身  +2", 620); audio.cue("perfect"); }
+      else if (event.type === "protected") { visualRuntime?.effect("protected", event.entity); }
       else if (event.type === "companion-cue") { toast("同行提示", 750); announce("同行提示"); }
       else if (event.type === "companion-sync") { visualRuntime?.effect("companion-sync", event); toast("同行默契", 750); audio.cue("collect"); }
       else if (event.type === "companion-missed" || event.type === "response-missed") { toast("错过同行节拍", 850); audio.cue("miss"); announce("同行提示已错过"); }
@@ -211,7 +353,7 @@
     }
     show(ui.performance, true); announce(ending.title);
   }
-  function continueStage() { if (mode !== "performance") return; show(ui.performance, false); mode = "playing"; pausedStage = null; motion.state.entities.length = 0; spawnClock = 0; updateHud(); }
+  function continueStage() { if (mode !== "performance") return; show(ui.performance, false); mode = "playing"; pausedStage = null; motion.state.entities.length = 0; spawnClock = 0; patternCursor += 1; updateHud(); }
   function retryStage() {
     if (mode !== "result" || runState.status !== "failed") return;
     runState = rules.retryFromCheckpoint(runState); motion = createMotion(); syncMotionStage(false); mode = "playing"; pausedStage = null;
@@ -284,8 +426,14 @@
   function update(seconds, now) {
     visualTime += seconds; beatClock += seconds; updateHold(now);
     if (mode !== "playing") return;
-    spawnClock -= seconds; if (spawnClock <= 0) { spawnPattern(); spawnClock = 1.18; }
+    spawnClock -= seconds;
+    if (!motion.state.finale && currentStageIndex() < 6 && spawnClock <= 0) {
+      spawnPattern();
+      spawnClock = 0.36;
+    }
     motion.step(seconds); handleMotionEvents(motion.drainEvents()); syncMotionStage(false); advanceRulesTime(seconds);
+    if (ui.score) ui.score.textContent = String(Math.round(motion.state.score + motion.state.distance));
+    if (ui.distance) ui.distance.textContent = String(Math.floor(motion.state.distance)) + "m";
   }
 
   function render() {
@@ -348,7 +496,7 @@
   function debugTime(milliseconds) { advanceRulesTime(Math.max(0, Number(milliseconds) || 0) / 1000); updateHud(); persist(); return snapshot(); }
   function completeStage(outcome) { const index = runState.stageIndex; while (runState.status === "playing" && runState.stageIndex === index) applyOutcome(outcome || "perfect"); return snapshot(); }
   function debugHold(milliseconds) { if (mode !== "handhold") return false; holdPointerId = 0; holdGeneration += 1; holdStartedAt = performance.now() - Math.max(0, milliseconds || 1500); updateHold(performance.now()); return mode === "reveal"; }
-  function snapshot() { return { mode, pausedStage, runState: clone(runState), motion: { stageIndex: motion.state.stageIndex, stage: motion.state.stage, finale: motion.state.finale, lane: motion.state.lane, action: motion.state.action, distance: motion.state.distance, speed: motion.state.speed, entities: clone(motion.state.entities), companion: clone(motion.state.companion) }, visual: visualRuntime?.snapshot?.() || { ready: false, webgl: false, error: visualFailure ? String(visualFailure.message || visualFailure) : null }, holdProgress, saved: safeLoad() }; }
+  function snapshot() { return { mode, pausedStage, runState: clone(runState), motion: { stageIndex: motion.state.stageIndex, stage: motion.state.stage, finale: motion.state.finale, lane: motion.state.lane, lanePosition: motion.state.lanePosition, action: motion.state.action, distance: motion.state.distance, speed: motion.state.speed, stumbleTime: motion.state.stumbleTime, dodges: motion.state.dodges, nearMisses: motion.state.nearMisses, entities: clone(motion.state.entities), companion: clone(motion.state.companion) }, visual: visualRuntime?.snapshot?.() || { ready: false, webgl: false, error: visualFailure ? String(visualFailure.message || visualFailure) : null }, holdProgress, saved: safeLoad() }; }
   window.__runnerLoveDebug = Object.freeze({ snapshot, reset, start: () => start(), step: debugStep, time: debugTime, input, spawn: (spec) => motion.spawn(spec), beat: applyOutcome, completeStage, continueStage, retry: retryStage, hold: debugHold, reveal: revealBox, result: showResult, save: persist });
 
   const saved = safeLoad(); if (saved && saved.run.status === "playing") show(ui.savedRun, true); configureCanvas(); updateHud(); render(); frameHandle = requestAnimationFrame(frame);

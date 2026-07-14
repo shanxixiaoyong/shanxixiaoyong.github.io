@@ -27,7 +27,7 @@ test("builds a true perspective WebGL scene with physically shaded depth and bou
     "new THREE.WebGLRenderer", "new THREE.PerspectiveCamera", "THREE.ACESFilmicToneMapping",
     "new THREE.FogExp2", "THREE.PCFShadowMap", "MAX_RENDER_PIXELS", "renderer.setPixelRatio"
   ]) assert.ok(source.includes(contract), contract);
-  assert.match(source, /const SEGMENT_COUNT = 14/);
+  assert.match(source, /const SEGMENT_COUNT = 12/);
   assert.match(source, /this\.camera\.lookAt/);
   assert.match(source, /this\.renderer\.render\(this\.scene, this\.camera\)/);
 });
@@ -39,7 +39,7 @@ test("models seven distinct story environments with local scene art, weather, li
   for (const weather of ["after-rain", "breeze", "neon", "rain", "warm", "storm", "starlight"]) {
     assert.ok(source.includes(`weather: "${weather}"`), weather);
   }
-  for (const builder of ["createTree", "createLamp", "createBench", "createRailing", "createBuilding", "createCafe", "createShelter", "createMarket", "createOverpass"]) {
+  for (const builder of ["createTree", "createLamp", "createBench", "createRailing", "createBuilding", "createCafe", "createShelter", "createMarket", "createOverpass", "createStation", "createTunnel", "createGantry"]) {
     assert.match(source, new RegExp(`function ${builder}\\(`));
   }
 });
@@ -53,4 +53,12 @@ test("uses jointed 3D runners, stage objects, obstacles and one-draw-call weathe
   assert.match(source, /motion\.action/);
   assert.match(source, /companionAction/);
   assert.match(source, /this\.canvas\.setAttribute\("data-render-calls"/);
+});
+
+test("renders metro-scale trains and reuses obstacle meshes for sustained mobile play", () => {
+  for (const token of ["createTrain", "createJumpBarrier", "createSignalGate", "createServiceCart", "new THREE.InstancedMesh", "entityPool", "WORLD_Z_SCALE"]) {
+    assert.ok(source.includes(token), token);
+  }
+  assert.match(source, /entity\.subtype, entity\.variant/);
+  assert.match(source, /motion\.lanePosition/);
 });

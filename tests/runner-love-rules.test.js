@@ -29,22 +29,24 @@ test("publishes the same API as a browser UMD global", () => {
 
 test("tracks heartbeat, progress, combo, checkpoint and 90 percent perfect stage", () => {
   let state = rules.createRunState();
-  state = hit(state, 5);
-  assert.equal(state.heartbeat, 86);
-  assert.equal(state.combo, 5);
-  assert.equal(state.bestCombo, 5);
+  state = hit(state, rules.STAGES[0].checkpoint);
+  assert.equal(state.heartbeat, 100);
+  assert.equal(state.combo, rules.STAGES[0].checkpoint);
+  assert.equal(state.bestCombo, rules.STAGES[0].checkpoint);
   assert.deepEqual(state.checkpoints, ["courage"]);
   assert.equal(rules.getStageProgress(state).checkpointReached, true);
-  state = hit(state, 3);
+  state = hit(state, rules.STAGES[0].target - rules.STAGES[0].checkpoint);
   assert.equal(state.stageIndex, 1);
   assert.deepEqual(state.perfectStages, ["courage"]);
   assert.deepEqual(state.completedStages, ["courage"]);
 });
 
-test("a stage with exactly 90 percent perfect successful beats earns its marker", () => {
+test("a stage with at least 90 percent perfect successful beats earns its marker", () => {
   let state = hit(rules.createRunState(), rules.STAGES[0].target);
-  state = hit(state, 9, "perfect");
-  state = rules.recordBeat(state, "good");
+  const target = rules.STAGES[1].target;
+  const perfects = Math.ceil(target * 0.9);
+  state = hit(state, perfects, "perfect");
+  state = hit(state, target - perfects, "good");
   assert.equal(state.stageIndex, 2);
   assert.deepEqual(state.perfectStages, ["courage", "resonance"]);
 });

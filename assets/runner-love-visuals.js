@@ -14,7 +14,7 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x9a9b8b,
     accent: 0xf0bd72,
     weather: "after-rain",
-    props: ["tree", "lamp", "campus"],
+    props: ["campus", "lamp", "signal", "graffiti"],
     companion: { x: -2.7, z: -19 }
   },
   {
@@ -30,7 +30,7 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x9baaaa,
     accent: 0x8fd6ca,
     weather: "breeze",
-    props: ["railing", "bench", "tree"],
+    props: ["station", "railing", "bench", "tree"],
     companion: { x: 2.35, z: -6.5 }
   },
   {
@@ -46,7 +46,7 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x646f79,
     accent: 0x6ed6e0,
     weather: "neon",
-    props: ["building", "cafe", "shelter"],
+    props: ["building", "cafe", "neon-sign", "signal"],
     companion: { x: 2.15, z: -2.7 }
   },
   {
@@ -62,7 +62,7 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x536674,
     accent: 0xef8291,
     weather: "rain",
-    props: ["overpass", "lamp", "shelter"],
+    props: ["tunnel", "lamp", "shelter", "graffiti"],
     companion: { x: 1.95, z: -1 }
   },
   {
@@ -78,7 +78,7 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x8c998c,
     accent: 0xf3bd62,
     weather: "warm",
-    props: ["market", "home", "tree"],
+    props: ["market", "station", "home", "tree"],
     companion: { x: 1.82, z: 0 }
   },
   {
@@ -94,7 +94,7 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x646b71,
     accent: 0xd85f5d,
     weather: "storm",
-    props: ["railing", "warning", "lamp"],
+    props: ["maintenance", "warning", "signal", "tunnel"],
     companion: { x: 2.45, z: -1.2 }
   },
   {
@@ -110,16 +110,20 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x72798a,
     accent: 0xf0c46f,
     weather: "starlight",
-    props: ["home", "lamp", "tree"],
+    props: ["terminal", "home", "lamp", "tree"],
     companion: { x: 1.55, z: 0.25 }
   }
 ]);
 
-const SEGMENT_LENGTH = 18;
-const SEGMENT_COUNT = 14;
-const ROAD_WIDTH = 8.4;
-const LANE_WIDTH = 2.25;
-const MAX_RENDER_PIXELS = 2_100_000;
+const SEGMENT_LENGTH = 16;
+const SEGMENT_COUNT = 12;
+const ROAD_WIDTH = 8.8;
+const LANE_WIDTH = 2.35;
+const WORLD_Z_SCALE = 1.62;
+const PLAYER_Z = 2.15;
+const COLLISION_Z = 0.85;
+const FOG_SCALE = 0.68;
+const MAX_RENDER_PIXELS = 1_850_000;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -130,13 +134,20 @@ function damp(current, target, smoothing, delta) {
 }
 
 function disposeObject(object) {
+  const geometries = new Set();
+  const materials = new Set();
+  const textures = new Set();
   object.traverse((child) => {
-    if (child.geometry) child.geometry.dispose?.();
-    if (child.material && child.userData.disposeMaterial) {
-      const materials = Array.isArray(child.material) ? child.material : [child.material];
-      materials.forEach((material) => material.dispose?.());
-    }
+    if (child.geometry) geometries.add(child.geometry);
+    if (!child.material || child.userData.sharedMaterial) return;
+    (Array.isArray(child.material) ? child.material : [child.material]).forEach((item) => materials.add(item));
   });
+  materials.forEach((item) => {
+    if (item.map && item.map !== object.userData.sharedTexture) textures.add(item.map);
+    item.dispose?.();
+  });
+  textures.forEach((item) => item.dispose?.());
+  geometries.forEach((item) => item.dispose?.());
 }
 
 function canvasTexture(width, height, painter) {
@@ -152,32 +163,116 @@ function canvasTexture(width, height, painter) {
 }
 
 function makeRoadTexture() {
-  const texture = canvasTexture(256, 512, (context, width, height) => {
-    context.fillStyle = "#737a77";
+  const texture = canvasTexture(512, 512, (context, width, height) => {
+    context.fillStyle = "#343a3a";
     context.fillRect(0, 0, width, height);
     let seed = 971;
-    for (let index = 0; index < 5400; index += 1) {
+    for (let index = 0; index < 7200; index += 1) {
       seed = (seed * 48271) % 2147483647;
       const x = seed % width;
       seed = (seed * 48271) % 2147483647;
       const y = seed % height;
-      const shade = 70 + (seed % 42);
-      context.fillStyle = `rgba(${shade},${shade + 3},${shade + 1},${0.08 + (seed % 13) / 100})`;
-      context.fillRect(x, y, 1 + (seed % 2), 1 + ((seed >> 2) % 2));
+      const shade = 44 + (seed % 58);
+      const warm = seed % 7 === 0 ? 10 : 0;
+      context.fillStyle = `rgba(${shade + warm},${shade + 4},${shade + 2},${0.22 + (seed % 31) / 100})`;
+      const stone = 1 + (seed % 4);
+      context.fillRect(x, y, stone, Math.max(1, stone - 1));
     }
-    context.strokeStyle = "rgba(212,220,214,.12)";
-    context.lineWidth = 1;
-    for (let y = 34; y < height; y += 73) {
-      context.beginPath();
-      context.moveTo(0, y);
-      context.bezierCurveTo(width * 0.25, y + 5, width * 0.64, y - 3, width, y + 2);
-      context.stroke();
+    const sheen = context.createLinearGradient(0, 0, width, 0);
+    sheen.addColorStop(0, "rgba(255,255,255,.02)");
+    sheen.addColorStop(0.5, "rgba(198,226,221,.09)");
+    sheen.addColorStop(1, "rgba(0,0,0,.08)");
+    context.fillStyle = sheen;
+    context.fillRect(0, 0, width, height);
+    for (let y = 0; y < height; y += 64) {
+      context.fillStyle = "rgba(7,10,11,.13)";
+      context.fillRect(0, y, width, 2);
     }
   });
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1.5, 5);
+  texture.repeat.set(1.25, 3.5);
   return texture;
+}
+
+function makePlatformTexture() {
+  const texture = canvasTexture(256, 256, (context, width, height) => {
+    context.fillStyle = "#777b78";
+    context.fillRect(0, 0, width, height);
+    for (let y = 0; y < height; y += 32) {
+      context.fillStyle = y % 64 ? "rgba(255,255,255,.035)" : "rgba(0,0,0,.08)";
+      context.fillRect(0, y, width, 2);
+    }
+    context.fillStyle = "#d2bb54";
+    context.fillRect(0, 17, width, 12);
+    for (let x = 0; x < width; x += 18) {
+      context.fillStyle = "rgba(45,43,30,.42)";
+      context.beginPath();
+      context.arc(x + 8, 23, 2.2, 0, Math.PI * 2);
+      context.fill();
+    }
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 4);
+  return texture;
+}
+
+function makeGraffitiTexture(accent, seed = 0) {
+  const color = new THREE.Color(accent);
+  return canvasTexture(512, 256, (context, width, height) => {
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, "#13191d");
+    gradient.addColorStop(1, "#252b30");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+    context.globalAlpha = 0.84;
+    context.lineCap = "round";
+    for (let line = 0; line < 11; line += 1) {
+      const hueShift = (line * 37 + seed * 19) % 90;
+      context.strokeStyle = line % 3 === 0
+        ? `rgb(${Math.round(color.r * 255)},${Math.round(color.g * 255)},${Math.round(color.b * 255)})`
+        : `hsl(${175 + hueShift},72%,${50 + line % 4 * 6}%)`;
+      context.lineWidth = 7 + line % 4 * 3;
+      context.beginPath();
+      const y = 42 + (line * 31) % 172;
+      context.moveTo(-20, y);
+      context.bezierCurveTo(90 + line * 7, y - 48, 270 - line * 4, y + 58, 540, y - 10);
+      context.stroke();
+    }
+    context.globalAlpha = 1;
+    context.fillStyle = "rgba(248,246,235,.9)";
+    context.font = "900 74px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(seed % 2 ? "NIGHT RUN" : "CITY FLOW", width / 2, height / 2);
+    context.strokeStyle = "rgba(255,255,255,.28)";
+    context.lineWidth = 3;
+    context.strokeRect(12, 12, width - 24, height - 24);
+  });
+}
+
+function makeTrainWindowTexture(accent, variant = 0) {
+  const color = new THREE.Color(accent);
+  return canvasTexture(512, 256, (context, width, height) => {
+    context.fillStyle = variant % 2 ? "#e6e8e5" : "#d8dedc";
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = `rgb(${Math.round(color.r * 190)},${Math.round(color.g * 190)},${Math.round(color.b * 190)})`;
+    context.fillRect(0, height * 0.66, width, height * 0.17);
+    for (let index = 0; index < 5; index += 1) {
+      const x = 18 + index * 100;
+      const windowGradient = context.createLinearGradient(x, 28, x + 78, 142);
+      windowGradient.addColorStop(0, "#81b2c2");
+      windowGradient.addColorStop(0.4, "#1c3543");
+      windowGradient.addColorStop(1, "#07131b");
+      context.fillStyle = windowGradient;
+      context.fillRect(x, 30, 72, 105);
+      context.fillStyle = "rgba(255,255,255,.18)";
+      context.fillRect(x + 7, 36, 4, 86);
+    }
+    context.fillStyle = "#333a3d";
+    context.fillRect(0, height - 28, width, 28);
+  });
 }
 
 function makeParticleTexture() {
@@ -421,6 +516,153 @@ function createOverpass() {
   return group;
 }
 
+function createSignal(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x273038, { roughness: 0.42, metalness: 0.72 });
+  const housing = material(0x111719, { roughness: 0.34, metalness: 0.58 });
+  const pole = mesh(new THREE.CylinderGeometry(0.07, 0.1, 4.8, 10), steel);
+  pole.position.y = 2.4;
+  const box = mesh(new THREE.BoxGeometry(0.62, 1.72, 0.42), housing);
+  box.position.set(0, 4.05, 0);
+  group.add(pole, box);
+  [0xff3f43, 0xf3c84b, accent].forEach((color, index) => {
+    const bezel = mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.12, 18), housing);
+    bezel.rotation.x = Math.PI / 2;
+    bezel.position.set(0, 4.55 - index * 0.5, 0.25);
+    const lens = mesh(new THREE.CircleGeometry(0.13, 18), material(color, {
+      emissive: color,
+      emissiveIntensity: index === 2 ? 4.8 : 0.35,
+      roughness: 0.18
+    }));
+    lens.position.set(0, 4.55 - index * 0.5, 0.318);
+    group.add(bezel, lens);
+  });
+  return group;
+}
+
+function createGraffiti(accent, seed) {
+  const group = new THREE.Group();
+  const wall = mesh(new THREE.BoxGeometry(5.6, 2.8, 0.34), material(0x343b3f, { roughness: 0.92 }));
+  wall.position.y = 1.4;
+  const texture = makeGraffitiTexture(accent, seed);
+  const artwork = mesh(new THREE.PlaneGeometry(5.25, 2.46), new THREE.MeshBasicMaterial({ map: texture }));
+  artwork.position.set(0, 1.42, 0.18);
+  group.add(wall, artwork);
+  return group;
+}
+
+function createStation(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x3a464c, { roughness: 0.38, metalness: 0.66 });
+  const roofMaterial = material(0x69767a, { roughness: 0.54, metalness: 0.38 });
+  const glass = material(0x8dcbd6, { transparent: true, opacity: 0.22, roughness: 0.12, depthWrite: false, side: THREE.DoubleSide });
+  const platform = mesh(new THREE.BoxGeometry(4.6, 0.36, 7.6), material(0x777e7c, { roughness: 0.92 }));
+  platform.position.y = 0.18;
+  const roof = mesh(new THREE.BoxGeometry(4.5, 0.16, 6.8), roofMaterial);
+  roof.position.y = 3.55;
+  group.add(platform, roof);
+  [-1.75, 1.75].forEach((x) => {
+    [-2.3, 0, 2.3].forEach((z) => {
+      const pillar = mesh(new THREE.CylinderGeometry(0.07, 0.09, 3.4, 10), steel);
+      pillar.position.set(x, 1.82, z);
+      group.add(pillar);
+    });
+  });
+  const pane = mesh(new THREE.PlaneGeometry(3.5, 1.65), glass);
+  pane.position.set(0, 1.45, 0);
+  group.add(pane);
+  const signTexture = makeSignTexture("HEART LINE", accent);
+  const sign = mesh(new THREE.PlaneGeometry(2.45, 0.7), new THREE.MeshBasicMaterial({ map: signTexture }));
+  sign.position.set(0, 3.02, 0.12);
+  group.add(sign);
+  return group;
+}
+
+function createTunnel(accent) {
+  const group = new THREE.Group();
+  const concrete = material(0x333b40, { roughness: 0.96 });
+  const trim = material(accent, { emissive: accent, emissiveIntensity: 1.4, roughness: 0.42 });
+  const top = mesh(new THREE.BoxGeometry(13.4, 0.62, 2.4), concrete);
+  top.position.y = 5.4;
+  const left = mesh(new THREE.BoxGeometry(1.15, 5.3, 2.4), concrete);
+  const right = left.clone();
+  left.position.set(-6.15, 2.65, 0);
+  right.position.set(6.15, 2.65, 0);
+  group.add(top, left, right);
+  [-4.85, 4.85].forEach((x) => {
+    const strip = mesh(new THREE.BoxGeometry(0.08, 0.08, 2.05), trim);
+    strip.position.set(x, 4.94, 0);
+    group.add(strip);
+  });
+  return group;
+}
+
+function createNeonSign(accent, seed) {
+  const group = new THREE.Group();
+  const frame = mesh(new THREE.BoxGeometry(3.9, 1.5, 0.22), material(0x12171c, { roughness: 0.38, metalness: 0.54 }));
+  frame.position.y = 2.5;
+  const texture = makeSignTexture(seed % 2 ? "NEXT STOP" : "RUN CITY", accent);
+  const sign = mesh(new THREE.PlaneGeometry(3.55, 1.16), new THREE.MeshBasicMaterial({ map: texture }));
+  sign.position.set(0, 2.5, 0.12);
+  group.add(frame, sign);
+  return group;
+}
+
+function createMaintenance(accent, seed) {
+  const group = createGraffiti(accent, seed);
+  const pipeMaterial = material(0x778086, { roughness: 0.4, metalness: 0.7 });
+  [-1.8, -1.35, 1.55].forEach((x, index) => {
+    const pipe = mesh(new THREE.CylinderGeometry(0.08 + index * 0.015, 0.08 + index * 0.015, 4.2, 10), pipeMaterial);
+    pipe.rotation.z = Math.PI / 2;
+    pipe.position.set(x * 0.3, 2.4 + index * 0.26, 0.3);
+    group.add(pipe);
+  });
+  return group;
+}
+
+function createTerminal(accent) {
+  const group = new THREE.Group();
+  const archMaterial = material(0xc2c8c5, { roughness: 0.42, metalness: 0.52 });
+  for (let index = -2; index <= 2; index += 1) {
+    const rib = mesh(new THREE.TorusGeometry(5.35, 0.08, 8, 40, Math.PI), archMaterial);
+    rib.position.set(0, 0.2, index * 1.35);
+    group.add(rib);
+  }
+  const signTexture = makeSignTexture("TO THE FUTURE", accent);
+  const sign = mesh(new THREE.PlaneGeometry(3.7, 0.82), new THREE.MeshBasicMaterial({ map: signTexture }));
+  sign.position.set(0, 4.82, 0.15);
+  group.add(sign);
+  return group;
+}
+
+function createGantry(accent, compact = false) {
+  const group = new THREE.Group();
+  const steel = material(0x4f5c63, { roughness: 0.34, metalness: 0.76 });
+  const cable = material(0x1b252a, { roughness: 0.52, metalness: 0.72 });
+  [-5.05, 5.05].forEach((x) => {
+    const height = compact ? 5.35 : 6.2;
+    const post = mesh(new THREE.BoxGeometry(0.16, height, 0.16), steel);
+    post.position.set(x, height / 2, 0);
+    group.add(post);
+  });
+  const beamY = compact ? 5.2 : 6.05;
+  const beam = mesh(new THREE.BoxGeometry(10.3, 0.15, 0.18), steel);
+  beam.position.y = beamY;
+  group.add(beam);
+  [-2.35, 0, 2.35].forEach((x, index) => {
+    const drop = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.72, 6), cable);
+    drop.position.set(x, beamY - 0.42, 0);
+    const insulator = mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.22, 8), material(accent, {
+      emissive: accent,
+      emissiveIntensity: index === 1 ? 1.25 : 0.38,
+      roughness: 0.28
+    }));
+    insulator.position.set(x, beamY - 0.82, 0);
+    group.add(drop, insulator);
+  });
+  return group;
+}
+
 function createProp(type, accent, seed) {
   if (type === "tree") return createTree(accent);
   if (type === "lamp") return createLamp(accent);
@@ -434,6 +676,14 @@ function createProp(type, accent, seed) {
   if (type === "market") return createMarket(accent);
   if (type === "warning") return createWarning(accent);
   if (type === "overpass") return createOverpass();
+  if (type === "signal") return createSignal(accent);
+  if (type === "graffiti") return createGraffiti(accent, seed);
+  if (type === "station") return createStation(accent);
+  if (type === "tunnel") return createTunnel(accent);
+  if (type === "neon-sign") return createNeonSign(accent, seed);
+  if (type === "maintenance") return createMaintenance(accent, seed);
+  if (type === "terminal") return createTerminal(accent);
+  if (type === "gantry") return createGantry(accent);
   return createLamp(accent);
 }
 
@@ -453,100 +703,141 @@ function createLimb(limbMaterial, upperLength, lowerLength, radius) {
 
 function createCharacter(options) {
   const root = new THREE.Group();
-  const skin = material(options.skin, { roughness: 0.82 });
-  const cloth = material(options.cloth, { roughness: 0.76 });
-  const clothDark = material(options.clothDark, { roughness: 0.8 });
+  const skin = material(options.skin, { roughness: 0.72 });
+  const cloth = material(options.cloth, { roughness: 0.58 });
+  const clothDark = material(options.clothDark, { roughness: 0.68 });
   const hair = material(options.hair, { roughness: 0.96 });
-  const shoeMaterial = material(0xf0eee7, { roughness: 0.56 });
+  const shoeMaterial = material(0xf4f0e8, { roughness: 0.42 });
+  const soleMaterial = material(0x24292d, { roughness: 0.76 });
+  const detailMaterial = material(options.accent || 0xf2c96d, { emissive: options.accent || 0xf2c96d, emissiveIntensity: 0.35, roughness: 0.48 });
 
-  const pelvis = mesh(new THREE.SphereGeometry(0.3, 14, 10), clothDark, true);
-  pelvis.scale.set(1, 0.68, 0.78);
-  pelvis.position.y = 0.92;
-  const torso = mesh(new THREE.CylinderGeometry(0.27, 0.36, 0.78, 12), cloth, true);
-  torso.position.y = 1.42;
+  const pelvis = mesh(new THREE.CapsuleGeometry(0.27, 0.24, 5, 12), clothDark, true);
+  pelvis.scale.set(1.04, 0.78, 0.86);
+  pelvis.position.y = 0.98;
+  const torso = mesh(new THREE.CapsuleGeometry(0.34, 0.48, 6, 14), cloth, true);
+  torso.scale.set(options.feminine ? 0.9 : 1.02, 1, 0.82);
+  torso.position.y = 1.5;
   torso.rotation.z = options.feminine ? 0.015 : -0.015;
   const neck = mesh(new THREE.CylinderGeometry(0.095, 0.11, 0.18, 10), skin, true);
-  neck.position.y = 1.91;
-  const head = mesh(new THREE.SphereGeometry(0.25, 18, 14), skin, true);
-  head.position.y = 2.16;
-  const hairCap = mesh(new THREE.SphereGeometry(0.262, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), hair, true);
-  hairCap.position.set(0, 2.22, 0);
+  neck.position.y = 2.02;
+  const head = mesh(new THREE.SphereGeometry(0.285, 22, 18), skin, true);
+  head.scale.set(0.94, 1.08, 0.96);
+  head.position.y = 2.28;
+  const hairCap = mesh(new THREE.SphereGeometry(0.3, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.63), hair, true);
+  hairCap.position.set(0, 2.37, 0.012);
   hairCap.rotation.x = -0.08;
   root.add(pelvis, torso, neck, head, hairCap);
 
-  const collar = mesh(new THREE.TorusGeometry(0.205, 0.035, 8, 22), clothDark, true);
-  collar.position.y = 1.79;
+  const collar = mesh(new THREE.TorusGeometry(0.23, 0.045, 8, 24), clothDark, true);
+  collar.scale.set(1, 0.8, 1);
+  collar.position.y = 1.92;
   collar.rotation.x = Math.PI / 2;
-  const backPanel = mesh(new THREE.BoxGeometry(0.34, 0.42, 0.045), clothDark, true);
-  backPanel.position.set(0, 1.43, 0.33);
-  backPanel.rotation.x = -0.05;
-  root.add(collar, backPanel);
+  const hood = mesh(new THREE.TorusGeometry(0.28, 0.075, 8, 24, Math.PI * 1.55), clothDark, true);
+  hood.position.set(0, 1.91, 0.17);
+  hood.rotation.set(Math.PI / 2, 0, -Math.PI * 0.77);
+  const backpack = mesh(new THREE.CapsuleGeometry(0.25, 0.34, 5, 12), clothDark, true);
+  backpack.scale.set(0.88, 1.12, 0.42);
+  backpack.position.set(0, 1.49, 0.37);
+  const backpackPanel = mesh(new THREE.BoxGeometry(0.34, 0.36, 0.045), detailMaterial, true);
+  backpackPanel.position.set(0, 1.47, 0.545);
+  const zipper = mesh(new THREE.BoxGeometry(0.025, 0.42, 0.022), detailMaterial);
+  zipper.position.set(0, 1.52, -0.293);
+  root.add(collar, hood, backpack, backpackPanel, zipper);
+
+  [-1, 1].forEach((side) => {
+    const ear = mesh(new THREE.SphereGeometry(0.055, 10, 8), skin, true);
+    ear.scale.set(0.58, 1, 0.66);
+    ear.position.set(side * 0.272, 2.28, 0);
+    root.add(ear);
+    const strap = mesh(new THREE.TorusGeometry(0.33, 0.025, 6, 22, Math.PI * 0.72), detailMaterial);
+    strap.position.set(side * 0.16, 1.55, 0.31);
+    strap.rotation.set(Math.PI / 2, 0, side > 0 ? 1.92 : -0.35);
+    root.add(strap);
+  });
+
+  const fringe = mesh(new THREE.BoxGeometry(0.38, 0.12, 0.08), hair, true);
+  fringe.position.set(0, 2.48, -0.205);
+  fringe.rotation.x = -0.22;
+  root.add(fringe);
 
   if (options.feminine) {
-    const ponytail = mesh(new THREE.SphereGeometry(0.14, 12, 10), hair, true);
-    ponytail.scale.set(0.82, 1.42, 0.82);
-    ponytail.position.set(0, 2.12, 0.22);
-    root.add(ponytail);
+    const ponytailPivot = new THREE.Group();
+    ponytailPivot.position.set(0, 2.38, 0.19);
+    const ponytail = mesh(new THREE.CapsuleGeometry(0.11, 0.3, 5, 10), hair, true);
+    ponytail.position.y = -0.22;
+    ponytail.rotation.z = 0.12;
+    ponytailPivot.add(ponytail);
+    root.add(ponytailPivot);
+    root.userData.ponytail = ponytailPivot;
   }
 
-  const leftArm = createLimb(cloth, 0.48, 0.44, 0.085);
-  const rightArm = createLimb(cloth, 0.48, 0.44, 0.085);
-  leftArm.position.set(-0.34, 1.72, 0);
-  rightArm.position.set(0.34, 1.72, 0);
-  const leftLeg = createLimb(clothDark, 0.61, 0.58, 0.115);
-  const rightLeg = createLimb(clothDark, 0.61, 0.58, 0.115);
-  leftLeg.position.set(-0.17, 0.94, 0);
-  rightLeg.position.set(0.17, 0.94, 0);
+  const leftArm = createLimb(cloth, 0.48, 0.43, 0.095);
+  const rightArm = createLimb(cloth, 0.48, 0.43, 0.095);
+  leftArm.position.set(-0.39, 1.8, 0);
+  rightArm.position.set(0.39, 1.8, 0);
+  const leftLeg = createLimb(clothDark, 0.62, 0.6, 0.13);
+  const rightLeg = createLimb(clothDark, 0.62, 0.6, 0.13);
+  leftLeg.position.set(-0.18, 1.02, 0);
+  rightLeg.position.set(0.18, 1.02, 0);
   [leftArm, rightArm].forEach((arm) => {
     const hand = mesh(new THREE.SphereGeometry(0.095, 10, 8), skin, true);
-    hand.position.y = -0.46;
+    hand.position.y = -0.44;
     arm.userData.joint.add(hand);
   });
   [leftLeg, rightLeg].forEach((leg, index) => {
     const knee = mesh(new THREE.SphereGeometry(0.12, 10, 8), clothDark, true);
     leg.userData.joint.add(knee);
-    const shoe = mesh(new THREE.BoxGeometry(0.2, 0.12, 0.42), shoeMaterial, true);
-    shoe.position.set(0, -0.59, -0.1);
-    shoe.rotation.x = 0.12;
-    leg.userData.joint.add(shoe);
+    const shoe = mesh(new THREE.BoxGeometry(0.23, 0.14, 0.46), shoeMaterial, true);
+    shoe.position.set(0, -0.6, -0.11);
+    shoe.rotation.x = 0.08;
+    const sole = mesh(new THREE.BoxGeometry(0.245, 0.055, 0.49), soleMaterial, true);
+    sole.position.set(0, -0.685, -0.105);
+    leg.userData.joint.add(shoe, sole);
     leg.userData.shoe = shoe;
     leg.userData.side = index ? 1 : -1;
   });
   root.add(leftArm, rightArm, leftLeg, rightLeg);
 
   const shadow = mesh(
-    new THREE.CircleGeometry(0.62, 24),
+    new THREE.CircleGeometry(0.68, 24),
     new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.24, depthWrite: false })
   );
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = 0.018;
   root.add(shadow);
-  root.userData.parts = { torso, head, hairCap, leftArm, rightArm, leftLeg, rightLeg, shadow };
+  root.userData.parts = { pelvis, torso, head, hairCap, backpack, leftArm, rightArm, leftLeg, rightLeg, shadow };
+  root.userData.baseScale = options.scale || 1;
+  root.scale.setScalar(root.userData.baseScale);
   return root;
 }
 
-function animateCharacter(character, time, action, vertical, intensity, phaseOffset = 0) {
+function animateCharacter(character, time, action, vertical, intensity, phaseOffset = 0, lateral = 0, stumble = 0) {
   const parts = character.userData.parts;
-  const phase = time * (8.4 + intensity * 1.5) + phaseOffset;
+  const phase = time * (8.8 + intensity * 2.2) + phaseOffset;
   const stride = Math.sin(phase);
-  const rebound = Math.abs(Math.cos(phase)) * 0.055;
-  parts.leftArm.rotation.x = stride * 0.78;
-  parts.rightArm.rotation.x = -stride * 0.78;
-  parts.leftLeg.rotation.x = -stride * 0.86;
-  parts.rightLeg.rotation.x = stride * 0.86;
-  parts.leftLeg.userData.joint.rotation.x = Math.max(0, stride) * 0.9;
-  parts.rightLeg.userData.joint.rotation.x = Math.max(0, -stride) * 0.9;
-  parts.leftArm.userData.joint.rotation.x = -0.25 - Math.max(0, -stride) * 0.5;
-  parts.rightArm.userData.joint.rotation.x = -0.25 - Math.max(0, stride) * 0.5;
-  parts.torso.rotation.z = -stride * 0.035;
-  parts.head.rotation.z = stride * 0.018;
-  character.rotation.x = 0;
-  character.scale.setScalar(1);
+  const rebound = Math.abs(Math.cos(phase)) * 0.065;
+  const strideScale = 0.78 + intensity * 0.18;
+  parts.leftArm.rotation.x = stride * 0.84 * strideScale;
+  parts.rightArm.rotation.x = -stride * 0.84 * strideScale;
+  parts.leftLeg.rotation.x = -stride * 0.92 * strideScale;
+  parts.rightLeg.rotation.x = stride * 0.92 * strideScale;
+  parts.leftLeg.userData.joint.rotation.x = Math.max(0, stride) * 1.05;
+  parts.rightLeg.userData.joint.rotation.x = Math.max(0, -stride) * 1.05;
+  parts.leftArm.userData.joint.rotation.x = -0.2 - Math.max(0, -stride) * 0.56;
+  parts.rightArm.userData.joint.rotation.x = -0.2 - Math.max(0, stride) * 0.56;
+  parts.pelvis.rotation.y = stride * 0.09;
+  parts.torso.rotation.y = -stride * 0.06;
+  parts.torso.rotation.z = -stride * 0.028;
+  parts.head.rotation.z = stride * 0.015;
+  character.rotation.x = 0.045;
+  character.rotation.z = clamp(-lateral * 0.13, -0.2, 0.2);
+  character.scale.setScalar(character.userData.baseScale || 1);
   character.position.y = rebound + vertical * 0.72;
   parts.shadow.material.opacity = clamp(0.24 - vertical * 0.11, 0.08, 0.24);
   parts.shadow.scale.setScalar(1 + vertical * 0.2);
 
   if (action === "jump") {
+    character.rotation.x = -0.04;
     parts.leftLeg.rotation.x = -0.48;
     parts.rightLeg.rotation.x = 0.34;
     parts.leftLeg.userData.joint.rotation.x = 1.15;
@@ -554,14 +845,25 @@ function animateCharacter(character, time, action, vertical, intensity, phaseOff
     parts.leftArm.rotation.x = 0.72;
     parts.rightArm.rotation.x = 0.46;
   } else if (action === "slide") {
-    character.position.y = 0.12;
-    character.rotation.x = -0.78;
-    character.scale.set(1, 0.84, 1);
-    parts.leftLeg.rotation.x = -1.12;
-    parts.rightLeg.rotation.x = -0.82;
-    parts.leftArm.rotation.x = 0.72;
-    parts.rightArm.rotation.x = 0.46;
+    character.position.y = 0.14;
+    character.rotation.x = -0.86;
+    const baseScale = character.userData.baseScale || 1;
+    character.scale.set(baseScale, baseScale * 0.82, baseScale);
+    parts.leftLeg.rotation.x = -1.2;
+    parts.rightLeg.rotation.x = -0.9;
+    parts.leftArm.rotation.x = 0.84;
+    parts.rightArm.rotation.x = 0.58;
   }
+  if (stumble > 0) {
+    character.rotation.z += Math.sin(time * 34) * 0.14 * stumble;
+    character.rotation.x += 0.24 * stumble;
+    parts.leftArm.rotation.z = 0.8 * stumble;
+    parts.rightArm.rotation.z = -0.8 * stumble;
+  } else {
+    parts.leftArm.rotation.z = 0;
+    parts.rightArm.rotation.z = 0;
+  }
+  if (character.userData.ponytail) character.userData.ponytail.rotation.x = -0.18 + stride * 0.2;
 }
 
 function createCollectible(stageIndex, accent, particleTexture) {
@@ -619,43 +921,130 @@ function createCollectible(stageIndex, accent, particleTexture) {
   return group;
 }
 
-function createObstacle(stageIndex, avoid, accent) {
+function createTrain(accent, variant = 0) {
   const group = new THREE.Group();
-  if (avoid === "slide") {
-    const frameMaterial = material(0x41494c, { roughness: 0.42, metalness: 0.48 });
-    [-1.05, 1.05].forEach((x) => {
-      const post = mesh(new THREE.BoxGeometry(0.12, 2.1, 0.12), frameMaterial);
-      post.position.set(x, 1.05, 0);
-      group.add(post);
+  const bodyColor = variant % 2 ? 0xe5e7e4 : 0xd4d9d7;
+  const bodyMaterial = material(bodyColor, { roughness: 0.34, metalness: 0.36 });
+  const dark = material(0x172027, { roughness: 0.28, metalness: 0.54 });
+  const stripe = material(accent, { emissive: accent, emissiveIntensity: 0.42, roughness: 0.38 });
+  const body = mesh(new THREE.BoxGeometry(1.92, 2.72, 5.75), bodyMaterial, true);
+  body.position.y = 1.62;
+  const roof = mesh(new THREE.BoxGeometry(1.78, 0.26, 5.45), dark, true);
+  roof.position.y = 3.08;
+  const nose = mesh(new THREE.SphereGeometry(1, 18, 12), bodyMaterial, true);
+  nose.scale.set(0.96, 1.22, 0.36);
+  nose.position.set(0, 1.72, 2.84);
+  const stripeBand = mesh(new THREE.BoxGeometry(1.955, 0.28, 5.82), stripe, true);
+  stripeBand.position.y = 0.82;
+  group.add(body, roof, nose, stripeBand);
+
+  const windowTexture = makeTrainWindowTexture(accent, variant);
+  [-1, 1].forEach((side) => {
+    const windows = mesh(new THREE.PlaneGeometry(5.25, 1.25), new THREE.MeshBasicMaterial({ map: windowTexture }));
+    windows.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+    windows.position.set(side * 0.966, 2.02, -0.08);
+    group.add(windows);
+  });
+  const windshield = mesh(new THREE.PlaneGeometry(1.34, 0.82), new THREE.MeshPhysicalMaterial({
+    color: 0x173544,
+    roughness: 0.08,
+    metalness: 0.18,
+    transmission: 0.08,
+    transparent: true,
+    opacity: 0.94
+  }));
+  windshield.position.set(0, 2.18, 3.185);
+  group.add(windshield);
+  [-0.58, 0.58].forEach((x) => {
+    const lamp = mesh(new THREE.CircleGeometry(0.13, 18), material(0xfff1bc, { emissive: 0xffe29a, emissiveIntensity: 6, roughness: 0.12 }));
+    lamp.position.set(x, 1.25, 3.19);
+    group.add(lamp);
+  });
+  [-0.68, 0.68].forEach((x) => {
+    [-1.85, 1.7].forEach((z) => {
+      const wheel = mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.18, 16), dark, true);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x, 0.34, z);
+      group.add(wheel);
     });
-    const banner = mesh(new THREE.BoxGeometry(2.35, 0.62, 0.14), material(accent, { emissive: accent, emissiveIntensity: 0.32, roughness: 0.6 }));
-    banner.position.y = 1.68;
-    group.add(banner);
-  } else if (stageIndex === 0 || stageIndex === 3 || stageIndex === 5) {
-    const puddle = mesh(new THREE.CircleGeometry(0.95, 32), material(0x86b2bd, { transparent: true, opacity: 0.48, roughness: 0.12, metalness: 0.16, depthWrite: false, side: THREE.DoubleSide }));
-    puddle.rotation.x = -Math.PI / 2;
-    puddle.scale.set(1.3, 0.62, 1);
-    puddle.position.y = 0.025;
-    group.add(puddle);
-    [0, 1, 2].forEach((index) => {
-      const ripple = mesh(new THREE.TorusGeometry(0.32 + index * 0.17, 0.014, 5, 28), new THREE.MeshBasicMaterial({ color: 0xbde8ec, transparent: true, opacity: 0.42 - index * 0.08, depthWrite: false }));
-      ripple.rotation.x = Math.PI / 2;
-      ripple.position.y = 0.035;
-      group.add(ripple);
-    });
-  } else {
-    const boardMaterial = material(accent, { roughness: 0.62 });
-    const frameMaterial = material(0x3a3e40, { roughness: 0.45, metalness: 0.45 });
-    const board = mesh(new THREE.BoxGeometry(2.15, 0.56, 0.18), boardMaterial, true);
-    board.position.y = 0.78;
-    [-0.82, 0.82].forEach((x) => {
-      const leg = mesh(new THREE.BoxGeometry(0.12, 0.86, 0.12), frameMaterial, true);
-      leg.position.set(x, 0.43, 0);
-      group.add(leg);
-    });
-    group.add(board);
-  }
+  });
+  const destinationTexture = makeSignTexture(variant % 2 ? "EXPRESS" : "CITY", accent);
+  const destination = mesh(new THREE.PlaneGeometry(0.92, 0.3), new THREE.MeshBasicMaterial({ map: destinationTexture }));
+  destination.position.set(0, 2.82, 3.2);
+  group.add(destination);
+  group.userData.kind = "train";
   return group;
+}
+
+function createJumpBarrier(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x3b4245, { roughness: 0.4, metalness: 0.58 });
+  const boardTexture = makeSignTexture("JUMP", accent);
+  const board = mesh(new THREE.BoxGeometry(2.05, 0.72, 0.2), material(accent, { emissive: accent, emissiveIntensity: 0.24, roughness: 0.58 }), true);
+  board.position.y = 0.72;
+  const face = mesh(new THREE.PlaneGeometry(1.8, 0.5), new THREE.MeshBasicMaterial({ map: boardTexture }));
+  face.position.set(0, 0.72, 0.105);
+  group.add(board, face);
+  [-0.78, 0.78].forEach((x) => {
+    const leg = mesh(new THREE.BoxGeometry(0.11, 1.05, 0.16), steel, true);
+    leg.position.set(x, 0.5, 0);
+    const foot = mesh(new THREE.BoxGeometry(0.42, 0.1, 0.52), steel, true);
+    foot.position.set(x, 0.08, 0);
+    const beacon = mesh(new THREE.SphereGeometry(0.095, 12, 8), material(0xffc44d, { emissive: 0xff9c2f, emissiveIntensity: 4.5, roughness: 0.2 }));
+    beacon.position.set(x, 1.18, 0);
+    group.add(leg, foot, beacon);
+  });
+  group.userData.kind = "barrier";
+  return group;
+}
+
+function createSignalGate(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x2d363c, { roughness: 0.36, metalness: 0.72 });
+  [-1.02, 1.02].forEach((x) => {
+    const post = mesh(new THREE.BoxGeometry(0.12, 2.45, 0.16), steel, true);
+    post.position.set(x, 1.22, 0);
+    const foot = mesh(new THREE.BoxGeometry(0.46, 0.1, 0.5), steel, true);
+    foot.position.set(x, 0.06, 0);
+    group.add(post, foot);
+  });
+  const warningTexture = makeSignTexture("DUCK", accent);
+  const beam = mesh(new THREE.BoxGeometry(2.22, 0.58, 0.22), material(accent, { emissive: accent, emissiveIntensity: 0.7, roughness: 0.44 }), true);
+  beam.position.y = 1.92;
+  const face = mesh(new THREE.PlaneGeometry(1.92, 0.42), new THREE.MeshBasicMaterial({ map: warningTexture }));
+  face.position.set(0, 1.92, 0.116);
+  group.add(beam, face);
+  group.userData.kind = "signal-gate";
+  return group;
+}
+
+function createServiceCart(accent) {
+  const group = new THREE.Group();
+  const body = mesh(new THREE.BoxGeometry(1.75, 1.18, 2.2), material(0xe0b842, { roughness: 0.46, metalness: 0.18 }), true);
+  body.position.y = 0.82;
+  const cabin = mesh(new THREE.BoxGeometry(1.58, 0.85, 1.05), material(0x54636b, { roughness: 0.28, metalness: 0.35 }), true);
+  cabin.position.set(0, 1.56, 0.34);
+  const glass = mesh(new THREE.PlaneGeometry(1.2, 0.52), material(0x7bbac8, { emissive: accent, emissiveIntensity: 0.12, roughness: 0.1 }));
+  glass.position.set(0, 1.6, 0.88);
+  group.add(body, cabin, glass);
+  [-0.66, 0.66].forEach((x) => {
+    [-0.65, 0.65].forEach((z) => {
+      const wheel = mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 14), material(0x202326, { roughness: 0.78 }), true);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x, 0.32, z);
+      group.add(wheel);
+    });
+  });
+  group.userData.kind = "service-cart";
+  return group;
+}
+
+function createObstacle(stageIndex, avoid, accent, subtype = null, variant = 0) {
+  if (subtype === "train") return createTrain(accent, variant);
+  if (subtype === "service-cart") return createServiceCart(accent);
+  if (subtype === "signal-gate" || avoid === "slide") return createSignalGate(accent);
+  if (subtype === "barrier" || avoid === "jump") return createJumpBarrier(accent);
+  return createServiceCart(accent);
 }
 
 function createCompanionCue(cue, accent) {
@@ -695,20 +1084,21 @@ class CinematicRunnerRenderer {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(STAGE_CONFIGS[0].sky);
-    this.scene.fog = new THREE.FogExp2(STAGE_CONFIGS[0].fog, STAGE_CONFIGS[0].fogDensity);
-    this.camera = new THREE.PerspectiveCamera(48, 9 / 16, 0.1, 260);
-    this.camera.position.set(0, 4.65, 9.4);
-    this.camera.lookAt(0, 1.4, -19);
+    this.scene.fog = new THREE.FogExp2(STAGE_CONFIGS[0].fog, STAGE_CONFIGS[0].fogDensity * FOG_SCALE);
+    this.camera = new THREE.PerspectiveCamera(55, 9 / 16, 0.1, 280);
+    this.camera.position.set(0, 4.35, 9.45);
+    this.camera.lookAt(0, 1.35, -18);
     this.scene.add(this.camera);
 
     this.textureLoader = new THREE.TextureLoader();
     this.roadTexture = makeRoadTexture();
+    this.platformTexture = makePlatformTexture();
     this.particleTexture = makeParticleTexture();
     this.stageTextures = Array(STAGE_CONFIGS.length).fill(null);
     this.backdropMaterials = [0, 1].map(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, fog: false, color: 0xffffff }));
     this.backdrops = this.backdropMaterials.map((backdropMaterial, index) => {
-      const backdrop = mesh(new THREE.PlaneGeometry(118, 70), backdropMaterial);
-      backdrop.position.set(0, 20, -118 - index * 0.2);
+      const backdrop = mesh(new THREE.PlaneGeometry(128, 76), backdropMaterial);
+      backdrop.position.set(0, 21, -126 - index * 0.2);
       backdrop.renderOrder = -4 + index;
       this.scene.add(backdrop);
       return backdrop;
@@ -716,11 +1106,11 @@ class CinematicRunnerRenderer {
     this.activeBackdrop = 0;
     this.backdropBlend = 1;
 
-    this.hemisphere = new THREE.HemisphereLight(0xcfe8e2, 0x1d2925, 1.8);
-    this.keyLight = new THREE.DirectionalLight(STAGE_CONFIGS[0].key, 3.3);
+    this.hemisphere = new THREE.HemisphereLight(0xcfe8e2, 0x1d2925, 1.65);
+    this.keyLight = new THREE.DirectionalLight(STAGE_CONFIGS[0].key, 3.8);
     this.keyLight.position.set(-8, 14, 8);
     this.keyLight.castShadow = true;
-    this.keyLight.shadow.mapSize.set(768, 768);
+    this.keyLight.shadow.mapSize.set(1024, 1024);
     this.keyLight.shadow.camera.left = -8;
     this.keyLight.shadow.camera.right = 8;
     this.keyLight.shadow.camera.top = 12;
@@ -728,21 +1118,26 @@ class CinematicRunnerRenderer {
     this.keyLight.shadow.camera.near = 1;
     this.keyLight.shadow.camera.far = 42;
     this.keyLight.shadow.bias = -0.0008;
-    this.edgeLight = new THREE.DirectionalLight(0x8fcbd4, 1.4);
+    this.edgeLight = new THREE.DirectionalLight(0x8fcbd4, 1.75);
     this.edgeLight.position.set(8, 7, -4);
-    this.warmLight = new THREE.PointLight(STAGE_CONFIGS[0].accent, 16, 25, 2);
+    this.warmLight = new THREE.PointLight(STAGE_CONFIGS[0].accent, 18, 28, 2);
     this.warmLight.position.set(0, 4.4, -4);
     this.scene.add(this.hemisphere, this.keyLight, this.edgeLight, this.warmLight);
 
     this.groundMaterial = material(STAGE_CONFIGS[0].ground, { roughness: 1 });
     this.roadMaterial = new THREE.MeshStandardMaterial({
       map: this.roadTexture,
-      color: STAGE_CONFIGS[0].road,
-      roughness: 0.62,
-      metalness: 0.06
+      color: new THREE.Color(STAGE_CONFIGS[0].road).multiplyScalar(0.5),
+      roughness: 0.94,
+      metalness: 0.02
     });
-    this.curbMaterial = material(STAGE_CONFIGS[0].curb, { roughness: 0.92 });
-    this.laneMaterial = material(0xe9dfc8, { emissive: 0x6f6655, emissiveIntensity: 0.18, roughness: 0.68 });
+    this.curbMaterial = material(STAGE_CONFIGS[0].curb, { roughness: 0.88 });
+    this.platformMaterial = new THREE.MeshStandardMaterial({ map: this.platformTexture, color: STAGE_CONFIGS[0].curb, roughness: 0.8, metalness: 0.04 });
+    this.railMaterial = material(0xc6d1d2, { roughness: 0.23, metalness: 0.92 });
+    this.railSideMaterial = material(0x596165, { roughness: 0.5, metalness: 0.72 });
+    this.sleeperMaterial = material(0x4a3b31, { roughness: 0.96 });
+    this.powerRailMaterial = material(STAGE_CONFIGS[0].accent, { emissive: STAGE_CONFIGS[0].accent, emissiveIntensity: 0.36, roughness: 0.42 });
+    this.safetyLineMaterial = material(0xe3c953, { emissive: 0x8b7224, emissiveIntensity: 0.28, roughness: 0.62 });
     this.ground = mesh(new THREE.PlaneGeometry(86, 410), this.groundMaterial, false, true);
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.position.set(0, -0.075, -120);
@@ -753,25 +1148,30 @@ class CinematicRunnerRenderer {
     this.scene.add(this.roadGroup);
     this.buildRoad();
 
-    this.player = createCharacter({ skin: 0xc98c6b, cloth: 0x315f63, clothDark: 0x1e3d42, hair: 0x24201f, feminine: false });
-    this.companion = createCharacter({ skin: 0xe0ad8c, cloth: 0xb9525b, clothDark: 0x793a47, hair: 0x2b211f, feminine: true });
-    this.player.position.set(0, 0, 2.15);
+    this.player = createCharacter({ skin: 0xc98c6b, cloth: 0x1d7378, clothDark: 0x173d47, hair: 0x24201f, accent: 0xf2ca65, feminine: false, scale: 1.04 });
+    this.companion = createCharacter({ skin: 0xe0ad8c, cloth: 0xc95362, clothDark: 0x763346, hair: 0x2b211f, accent: 0xffd28c, feminine: true, scale: 0.94 });
+    this.player.position.set(0, 0, PLAYER_Z);
     this.companion.position.set(-2.7, 0, -19);
     this.scene.add(this.player, this.companion);
 
     this.entityObjects = new Map();
+    this.entityPool = new Map();
     this.bursts = [];
+    this.rings = [];
     this.shake = 0;
     this.flash = 0;
+    this.speedPulse = 0;
     this.lastTime = 0;
     this.stageIndex = -1;
     this.stageElapsed = 0;
     this.currentDistance = 0;
     this.currentLaneX = 0;
+    this.previousLaneX = 0;
+    this.lateralVelocity = 0;
     this.targetExposure = 1.08;
     this.targetBackground = new THREE.Color(STAGE_CONFIGS[0].sky);
     this.targetFog = new THREE.Color(STAGE_CONFIGS[0].fog);
-    this.targetFogDensity = STAGE_CONFIGS[0].fogDensity;
+    this.targetFogDensity = STAGE_CONFIGS[0].fogDensity * FOG_SCALE;
 
     this.flashMaterial = new THREE.SpriteMaterial({ color: 0xff665f, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
     this.flashSprite = new THREE.Sprite(this.flashMaterial);
@@ -785,23 +1185,64 @@ class CinematicRunnerRenderer {
   }
 
   buildRoad() {
+    const transform = new THREE.Matrix4();
     for (let index = 0; index < SEGMENT_COUNT; index += 1) {
       const segment = new THREE.Group();
-      const road = mesh(new THREE.PlaneGeometry(ROAD_WIDTH, SEGMENT_LENGTH), this.roadMaterial, false, true);
-      road.rotation.x = -Math.PI / 2;
-      road.position.y = 0;
-      const leftWalk = mesh(new THREE.BoxGeometry(2.55, 0.22, SEGMENT_LENGTH), this.curbMaterial, false, true);
-      const rightWalk = leftWalk.clone();
-      leftWalk.position.set(-5.48, 0.08, 0);
-      rightWalk.position.set(5.48, 0.08, 0);
-      segment.add(road, leftWalk, rightWalk);
-      [-LANE_WIDTH / 2, LANE_WIDTH / 2].forEach((x) => {
-        for (let dash = 0; dash < 5; dash += 1) {
-          const mark = mesh(new THREE.BoxGeometry(0.055, 0.018, 1.5), this.laneMaterial);
-          mark.position.set(x, 0.024, -6.5 + dash * 3.25);
-          segment.add(mark);
+      const ballast = mesh(new THREE.BoxGeometry(ROAD_WIDTH, 0.2, SEGMENT_LENGTH), this.roadMaterial, false, true);
+      ballast.position.y = -0.08;
+      segment.add(ballast);
+
+      const sleepers = new THREE.InstancedMesh(new THREE.BoxGeometry(1.95, 0.11, 0.24), this.sleeperMaterial, 42);
+      sleepers.receiveShadow = true;
+      sleepers.castShadow = false;
+      let sleeperIndex = 0;
+      [-1, 0, 1].forEach((lane) => {
+        for (let row = 0; row < 14; row += 1) {
+          transform.makeTranslation(lane * LANE_WIDTH, 0.065, -7.45 + row * 1.14);
+          sleepers.setMatrixAt(sleeperIndex, transform);
+          sleeperIndex += 1;
         }
       });
+      sleepers.instanceMatrix.needsUpdate = true;
+      segment.add(sleepers);
+
+      const rails = new THREE.InstancedMesh(new THREE.BoxGeometry(0.085, 0.105, SEGMENT_LENGTH), this.railMaterial, 6);
+      rails.castShadow = false;
+      rails.receiveShadow = true;
+      let railIndex = 0;
+      [-1, 0, 1].forEach((lane) => {
+        [-0.53, 0.53].forEach((offset) => {
+          transform.makeTranslation(lane * LANE_WIDTH + offset, 0.155, 0);
+          rails.setMatrixAt(railIndex, transform);
+          railIndex += 1;
+        });
+      });
+      rails.instanceMatrix.needsUpdate = true;
+      segment.add(rails);
+
+      const thirdRails = new THREE.InstancedMesh(new THREE.BoxGeometry(0.07, 0.075, SEGMENT_LENGTH), this.powerRailMaterial, 3);
+      [-1, 0, 1].forEach((lane, laneIndex) => {
+        transform.makeTranslation(lane * LANE_WIDTH + 0.82, 0.12, 0);
+        thirdRails.setMatrixAt(laneIndex, transform);
+      });
+      thirdRails.instanceMatrix.needsUpdate = true;
+      segment.add(thirdRails);
+
+      const walks = new THREE.InstancedMesh(new THREE.BoxGeometry(2.45, 0.34, SEGMENT_LENGTH), this.platformMaterial, 2);
+      transform.makeTranslation(-5.7, 0.1, 0);
+      walks.setMatrixAt(0, transform);
+      transform.makeTranslation(5.7, 0.1, 0);
+      walks.setMatrixAt(1, transform);
+      walks.instanceMatrix.needsUpdate = true;
+      walks.receiveShadow = true;
+      const safetyLines = new THREE.InstancedMesh(new THREE.BoxGeometry(0.11, 0.025, SEGMENT_LENGTH), this.safetyLineMaterial, 2);
+      transform.makeTranslation(-4.46, 0.3, 0);
+      safetyLines.setMatrixAt(0, transform);
+      transform.makeTranslation(4.46, 0.3, 0);
+      safetyLines.setMatrixAt(1, transform);
+      safetyLines.instanceMatrix.needsUpdate = true;
+      segment.add(walks, safetyLines);
+
       const decor = new THREE.Group();
       decor.name = "decor";
       segment.add(decor);
@@ -818,23 +1259,26 @@ class CinematicRunnerRenderer {
       segment.remove(oldDecor);
       disposeObject(oldDecor);
       const decor = new THREE.Group();
-      const requestedLeftType = config.props[index % config.props.length];
-      const requestedRightType = config.props[(index + 1) % config.props.length];
-      const leftType = requestedLeftType === "overpass" && index % 6 !== 0 ? "lamp" : requestedLeftType;
-      const rightType = requestedRightType === "overpass" && index % 6 !== 0 ? "lamp" : requestedRightType;
-      const left = createProp(leftType, config.accent, index * 3 + this.stageIndex);
-      const right = createProp(rightType, config.accent, index * 5 + this.stageIndex + 1);
-      const leftX = -6.2 - (index % 3) * 0.6;
-      const rightX = 6.2 + ((index + 1) % 3) * 0.6;
-      left.position.set(leftX, 0.18, (index % 2 ? -2.8 : 2.2));
-      right.position.set(rightX, 0.18, (index % 2 ? 2.6 : -2.4));
-      left.rotation.y = Math.PI / 2;
-      right.rotation.y = -Math.PI / 2;
-      if (leftType === "railing") left.rotation.y = 0;
-      if (rightType === "railing") right.rotation.y = 0;
-      if (leftType === "overpass") { left.position.x = 0; left.rotation.y = 0; }
-      if (rightType === "overpass") { right.position.x = 0; right.rotation.y = 0; }
-      decor.add(left, right);
+      const spanningType = config.props.find((type) => type === "tunnel" || type === "terminal" || type === "overpass");
+      if (index < 10 && spanningType && index % 7 === 3) {
+        const spanning = createProp(spanningType, config.accent, index + this.stageIndex);
+        spanning.position.set(0, 0.18, 0);
+        decor.add(spanning);
+      } else if (index < 10) {
+        const requestedType = config.props[index % config.props.length];
+        const sideSafe = (type) => ["tunnel", "terminal", "overpass"].includes(type) ? "lamp" : type;
+        const side = index % 2 ? 1 : -1;
+        const type = sideSafe(requestedType);
+        const prop = createProp(type, config.accent, index * 5 + this.stageIndex);
+        prop.position.set(side * (6.25 + (index % 3) * 0.38), 0.18, index % 3 === 0 ? -2.4 : 2.2);
+        prop.rotation.y = type === "railing" ? 0 : side < 0 ? Math.PI / 2 : -Math.PI / 2;
+        decor.add(prop);
+      }
+      if (index % 6 === 0) {
+        const gantry = createGantry(config.accent, this.stageIndex === 5);
+        gantry.position.z = -4.8;
+        decor.add(gantry);
+      }
       segment.add(decor);
       segment.userData.decor = decor;
     });
@@ -932,7 +1376,7 @@ class CinematicRunnerRenderer {
     if (!texture) return;
     if (immediate) {
       this.backdropMaterials[this.activeBackdrop].map = texture;
-      this.backdropMaterials[this.activeBackdrop].opacity = 0.38;
+      this.backdropMaterials[this.activeBackdrop].opacity = 0.24;
       this.backdropMaterials[this.activeBackdrop].needsUpdate = true;
       return;
     }
@@ -951,16 +1395,21 @@ class CinematicRunnerRenderer {
     const config = STAGE_CONFIGS[this.stageIndex];
     this.targetBackground.setHex(config.sky);
     this.targetFog.setHex(config.fog);
-    this.targetFogDensity = config.fogDensity;
+    this.targetFogDensity = config.fogDensity * FOG_SCALE;
     this.targetExposure = config.weather === "storm" ? 0.86 : config.weather === "starlight" ? 1.18 : 1.06;
     this.hemisphere.color.setHex(config.ambient);
     this.hemisphere.groundColor.setHex(config.ground);
     this.keyLight.color.setHex(config.key);
     this.edgeLight.color.setHex(config.accent);
     this.warmLight.color.setHex(config.accent);
-    this.roadMaterial.color.setHex(config.road);
-    this.roadMaterial.roughness = ["after-rain", "rain", "storm"].includes(config.weather) ? 0.36 : 0.68;
+    this.roadMaterial.color.copy(new THREE.Color(config.road).multiplyScalar(0.52));
+    this.roadMaterial.roughness = ["after-rain", "rain", "storm"].includes(config.weather) ? 0.58 : 0.9;
     this.curbMaterial.color.setHex(config.curb);
+    this.platformMaterial.color.copy(new THREE.Color(config.curb).multiplyScalar(0.82));
+    this.powerRailMaterial.color.setHex(config.accent);
+    this.powerRailMaterial.emissive.setHex(config.accent);
+    this.safetyLineMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xf0cf58), 0.55));
+    this.safetyLineMaterial.emissive.copy(new THREE.Color(config.accent).multiplyScalar(0.42));
     this.groundMaterial.color.setHex(config.ground);
     this.ambientParticles.material.color.setHex(config.accent);
     this.activateBackdrop(this.stageIndex, immediate);
@@ -986,13 +1435,45 @@ class CinematicRunnerRenderer {
   }
 
   syncRoad(distance) {
-    const offset = (distance * 1.55) % SEGMENT_LENGTH;
+    const offset = (distance * WORLD_Z_SCALE) % SEGMENT_LENGTH;
     this.roadSegments.forEach((segment, index) => {
       let z = 7 - index * SEGMENT_LENGTH + offset;
       if (z > 14) z -= SEGMENT_COUNT * SEGMENT_LENGTH;
       segment.position.z = z;
+      segment.userData.decor.visible = z < 4.8;
     });
     this.roadTexture.offset.y = -(distance * 0.011) % 1;
+  }
+
+  acquireEntity(entity, config) {
+    const signature = `${this.stageIndex}:${entity.type}:${entity.subtype || entity.avoid || entity.cue || "default"}:${Number(entity.variant) % 2}`;
+    const bucket = this.entityPool.get(signature);
+    let object = bucket?.pop();
+    if (!object) {
+      if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
+      else if (entity.type === "obstacle") object = createObstacle(this.stageIndex, entity.avoid, config.accent, entity.subtype, entity.variant);
+      else object = createCompanionCue(entity.cue, config.accent);
+      object.userData.poolKey = signature;
+      object.userData.sharedTexture = entity.type === "collectible" ? this.particleTexture : null;
+    }
+    object.visible = true;
+    object.userData.entityType = entity.type;
+    object.userData.entitySubtype = entity.subtype || null;
+    this.scene.add(object);
+    return object;
+  }
+
+  recycleEntity(object) {
+    this.scene.remove(object);
+    object.visible = false;
+    const key = object.userData.poolKey || "misc";
+    const bucket = this.entityPool.get(key) || [];
+    if (bucket.length < 5) {
+      bucket.push(object);
+      this.entityPool.set(key, bucket);
+    } else {
+      disposeObject(object);
+    }
   }
 
   syncEntities(entities, time) {
@@ -1003,27 +1484,24 @@ class CinematicRunnerRenderer {
       activeIds.add(entity.id);
       let object = this.entityObjects.get(entity.id);
       if (!object) {
-        if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
-        else if (entity.type === "obstacle") object = createObstacle(this.stageIndex, entity.avoid, config.accent);
-        else object = createCompanionCue(entity.cue, config.accent);
-        object.userData.entityType = entity.type;
+        object = this.acquireEntity(entity, config);
         this.entityObjects.set(entity.id, object);
-        this.scene.add(object);
       }
       object.position.x = entity.lane * LANE_WIDTH;
-      object.position.z = 1.2 - entity.z * 1.72;
+      object.position.z = PLAYER_Z + (COLLISION_Z - entity.z) * WORLD_Z_SCALE;
       if (entity.type === "collectible") {
-        object.position.y = 1.25 + Math.sin(time * 4.5 + entity.id) * 0.12;
+        object.position.y = 1.22 + (Number(entity.height) || 0) + Math.sin(time * 4.5 + entity.id) * 0.12;
         object.rotation.y = time * 1.7 + entity.id;
         object.rotation.z = Math.sin(time * 1.2 + entity.id) * 0.12;
       } else {
         object.position.y = 0;
+        if (object.userData.kind === "train") object.rotation.z = Math.sin(time * 7 + entity.id) * 0.0025;
+        if (object.userData.kind === "service-cart") object.rotation.y = Math.sin(time * 5.4 + entity.id) * 0.012;
       }
     });
     this.entityObjects.forEach((object, id) => {
       if (activeIds.has(id)) return;
-      this.scene.remove(object);
-      disposeObject(object);
+      this.recycleEntity(object);
       this.entityObjects.delete(id);
     });
   }
@@ -1054,7 +1532,7 @@ class CinematicRunnerRenderer {
     this.ambientParticles.material.size = config.weather === "starlight" ? 0.2 : 0.11;
     this.ambientParticles.rotation.y = time * 0.012;
     this.ambientParticles.position.y = Math.sin(time * 0.24) * 0.28;
-    const streakTarget = clamp((speed - 11) / 17 + combo * 0.025, 0, 0.26);
+    const streakTarget = clamp((speed - 11) / 17 + combo * 0.025 + this.speedPulse * 0.28, 0, 0.42);
     this.speedStreaks.material.opacity = damp(this.speedStreaks.material.opacity, streakTarget, 5, delta);
     this.speedStreaks.position.z = (time * speed * 0.85) % 8;
   }
@@ -1064,8 +1542,8 @@ class CinematicRunnerRenderer {
     this.backdropBlend = clamp(this.backdropBlend + delta / 1.25, 0, 1);
     const next = 1 - this.activeBackdrop;
     const smooth = this.backdropBlend * this.backdropBlend * (3 - 2 * this.backdropBlend);
-    this.backdropMaterials[this.activeBackdrop].opacity = 0.38 * (1 - smooth);
-    this.backdropMaterials[next].opacity = 0.38 * smooth;
+    this.backdropMaterials[this.activeBackdrop].opacity = 0.24 * (1 - smooth);
+    this.backdropMaterials[next].opacity = 0.24 * smooth;
     if (this.backdropBlend >= 1) this.activeBackdrop = next;
   }
 
@@ -1088,12 +1566,24 @@ class CinematicRunnerRenderer {
       burst.points.material.dispose();
       return false;
     });
+    this.rings = this.rings.filter((ring) => {
+      ring.life -= delta;
+      const progress = 1 - clamp(ring.life / ring.duration, 0, 1);
+      ring.mesh.scale.setScalar(0.65 + progress * 2.15);
+      ring.mesh.material.opacity = (1 - progress) * 0.82;
+      ring.mesh.rotation.z += delta * ring.spin;
+      if (ring.life > 0) return true;
+      this.scene.remove(ring.mesh);
+      ring.mesh.geometry.dispose();
+      ring.mesh.material.dispose();
+      return false;
+    });
   }
 
   effect(type, detail = {}) {
     if (type === "miss") {
-      this.shake = Math.max(this.shake, 0.72);
-      this.flash = Math.max(this.flash, 0.42);
+      this.shake = Math.max(this.shake, 0.82);
+      this.flash = Math.max(this.flash, 0.34);
       this.flashMaterial.color.setHex(0xff5d58);
       return;
     }
@@ -1102,7 +1592,13 @@ class CinematicRunnerRenderer {
       this.flashMaterial.color.setHex(STAGE_CONFIGS[this.stageIndex].accent);
       return;
     }
-    const count = type === "perfect" || type === "companion-sync" ? 30 : 18;
+    if (type === "near-miss") {
+      this.shake = Math.max(this.shake, 0.26);
+      this.speedPulse = Math.max(this.speedPulse, 1);
+    } else if (type === "dodge") {
+      this.speedPulse = Math.max(this.speedPulse, 0.62);
+    }
+    const count = type === "perfect" || type === "companion-sync" ? 34 : type === "near-miss" ? 26 : 20;
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count * 3);
     for (let index = 0; index < count; index += 1) {
@@ -1127,9 +1623,26 @@ class CinematicRunnerRenderer {
       blending: THREE.AdditiveBlending
     });
     const points = new THREE.Points(geometry, pointMaterial);
-    points.position.set((detail.lane || 0) * LANE_WIDTH, 1.25, 1.2 - (detail.z || 0) * 1.72);
+    const effectX = (detail.lane || 0) * LANE_WIDTH;
+    const effectZ = PLAYER_Z + (COLLISION_Z - (detail.z || COLLISION_Z)) * WORLD_Z_SCALE;
+    points.position.set(effectX, type === "dodge" ? 0.75 : 1.25, effectZ);
     this.scene.add(points);
     this.bursts.push({ points, velocities, life: 0.85, duration: 0.85 });
+    if (["dodge", "near-miss", "perfect", "companion-sync"].includes(type)) {
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: type === "near-miss" ? 0xffd169 : type === "companion-sync" ? 0x9ff1df : STAGE_CONFIGS[this.stageIndex].accent,
+        transparent: true,
+        opacity: 0.82,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const ring = mesh(new THREE.TorusGeometry(0.45, 0.035, 8, 36), ringMaterial);
+      ring.position.set(effectX, type === "dodge" ? 0.72 : 1.2, effectZ);
+      ring.rotation.x = Math.PI / 2;
+      this.scene.add(ring);
+      this.rings.push({ mesh: ring, life: 0.48, duration: 0.48, spin: type === "near-miss" ? 4 : 1.6 });
+    }
   }
 
   render(frame = {}) {
@@ -1147,11 +1660,15 @@ class CinematicRunnerRenderer {
     this.syncRoad(this.currentDistance);
     this.syncEntities(motion.entities || [], time);
 
-    const targetPlayerX = (Number(motion.lane) || 0) * LANE_WIDTH;
-    this.currentLaneX = damp(this.currentLaneX, targetPlayerX, 12, delta);
+    const lanePosition = Number.isFinite(Number(motion.lanePosition)) ? Number(motion.lanePosition) : Number(motion.lane) || 0;
+    const targetPlayerX = lanePosition * LANE_WIDTH;
+    this.previousLaneX = this.currentLaneX;
+    this.currentLaneX = damp(this.currentLaneX, targetPlayerX, 28, delta);
+    this.lateralVelocity = damp(this.lateralVelocity, (this.currentLaneX - this.previousLaneX) / Math.max(delta, 1 / 120) / LANE_WIDTH, 18, delta);
     this.player.position.x = this.currentLaneX;
-    this.player.position.z = 2.15;
-    animateCharacter(this.player, time, motion.action || "run", Number(motion.vertical) || 0, speed / 17);
+    this.player.position.z = PLAYER_Z;
+    const stumble = clamp((Number(motion.stumbleTime) || 0) / 0.62, 0, 1);
+    animateCharacter(this.player, time, motion.action || "run", Number(motion.vertical) || 0, speed / 17, 0, this.lateralVelocity, stumble);
 
     const config = STAGE_CONFIGS[this.stageIndex];
     const heartbeat = Number(runState.heartbeat) || 60;
@@ -1166,22 +1683,24 @@ class CinematicRunnerRenderer {
     this.companion.position.z = damp(this.companion.position.z, companionZ, 2.9, delta);
     const companionCue = motion.companion?.cue?.action;
     const companionAction = companionCue === "jump" || companionCue === "slide" ? companionCue : "run";
-    animateCharacter(this.companion, time, companionAction, companionAction === "jump" ? 0.75 : 0, speed / 17, 0.9);
+    animateCharacter(this.companion, time, companionAction, companionAction === "jump" ? 0.75 : 0, speed / 17, 0.9, 0, 0);
     this.companion.rotation.y = this.stageIndex === 0 ? -0.08 : 0;
 
-    const cameraTargetX = this.currentLaneX * 0.28 + (this.stageIndex >= 4 ? 0.13 : 0);
+    const cameraTargetX = this.currentLaneX * 0.48 + (this.stageIndex >= 4 ? 0.1 : 0);
     const cameraBob = frame.mode === "playing" ? Math.sin(time * 8.5) * 0.035 : Math.sin(time * 0.8) * 0.025;
     const shakeX = (Math.sin(time * 83) + Math.sin(time * 41)) * this.shake * 0.07;
     const shakeY = Math.sin(time * 67) * this.shake * 0.055;
     this.camera.position.x = damp(this.camera.position.x, cameraTargetX, 6, delta) + shakeX;
-    this.camera.position.y = damp(this.camera.position.y, 4.65 + cameraBob, 8, delta) + shakeY;
-    this.camera.position.z = damp(this.camera.position.z, motion.action === "slide" ? 9.75 : 9.4, 5, delta);
-    this.camera.fov = damp(this.camera.fov, 47 + clamp((speed - 10) * 0.55, 0, 5), 3, delta);
+    this.camera.position.y = damp(this.camera.position.y, 4.18 + cameraBob - (motion.action === "slide" ? 0.16 : 0), 8, delta) + shakeY;
+    this.camera.position.z = damp(this.camera.position.z, motion.action === "slide" ? 9.72 : 9.45, 5, delta);
+    this.camera.fov = damp(this.camera.fov, 54 + clamp((speed - 10) * 0.42, 0, 4.5) + this.speedPulse * 1.4, 4, delta);
     this.camera.updateProjectionMatrix();
-    this.camera.lookAt(this.currentLaneX * 0.16, 1.35, -19.5);
+    this.camera.lookAt(this.currentLaneX * 0.38, 1.42, -20.5);
+    this.camera.rotation.z += clamp(-this.lateralVelocity * 0.014, -0.045, 0.045);
     this.shake = Math.max(0, this.shake - delta * 2.8);
     this.flash = Math.max(0, this.flash - delta * 1.8);
     this.flashMaterial.opacity = this.flash;
+    this.speedPulse = Math.max(0, this.speedPulse - delta * 2.4);
 
     this.scene.background.lerp(this.targetBackground, 1 - Math.exp(-2.2 * delta));
     this.scene.fog.color.lerp(this.targetFog, 1 - Math.exp(-2.2 * delta));
@@ -1211,6 +1730,7 @@ class CinematicRunnerRenderer {
       height: this.canvas.height,
       entities: this.entityObjects.size,
       bursts: this.bursts.length,
+      rings: this.rings.length,
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,
       rainOpacity: this.rain.material.opacity,
@@ -1219,6 +1739,8 @@ class CinematicRunnerRenderer {
   }
 
   dispose() {
+    this.entityObjects.forEach((object) => disposeObject(object));
+    this.entityPool.forEach((bucket) => bucket.forEach((object) => disposeObject(object)));
     this.renderer.dispose();
     this.roadTexture.dispose();
     this.particleTexture.dispose();

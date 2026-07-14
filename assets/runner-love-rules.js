@@ -14,13 +14,13 @@
   }
 
   const STAGES = deepFreeze([
-    { index: 0, number: 1, id: "courage", name: "勇气", target: 8, checkpoint: 5, duration: 35, perfectWindow: 90, failEnding: "未能迈出第一步" },
-    { index: 1, number: 2, id: "resonance", name: "共鸣", target: 10, checkpoint: 6, duration: 40, perfectWindow: 90, failEnding: "频率渐行渐远" },
-    { index: 2, number: 3, id: "response", name: "回应", target: 12, checkpoint: 7, duration: 45, perfectWindow: 90, failEnding: "心意没有回音" },
-    { index: 3, number: 4, id: "rapport", name: "默契", target: 14, checkpoint: 9, duration: 50, perfectWindow: 90, failEnding: "脚步错开彼此" },
-    { index: 4, number: 5, id: "trust", name: "信任", target: 16, checkpoint: 10, duration: 55, perfectWindow: 90, failEnding: "信任停在半途" },
-    { index: 5, number: 6, id: "understanding", name: "理解", target: 18, checkpoint: 11, duration: 60, perfectWindow: 90, failEnding: "没能读懂真心" },
-    { index: 6, number: 7, id: "promise", name: "约定", target: 20, checkpoint: 13, duration: 65, perfectWindow: 90, failEnding: "约定未能抵达" }
+    { index: 0, number: 1, id: "courage", name: "勇气", target: 32, checkpoint: 19, duration: 55, perfectWindow: 90, failEnding: "未能迈出第一步" },
+    { index: 1, number: 2, id: "resonance", name: "共鸣", target: 38, checkpoint: 23, duration: 60, perfectWindow: 90, failEnding: "频率渐行渐远" },
+    { index: 2, number: 3, id: "response", name: "回应", target: 44, checkpoint: 26, duration: 65, perfectWindow: 90, failEnding: "心意没有回音" },
+    { index: 3, number: 4, id: "rapport", name: "默契", target: 50, checkpoint: 30, duration: 70, perfectWindow: 90, failEnding: "脚步错开彼此" },
+    { index: 4, number: 5, id: "trust", name: "信任", target: 56, checkpoint: 34, duration: 75, perfectWindow: 90, failEnding: "信任停在半途" },
+    { index: 5, number: 6, id: "understanding", name: "理解", target: 62, checkpoint: 37, duration: 80, perfectWindow: 90, failEnding: "没能读懂真心" },
+    { index: 6, number: 7, id: "promise", name: "约定", target: 68, checkpoint: 41, duration: 85, perfectWindow: 90, failEnding: "约定未能抵达" }
   ]);
 
   const RULES = deepFreeze({

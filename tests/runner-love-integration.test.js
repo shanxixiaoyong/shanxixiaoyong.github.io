@@ -20,6 +20,14 @@ test("connects swipe, keyboard, companion cues, scene changes and BFCache lifecy
   assert.match(source, /window\.addEventListener\("pagehide"/); assert.match(source, /window\.addEventListener\("pageshow"/);
 });
 
+test("rotates a broad set of solvable metro patterns instead of repeating one obstacle row", () => {
+  const patternIds = [...source.matchAll(/Object\.freeze\(\{ id: "([^"]+)", minStage:/g)].map((match) => match[1]);
+  assert.ok(patternIds.length >= 12, patternIds.join(", "));
+  assert.equal(new Set(patternIds).size, patternIds.length);
+  for (const subtype of ["barrier", "signal-gate", "service-cart", "train"]) assert.ok(source.includes(`subtype: "${subtype}"`), subtype);
+  for (const movement of ["jump", "slide", "switch"]) assert.ok(source.includes(`avoid: "${movement}"`), movement);
+});
+
 test("closes finale, stage-sync, pointer cancellation and lifecycle integration gaps", () => {
   assert.match(source, /finaleSeconds:\s*20/); assert.match(source, /!motion\.state\.finale && currentStageIndex\(\) < 6/); assert.match(source, /motion\.seekStage/);
   assert.match(source, /event\.entity\.type === "collectible"/); assert.match(source, /companion-missed/); assert.match(source, /response-missed/);

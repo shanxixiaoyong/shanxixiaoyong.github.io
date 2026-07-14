@@ -83,8 +83,8 @@ test("reveals the ended relationship in four paced shots before showing the rati
 });
 
 test("enters a compensation segment at a reached checkpoint and persists it", () => {
-  const { debug } = boot(); debug.start(); for (let i = 0; i < 5; i += 1) debug.beat("good");
-  const state = debug.time(35100); assert.equal(state.runState.stage.compensation, true); assert.equal(state.runState.usedCompensation, true);
+  const { debug } = boot(); debug.start(); for (let i = 0; i < RunnerLoveRules.STAGES[0].checkpoint; i += 1) debug.beat("good");
+  const state = debug.time((RunnerLoveRules.STAGES[0].duration + 0.1) * 1000); assert.equal(state.runState.stage.compensation, true); assert.equal(state.runState.usedCompensation, true);
 });
 
 test("keeps the engine stage synchronized while a completed stage performance stays paused", () => {
@@ -94,9 +94,10 @@ test("keeps the engine stage synchronized while a completed stage performance st
 });
 
 test("retries a failed run from the current stage checkpoint", () => {
-  const { debug } = boot(); debug.start(); for (let index = 0; index < 5; index += 1) debug.beat("good");
-  debug.time(55100); assert.equal(debug.snapshot().runState.status, "failed"); debug.retry();
-  const state = debug.snapshot(); assert.equal(state.mode, "playing"); assert.equal(state.runState.stage.progress, 5); assert.ok(state.runState.heartbeat >= 60);
+  const definition = RunnerLoveRules.STAGES[0];
+  const { debug } = boot(); debug.start(); for (let index = 0; index < definition.checkpoint; index += 1) debug.beat("good");
+  debug.time((definition.duration + RunnerLoveRules.RULES.compensationSeconds + 0.1) * 1000); assert.equal(debug.snapshot().runState.status, "failed"); debug.retry();
+  const state = debug.snapshot(); assert.equal(state.mode, "playing"); assert.equal(state.runState.stage.progress, definition.checkpoint); assert.ok(state.runState.heartbeat >= 60);
 });
 
 test("enters the engine finale for stage seven and does not create final-stage obstacles", () => {

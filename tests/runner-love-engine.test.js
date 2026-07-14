@@ -40,6 +40,45 @@ test("changes only among three lanes and runs jump and slide timers", () => {
   advance(run, 0.7); assert.equal(run.state.action, "run");
 });
 
+test("eases lane position and requires a jump for elevated collectible arcs", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0, laneChangeDuration: 0.3 });
+  run.step(0.1, "left");
+  assert.equal(run.state.lane, -1);
+  assert.ok(run.state.lanePosition < 0 && run.state.lanePosition > -1);
+  advance(run, 0.2);
+  assert.equal(run.state.lanePosition, -1);
+
+  const high = run.spawn({ type: "collectible", lane: -1, z: 1.5, height: 1.1 });
+  run.step(0.1);
+  assert.equal(high.collected, false);
+  const airborne = run.spawn({ type: "collectible", lane: -1, z: 1.5, height: 1.1 });
+  run.step(0.1, "jump");
+  assert.equal(airborne.collected, true);
+});
+
+test("emits dodge and near-miss rewards and protects consecutive collisions", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
+  run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "jump" });
+  run.step(0.1, "jump");
+  assert.equal(run.state.dodges, 1);
+  assert.ok(run.drainEvents().some((event) => event.type === "dodge"));
+
+  run.spawn({ type: "obstacle", lane: 1, z: 1.5, avoid: "switch", rewardNearMiss: true });
+  run.step(0.1);
+  assert.equal(run.state.nearMisses, 1);
+
+  run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "slide" });
+  run.step(0.1);
+  assert.equal(run.state.hits, 1);
+  run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "slide" });
+  run.step(0.1);
+  assert.equal(run.state.hits, 1);
+  assert.ok(run.drainEvents().some((event) => event.type === "protected"));
+  const postHitSpeed = run.state.speed;
+  advance(run, 3);
+  assert.ok(run.state.speed > postHitSpeed + 2.5);
+});
+
 test("advances perspective z and resolves obstacles and collectibles", () => {
   const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
   const obstacle = run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "slide" });

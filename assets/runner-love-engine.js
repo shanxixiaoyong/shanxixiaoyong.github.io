@@ -14,9 +14,10 @@
   ]);
   const DEFAULTS = Object.freeze({
     fixedStep: 1 / 60, maxFrame: 0.25, duration: 120, finaleSeconds: 20,
-    startSpeed: 9, maxSpeed: 18, acceleration: 0.055, moduleLength: 36,
+    startSpeed: 11, maxSpeed: 22, acceleration: 0.085, moduleLength: 36,
     spawnAhead: 90, despawnBehind: 5, collisionDepth: 0.85,
-    jumpDuration: 0.82, jumpHeight: 1.65, slideDuration: 0.7,
+    laneChangeDuration: 0.16, jumpDuration: 0.76, jumpHeight: 1.9, slideDuration: 0.64,
+    stumbleDuration: 0.62, invulnerabilityDuration: 1.05, collisionSpeedLoss: 3.2,
     responseWindow: 4, companionWindow: 2.5, stages: DEFAULT_STAGES
   });
 
@@ -63,9 +64,11 @@
     return {
       config, seed: options && options.seed !== undefined ? options.seed : "runner-love",
       randomState: hashSeed(options && options.seed), accumulator: 0, ticks: 0, elapsed: 0,
-      distance: 0, speed: config.startSpeed, lane: 0, vertical: 0, action: "run",
+      distance: 0, speed: config.startSpeed, lane: 0, laneFrom: 0, lanePosition: 0,
+      laneChangeTime: config.laneChangeDuration, vertical: 0, action: "run",
       actionTime: 0, entities: [], nextEntityId: 1, events: [], inputQueue: [],
-      score: 0, collected: 0, hits: 0, response: null, responses: 0,
+      score: 0, collected: 0, hits: 0, dodges: 0, nearMisses: 0,
+      stumbleTime: 0, invulnerableTime: 0, response: null, responses: 0,
       companion: { cue: null, synced: 0, missed: 0 }, stageIndex: 0, stage: stage.id,
       moduleIndex: -1, modules: [], nextModuleDistance: 0, finale: false, finished: false
     };
@@ -82,7 +85,11 @@
     if (action === ACTIONS.LEFT || action === ACTIONS.RIGHT) {
       const before = state.lane;
       state.lane = lane(state.lane + (action === ACTIONS.LEFT ? -1 : 1));
-      if (before !== state.lane) emit(state, "lane", { lane: state.lane });
+      if (before !== state.lane) {
+        state.laneFrom = state.lanePosition;
+        state.laneChangeTime = 0;
+        emit(state, "lane", { lane: state.lane, from: before });
+      }
     } else if (action === ACTIONS.JUMP && state.action === "run") {
       state.action = "jump"; state.actionTime = 0; emit(state, "jump");
     } else if (action === ACTIONS.SLIDE && state.action === "run") {
@@ -96,7 +103,13 @@
       active: spec.active !== false, collected: false, hit: false, data: spec.data || null,
       avoid: spec.avoid || (spec.type === "obstacle" ? "jump" : null),
       pairId: spec.pairId || null, responseTo: spec.responseTo || null,
-      cue: spec.cue || null, points: Number.isFinite(spec.points) ? spec.points : 1
+      cue: spec.cue || null, points: Number.isFinite(spec.points) ? spec.points : 1,
+      subtype: spec.subtype || null, variant: spec.variant || 0,
+      height: Number.isFinite(spec.height) ? spec.height : 0,
+      arc: Number.isFinite(spec.arc) ? spec.arc : 0,
+      row: Number.isFinite(spec.row) ? spec.row : 0,
+      patternId: spec.patternId || null,
+      rewardNearMiss: Boolean(spec.rewardNearMiss), nearMissed: false
     };
     if (state.finale && entity.type === "obstacle") entity.active = false;
     if (!Number.isFinite(entity.z)) entity.z = state.config.spawnAhead;
@@ -128,10 +141,23 @@
       state.action = "run"; state.actionTime = 0;
     }
   }
+  function updateLane(state, dt) {
+    if (state.lanePosition === state.lane) return;
+    state.laneChangeTime = Math.min(state.config.laneChangeDuration, state.laneChangeTime + dt);
+    const ratio = clamp(state.laneChangeTime / Math.max(0.001, state.config.laneChangeDuration), 0, 1);
+    const eased = ratio * ratio * (3 - ratio * 2);
+    state.lanePosition = state.laneFrom + (state.lane - state.laneFrom) * eased;
+    if (ratio >= 1) state.lanePosition = state.lane;
+  }
   function isAvoided(state, entity) {
-    if (entity.avoid === "jump") return state.action === "jump" && state.vertical >= 0.55;
+    if (entity.avoid === "jump") return state.action === "jump" && state.vertical >= 0.48;
     if (entity.avoid === "slide") return state.action === "slide";
+    if (entity.avoid === "either") return state.action === "slide" || (state.action === "jump" && state.vertical >= 0.48);
     return false;
+  }
+  function canCollect(state, entity) {
+    if (entity.height < 0.42) return true;
+    return state.action === "jump" && state.vertical >= Math.max(0.42, entity.height * 0.5);
   }
   function collect(state, entity) {
     entity.collected = true; entity.active = false; state.collected += 1; state.score += entity.points;
@@ -153,11 +179,31 @@
       if (!entity.active) continue;
       const previous = entity.z; entity.z -= dz;
       const crossed = previous > state.config.collisionDepth && entity.z <= state.config.collisionDepth;
-      if (crossed && entity.lane === state.lane) {
+      const laneAligned = Math.abs(entity.lane - state.lanePosition) < 0.42;
+      if (crossed && laneAligned) {
         if (entity.type === "obstacle") {
-          if (!isAvoided(state, entity)) { entity.hit = true; state.hits += 1; emit(state, "collision", { entity }); }
+          if (isAvoided(state, entity)) {
+            state.dodges += 1;
+            emit(state, "dodge", { entity, action: state.action });
+          } else if (state.invulnerableTime <= 0) {
+            entity.hit = true;
+            state.hits += 1;
+            state.stumbleTime = state.config.stumbleDuration;
+            state.invulnerableTime = state.config.invulnerabilityDuration;
+            state.speed = Math.max(state.config.startSpeed * 0.72, state.speed - state.config.collisionSpeedLoss);
+            emit(state, "collision", { entity });
+          } else {
+            emit(state, "protected", { entity });
+          }
           entity.active = false;
-        } else collect(state, entity);
+        } else if (canCollect(state, entity)) collect(state, entity);
+      } else if (crossed && entity.type === "obstacle" && entity.rewardNearMiss
+          && Math.abs(entity.lane - state.lanePosition) >= 0.42
+          && Math.abs(entity.lane - state.lanePosition) <= 1.25 && !entity.nearMissed) {
+        entity.nearMissed = true;
+        state.nearMisses += 1;
+        state.score += 2;
+        emit(state, "near-miss", { entity });
       }
       if (entity.z < -state.config.despawnBehind) entity.active = false;
     }
@@ -187,7 +233,9 @@
     const dt = state.config.fixedStep;
     state.ticks += 1; state.elapsed = Math.min(state.config.duration, state.elapsed + dt);
     while (state.inputQueue.length) performInput(state, state.inputQueue.shift());
-    updateAction(state, dt);
+    updateAction(state, dt); updateLane(state, dt);
+    state.stumbleTime = Math.max(0, state.stumbleTime - dt);
+    state.invulnerableTime = Math.max(0, state.invulnerableTime - dt);
     const finaleAt = Math.max(0, state.config.duration - state.config.finaleSeconds);
     if (!state.finale && state.elapsed >= finaleAt) {
       state.finale = true;
@@ -197,7 +245,9 @@
     }
     const stageInfo = stageIndexAt(state.config, state.elapsed);
     if (stageInfo.index !== state.stageIndex) syncStage(state, stageInfo.index);
-    state.speed = Math.min(state.config.maxSpeed, state.speed + state.config.acceleration * dt);
+    const targetSpeed = Math.min(state.config.maxSpeed, state.config.startSpeed + state.config.acceleration * state.elapsed);
+    const recovery = Math.max(1.1, state.config.acceleration * 2.4);
+    state.speed = Math.min(targetSpeed, state.speed + recovery * dt);
     const dz = state.speed * dt; state.distance += dz;
     resolveEntities(state, dz); checkWindows(state); scheduleModules(state);
     if (state.elapsed >= state.config.duration) { state.finished = true; emit(state, "finish"); }
