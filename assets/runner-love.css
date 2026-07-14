@@ -313,7 +313,7 @@ a {
   align-items: center;
 }
 
-.heart-meter,
+.condition-meter,
 .stage-meter {
   display: grid;
   min-width: 0;
@@ -327,13 +327,13 @@ a {
   grid-template-columns: auto 1fr;
 }
 
-.heart-glyph {
-  color: var(--rose);
-  filter: drop-shadow(0 0 6px var(--rose));
-  animation: heartbeat 1s ease-in-out infinite;
+.condition-glyph {
+  color: #f7f3df;
+  font-size: 7px;
+  filter: drop-shadow(0 0 7px var(--stage-accent));
 }
 
-.heart-meter > div,
+.condition-meter > div,
 .stage-meter > div {
   height: 4px;
   overflow: hidden;
@@ -341,14 +341,14 @@ a {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.heart-meter i,
+.condition-meter i,
 .stage-meter i {
   display: block;
   width: 100%;
   height: 100%;
   transform: scaleX(0.6);
   transform-origin: left;
-  background: var(--rose);
+  background: linear-gradient(90deg, #f1e8d0, var(--stage-accent));
   box-shadow: 0 0 8px currentColor;
   transition: transform 220ms ease;
 }
@@ -359,11 +359,50 @@ a {
 }
 
 .combo {
-  min-width: 28px;
+  min-width: 54px;
   color: var(--stage-accent);
   font-family: Georgia, serif;
-  font-size: 16px;
+  font-size: 11px;
   text-align: right;
+}
+
+.destination-line {
+  display: flex;
+  min-height: 20px;
+  margin-top: 7px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 9px;
+}
+
+.destination-line > span {
+  white-space: nowrap;
+}
+
+.runner-cargo {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.runner-cargo[hidden] {
+  display: none;
+}
+
+.runner-cargo span {
+  max-width: 10em;
+  overflow: hidden;
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  background: rgba(6, 11, 13, 0.38);
+  color: #fffdf5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
 }
 
 .run-telemetry {
@@ -413,6 +452,113 @@ a {
   text-shadow: 0 2px 8px #000;
   text-shadow: 0 2px 9px #000, 0 0 16px var(--stage-accent);
 }
+
+.route-message {
+  position: absolute;
+  z-index: 6;
+  top: 18%;
+  right: 14px;
+  display: grid;
+  width: min(68%, 360px);
+  padding: 10px 12px 11px;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 7px 7px 2px 7px;
+  background: rgba(8, 15, 18, 0.64);
+  color: rgba(255, 252, 245, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24), inset 0 1px rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  line-height: 1.55;
+  text-shadow: 0 2px 8px #000;
+  backdrop-filter: blur(12px) saturate(1.15);
+  pointer-events: none;
+  animation: route-message-in 360ms ease both;
+}
+
+.route-message[hidden] {
+  display: none;
+}
+
+.route-message small {
+  padding-top: 1px;
+  color: var(--stage-accent);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.runner-shell[data-state="arrival"] .runner-hud,
+.runner-shell[data-state="arrival"] .runner-topbar,
+.runner-shell[data-state="arrival"] .gesture-cue,
+.runner-shell[data-state="arrival"] .route-message,
+.runner-shell[data-state="result"] .runner-hud,
+.runner-shell[data-state="result"] .gesture-cue {
+  opacity: 0;
+  transition: opacity 360ms ease;
+}
+
+.arrival-caption {
+  position: absolute;
+  z-index: 8;
+  right: 22px;
+  bottom: max(34px, calc(env(safe-area-inset-bottom) + 24px));
+  left: 22px;
+  padding: 18px 18px 20px;
+  overflow: hidden;
+  border-left: 2px solid var(--stage-accent);
+  background: linear-gradient(90deg, rgba(5, 9, 11, 0.82), rgba(5, 9, 11, 0.45) 72%, transparent);
+  color: #fff;
+  text-shadow: 0 2px 12px #000;
+  pointer-events: none;
+  animation: arrival-caption-in 520ms 680ms ease both;
+}
+
+.arrival-caption[hidden] {
+  display: none;
+}
+
+.arrival-caption p {
+  margin: 0 0 4px;
+  color: var(--stage-accent);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.arrival-caption h2 {
+  margin: 0;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.arrival-caption span {
+  display: block;
+  max-width: 34em;
+  margin-top: 8px;
+  color: rgba(255, 250, 240, 0.82);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.arrival-caption i {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--stage-accent), transparent);
+  animation: arrival-progress 4.7s linear both;
+}
+
+.runner-shell[data-arrival-stage="1"] .arrival-caption i { animation-duration: 4.3s; }
+.runner-shell[data-arrival-stage="2"] .arrival-caption i { animation-duration: 4.5s; }
+.runner-shell[data-arrival-stage="4"] .arrival-caption i,
+.runner-shell[data-arrival-stage="5"] .arrival-caption i { animation-duration: 4.8s; }
+.runner-shell[data-arrival-stage="6"] .arrival-caption i { animation-duration: 5s; }
+.runner-shell[data-arrival-stage="7"] .arrival-caption i { animation-duration: 5.6s; }
 
 .gesture-cue {
   position: absolute;
@@ -501,6 +647,31 @@ a {
   background: linear-gradient(180deg, rgba(4, 7, 8, 0.02) 24%, rgba(4, 7, 8, 0.22) 54%, rgba(4, 7, 8, 0.95) 100%);
 }
 
+.intro-message {
+  width: min(88%, 360px);
+  margin: 18px 0 0 auto;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px 8px 2px 8px;
+  background: rgba(12, 20, 22, 0.55);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.26), inset 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.intro-message small {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--stage-accent);
+  font-size: 8px;
+}
+
+.runner-overlay .intro-message p {
+  margin: 0;
+  color: #fffdf7;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .primary-button,
 .quiet-button {
   min-height: 48px;
@@ -537,100 +708,10 @@ a {
   cursor: pointer;
 }
 
-.performance {
-  isolation: isolate;
-  background-position: center;
-  background-size: cover;
-  animation: performance-enter 520ms ease both;
-}
-
-.performance::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-accent) 8%, transparent), transparent 42%);
-  content: "";
-}
-
-.handhold {
-  align-items: center;
-  text-align: center;
-  background:
-    linear-gradient(180deg, rgba(10, 12, 18, 0.1), rgba(7, 9, 14, 0.9) 82%),
-    url("love-scenes/starlight-vow.webp") center / cover no-repeat;
-}
-
-.hold-button {
-  position: relative;
-  width: 146px;
-  height: 146px;
-  flex: 0 0 146px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-weight: 800;
-  box-shadow: 0 0 55px rgba(239, 119, 128, 0.18);
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-  touch-action: none;
-}
-
-.hold-button i {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 0;
-  background: linear-gradient(180deg, rgba(239, 119, 128, 0.78), #bd4f68);
-  transition: height 80ms linear;
-}
-
-.hold-button span {
-  position: relative;
-  z-index: 1;
-}
-
-.reveal {
-  align-items: center;
-  text-align: center;
-  background:
-    linear-gradient(180deg, rgba(7, 9, 11, 0.04) 16%, rgba(7, 9, 11, 0.35) 54%, rgba(7, 9, 11, 0.94) 100%),
-    url("runner-scenes/08-reveal.jpg") center / cover no-repeat;
-  animation: reveal-room 850ms ease both;
-}
-
-.reveal-step {
-  display: block;
-  margin-bottom: 9px;
-  color: rgba(255, 255, 255, 0.54);
-  font-family: Georgia, serif;
-  font-size: 10px;
-}
-
-.reveal[data-shot="2"] {
-  background-position: 54% center;
-}
-
-.reveal[data-shot="3"] {
-  background-position: 46% center;
-}
-
-.reveal[data-shot="4"] {
-  background-position: 40% center;
-}
-
-.reveal[data-shot] h2,
-.reveal[data-shot] p,
-.reveal[data-shot] .reveal-step {
-  animation: reveal-copy 420ms ease both;
-}
-
 .result {
   background:
     linear-gradient(180deg, rgba(7, 10, 12, 0.22), rgba(7, 10, 12, 0.97)),
-    url("runner-scenes/08-reveal.jpg") center / cover no-repeat;
+    url("love-scenes/starlight-vow.webp") center / cover no-repeat;
 }
 
 .grade {
@@ -645,7 +726,7 @@ a {
   display: grid;
   width: 100%;
   margin: 0 0 22px;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border-block: 1px solid rgba(255, 255, 255, 0.18);
 }
 
@@ -682,23 +763,19 @@ a {
   clip: rect(0, 0, 0, 0);
 }
 
-@keyframes heartbeat {
-  50% { transform: scale(1.26); }
-}
-
-@keyframes performance-enter {
-  from { opacity: 0; transform: scale(1.025); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes reveal-room {
-  from { opacity: 0; filter: brightness(1.7); }
-  to { opacity: 1; filter: brightness(1); }
-}
-
-@keyframes reveal-copy {
-  from { opacity: 0; transform: translateY(10px); }
+@keyframes arrival-caption-in {
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes arrival-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes route-message-in {
+  from { opacity: 0; transform: translate3d(16px, -6px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes speed-stream {
@@ -729,11 +806,6 @@ a {
   .runner-overlay h1 { font-size: 35px; }
   .runner-overlay h2 { font-size: 27px; }
 
-  .hold-button {
-    width: 116px;
-    height: 116px;
-    flex-basis: 116px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

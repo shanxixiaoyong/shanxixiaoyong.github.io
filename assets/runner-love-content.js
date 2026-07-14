@@ -12,129 +12,178 @@
   }
 
   const STAGES = [
-    { id: "first-sight", order: 1, name: "初见", scene: "傍晚校园", palette: "香樟绿与夕照金", weather: "风吹过刚停的雨", music: ["木吉他", "鞋底轻响"], objective: "抓住两条路线短暂交汇的机会", opening: "下课铃刚停，她从香樟道另一侧经过。雨水正从叶尖落下，你们在路口第一次看见彼此。", closing: "她在路口停半步，把伞向你这边偏过来。" },
-    { id: "familiar-steps", order: 2, name: "熟悉", scene: "清晨河堤", palette: "薄雾蓝与晨光白", weather: "河面有轻雾", music: ["轻鼓点", "自行车铃"], objective: "保持并肩并收集共同话题", opening: "她已经在桥下热身，见你靠近便抬手示意。两双鞋落在同一个节拍里。", closing: "终点还没到，你们已经约好下一次出发时间。" },
-    { id: "first-date", order: 3, name: "暧昧", scene: "霓虹夜街", palette: "砖红与夜色青", weather: "晚风穿过街巷", music: ["轻柔合成器", "消息提示音"], objective: "连续收集成对的邀请与回应", opening: "夜色把聊天气泡变成沿街灯光。她时而靠近，时而在下一个路口等你的回应。", closing: "雨棚下，她很自然地问起这个周末有没有空。" },
-    { id: "heart-spoken", order: 4, name: "约会", scene: "雨夜旧城", palette: "霓虹青与暖灯橙", weather: "细雨持续落下", music: ["钢琴单音", "雨打伞面"], objective: "跟随同行动作完成第一次正式约会", opening: "风把伞沿推高，她伸手帮你按住。两个人在雨里沿同一条路继续向前。", closing: "约会结束的路口，她没有告别，只是很自然地牵住你的手。" },
-    { id: "shared-days", order: 5, name: "相恋", scene: "四季街区", palette: "晴日黄与生活绿", weather: "光影随街区切换", music: ["完整吉他主题", "城市节拍"], objective: "收集日常并维持双人光轨", opening: "路线穿过菜场、站台和晚归的街。她时快时慢，总在下一个路口与你并肩。", closing: "窗里的灯一盏盏亮起，你们把明天也写进共同清单。" },
-    { id: "rough-weather", order: 6, name: "磨合", scene: "台风前的城市", palette: "铅灰与信号红", weather: "阵风推着云层", music: ["低音弦乐", "远处雷声"], objective: "避开误解并修复节奏", opening: "风越来越急，计划和路线同时改变。她放慢脚步，等你把真正担心的事说完。", closing: "雨势没有立刻减弱，你们却重新找到同一个速度。" },
-    { id: "toward-home", order: 7, name: "未来", scene: "黎明星光长路", palette: "深夜靛与窗灯金", weather: "夜空逐渐转亮", music: ["钢琴与弦乐", "稳定心跳"], objective: "收集约定并共同抵达发光终点", opening: "长街笔直向前，沿途收集的物件化作光点铺在路上。她始终与你并肩。", closing: "终点在晨光中打开，她停下来，向你伸出手。" }
+    {
+      id: "first-sight", order: 1, name: "再遇见", metric: "路口",
+      scene: "雨后香樟路", destination: "图书馆路口", district: "campus-line",
+      palette: "雨后青绿与夕照金", weather: "树叶还在滴水",
+      objective: "穿过放学后的人潮，在图书馆路口再次遇见她",
+      opening: "她发来一句：刚才是不是在香樟路看见你了？",
+      arrival: "路口的红灯亮起，她站在屋檐下，认出了从雨里赶来的你。"
+    },
+    {
+      id: "familiar-steps", order: 2, name: "渐渐熟悉", metric: "同行",
+      scene: "清晨河堤与书店", destination: "桥下书店", district: "glass-station",
+      palette: "晨雾蓝与纸页白", weather: "河面升起薄雾",
+      objective: "沿着共同喜欢的事物，跑向下一次见面",
+      opening: "她说桥下新开了一家小店，问你要不要一起去看看。",
+      arrival: "玻璃门被推开，你带来的东西恰好接上了昨晚没聊完的话题。"
+    },
+    {
+      id: "first-date", order: 3, name: "第一次赴约", metric: "准时",
+      scene: "霓虹站前街", destination: "旧城电影院", district: "neon-river",
+      palette: "夜色蓝与影院暖红", weather: "远处刚亮起霓虹",
+      objective: "赶上末班车，把这次邀请变成真正的见面",
+      opening: "手机屏幕亮起：电影七点四十开始，我在门口等你。",
+      arrival: "影院灯牌在雨雾里亮着，她看了眼时间，又笑着朝你挥手。"
+    },
+    {
+      id: "heart-spoken", order: 4, name: "约会正发生", metric: "今晚",
+      scene: "夜市与河岸", destination: "河岸长椅", district: "date-market",
+      palette: "玫红霓虹与灯笼暖橙", weather: "夜风穿过摊位",
+      objective: "让今晚的路线自然长成只属于你们的一晚",
+      opening: "电影散场还早，她问：要不要再走一会儿？",
+      arrival: "河面映着城市灯光，今晚带来的每件小东西都有了去处。"
+    },
+    {
+      id: "shared-days", order: 5, name: "成为日常", metric: "归家",
+      scene: "清晨市场与街区", destination: "亮灯的厨房", district: "home-quarter",
+      palette: "生活绿与早餐暖黄", weather: "窗边有柔和晨光",
+      objective: "把早餐和寻常小事完整带回那间亮着灯的家",
+      opening: "她发来一张空冰箱的照片：回来的路上，顺便买点东西？",
+      arrival: "门锁转动，厨房的灯已经亮了。最普通的一天因此有了期待。"
+    },
+    {
+      id: "rough-weather", order: 6, name: "雨夜之后", metric: "见面",
+      scene: "暴雨高架与旧桥", destination: "河桥雨棚", district: "storm-bridge",
+      palette: "风暴蓝与信号红", weather: "阵雨压低城市灯光",
+      objective: "绕过封闭道路，亲自把没说清的话带到她面前",
+      opening: "消息停在输入框很久。最后你只发出一句：见面说吧。",
+      arrival: "雨声仍然很大，但你们终于站在同一处屋檐下，不再隔着屏幕猜测。"
+    },
+    {
+      id: "toward-home", order: 7, name: "下一站", metric: "抵达",
+      scene: "黎明车站与长街", destination: "有灯的家", district: "sunrise-terminal",
+      palette: "黎明靛蓝与窗灯金", weather: "天际线逐渐转亮",
+      objective: "经过一路熟悉的地方，抵达共同选择的下一站",
+      opening: "清晨的车票夹在门边。她说：不用赶，我会一直开着灯。",
+      arrival: "一路经过的物件在门口安静落定。门打开时，晨光也刚好照进来。"
+    }
   ];
 
-  const COLLECTIBLES = [
-    { id: "umbrella-pin", stage: 1, name: "伞扣", symbol: "透明雨滴", effect: "扩大首次吸附范围", line: "她把松开的伞扣按好，也替你挡住一阵雨。" },
-    { id: "earbud", stage: 2, name: "半边耳机", symbol: "银色音符", effect: "短暂显示节拍线", line: "同一首歌落进两个人的步频。" },
-    { id: "ticket-stub", stage: 3, name: "双人票根", symbol: "蓝色方票", effect: "约会路线加一格默契", line: "票根一分为二，又在掌心拼成完整图案。" },
-    { id: "brave-word", stage: 4, name: "勇气字句", symbol: "发光短笺", effect: "保护一次心意连击", line: "想说的话不再绕开主语。" },
-    { id: "door-key", stage: 5, name: "门钥匙", symbol: "黄铜小钥匙", effect: "同行动作持续更久", line: "钥匙轻轻相碰，发出清脆的一声。" },
-    { id: "repair-thread", stage: 6, name: "修补线", symbol: "红色线结", effect: "失误后保留一半默契", line: "线结不遮住裂口，只让两边重新靠近。" },
-    { id: "heart-seal", stage: 7, name: "心章", symbol: "暖金印记", effect: "开启最终盒子", line: "七段路在掌心汇成完整的心形。" }
+  const STORY_ITEMS = [
+    { id: "dropped-photo", stage: 1, name: "被风吹走的照片", kind: "photo", color: "ivory", carry: "backpack", action: "return", line: "你在积水前接住照片，照片背面还留着她刚写下的日期。" },
+    { id: "shared-umbrella", stage: 1, name: "透明雨伞", kind: "umbrella", color: "cyan", carry: "hand", action: "shelter", line: "雨势突然变大，你把一路护住的伞递到她面前。" },
+    { id: "warm-can", stage: 1, name: "温热饮料", kind: "drink", color: "amber", carry: "hand", action: "offer", line: "自动贩卖机还亮着，两罐饮料在手里碰出清脆一声。" },
+    { id: "library-bookmark", stage: 1, name: "银杏叶书签", kind: "note", color: "gold", carry: "pocket", action: "return", line: "书签从台阶边被拾起，她接过去时认出那是上次借书留下的叶子。" },
+    { id: "pocket-candy", stage: 1, name: "柑橘糖纸袋", kind: "packet", color: "coral", carry: "pocket", action: "share", line: "等红灯的几秒里，你递出一颗糖，陌生的沉默先有了轻松的味道。" },
+    { id: "paperback", stage: 2, name: "她提过的书", kind: "book", color: "coral", carry: "backpack", action: "share", line: "她翻开你带来的书，书签正停在你们昨晚聊到的那一页。" },
+    { id: "record", stage: 2, name: "同一张唱片", kind: "record", color: "violet", carry: "backpack", action: "listen", line: "唱针落下，她把另一边耳机递过来，同一段前奏同时响起。" },
+    { id: "lemon-soda", stage: 2, name: "柠檬汽水", kind: "drink", color: "lime", carry: "hand", action: "toast", line: "玻璃瓶蒙着水汽，你们为了最后一瓶相视而笑。" },
+    { id: "cat-treat", stage: 2, name: "猫咪零食", kind: "packet", color: "rose", carry: "pocket", action: "feed", line: "书店门口的猫先一步跑来，她蹲下时给你留出身边的位置。" },
+    { id: "bookstore-coffee", stage: 2, name: "书店手冲", kind: "coffee", color: "cream", carry: "hand", action: "offer", line: "咖啡在旧木桌上冒着热气，你们把一章书聊成了一个下午。" },
+    { id: "river-postcard", stage: 2, name: "河堤明信片", kind: "photo", color: "blue", carry: "backpack", action: "write", line: "她在明信片空白处写下店名，说下次可以从这里继续逛。" },
+    { id: "cinema-ticket", stage: 3, name: "两张电影票", kind: "ticket", color: "crimson", carry: "pocket", action: "admit", line: "你赶在灯光暗下前递出票根，她已经替你留好了靠里的座位。" },
+    { id: "coffee-pair", stage: 3, name: "两杯热咖啡", kind: "coffee", color: "cream", carry: "hand", action: "offer", line: "杯盖还冒着热气，她接过那杯时准确叫出了你常点的口味。" },
+    { id: "rain-umbrella", stage: 3, name: "深蓝长伞", kind: "umbrella", color: "blue", carry: "hand", action: "shelter", line: "散场时雨正落下，一把伞让回程自然变成并肩慢走。" },
+    { id: "last-train-pass", stage: 3, name: "末班车票", kind: "ticket", color: "cyan", carry: "pocket", action: "detour", line: "电影结束得太晚，你们改坐最后一班车，多聊了整整七站。" },
+    { id: "cinema-flower", stage: 3, name: "影院门口的小花", kind: "flower", color: "rose", carry: "hand", action: "gift", line: "它并不隆重，却让等待开场的那几分钟突然有了正式赴约的意味。" },
+    { id: "soundtrack-record", stage: 3, name: "电影原声唱片", kind: "record", color: "violet", carry: "backpack", action: "listen", line: "片尾曲响起时你们同时认出旋律，散场后的路也因此走得更慢。" },
+    { id: "single-flower", stage: 4, name: "一枝小花", kind: "flower", color: "rose", carry: "hand", action: "gift", line: "不是郑重其事的花束，只是路过时觉得它很适合今晚。" },
+    { id: "instant-camera", stage: 4, name: "拍立得", kind: "camera", color: "ivory", carry: "neck", action: "photo", line: "快门亮起时你们都没准备好，那张照片反而笑得最自然。" },
+    { id: "night-snack", stage: 4, name: "夜市纸袋", kind: "snack", color: "amber", carry: "hand", action: "share", line: "最后一口被推来推去，纸袋底只剩下暖暖的香气。" },
+    { id: "music-wristband", stage: 4, name: "演出手环", kind: "wristband", color: "magenta", carry: "wrist", action: "dance", line: "灯光扫过人群，她拉住你的袖口，带你挤到更靠近舞台的位置。" },
+    { id: "river-map", stage: 4, name: "手绘夜游地图", kind: "map", color: "blue", carry: "backpack", action: "wander", line: "你们没有照着地图走，却把绕远的那一段也认真圈了起来。" },
+    { id: "riverside-lamp", stage: 4, name: "露营小灯", kind: "lamp", color: "gold", carry: "hand", action: "light", line: "长椅旁的小灯被拧亮，河面、晚风和彼此的侧脸都变得清楚。" },
+    { id: "breakfast-bag", stage: 5, name: "早餐纸袋", kind: "snack", color: "cream", carry: "hand", action: "breakfast", line: "纸袋里装着两种口味，餐桌前那把椅子已经被自然拉开。" },
+    { id: "grocery-bag", stage: 5, name: "一袋食材", kind: "groceries", color: "green", carry: "hand", action: "cook", line: "你把食材放上料理台，她已经卷起袖口，留下另一半工作给你。" },
+    { id: "brass-key", stage: 5, name: "黄铜钥匙", kind: "key", color: "gold", carry: "pocket", action: "unlock", line: "钥匙第一次顺利转动，门里的灯也在同一刻亮起。" },
+    { id: "small-plant", stage: 5, name: "窗边绿植", kind: "plant", color: "green", carry: "hand", action: "place", line: "她把花盆挪到窗边，空着的那一格从此有了共同照看的东西。" },
+    { id: "recipe-note", stage: 5, name: "折角食谱", kind: "note", color: "ivory", carry: "pocket", action: "cook", line: "食谱边缘写满临时改动，最后那道菜也变成了只属于这张餐桌的味道。" },
+    { id: "kitchen-towel", stage: 5, name: "格纹餐巾", kind: "cloth", color: "blue", carry: "backpack", action: "set-table", line: "你把餐巾铺好，她端来刚出锅的盘子，寻常晚餐有了郑重的开场。" },
+    { id: "folded-note", stage: 6, name: "折好的短笺", kind: "note", color: "ivory", carry: "pocket", action: "explain", line: "纸上的句子很短，但每个字都比输入框里的猜测更清楚。" },
+    { id: "hot-cocoa", stage: 6, name: "热可可", kind: "coffee", color: "amber", carry: "hand", action: "warm", line: "你没有急着解释，只先把还温热的杯子放到她手里。" },
+    { id: "dry-towel", stage: 6, name: "干燥毛巾", kind: "cloth", color: "blue", carry: "backpack", action: "care", line: "她接过毛巾，也终于没有避开你认真看过来的目光。" },
+    { id: "mended-ticket", stage: 6, name: "拼好的旧票根", kind: "ticket", color: "rose", carry: "pocket", action: "remember", line: "裂开的票根被重新拼好，不是为了回到从前，而是把今天说完整。" },
+    { id: "rain-flower", stage: 6, name: "雨里的白花", kind: "flower", color: "ivory", carry: "hand", action: "wait", line: "花瓣被雨打得有些狼狈，你们却终于愿意停下来把真正介意的事说完。" },
+    { id: "spare-key", stage: 6, name: "备用钥匙", kind: "key", color: "gold", carry: "pocket", action: "trust", line: "钥匙没有立刻被收起。她握在手里，等你把最后一句解释说完。" },
+    { id: "travel-map", stage: 7, name: "折叠地图", kind: "map", color: "blue", carry: "backpack", action: "plan", line: "地图摊在桌上，下一条路线终于不再只属于一个人。" },
+    { id: "home-key", stage: 7, name: "两把钥匙", kind: "key", color: "gold", carry: "pocket", action: "home", line: "两把钥匙落在同一个托盘里，发出很轻却很确定的声音。" },
+    { id: "window-lamp", stage: 7, name: "窗边小灯", kind: "lamp", color: "amber", carry: "hand", action: "light", line: "灯被放上窗台，回来的路从此总有一个清楚的坐标。" },
+    { id: "morning-bread", stage: 7, name: "清晨面包", kind: "snack", color: "cream", carry: "hand", action: "breakfast", line: "门打开时面包还热着，未来先从一顿很普通的早餐开始。" },
+    { id: "framed-photo", stage: 7, name: "装框的合照", kind: "photo", color: "rose", carry: "backpack", action: "place", line: "照片被放在玄关最容易看见的位置，出门与回家都能经过同一段笑容。" },
+    { id: "house-plant", stage: 7, name: "新家的第一盆植物", kind: "plant", color: "green", carry: "hand", action: "grow", line: "花盆落在晨光里，你们讨论的不是它会不会开花，而是谁记得先浇水。" }
   ];
+
+  const STAGE_ITEM_IDS = STAGES.map((stage) => STORY_ITEMS.filter((item) => item.stage === stage.order).map((item) => item.id));
+
+  const ROUTE_SET_PIECES = [
+    { stage: 1, venues: ["香樟道", "玻璃连廊", "图书馆路口"], obstacles: ["crowd", "puddle", "barrier"], gestures: ["switch", "jump", "slide"] },
+    { stage: 2, venues: ["河堤", "唱片店", "桥下书店"], obstacles: ["bicycle", "book-cart", "awning"], gestures: ["switch", "jump", "slide"] },
+    { stage: 3, venues: ["站前街", "地铁站", "旧城电影院"], obstacles: ["service-cart", "train", "signal-gate"], gestures: ["switch", "jump", "slide"] },
+    { stage: 4, venues: ["夜市", "音乐广场", "河岸长椅"], obstacles: ["stall", "barrier", "awning"], gestures: ["switch", "jump", "slide"] },
+    { stage: 5, venues: ["早餐店", "清晨市场", "亮灯的厨房"], obstacles: ["delivery-cart", "grocery-crate", "signal-gate"], gestures: ["switch", "jump", "slide"] },
+    { stage: 6, venues: ["高架桥", "封路街口", "河桥雨棚"], obstacles: ["warning", "puddle", "maintenance"], gestures: ["switch", "jump", "slide"] },
+    { stage: 7, venues: ["黎明站台", "熟悉长街", "有灯的家"], obstacles: ["luggage", "barrier", "awning"], gestures: ["switch", "jump", "slide"] }
+  ];
+
+  const ARRIVAL_SCENES = [
+    { stage: 1, id: "awning-recognition", venue: "图书馆路口", camera: "跟跑转屋檐双人中景", durationMs: 4300, defaultItemId: "shared-umbrella" },
+    { stage: 2, id: "bookstore-conversation", venue: "桥下书店", camera: "推门跟拍转桌边近景", durationMs: 4500, defaultItemId: "paperback" },
+    { stage: 3, id: "cinema-arrival", venue: "旧城电影院", camera: "冲出站口转影院灯牌", durationMs: 4700, defaultItemId: "cinema-ticket" },
+    { stage: 4, id: "riverside-night", venue: "河岸长椅", camera: "夜市穿行转河面环绕", durationMs: 4800, defaultItemId: "instant-camera" },
+    { stage: 5, id: "kitchen-light", venue: "亮灯的厨房", camera: "钥匙入锁转室内暖景", durationMs: 4800, defaultItemId: "grocery-bag" },
+    { stage: 6, id: "bridge-shelter", venue: "河桥雨棚", camera: "雨中长焦转并肩近景", durationMs: 5000, defaultItemId: "folded-note" },
+    { stage: 7, id: "home-at-dawn", venue: "有灯的家", camera: "黎明长跟转门内晨光", durationMs: 5600, defaultItemId: "home-key" }
+  ];
+
+  const COLLECTIBLES = STAGES.map((stage, index) => {
+    const signature = STORY_ITEMS.find((item) => item.id === ARRIVAL_SCENES[index].defaultItemId);
+    return { ...signature, signature: true, items: STAGE_ITEM_IDS[index] };
+  });
 
   const OBSTACLES = [
-    { id: "puddle", stages: [1, 4], name: "积水", cue: "路面反光晃动", response: "跳跃", meaning: "突如其来的局促" },
-    { id: "crowd", stages: [1, 3, 5], name: "人潮", cue: "行人轨迹交错", response: "换道", meaning: "靠近需要主动选择" },
-    { id: "silent-gap", stages: [2, 3], name: "冷场", cue: "节拍线出现空拍", response: "收集话题", meaning: "不必用讨好填满沉默" },
-    { id: "missed-bus", stages: [3, 5], name: "错过的车", cue: "车门提示灯闪烁", response: "改走支路", meaning: "计划改变也能继续同行" },
-    { id: "crosswind", stages: [4, 6], name: "侧风", cue: "雨线突然倾斜", response: "相互搀扶", meaning: "坦白让人短暂失去平衡" },
-    { id: "work-stack", stages: [5, 6], name: "忙碌堆叠", cue: "日程牌连续落下", response: "分工", meaning: "亲密仍需要留出时间" },
-    { id: "assumption-wall", stages: [6], name: "猜测墙", cue: "不完整句子组成路障", response: "沟通", meaning: "没有说出口的判断阻断道路" },
-    { id: "closing-dark", stages: [7], name: "熄灯路段", cue: "街灯逐盏变暗", response: "跟随心章", meaning: "信任比视野先一步抵达" }
+    { id: "puddle", stages: [1, 3, 6], name: "积水", cue: "地面反光", response: "jump" },
+    { id: "crowd", stages: [1, 2, 4, 5], name: "人潮", cue: "路线交错", response: "switch" },
+    { id: "barrier", stages: [1, 4, 7], name: "矮栏", cue: "警示反光", response: "jump" },
+    { id: "signal-gate", stages: [3, 5, 7], name: "低闸", cue: "关闭提示", response: "slide" },
+    { id: "train", stages: [3, 7], name: "进站列车", cue: "车灯靠近", response: "switch" },
+    { id: "service-cart", stages: [2, 3, 5], name: "手推车", cue: "滚轮声", response: "switch" },
+    { id: "awning", stages: [2, 4, 6], name: "低矮雨棚", cue: "垂下布帘", response: "slide" },
+    { id: "warning", stages: [6], name: "封路警示", cue: "红灯连续闪烁", response: "switch" }
   ];
 
-  const ROAD_MODULES = [
-    { id: "straight", name: "并肩直道", lanes: 3, mechanic: "维持同道积累默契", length: 12 },
-    { id: "fork", name: "选择岔路", lanes: 2, mechanic: "话题或约会路线决定出口", length: 8 },
-    { id: "rhythm-bridge", name: "节拍桥", lanes: 1, mechanic: "按提示同步跳跃", length: 10 },
-    { id: "market-weave", name: "生活穿行", lanes: 3, mechanic: "分工收集清单物品", length: 14 },
-    { id: "conversation-tunnel", name: "对话隧道", lanes: 2, mechanic: "击破猜测，保留真实句子", length: 9 },
-    { id: "shelter", name: "避雨檐廊", lanes: 1, mechanic: "降低速度并恢复默契", length: 6 },
-    { id: "starlight-finish", name: "星光终道", lanes: 3, mechanic: "七枚心章依次点亮路面", length: 16 }
-  ];
+  const ROAD_MODULES = ROUTE_SET_PIECES.flatMap((route) => route.venues.map((venue, index) => ({
+    id: `stage-${route.stage}-route-${index + 1}`,
+    stage: route.stage,
+    name: venue,
+    mechanic: index === 2 ? "抵达" : index === 1 ? "途中选择" : "城市穿行",
+    length: index === 2 ? 18 : 34
+  })));
 
-  const TOPIC_CATEGORIES = [
-    { id: "daily", name: "日常", tone: "轻松", prompts: ["今天最想分享的小事", "最近常走的一条路", "此刻想吃的东西"] },
-    { id: "interests", name: "兴趣", tone: "明亮", prompts: ["循环播放的歌", "愿意重看的电影", "最近翻开的书"] },
-    { id: "values", name: "选择", tone: "认真", prompts: ["怎样算守约", "独处和陪伴的边界", "面对改变的方式"] },
-    { id: "vulnerability", name: "真心", tone: "克制", prompts: ["现在最担心的事", "需要怎样的支持", "一句不容易说出口的话"] },
-    { id: "future", name: "未来", tone: "务实", prompts: ["理想的一天", "愿意共同承担的事", "想住下的地方"] }
-  ];
-
-  const DATE_ROUTES = [
-    { id: "bookstore-river", name: "书店与河岸", topicIds: ["interests", "values"], stage: 3, beats: ["交换书签", "沿河慢走", "赶上末班车"], closing: "她把选中的书递给你，请你读完再谈结尾。" },
-    { id: "market-kitchen", name: "市集与厨房", topicIds: ["daily", "future"], stage: 5, beats: ["共同选菜", "分工备餐", "收拾餐桌"], closing: "锅里冒着热气，你们开始商量下一顿饭。" },
-    { id: "museum-rooftop", name: "展馆与天台", topicIds: ["interests", "vulnerability"], stage: 4, beats: ["各选一幅画", "交换理由", "在天台停步"], closing: "城市在脚下铺开，你们把话说得比夜色清楚。" },
-    { id: "station-seaside", name: "车站与海边", topicIds: ["values", "future"], stage: 7, beats: ["确认车次", "分享靠窗座位", "迎着海风回程"], closing: "返程票放在一起，座位仍然相邻。" }
-  ];
-
-  const COMPANION_ACTIONS = [
-    { id: "pace-match", name: "调整步频", input: "靠近同行者", result: "双方速度取平均值", line: "不用谁追赶谁，脚步自然落在一起。" },
-    { id: "hand-pull", name: "伸手拉起", input: "同伴失衡时互动", result: "免除一次跌倒", line: "手先伸过来，解释可以稍后再说。" },
-    { id: "umbrella-share", name: "共撑一伞", input: "雨区内保持同道", result: "持续恢复默契", line: "伞面不大，肩膀因此靠近一点。" },
-    { id: "split-task", name: "默契分工", input: "在双目标前分道", result: "同时完成两个收集目标", line: "你看向左边，她已经跑向右边。" },
-    { id: "wait-at-turn", name: "路口等候", input: "领先时主动减速", result: "提高信任倍率", line: "她回头时，你仍在能看见的位置。" },
-    { id: "honest-talk", name: "停下说清", input: "猜测墙前保持互动", result: "将障碍改为恢复路段", line: "你们把速度放低，让每句话完整落地。" }
-  ];
-
-  const STAGE_PERFORMANCES = STAGES.map((stage) => ({
-    id: `performance-${stage.id}`,
+  const STAGE_PERFORMANCES = STAGES.map((stage, index) => ({
+    id: `arrival-${stage.id}`,
     stage: stage.order,
-    durationMs: 2400 + stage.order * 180,
-    camera: stage.order === 7 ? "长焦跟跑转室内近景" : "侧向跟跑转双人近景",
-    beats: [stage.opening, `“${stage.objective}”的路标在前方亮起。`, stage.closing],
-    skipLabel: "略过演出"
+    durationMs: ARRIVAL_SCENES[index].durationMs,
+    camera: ARRIVAL_SCENES[index].camera,
+    venue: ARRIVAL_SCENES[index].venue,
+    line: stage.arrival
   }));
 
-  const COMPENSATION_SEGMENTS = [
-    { id: "gentle-ramp", trigger: "连续失误两次", moduleId: "shelter", benefit: "移除下一组障碍并补充一枚普通心点", line: "前方转入平缓檐廊，呼吸和步频都有重新调整的空间。" },
-    { id: "partner-wait", trigger: "与同行者距离过远", moduleId: "straight", benefit: "同行者减速并标出安全路线", line: "她在路口放慢脚步，清晰的落脚点逐个亮起。" },
-    { id: "topic-reprise", trigger: "约会话题选择失败", moduleId: "fork", benefit: "提供同类别的新话题且不扣默契", line: "话题换一个入口，真诚仍然有效。" },
-    { id: "heart-shelter", trigger: "默契值低于四分之一", moduleId: "shelter", benefit: "暂停衰减并恢复至安全线", line: "雨棚留出一段安静路程，你们并肩把节奏找回来。" }
-  ];
-
-  const STAGE_ENDINGS = STAGES.map((stage) => ({
+  const STAGE_ENDINGS = STAGES.map((stage, index) => ({
     id: `stage-ending-${stage.id}`,
     stage: stage.order,
-    title: ["一次对视", "聊到深夜", "主动邀约", "第一次牵手", "亮灯日常", "重新并肩", "伸出的手"][stage.order - 1],
-    line: stage.closing,
-    nextHint: stage.order < 7 ? `下一段路通向${STAGES[stage.order].scene}。` : "盒盖上的心形凹槽正等待七枚心章。"
+    title: ["她认出了你", "话题没有结束", "准时抵达", "今晚还很长", "灯已经亮了", "终于见面", "下一站，回家"][index],
+    line: stage.arrival
   }));
 
   const FINAL_ENDINGS = {
-    S: { id: "ending-s-complete-journey", grade: "S", title: "完整走过", requirement: "七段旅程高完成度且收集足够隐藏物件", scene: "晨光照进安静的房间，旧物盒已经合上。", line: "这段爱情没有留在今天，却完整地存在过，也把你带到了这里。", coda: "你穿上外套走入清晨，熟悉的光轨在身后亮起片刻，然后自然消失。" },
-    A: { id: "ending-a-real-love", grade: "A", title: "一段完整的爱情", requirement: "完成七段旅程并抵达最终揭示", scene: "旧照片被轻轻放回盒中，窗外已经天亮。", line: "你们确实一起走了很远。终点不是重新开始，而是终于能够平静地回望。", coda: "你合上盒子，独自走出房间，街道仍向前延伸。" },
-    B: { id: "ending-b-stumbling-journey", grade: "B", title: "跌跌撞撞地走过", requirement: "完成旅程但遗漏较多物件", scene: "盒中的票根和照片并不完整，留下的空位对应一路错过的片段。", line: "这段关系并不完美，但每一次靠近都真实发生过。", coda: "你没有急着给它结论，只把盒子收好，走向已经亮起的街道。" }
+    S: { id: "ending-s-one-perfect-night", grade: "S", title: "每次都刚刚好", line: "你没有把约会安排得毫无意外，却认真接住了沿途发生的一切。", coda: "门里的灯亮着，下一段路从这里继续。" },
+    A: { id: "ending-a-arrived", grade: "A", title: "今晚，抵达", line: "有些路线绕了远路，有些东西没能带到，但你还是出现在约定的地方。", coda: "她打开门，晨光刚好越过你的肩膀。" },
+    B: { id: "ending-b-unplanned", grade: "B", title: "意外的一晚", line: "错过的车、淋湿的外套和临时改变的路线，也成了只属于你们的故事。", coda: "不是完美的一晚，却是一场真实发生的见面。" }
   };
-
-  const BOX_REVEAL = {
-    id: "final-box-reveal",
-    title: "原来，这条路早已走过",
-    boundary: "post-reveal",
-    requires: ["umbrella-pin", "earbud", "ticket-stub", "brave-word", "door-key", "repair-thread", "heart-seal"],
-    shots: [
-      { title: "光芒褪去", framing: "旧物盒近景", line: "七枚心章失去光芒，变成褪色的电影票、旧车票、钥匙扣和拍立得照片。" },
-      { title: "房间里只有一个人", framing: "镜头缓慢后退", line: "刚才并肩奔跑的人并不在房间里，只有你独自坐在打开的旧物盒前。" },
-      { title: "这条路跨过了很多年", framing: "照片与季节交叠", line: "照片里的季节跨过数年。前面连成一条路的场景，原来是这段关系留下的真实轨迹。" },
-      { title: "天已经亮了", framing: "现实房间与窗外街道", line: "窗外正是初见时的那条街。你看完最后一张照片，把它轻轻放回盒中。" }
-    ],
-    line: "我们确实一起走了很远。",
-    restraint: "不使用死亡、背叛或哭喊解释，只让角色合上盒子，在天亮后继续生活。"
-  };
-
-  const NEW_GAME_PLUS_CLUES = [
-    { id: "clue-wristband", stage: 1, layer: "foreground", detail: "冲刺后袖口短暂滑开，腕上露出一截褪色的音乐节手环。", payoff: "最终盒中保存着同一条手环。" },
-    { id: "clue-bench-count", stage: 2, layer: "environment", detail: "河堤每隔固定距离出现同款长椅，同行者总在其中一张旁边放慢。", payoff: "最终照片背面写着那张长椅的位置。" },
-    { id: "clue-route-fold", stage: 3, layer: "prop", detail: "票根背面的蓝线在折角处中断，形状像一张缩小路线图。", payoff: "盒中路线图沿同一折角展开。" },
-    { id: "clue-rain-loop", stage: 4, layer: "audio", detail: "雨声中短暂混入更早季节的蝉鸣，随后又恢复正常。", payoff: "这些场景并非发生在同一天，而是跨越数年。" },
-    { id: "clue-left-step", stage: 5, layer: "animation", detail: "经过熟悉路口时，同行者总会自然走到左侧。", payoff: "旧照片里，她也一直站在相同一侧。" },
-    { id: "clue-breath-marker", stage: 6, layer: "ui", detail: "风声增强时，两条光轨偶尔只剩下一条。", payoff: "同行的人只存在于这次重新走过的轨迹中。" },
-    { id: "clue-window", stage: 7, layer: "background", detail: "终点窗框与前几程边缘反复出现的白色框线完全重合。", payoff: "所有道路最终都收束到现实房间的这扇窗。" }
-  ];
 
   function stableIndex(seed, salt, length) {
-    if (typeof seed !== "string" && (typeof seed !== "number" || !Number.isFinite(seed))) {
-      throw new TypeError("seed must be a finite number or string");
-    }
+    if (typeof seed !== "string" && (typeof seed !== "number" || !Number.isFinite(seed))) throw new TypeError("seed must be a finite number or string");
     const input = `${salt}|${seed}`;
     let hash = 2166136261;
     for (let index = 0; index < input.length; index += 1) {
@@ -144,12 +193,6 @@
     return (hash >>> 0) % length;
   }
 
-  function findByStage(value, collection, label) {
-    const item = collection.find((entry) => entry.stage === value || entry.id === value);
-    if (!item) throw new RangeError(`unknown ${label}: ${value}`);
-    return item;
-  }
-
   function getStage(value) {
     if (typeof value !== "number" && typeof value !== "string") throw new TypeError("stage must be a number or id");
     const stage = STAGES.find((entry) => entry.order === value || entry.id === value);
@@ -157,9 +200,18 @@
     return stage;
   }
 
+  function getItem(value) {
+    if (typeof value !== "string") throw new TypeError("item id must be a string");
+    const item = STORY_ITEMS.find((entry) => entry.id === value);
+    if (!item) throw new RangeError(`unknown item: ${value}`);
+    return item;
+  }
+
   function getCollectible(value) {
     if (typeof value !== "number" && typeof value !== "string") throw new TypeError("collectible must be a stage or id");
-    return findByStage(value, COLLECTIBLES, "collectible");
+    const item = COLLECTIBLES.find((entry) => entry.stage === value || entry.id === value);
+    if (!item) throw new RangeError(`unknown collectible: ${value}`);
+    return item;
   }
 
   function getEnding(grade) {
@@ -169,65 +221,50 @@
     return ending;
   }
 
-  function selectTopic(options) {
-    if (!options || typeof options !== "object") throw new TypeError("options are required");
-    const category = TOPIC_CATEGORIES.find((item) => item.id === options.categoryId);
-    if (!category) throw new RangeError(`unknown topic category: ${options.categoryId}`);
-    const index = stableIndex(options.seed === undefined ? 0 : options.seed, category.id, category.prompts.length);
-    return deepFreeze({ categoryId: category.id, category: category.name, prompt: category.prompts[index], index });
+  function getRoute(value) {
+    const stage = getStage(value);
+    return ROUTE_SET_PIECES[stage.order - 1];
   }
 
-  function selectDateRoute(options) {
-    if (!options || typeof options !== "object") throw new TypeError("options are required");
-    getStage(options.stage);
-    const candidates = DATE_ROUTES.filter((route) => route.stage === options.stage && (!options.topicId || route.topicIds.includes(options.topicId)));
-    if (!candidates.length) throw new RangeError("no date route matches the supplied stage and topic");
-    return candidates[stableIndex(options.seed === undefined ? 0 : options.seed, `route-${options.stage}-${options.topicId || "any"}`, candidates.length)];
-  }
-
-  function selectRoadModule(options) {
+  function selectStageItem(options) {
     if (!options || typeof options !== "object") throw new TypeError("options are required");
     const stage = getStage(options.stage);
-    const excluded = new Set(options.excludeIds || []);
     if (!Array.isArray(options.excludeIds || [])) throw new TypeError("excludeIds must be an array");
-    const candidates = ROAD_MODULES.filter((module) => !excluded.has(module.id));
-    if (!candidates.length) throw new RangeError("all road modules are excluded");
-    return candidates[stableIndex(options.seed === undefined ? 0 : options.seed, `road-${stage.id}`, candidates.length)];
+    const items = STORY_ITEMS.filter((item) => item.stage === stage.order && !(options.excludeIds || []).includes(item.id));
+    if (!items.length) throw new RangeError("all stage items are excluded");
+    return items[stableIndex(options.seed === undefined ? 0 : options.seed, `item-${stage.id}`, items.length)];
   }
 
-  deepFreeze(STAGES);
-  deepFreeze(COLLECTIBLES);
-  deepFreeze(OBSTACLES);
-  deepFreeze(ROAD_MODULES);
-  deepFreeze(TOPIC_CATEGORIES);
-  deepFreeze(DATE_ROUTES);
-  deepFreeze(COMPANION_ACTIONS);
-  deepFreeze(STAGE_PERFORMANCES);
-  deepFreeze(COMPENSATION_SEGMENTS);
-  deepFreeze(STAGE_ENDINGS);
-  deepFreeze(FINAL_ENDINGS);
-  deepFreeze(BOX_REVEAL);
-  deepFreeze(NEW_GAME_PLUS_CLUES);
+  function selectArrival(options) {
+    if (!options || typeof options !== "object") throw new TypeError("options are required");
+    const stage = getStage(options.stage);
+    const scene = ARRIVAL_SCENES[stage.order - 1];
+    const supplied = Array.isArray(options.itemIds) ? options.itemIds.filter((id) => STORY_ITEMS.some((item) => item.id === id && item.stage === stage.order)) : [];
+    const itemId = supplied.length ? supplied[stableIndex(options.seed === undefined ? 0 : options.seed, `arrival-${stage.id}`, supplied.length)] : scene.defaultItemId;
+    const item = getItem(itemId);
+    return deepFreeze({ ...scene, itemId: item.id, itemName: item.name, action: item.action, line: item.line });
+  }
+
+  [STAGES, STORY_ITEMS, STAGE_ITEM_IDS, ROUTE_SET_PIECES, ARRIVAL_SCENES, COLLECTIBLES, OBSTACLES, ROAD_MODULES, STAGE_PERFORMANCES, STAGE_ENDINGS, FINAL_ENDINGS].forEach(deepFreeze);
 
   return deepFreeze({
     STAGES,
+    STORY_ITEMS,
+    STAGE_ITEM_IDS,
+    ROUTE_SET_PIECES,
+    ARRIVAL_SCENES,
     COLLECTIBLES,
     OBSTACLES,
     ROAD_MODULES,
-    TOPIC_CATEGORIES,
-    DATE_ROUTES,
-    COMPANION_ACTIONS,
     STAGE_PERFORMANCES,
-    COMPENSATION_SEGMENTS,
     STAGE_ENDINGS,
     FINAL_ENDINGS,
-    BOX_REVEAL,
-    NEW_GAME_PLUS_CLUES,
     getStage,
+    getItem,
     getCollectible,
     getEnding,
-    selectTopic,
-    selectDateRoute,
-    selectRoadModule
+    getRoute,
+    selectStageItem,
+    selectArrival
   });
 });

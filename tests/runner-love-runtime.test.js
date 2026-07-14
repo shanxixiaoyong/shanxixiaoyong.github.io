@@ -14,95 +14,160 @@ const RunnerLoveContent = require("../assets/runner-love-content.js");
 
 class ClassList {
   constructor() { this.values = new Set(); }
-  toggle(value, force) { if (force) this.values.add(value); else this.values.delete(value); return force; }
+  toggle(value, force) {
+    const enabled = force === undefined ? !this.values.has(value) : Boolean(force);
+    if (enabled) this.values.add(value); else this.values.delete(value);
+    return enabled;
+  }
 }
+
 class Node {
-  constructor() { this.hidden = false; this.textContent = ""; this.children = []; this.listeners = {}; this.classList = new ClassList(); this.style = {}; this.attributes = {}; }
+  constructor() {
+    this.hidden = false;
+    this.textContent = "";
+    this.innerHTML = "";
+    this.children = [];
+    this.listeners = {};
+    this.classList = new ClassList();
+    this.style = { values: {}, setProperty(name, value) { this.values[name] = value; } };
+    this.attributes = {};
+  }
   addEventListener(name, listener) { this.listeners[name] = listener; }
-  setAttribute(name, value) { this.attributes[name] = value; }
+  appendChild(node) { this.children.push(node); return node; }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
   setPointerCapture() {}
+  getBoundingClientRect() { return { width: 720, height: 1280 }; }
 }
+
 function drawingContext() {
   const gradient = { addColorStop() {} };
-  return new Proxy({}, { get(target, key) { if (key === "createLinearGradient" || key === "createRadialGradient") return () => gradient; if (!(key in target)) target[key] = () => {}; return target[key]; }, set(target, key, value) { target[key] = value; return true; } });
+  return new Proxy({}, {
+    get(target, key) {
+      if (key === "createLinearGradient" || key === "createRadialGradient") return () => gradient;
+      if (!(key in target)) target[key] = () => {};
+      return target[key];
+    },
+    set(target, key, value) { target[key] = value; return true; }
+  });
 }
+
 function boot() {
-  const nodes = new Map(); const canvas = new Node(); canvas.getContext = drawingContext;
-  const stageTrack = new Node(); stageTrack.children = Array.from({ length: 7 }, () => new Node());
-  nodes.set("#runner-canvas", canvas); nodes.set("[data-stage-track]", stageTrack);
-  const querySelector = (selector) => { if (!nodes.has(selector)) nodes.set(selector, new Node()); return nodes.get(selector); };
-  const values = new Map(); const localStorage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, String(value)) };
-  const document = { hidden: false, querySelector, addEventListener() {} };
+  const nodes = new Map();
+  const canvas = new Node();
+  canvas.getContext = drawingContext;
+  const stageTrack = new Node();
+  stageTrack.children = Array.from({ length: 7 }, () => new Node());
+  nodes.set("#runner-canvas", canvas);
+  nodes.set("[data-stage-track]", stageTrack);
+  const querySelector = (selector) => {
+    if (!nodes.has(selector)) nodes.set(selector, new Node());
+    return nodes.get(selector);
+  };
+  const values = new Map();
+  const localStorage = {
+    getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, String(value))
+  };
+  const document = { hidden: false, querySelector, createElement: () => new Node(), addEventListener() {} };
   const window = { RunnerLoveRules, RunnerLoveEngine, RunnerLoveContent, localStorage, addEventListener() {} };
-  let now = 1000; const performance = { now: () => now };
-  const sandbox = { window, document, localStorage, performance, console, requestAnimationFrame: () => 1, cancelAnimationFrame() {}, setTimeout: () => 1, clearTimeout() {}, Math };
+  let now = 1000;
+  const performance = { now: () => now };
+  const sandbox = {
+    window, document, localStorage, performance, console,
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame() {},
+    setTimeout: () => 1,
+    clearTimeout() {},
+    Math
+  };
   vm.runInNewContext(source, sandbox, { filename: "runner-love-game.js" });
   return { debug: window.__runnerLoveDebug, nodes, setNow(value) { now = value; } };
 }
 
-test("boots the real runtime in intro mode with a valid seven-stage rule state", () => {
-  const { debug } = boot(); const state = debug.snapshot();
-  assert.equal(state.mode, "intro"); assert.equal(state.runState.stageIndex, 0); assert.equal(state.runState.heartbeat, 60);
-  assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "continueStage", "hold", "input", "reset", "result", "retry", "reveal", "save", "snapshot", "spawn", "start", "step", "time"].sort());
+test("boots the real runtime in intro mode with the long-form seven-stage state", () => {
+  const { debug } = boot();
+  const state = debug.snapshot();
+  assert.equal(state.mode, "intro");
+  assert.equal(state.runState.stageIndex, 0);
+  assert.equal(state.runState.condition, 100);
+  assert.equal(state.runState.stage.expectedSeconds, 180);
+  assert.equal(state.motion.stage, RunnerLoveContent.STAGES[0].id);
+  assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "finishArrival", "input", "moment", "reset", "retry", "save", "snapshot", "spawn", "start", "step"].sort());
 });
 
-test("accepts keyboard-equivalent actions through the fixed-step three-lane engine", () => {
-  const { debug } = boot(); debug.start(); debug.input("left"); let state = debug.step(100);
-  assert.equal(state.motion.lane, -1); debug.input("jump"); state = debug.step(100); assert.equal(state.motion.action, "jump");
+test("accepts swipe-equivalent actions through the fixed-step three-lane engine", () => {
+  const { debug } = boot();
+  debug.start();
+  debug.input("left");
+  let state = debug.step(100);
+  assert.equal(state.motion.lane, -1);
+  debug.input("jump");
+  state = debug.step(100);
+  assert.equal(state.motion.action, "jump");
 });
 
-test("pauses for each stage performance and reaches the final long-hold reveal", () => {
-  const { debug } = boot(); debug.start();
+test("pauses at a destination with the selected physical item before the next route", () => {
+  const { debug } = boot();
+  debug.start();
+  const state = debug.completeStage("perfect");
+  assert.equal(state.mode, "arrival");
+  assert.equal(state.pausedStage, 0);
+  assert.equal(state.runState.stageIndex, 1);
+  assert.equal(state.motion.stageIndex, 0);
+  assert.equal(state.arrival.venue, "图书馆路口");
+  assert.ok(state.arrival.itemIds.includes(state.arrival.itemId));
+  assert.ok(state.arrival.items.length >= 1 && state.arrival.items.length <= 3);
+  assert.ok(state.runState.stageRecords[0].elapsed >= 0);
+
+  assert.equal(debug.finishArrival(), true);
+  const resumed = debug.snapshot();
+  assert.equal(resumed.mode, "playing");
+  assert.equal(resumed.motion.stageIndex, 1);
+  assert.equal(resumed.pausedStage, null);
+});
+
+test("completes seven automatic arrival films and persists the final rating", () => {
+  const { debug } = boot();
+  debug.start();
   for (let stage = 0; stage < 7; stage += 1) {
-    let state = debug.completeStage("perfect");
-    if (stage < 6) { assert.equal(state.mode, "performance"); debug.continueStage(); }
-    else assert.equal(state.mode, "handhold");
+    const state = debug.completeStage("perfect");
+    assert.equal(state.mode, "arrival");
+    assert.equal(state.arrival.stageIndex, stage);
+    debug.finishArrival();
   }
-  assert.equal(debug.hold(1600), true); assert.equal(debug.snapshot().mode, "reveal"); debug.result();
-  const final = debug.snapshot(); assert.equal(final.mode, "result"); assert.equal(final.runState.grade, "S"); assert.equal(final.saved.profile.completedRuns, 1);
+  const final = debug.snapshot();
+  assert.equal(final.mode, "result");
+  assert.equal(final.runState.status, "completed");
+  assert.equal(final.runState.grade, "S");
+  assert.equal(final.saved.profile.completedRuns, 1);
+  assert.equal(final.saved.profile.visitedDestinations.length, 7);
 });
 
-test("reveals the ended relationship in four paced shots before showing the rating", () => {
-  const { debug, nodes } = boot(); debug.start();
-  for (let stage = 0; stage < 7; stage += 1) {
+test("manual story stages stay synchronized across a route longer than the old engine limit", () => {
+  const { debug } = boot();
+  debug.start();
+  for (let stage = 0; stage < 6; stage += 1) {
     debug.completeStage("perfect");
-    if (stage < 6) debug.continueStage();
+    debug.finishArrival();
   }
-  assert.equal(debug.hold(1600), true);
-  const next = nodes.get("[data-reveal-next]");
-  const reveal = nodes.get("[data-reveal]");
-  assert.equal(reveal.attributes["data-shot"], "1");
-  for (let shot = 2; shot <= 4; shot += 1) {
-    next.listeners.click();
-    assert.equal(debug.snapshot().mode, "reveal");
-    assert.equal(reveal.attributes["data-shot"], String(shot));
-  }
-  assert.equal(next.textContent, "走向清晨");
-  next.listeners.click();
-  assert.equal(debug.snapshot().mode, "result");
+  const state = debug.snapshot();
+  assert.equal(state.runState.stageIndex, 6);
+  assert.equal(state.motion.stageIndex, 6);
+  assert.equal(state.motion.stage, RunnerLoveContent.STAGES[6].id);
+  assert.equal(state.motion.entities.some((entity) => entity.type === "companion-cue"), false);
 });
 
-test("enters a compensation segment at a reached checkpoint and persists it", () => {
-  const { debug } = boot(); debug.start(); for (let i = 0; i < RunnerLoveRules.STAGES[0].checkpoint; i += 1) debug.beat("good");
-  const state = debug.time((RunnerLoveRules.STAGES[0].duration + 0.1) * 1000); assert.equal(state.runState.stage.compensation, true); assert.equal(state.runState.usedCompensation, true);
-});
-
-test("keeps the engine stage synchronized while a completed stage performance stays paused", () => {
-  const { debug } = boot(); debug.start(); const state = debug.completeStage("perfect");
-  assert.equal(state.runState.stageIndex, 1); assert.equal(state.motion.stageIndex, 1); assert.equal(state.pausedStage, 0);
-  debug.continueStage(); assert.equal(debug.snapshot().pausedStage, null);
-});
-
-test("retries a failed run from the current stage checkpoint", () => {
+test("retries a failed route from its checkpoint with half the stage time retained", () => {
   const definition = RunnerLoveRules.STAGES[0];
-  const { debug } = boot(); debug.start(); for (let index = 0; index < definition.checkpoint; index += 1) debug.beat("good");
-  debug.time((definition.duration + RunnerLoveRules.RULES.compensationSeconds + 0.1) * 1000); assert.equal(debug.snapshot().runState.status, "failed"); debug.retry();
-  const state = debug.snapshot(); assert.equal(state.mode, "playing"); assert.equal(state.runState.stage.progress, definition.checkpoint); assert.ok(state.runState.heartbeat >= 60);
-});
-
-test("enters the engine finale for stage seven and does not create final-stage obstacles", () => {
-  const { debug } = boot(); debug.start();
-  for (let stage = 0; stage < 6; stage += 1) { debug.completeStage("perfect"); debug.continueStage(); }
-  let state = debug.step(20); assert.equal(state.runState.stageIndex, 6); assert.equal(state.motion.finale, true);
-  state = debug.step(1400); assert.equal(state.motion.entities.some((entity) => entity.type === "obstacle"), false);
+  const { debug } = boot();
+  debug.start();
+  for (let index = 0; index < definition.checkpoint; index += 1) debug.beat("good");
+  while (debug.snapshot().runState.status === "playing") debug.moment({ outcome: "miss", kind: "collision" });
+  assert.equal(debug.snapshot().mode, "result");
+  debug.retry();
+  const state = debug.snapshot();
+  assert.equal(state.mode, "playing");
+  assert.equal(state.runState.stage.progress, definition.checkpoint);
+  assert.equal(state.runState.stage.elapsed, 90);
+  assert.equal(state.runState.condition, RunnerLoveRules.RULES.retryCondition);
 });

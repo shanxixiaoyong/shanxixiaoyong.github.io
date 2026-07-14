@@ -110,18 +110,39 @@ test("syncs stages with events and seeks stages silently without changing random
   assert.throws(() => run.seekStage("missing"), RangeError);
 });
 
-test("opens and completes paired response windows", () => {
-  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0, responseWindow: 1 });
-  run.spawn({ pairId: "hello", lane: 0, z: 1.5 }); run.step(0.1);
-  assert.equal(run.state.response.pairId, "hello");
-  run.spawn({ responseTo: "hello", lane: 0, z: 1.5 }); run.step(0.1);
-  assert.equal(run.state.responses, 1); assert.equal(run.state.response, null);
+test("manual story stages never advance from elapsed time alone", () => {
+  const run = game({ duration: 10, finaleSeconds: 0, manualStages: true, stages: [
+    { id: "street", from: 0, modules: ["street"] }, { id: "cinema", from: 0.2, modules: ["cinema"] }
+  ] });
+  advance(run, 5);
+  assert.equal(run.state.stage, "street");
+  run.syncStage("cinema");
+  advance(run, 1);
+  assert.equal(run.state.stage, "cinema");
 });
 
-test("checks companion cues against matching player actions", () => {
+test("selects one physical route item and deactivates its sibling choices", () => {
   const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
-  run.spawn({ type: "companion-cue", cue: "jump", lane: 0, z: 1.5 }); run.step(0.1);
-  run.step(0.1, "jump"); assert.equal(run.state.companion.synced, 1);
+  ["book", "coffee", "ticket"].forEach((itemId, index) => run.spawn({
+    type: "route-choice", lane: index - 1, z: 1.5, itemId,
+    choiceGroup: "route-1", choiceId: `route-1-${itemId}`
+  }));
+  run.step(0.1);
+  assert.equal(run.state.routeChoices["route-1"], "route-1-coffee");
+  const events = run.drainEvents();
+  assert.ok(events.some((event) => event.type === "route-choice" && event.itemId === "coffee"));
+  assert.equal(run.state.entities.some((entity) => entity.choiceGroup === "route-1"), false);
+});
+
+test("reports a missed story item after it passes the player", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
+  run.spawn({ type: "story-item", lane: 1, z: 1.5, itemId: "umbrella" });
+  const events = [];
+  for (let index = 0; index < 8; index += 1) {
+    run.step(0.1);
+    events.push(...run.drainEvents());
+  }
+  assert.ok(events.some((event) => event.type === "story-missed" && event.entity.itemId === "umbrella"));
 });
 
 test("switches stage modules and keeps the final twenty seconds obstacle-free", () => {

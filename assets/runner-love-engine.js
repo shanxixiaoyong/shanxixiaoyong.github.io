@@ -13,12 +13,12 @@
     { id: "promise", from: 0.68, modules: ["city", "starlight"] }
   ]);
   const DEFAULTS = Object.freeze({
-    fixedStep: 1 / 60, maxFrame: 0.25, duration: 120, finaleSeconds: 20,
+    fixedStep: 1 / 60, maxFrame: 0.25, duration: 120, finaleSeconds: 20, manualStages: false,
     startSpeed: 11, maxSpeed: 22, acceleration: 0.085, moduleLength: 36,
     spawnAhead: 90, despawnBehind: 5, collisionDepth: 0.85,
     laneChangeDuration: 0.16, jumpDuration: 0.76, jumpHeight: 1.9, slideDuration: 0.64,
     stumbleDuration: 0.62, invulnerabilityDuration: 1.05, collisionSpeedLoss: 3.2,
-    responseWindow: 4, companionWindow: 2.5, stages: DEFAULT_STAGES
+    stages: DEFAULT_STAGES
   });
 
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
@@ -68,8 +68,7 @@
       laneChangeTime: config.laneChangeDuration, vertical: 0, action: "run",
       actionTime: 0, entities: [], nextEntityId: 1, events: [], inputQueue: [],
       score: 0, collected: 0, hits: 0, dodges: 0, nearMisses: 0,
-      stumbleTime: 0, invulnerableTime: 0, response: null, responses: 0,
-      companion: { cue: null, synced: 0, missed: 0 }, stageIndex: 0, stage: stage.id,
+      stumbleTime: 0, invulnerableTime: 0, routeChoices: {}, stageIndex: 0, stage: stage.id,
       moduleIndex: -1, modules: [], nextModuleDistance: 0, finale: false, finished: false
     };
   }
@@ -102,9 +101,14 @@
       type: spec.type || "collectible", lane: lane(spec.lane), z: Number(spec.z),
       active: spec.active !== false, collected: false, hit: false, data: spec.data || null,
       avoid: spec.avoid || (spec.type === "obstacle" ? "jump" : null),
-      pairId: spec.pairId || null, responseTo: spec.responseTo || null,
-      cue: spec.cue || null, points: Number.isFinite(spec.points) ? spec.points : 1,
+      points: Number.isFinite(spec.points) ? spec.points : 1,
       subtype: spec.subtype || null, variant: spec.variant || 0,
+      itemId: spec.itemId || spec.data?.itemId || null,
+      choiceGroup: spec.choiceGroup || spec.data?.choiceGroup || null,
+      choiceId: spec.choiceId || spec.data?.choiceId || null,
+      momentId: spec.momentId || spec.data?.momentId || null,
+      interaction: spec.interaction || spec.data?.interaction || null,
+      label: spec.label || spec.data?.label || null,
       height: Number.isFinite(spec.height) ? spec.height : 0,
       arc: Number.isFinite(spec.arc) ? spec.arc : 0,
       row: Number.isFinite(spec.row) ? spec.row : 0,
@@ -162,16 +166,17 @@
   function collect(state, entity) {
     entity.collected = true; entity.active = false; state.collected += 1; state.score += entity.points;
     emit(state, "collect", { entity });
-    if (entity.pairId) {
-      state.response = { pairId: entity.pairId, expiresAt: state.elapsed + state.config.responseWindow };
-      emit(state, "response-open", { pairId: entity.pairId, expiresAt: state.response.expiresAt });
-    }
-    if (entity.responseTo && state.response && entity.responseTo === state.response.pairId && state.elapsed <= state.response.expiresAt) {
-      state.responses += 1; state.response = null; emit(state, "response", { pairId: entity.responseTo });
-    }
-    if (entity.type === "companion-cue") {
-      state.companion.cue = { action: entity.cue || entity.data, expiresAt: state.elapsed + state.config.companionWindow };
-      emit(state, "companion-cue", { cue: state.companion.cue });
+    if (entity.choiceGroup) {
+      state.routeChoices[entity.choiceGroup] = entity.choiceId || entity.itemId || entity.id;
+      state.entities.forEach((candidate) => {
+        if (candidate.id !== entity.id && candidate.choiceGroup === entity.choiceGroup) candidate.active = false;
+      });
+      emit(state, "route-choice", {
+        group: entity.choiceGroup,
+        choiceId: entity.choiceId || entity.itemId || entity.id,
+        itemId: entity.itemId,
+        entity
+      });
     }
   }
   function resolveEntities(state, dz) {
@@ -205,7 +210,12 @@
         state.score += 2;
         emit(state, "near-miss", { entity });
       }
-      if (entity.z < -state.config.despawnBehind) entity.active = false;
+      if (entity.z < -state.config.despawnBehind) {
+        if ((entity.type === "story-item" || entity.type === "route-choice") && !entity.collected) {
+          emit(state, "story-missed", { entity });
+        }
+        entity.active = false;
+      }
     }
     state.entities = state.entities.filter((entity) => entity.active);
   }
@@ -218,17 +228,6 @@
   }
   function syncStage(state, stage) { return setStage(state, stage, true); }
   function seekStage(state, stage) { return setStage(state, stage, false); }
-  function checkWindows(state) {
-    if (state.response && state.elapsed > state.response.expiresAt) {
-      emit(state, "response-missed", { pairId: state.response.pairId }); state.response = null;
-    }
-    const cue = state.companion.cue;
-    if (!cue) return;
-    const matched = (cue.action === state.action) || (cue.action === "left" && state.lane === -1) ||
-      (cue.action === "right" && state.lane === 1) || (cue.action === state.lane);
-    if (matched) { state.companion.synced += 1; state.companion.cue = null; emit(state, "companion-sync", { action: cue.action }); }
-    else if (state.elapsed > cue.expiresAt) { state.companion.missed += 1; state.companion.cue = null; emit(state, "companion-missed", { action: cue.action }); }
-  }
   function fixedUpdate(state) {
     const dt = state.config.fixedStep;
     state.ticks += 1; state.elapsed = Math.min(state.config.duration, state.elapsed + dt);
@@ -243,13 +242,15 @@
       state.entities = state.entities.filter((entity) => entity.active);
       emit(state, "finale");
     }
-    const stageInfo = stageIndexAt(state.config, state.elapsed);
-    if (stageInfo.index !== state.stageIndex) syncStage(state, stageInfo.index);
+    if (!state.config.manualStages) {
+      const stageInfo = stageIndexAt(state.config, state.elapsed);
+      if (stageInfo.index !== state.stageIndex) syncStage(state, stageInfo.index);
+    }
     const targetSpeed = Math.min(state.config.maxSpeed, state.config.startSpeed + state.config.acceleration * state.elapsed);
     const recovery = Math.max(1.1, state.config.acceleration * 2.4);
     state.speed = Math.min(targetSpeed, state.speed + recovery * dt);
     const dz = state.speed * dt; state.distance += dz;
-    resolveEntities(state, dz); checkWindows(state); scheduleModules(state);
+    resolveEntities(state, dz); scheduleModules(state);
     if (state.elapsed >= state.config.duration) { state.finished = true; emit(state, "finish"); }
   }
   function step(state, delta, actions) {

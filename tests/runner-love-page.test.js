@@ -23,39 +23,47 @@ test("publishes the standalone runner with ordered domain modules and one full-s
   assert.match(visuals, /new THREE\.WebGLRenderer/);
 });
 
-test("renders a seven-stage HUD and complete in-game overlays without requirement copy", () => {
+test("renders a compact seven-stage journey HUD without exposing implementation requirements", () => {
   assert.equal((html.match(/<li(?: class="is-current")?>/g) || []).length, 7);
-  for (const token of ["data-heartbeat", "data-progress", "data-combo", "data-performance", "data-handhold", "data-reveal", "data-result"]) assert.ok(html.includes(token), token);
-  for (const forbidden of ["需求", "实现说明", "GitHub Pages", "调试 API", "WebAudio"]) assert.equal(html.includes(forbidden), false, forbidden);
+  for (const token of ["data-condition", "data-progress", "data-combo", "data-cargo", "data-destination", "data-route-message", "data-arrival", "data-result"]) assert.ok(html.includes(token), token);
+  for (const forbidden of ["需求", "实现说明", "GitHub Pages", "调试 API", "子代理", "WebAudio"]) assert.equal(html.includes(forbidden), false, forbidden);
+  for (const retired of ["data-performance", "data-handhold", "data-reveal", "data-companion"]) assert.equal(html.includes(retired), false, retired);
 });
 
-test("keeps the arcade HUD compact so the 3D route remains the primary mobile surface", () => {
-  assert.match(css, /\.stage-track span\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?clip:/);
-  assert.match(css, /\.runner-shell\[data-state="playing"\] \.runner-hud/);
-  assert.match(css, /\.runner-speed-aura/);
-  assert.match(html, /class="runner-speed-aura"/);
+test("starts with a believable message and lets destination scenes play without a continue dialog", () => {
+  assert.match(html, /刚才是不是在香樟路看见你了/);
+  assert.match(html, /去见她/);
+  assert.match(html, /class="arrival-caption" data-arrival hidden/);
+  assert.doesNotMatch(html, /data-arrival-continue|data-performance-continue|点击继续/);
+  assert.match(game, /if \(arrivalElapsed >= arrivalDuration\) finishArrival\(\)/);
+  assert.match(game, /content\.selectArrival/);
 });
 
-test("keeps a stable portrait stage with mobile safe areas, desktop centering and reduced motion", () => {
+test("keeps the 3D route primary on a 9:16 mobile stage with safe areas", () => {
   assert.match(css, /aspect-ratio:\s*9 \/ 16/);
   assert.match(css, /place-items:\s*center/);
   assert.match(css, /env\(safe-area-inset-top\)/);
   assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)/);
   assert.doesNotMatch(css, /font-size:\s*[\d.]+vw/);
   for (const edge of ["top", "right", "bottom", "left"]) assert.match(css, new RegExp(`safe-area-inset-${edge}`));
-  assert.match(css, /@media \(max-height:\s*620px\)/); assert.match(css, /overflow-y:\s*auto/);
+  assert.match(css, /@media \(max-height:\s*620px\)/);
   assert.match(css, /\.runner-hud\s*\{[\s\S]*?pointer-events:\s*none;/);
   assert.match(css, /\.runner-topbar\s*\{[\s\S]*?pointer-events:\s*none;/);
 });
 
-test("exposes persistent new-game-plus clues, heart stamps and checkpoint retry controls", () => {
-  for (const token of ["data-new-game-plus", "data-new-game-clue", "data-stamp-count", "data-retry"]) assert.ok(html.includes(token), token);
+test("uses local cinematic scene art, local 3D models, and a cache-consistent release", () => {
+  assert.match(html, /assets\/love-scenes\/campus-library\.webp/);
+  assert.match(html, /assets\/runner-models\/runner-player\.glb/);
+  assert.match(html, /assets\/runner-models\/runner-city\.glb/);
+  const versions = [...html.matchAll(/runner-love-[^"?]+\?v=([^"']+)/g)].map((match) => match[1]);
+  assert.ok(versions.length >= 5);
+  assert.equal(new Set(versions).size, 1);
+  assert.equal(versions[0], "runner-love-rendezvous-20260714d");
 });
 
-test("uses a four-shot reality reveal instead of a decorative fake box", () => {
-  for (const token of ["data-reveal-step", "data-reveal-title", "data-reveal-copy", "data-reveal-next"]) assert.ok(html.includes(token), token);
-  assert.doesNotMatch(html, /class="reveal-box"/);
-  assert.match(css, /url\("runner-scenes\/08-reveal\.jpg"\)/);
-  assert.match(game, /function showRevealShot\(\)/);
-  assert.match(game, /function nextRevealShot\(\)/);
+test("result and checkpoint surfaces preserve route stats and immediate replay", () => {
+  for (const token of ["data-stat-completion", "data-stat-accuracy", "data-stat-items", "data-stat-collisions", "data-retry", "data-restart", "data-new-game-plus"]) assert.ok(html.includes(token), token);
+  assert.match(css, /\.result-stats/);
+  assert.match(game, /rules\.retryFromCheckpoint/);
+  assert.match(game, /profile\?\.newGamePlusUnlocked/);
 });

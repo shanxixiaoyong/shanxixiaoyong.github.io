@@ -5,7 +5,7 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "first-sight",
     district: "campus-line",
-    asset: "assets/runner-scenes/01-encounter.jpg",
+    asset: "assets/love-scenes/campus-library.webp",
     sky: 0x70bfd0,
     skyTop: 0x3a92ae,
     skyBottom: 0xf6c982,
@@ -18,13 +18,14 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0xbab49f,
     accent: 0xffc454,
     weather: "after-rain",
-    props: ["campus", "lamp", "signal", "graffiti"],
-    companion: { x: -2.7, z: -19 }
+    routeStyle: "promenade",
+    destination: "library-crossing",
+    props: ["campus", "lamp", "signal", "graffiti"]
   },
   {
     id: "familiar-steps",
     district: "glass-station",
-    asset: "assets/runner-scenes/02-familiar.jpg",
+    asset: "assets/love-scenes/cafe-evening.webp",
     sky: 0x72c8d2,
     skyTop: 0x3791a7,
     skyBottom: 0xc8f2e6,
@@ -37,13 +38,14 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0xa9c8c3,
     accent: 0x61e0ca,
     weather: "breeze",
-    props: ["station", "railing", "bench", "tree"],
-    companion: { x: 2.35, z: -6.5 }
+    routeStyle: "riverside",
+    destination: "bridge-bookstore",
+    props: ["station", "railing", "bench", "tree"]
   },
   {
     id: "closer-signals",
     district: "neon-river",
-    asset: "assets/runner-scenes/03-ambiguous.jpg",
+    asset: "assets/love-scenes/city-night.webp",
     sky: 0x121c3f,
     skyTop: 0x080c26,
     skyBottom: 0x68345e,
@@ -56,8 +58,9 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x4d5270,
     accent: 0x42e7f5,
     weather: "neon",
-    props: ["building", "cafe", "neon-sign", "signal"],
-    companion: { x: 2.15, z: -2.7 }
+    routeStyle: "metro",
+    destination: "old-cinema",
+    props: ["building", "cafe", "neon-sign", "signal"]
   },
   {
     id: "spoken-heart",
@@ -75,13 +78,14 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x77536d,
     accent: 0xff6f91,
     weather: "rain",
-    props: ["tunnel", "lamp", "shelter", "graffiti"],
-    companion: { x: 1.95, z: -1 }
+    routeStyle: "market",
+    destination: "riverside-bench",
+    props: ["tunnel", "lamp", "shelter", "graffiti"]
   },
   {
     id: "shared-days",
     district: "home-quarter",
-    asset: "assets/runner-scenes/02-familiar.jpg",
+    asset: "assets/love-scenes/warm-home.webp",
     sky: 0x5e8f93,
     skyTop: 0x3c6974,
     skyBottom: 0xf0bd7e,
@@ -94,8 +98,9 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0xa8a58c,
     accent: 0xffbf4f,
     weather: "warm",
-    props: ["market", "station", "home", "tree"],
-    companion: { x: 1.82, z: 0 }
+    routeStyle: "neighborhood",
+    destination: "warm-kitchen",
+    props: ["market", "station", "home", "tree"]
   },
   {
     id: "rough-weather",
@@ -113,8 +118,9 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x5c6673,
     accent: 0xff5f63,
     weather: "storm",
-    props: ["maintenance", "warning", "signal", "tunnel"],
-    companion: { x: 2.45, z: -1.2 }
+    routeStyle: "bridge",
+    destination: "bridge-shelter",
+    props: ["maintenance", "warning", "signal", "tunnel"]
   },
   {
     id: "toward-home",
@@ -132,8 +138,9 @@ const STAGE_CONFIGS = Object.freeze([
     curb: 0x827f91,
     accent: 0xffd36b,
     weather: "starlight",
-    props: ["terminal", "home", "lamp", "tree"],
-    companion: { x: 1.55, z: 0.25 }
+    routeStyle: "terminal",
+    destination: "lit-home",
+    props: ["terminal", "home", "lamp", "tree"]
   }
 ]);
 
@@ -147,7 +154,7 @@ const COLLISION_Z = 0.85;
 const FOG_SCALE = 0.52;
 const MAX_RENDER_PIXELS = 1_850_000;
 const CITY_BUILDING_COUNT = 54;
-const BACKDROP_OPACITY = 0.055;
+const BACKDROP_OPACITY = 0.13;
 const STAGE_COLLECTIBLE_COLORS = Object.freeze([0xffc34d, 0x68ead3, 0x67e8ff, 0xff6688, 0xffb74f, 0xff6a70, 0xffd85a]);
 const STAGE_TOKEN_COLORS = Object.freeze([0xff5f72, 0xf4fff9, 0xffe1a0, 0xfff4e6, 0xfff0a6, 0xffedf0, 0xffffff]);
 const STAGE_TRACKSIDE_PROPS = Object.freeze([
@@ -186,6 +193,8 @@ function damp(current, target, smoothing, delta) {
   return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-smoothing * delta));
 }
 
+const SHARED_GEOMETRIES = new WeakSet();
+
 function disposeObject(object) {
   const geometries = new Set();
   const materials = new Set();
@@ -200,7 +209,7 @@ function disposeObject(object) {
     item.dispose?.();
   });
   textures.forEach((item) => item.dispose?.());
-  geometries.forEach((item) => item.dispose?.());
+  geometries.forEach((item) => { if (!SHARED_GEOMETRIES.has(item)) item.dispose?.(); });
 }
 
 function canvasTexture(width, height, painter) {
@@ -268,6 +277,7 @@ function roundedPanelGeometry(width, height, depth, radius = 0.1) {
     curveSegments: 5
   });
   geometry.center();
+  SHARED_GEOMETRIES.add(geometry);
   roundedGeometryCache.set(key, geometry);
   return geometry;
 }
@@ -289,6 +299,7 @@ function createHeartGeometry() {
     curveSegments: 14
   });
   heartGeometry.center();
+  SHARED_GEOMETRIES.add(heartGeometry);
   return heartGeometry;
 }
 
@@ -297,6 +308,7 @@ function createStageTokenGeometry(stageIndex) {
   if (stageIndex === 0) {
     const geometry = createHeartGeometry().clone();
     geometry.scale(0.52, 0.52, 0.72);
+    SHARED_GEOMETRIES.add(geometry);
     stageTokenGeometryCache.set(stageIndex, geometry);
     return geometry;
   }
@@ -357,8 +369,227 @@ function createStageTokenGeometry(stageIndex) {
   });
   geometry.center();
   geometry.scale(0.58, 0.58, 0.72);
+  SHARED_GEOMETRIES.add(geometry);
   stageTokenGeometryCache.set(stageIndex, geometry);
   return geometry;
+}
+
+const STORY_PROP_COLORS = Object.freeze({
+  ivory: 0xfff5df,
+  cyan: 0x75e7ed,
+  amber: 0xffb44d,
+  coral: 0xff7568,
+  violet: 0x9d72ff,
+  lime: 0xcce85d,
+  rose: 0xff6688,
+  crimson: 0xd9334f,
+  cream: 0xffe6bb,
+  blue: 0x4d8fff,
+  magenta: 0xef58dc,
+  green: 0x59b87a,
+  gold: 0xf6c75a
+});
+
+function storyPropColor(item, fallback) {
+  return STORY_PROP_COLORS[item?.color] || fallback || 0xffd36b;
+}
+
+function createStoryProp(item = {}, accent = 0xffd36b, particleTexture = null, carried = false) {
+  const group = new THREE.Group();
+  const color = storyPropColor(item, accent);
+  const primary = material(color, { roughness: 0.34, metalness: 0.08, emissive: color, emissiveIntensity: carried ? 0.06 : 0.22 });
+  const pale = material(0xfff7e8, { roughness: 0.72, metalness: 0.01 });
+  const dark = material(0x1b252b, { roughness: 0.46, metalness: 0.28 });
+  const gold = material(0xe6b84e, { roughness: 0.24, metalness: 0.82, emissive: 0x6d4310, emissiveIntensity: 0.18 });
+  const glass = material(new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.38), {
+    roughness: 0.08,
+    metalness: 0.02,
+    transparent: true,
+    opacity: 0.56
+  });
+  const kind = item.kind || "packet";
+
+  if (["photo", "note", "ticket", "map"].includes(kind)) {
+    const width = kind === "ticket" ? 0.82 : kind === "map" ? 0.9 : 0.68;
+    const height = kind === "ticket" ? 0.34 : 0.54;
+    const paper = mesh(roundedPanelGeometry(width, height, 0.045, 0.035), pale, true);
+    paper.rotation.x = -0.08;
+    const ink = mesh(new THREE.PlaneGeometry(width * 0.72, height * 0.18), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    ink.position.set(0, kind === "photo" ? -0.13 : 0.05, 0.03);
+    const stamp = mesh(new THREE.CircleGeometry(0.08, 18), new THREE.MeshBasicMaterial({ color: kind === "photo" ? 0x4b7184 : color, side: THREE.DoubleSide }));
+    stamp.position.set(width * 0.27, height * 0.25, 0.032);
+    group.add(paper, ink, stamp);
+    if (kind === "map") {
+      [-0.2, 0.2].forEach((x) => {
+        const fold = mesh(new THREE.PlaneGeometry(0.012, height * 0.85), new THREE.MeshBasicMaterial({ color: 0x9b8e78, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
+        fold.position.set(x, 0, 0.034);
+        group.add(fold);
+      });
+    }
+  } else if (kind === "book") {
+    const cover = mesh(roundedPanelGeometry(0.68, 0.88, 0.13, 0.045), primary, true);
+    cover.rotation.x = -0.16;
+    const pages = mesh(new THREE.BoxGeometry(0.59, 0.76, 0.11), pale, true);
+    pages.position.z = 0.02;
+    const band = mesh(new THREE.BoxGeometry(0.12, 0.8, 0.145), gold, true);
+    band.position.x = -0.17;
+    group.add(cover, pages, band);
+  } else if (kind === "record") {
+    const disc = mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.055, 36), dark, true);
+    disc.rotation.x = Math.PI / 2;
+    const label = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.062, 28), primary, true);
+    label.rotation.x = Math.PI / 2;
+    const hole = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.07, 16), pale);
+    hole.rotation.x = Math.PI / 2;
+    group.add(disc, label, hole);
+  } else if (["drink", "coffee"].includes(kind)) {
+    const cup = mesh(new THREE.CylinderGeometry(0.23, 0.19, 0.58, 24), kind === "coffee" ? pale : glass, true);
+    const sleeve = mesh(new THREE.CylinderGeometry(0.235, 0.215, 0.2, 24), primary, true);
+    sleeve.position.y = -0.04;
+    const lid = mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.055, 24), dark, true);
+    lid.position.y = 0.305;
+    const straw = mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.36, 10), pale, true);
+    straw.position.set(0.07, 0.49, 0);
+    straw.rotation.z = -0.12;
+    group.add(cup, sleeve, lid, straw);
+  } else if (kind === "umbrella") {
+    const canopy = mesh(new THREE.SphereGeometry(0.52, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2), glass, true);
+    canopy.scale.y = 0.58;
+    canopy.position.y = 0.18;
+    const shaft = mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.92, 10), gold, true);
+    shaft.position.y = -0.18;
+    const handle = mesh(new THREE.TorusGeometry(0.12, 0.022, 8, 18, Math.PI), gold, true);
+    handle.rotation.z = Math.PI;
+    handle.position.set(0.1, -0.64, 0);
+    group.add(canopy, shaft, handle);
+  } else if (kind === "flower") {
+    const stem = mesh(new THREE.CylinderGeometry(0.018, 0.025, 0.88, 9), material(0x3f9b61, { roughness: 0.8 }), true);
+    stem.position.y = -0.12;
+    stem.rotation.z = -0.22;
+    const center = mesh(new THREE.SphereGeometry(0.12, 18, 12), gold, true);
+    center.position.set(-0.1, 0.33, 0);
+    group.add(stem, center);
+    for (let index = 0; index < 7; index += 1) {
+      const angle = index / 7 * Math.PI * 2;
+      const petal = mesh(new THREE.SphereGeometry(0.13, 14, 10), primary, true);
+      petal.scale.set(1.2, 0.68, 0.45);
+      petal.position.set(-0.1 + Math.cos(angle) * 0.17, 0.33 + Math.sin(angle) * 0.17, 0);
+      petal.rotation.z = angle;
+      group.add(petal);
+    }
+  } else if (kind === "camera") {
+    const body = mesh(roundedPanelGeometry(0.72, 0.52, 0.28, 0.08), pale, true);
+    const lens = mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.22, 28), dark, true);
+    lens.rotation.x = Math.PI / 2;
+    lens.position.z = 0.2;
+    const glassLens = mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.225, 24), glass, true);
+    glassLens.rotation.x = Math.PI / 2;
+    glassLens.position.z = 0.22;
+    const shutter = mesh(new THREE.BoxGeometry(0.12, 0.07, 0.08), primary, true);
+    shutter.position.set(0.24, 0.28, 0);
+    group.add(body, lens, glassLens, shutter);
+  } else if (kind === "key") {
+    const ring = mesh(new THREE.TorusGeometry(0.2, 0.045, 10, 28), gold, true);
+    const shaft = mesh(new THREE.BoxGeometry(0.08, 0.48, 0.07), gold, true);
+    shaft.position.y = -0.31;
+    const tooth = mesh(new THREE.BoxGeometry(0.22, 0.08, 0.07), gold, true);
+    tooth.position.set(0.07, -0.53, 0);
+    group.add(ring, shaft, tooth);
+  } else if (kind === "plant") {
+    const pot = mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.34, 20), material(0xb96b48, { roughness: 0.78 }), true);
+    pot.position.y = -0.22;
+    for (let index = 0; index < 6; index += 1) {
+      const leaf = mesh(new THREE.SphereGeometry(0.17, 14, 10), material(index % 2 ? 0x5dbb72 : 0x2f8654, { roughness: 0.72 }), true);
+      leaf.scale.set(0.55, 1.35, 0.45);
+      leaf.position.set(Math.sin(index * 2.1) * 0.18, 0.12 + (index % 3) * 0.13, Math.cos(index * 2.1) * 0.12);
+      leaf.rotation.z = Math.sin(index) * 0.42;
+      group.add(leaf);
+    }
+    group.add(pot);
+  } else if (kind === "lamp") {
+    const base = mesh(new THREE.CylinderGeometry(0.17, 0.24, 0.16, 20), gold, true);
+    base.position.y = -0.42;
+    const stem = mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.54, 10), gold, true);
+    stem.position.y = -0.12;
+    const shade = mesh(new THREE.ConeGeometry(0.34, 0.4, 28, 1, true), glass, true);
+    shade.position.y = 0.23;
+    const bulb = mesh(new THREE.SphereGeometry(0.1, 16, 12), material(color, { emissive: color, emissiveIntensity: 3 }), true);
+    bulb.position.y = 0.17;
+    group.add(base, stem, shade, bulb);
+  } else if (kind === "wristband") {
+    const band = mesh(new THREE.TorusGeometry(0.31, 0.065, 10, 32), primary, true);
+    band.rotation.x = 0.32;
+    const tag = mesh(roundedPanelGeometry(0.26, 0.15, 0.07, 0.04), pale, true);
+    tag.position.set(0.3, 0.02, 0);
+    group.add(band, tag);
+  } else if (kind === "cloth") {
+    const towel = mesh(roundedPanelGeometry(0.78, 0.58, 0.16, 0.08), primary, true);
+    towel.rotation.set(-0.16, 0.08, -0.12);
+    const fold = mesh(new THREE.BoxGeometry(0.7, 0.035, 0.18), pale, true);
+    fold.position.set(0.02, 0.02, 0.1);
+    const stitch = mesh(new THREE.BoxGeometry(0.5, 0.025, 0.185), gold, true);
+    stitch.position.set(0.02, -0.17, 0.11);
+    group.add(towel, fold, stitch);
+  } else {
+    const bagColor = ["groceries", "snack", "packet"].includes(kind) ? primary : pale;
+    const bag = mesh(roundedPanelGeometry(0.62, 0.72, 0.27, 0.055), bagColor, true);
+    bag.position.y = -0.08;
+    [-0.18, 0.18].forEach((x) => {
+      const handle = mesh(new THREE.TorusGeometry(0.17, 0.022, 8, 18, Math.PI), dark, true);
+      handle.rotation.z = Math.PI;
+      handle.position.set(x, 0.34, 0);
+      group.add(handle);
+    });
+    if (kind === "groceries") {
+      [0x5cab6a, 0xe55f4d, 0xf0d16d].forEach((vegetableColor, index) => {
+        const vegetable = mesh(new THREE.SphereGeometry(0.11, 12, 8), material(vegetableColor, { roughness: 0.8 }), true);
+        vegetable.position.set((index - 1) * 0.16, 0.35 + (index % 2) * 0.08, 0);
+        group.add(vegetable);
+      });
+    }
+    group.add(bag);
+  }
+
+  if (!carried && particleTexture) {
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: particleTexture,
+      color,
+      transparent: true,
+      opacity: 0.58,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false
+    }));
+    halo.scale.set(1.5, 1.5, 1);
+    halo.position.z = -0.12;
+    group.add(halo);
+    group.userData.halo = halo;
+
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.52,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    });
+    const markerRing = mesh(new THREE.TorusGeometry(0.62, 0.034, 8, 42), markerMaterial);
+    markerRing.rotation.x = Math.PI / 2;
+    markerRing.position.y = -0.98;
+    const beam = mesh(new THREE.CylinderGeometry(0.16, 0.58, 2.45, 24, 1, true), markerMaterial.clone());
+    beam.position.y = -0.1;
+    beam.material.opacity = 0.09;
+    group.add(markerRing, beam);
+    group.userData.markerRing = markerRing;
+    group.userData.markerBeam = beam;
+  }
+  group.userData.kind = "story-item";
+  group.userData.storyKind = kind;
+  group.userData.itemId = item.id || null;
+  group.userData.storyColor = color;
+  group.scale.setScalar(carried ? 0.58 : 1.05);
+  return group;
 }
 
 function makeWarningStripeTexture(accent) {
@@ -1458,7 +1689,18 @@ function animateCharacter(character, time, action, vertical, intensity, phaseOff
   parts.shadow.material.opacity = clamp(0.24 - vertical * 0.11, 0.08, 0.24);
   parts.shadow.scale.setScalar(1 + vertical * 0.2);
 
-  if (action === "jump") {
+  if (action === "idle") {
+    parts.leftArm.rotation.x = -0.08;
+    parts.rightArm.rotation.x = -0.08;
+    parts.leftLeg.rotation.x = 0;
+    parts.rightLeg.rotation.x = 0;
+    parts.leftLeg.userData.joint.rotation.x = 0;
+    parts.rightLeg.userData.joint.rotation.x = 0;
+    parts.pelvis.rotation.y = 0;
+    parts.torso.rotation.y = 0;
+    character.position.y = Math.sin(time * 1.6 + phaseOffset) * 0.012;
+    character.rotation.x = 0;
+  } else if (action === "jump") {
     character.rotation.x = -0.04;
     parts.leftLeg.rotation.x = -0.48;
     parts.rightLeg.rotation.x = 0.34;
@@ -1594,7 +1836,7 @@ function createRiggedRunner(gltf, options, animationClips = gltf.animations) {
 
 function animateRiggedRunner(character, delta, action, vertical, intensity, lateral = 0, stumble = 0) {
   const runner = character.userData.modelRunner;
-  const nextAction = stumble > 0.15 ? "stumble" : action === "slide" ? "slide" : "run";
+  const nextAction = stumble > 0.15 ? "stumble" : action === "idle" ? "idle" : action === "slide" ? "slide" : "run";
   if (nextAction !== runner.currentAction) {
     const previous = runner.actions[runner.currentAction];
     const next = runner.actions[nextAction];
@@ -1893,20 +2135,308 @@ function createObstacle(stageIndex, avoid, accent, subtype = null, variant = 0) 
   return createServiceCart(accent);
 }
 
-function createCompanionCue(cue, accent) {
+function createStringLights(accent, width = 7.4, y = 3.6) {
   const group = new THREE.Group();
-  const cueMaterial = new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-  if (cue === "jump") {
-    const arc = mesh(new THREE.TorusGeometry(0.58, 0.055, 8, 30, Math.PI), cueMaterial);
-    arc.rotation.z = Math.PI;
-    arc.position.y = 0.34;
-    group.add(arc);
-  } else {
-    const ribbon = mesh(new THREE.PlaneGeometry(1.35, 0.18), cueMaterial);
-    ribbon.rotation.x = -Math.PI / 2;
-    ribbon.position.y = 0.04;
-    group.add(ribbon);
+  const cablePoints = [];
+  const bulbs = [];
+  const bulbMaterial = material(accent, { emissive: accent, emissiveIntensity: 3.8, roughness: 0.18 });
+  for (let index = 0; index <= 12; index += 1) {
+    const ratio = index / 12;
+    const x = -width / 2 + ratio * width;
+    const sag = Math.sin(ratio * Math.PI) * 0.42;
+    cablePoints.push(new THREE.Vector3(x, y - sag, 0));
+    if (index % 2 === 0) {
+      const bulb = mesh(new THREE.SphereGeometry(0.045, 10, 7), bulbMaterial);
+      bulb.position.set(x, y - sag - 0.1, 0);
+      bulbs.push(bulb);
+      group.add(bulb);
+    }
   }
+  const cable = new THREE.Line(new THREE.BufferGeometry().setFromPoints(cablePoints), new THREE.LineBasicMaterial({ color: 0x202326 }));
+  group.add(cable);
+  group.userData.bulbs = bulbs;
+  return group;
+}
+
+function createCinemaFront(accent) {
+  const group = new THREE.Group();
+  const canopy = mesh(new THREE.BoxGeometry(7.2, 0.2, 1.15), material(0x1a1720, { roughness: 0.32, metalness: 0.62 }), true);
+  canopy.position.set(0, 4.15, 0);
+  const marquee = mesh(roundedPanelGeometry(3.9, 0.78, 0.18, 0.1), material(0x241d28, { emissive: accent, emissiveIntensity: 0.22, roughness: 0.32, metalness: 0.34 }), true);
+  marquee.position.set(0, 4.56, 0.14);
+  const signTexture = makeSignTexture("TONIGHT  19:40", accent);
+  const sign = mesh(new THREE.PlaneGeometry(3.5, 0.58), new THREE.MeshBasicMaterial({ map: signTexture, transparent: true, toneMapped: false }));
+  sign.position.set(0, 4.56, 0.245);
+  const bulbMaterial = material(0xffe0a5, { emissive: accent, emissiveIntensity: 3.2, roughness: 0.16 });
+  for (let index = 0; index < 11; index += 1) {
+    const bulb = mesh(new THREE.SphereGeometry(0.055, 10, 7), bulbMaterial);
+    bulb.position.set(-3.25 + index * 0.65, 4.02, 0.54);
+    group.add(bulb);
+  }
+  [-2.75, 2.75].forEach((x, index) => {
+    const poster = mesh(roundedPanelGeometry(1.02, 1.65, 0.08, 0.05), material(index ? 0x276a83 : 0x84354d, { emissive: index ? 0x123d52 : 0x4e1c2c, emissiveIntensity: 0.48, roughness: 0.38 }), true);
+    poster.position.set(x, 2.42, 0.1);
+    group.add(poster);
+  });
+  group.add(canopy, marquee, sign);
+  group.userData.sign = marquee;
+  return group;
+}
+
+function createArrivalItemDisplay(items, accent, stageIndex) {
+  const group = new THREE.Group();
+  const selected = Array.isArray(items) ? items.slice(-3) : [];
+  const featured = selected[Math.floor(selected.length / 2)] || selected[0] || { kind: "note", color: "gold" };
+  const entries = selected.map((item, index) => {
+    const prop = createStoryProp(item, accent, null, true);
+    const offset = index - (selected.length - 1) / 2;
+    const elevated = item.kind === "umbrella" ? 1.06 : item.kind === "lamp" ? 0.38 : 0;
+    prop.position.set(offset * 0.95, 1.03 + elevated, 2.18 + Math.abs(offset) * 0.08);
+    prop.rotation.set(-0.08, offset * -0.22, offset * 0.08);
+    prop.scale.setScalar(0.001);
+    const halo = mesh(new THREE.RingGeometry(0.26, 0.38, 36), new THREE.MeshBasicMaterial({
+      color: storyPropColor(item, accent),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    }));
+    halo.position.copy(prop.position);
+    halo.position.z -= 0.12;
+    halo.scale.setScalar(0.001);
+    group.add(prop, halo);
+    return { item, prop, halo, revealOrder: Math.round(Math.abs(offset) * 2) };
+  });
+
+  const handoffCurve = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(-0.9, 1.18, 2.25),
+    new THREE.Vector3(-0.35, 1.88, 2.1),
+    new THREE.Vector3(0.35, 1.88, 2.1),
+    new THREE.Vector3(0.9, 1.18, 2.2)
+  );
+  const handoffArc = mesh(new THREE.TubeGeometry(handoffCurve, 36, 0.018, 6, false), new THREE.MeshBasicMaterial({
+    color: accent,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  }));
+  group.add(handoffArc);
+
+  const sparklePositions = new Float32Array(22 * 3);
+  for (let index = 0; index < 22; index += 1) {
+    const angle = index / 22 * Math.PI * 2;
+    sparklePositions[index * 3] = Math.cos(angle) * (1.3 + (index % 4) * 0.22);
+    sparklePositions[index * 3 + 1] = 0.45 + (index % 7) * 0.32;
+    sparklePositions[index * 3 + 2] = 1.8 + Math.sin(angle) * 0.4;
+  }
+  const sparkleGeometry = new THREE.BufferGeometry();
+  sparkleGeometry.setAttribute("position", new THREE.BufferAttribute(sparklePositions, 3));
+  const sparkles = new THREE.Points(sparkleGeometry, new THREE.PointsMaterial({
+    color: accent,
+    size: stageIndex === 6 ? 0.1 : 0.075,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  }));
+  group.add(sparkles);
+
+  const interactionFx = new THREE.Group();
+  const fxMaterials = [];
+  const fxColor = storyPropColor(featured, accent);
+  const addFxMaterial = (maxOpacity = 0.64) => {
+    const fxMaterial = new THREE.MeshBasicMaterial({
+      color: fxColor,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    });
+    fxMaterials.push({ material: fxMaterial, maxOpacity });
+    return fxMaterial;
+  };
+  const featuredKind = featured.kind || "note";
+  if (["coffee", "drink"].includes(featuredKind)) {
+    [-0.16, 0, 0.16].forEach((x, index) => {
+      const steamCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x, 1.38, 2.2),
+        new THREE.Vector3(x + 0.08, 1.62, 2.2),
+        new THREE.Vector3(x - 0.06, 1.88, 2.2),
+        new THREE.Vector3(x + 0.05, 2.12 + index * 0.04, 2.2)
+      ]);
+      interactionFx.add(mesh(new THREE.TubeGeometry(steamCurve, 20, 0.012, 5, false), addFxMaterial(0.5)));
+    });
+  } else if (["record", "wristband"].includes(featuredKind)) {
+    [0.38, 0.6, 0.82].forEach((radius, index) => {
+      const wave = mesh(new THREE.TorusGeometry(radius, 0.014, 6, 48), addFxMaterial(0.5 - index * 0.08));
+      wave.position.set(0, 1.1, 2.05);
+      interactionFx.add(wave);
+    });
+  } else if (featuredKind === "umbrella") {
+    const shield = mesh(new THREE.SphereGeometry(1.08, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), addFxMaterial(0.24));
+    shield.scale.y = 0.58;
+    shield.position.set(0, 1.72, 2.14);
+    shield.material.wireframe = true;
+    interactionFx.add(shield);
+  } else if (["camera", "photo"].includes(featuredKind)) {
+    const flash = mesh(new THREE.PlaneGeometry(1.28, 1.28), addFxMaterial(0.74));
+    flash.position.set(0, 1.28, 2.08);
+    flash.rotation.z = Math.PI / 4;
+    interactionFx.add(flash);
+  } else if (["key", "lamp"].includes(featuredKind)) {
+    const keyRing = mesh(new THREE.TorusGeometry(0.64, 0.025, 8, 56), addFxMaterial(0.68));
+    keyRing.position.set(0, 1.18, 2.08);
+    interactionFx.add(keyRing);
+  } else if (["flower", "plant"].includes(featuredKind)) {
+    for (let index = 0; index < 8; index += 1) {
+      const angle = index / 8 * Math.PI * 2;
+      const petal = mesh(new THREE.SphereGeometry(0.08, 10, 7), addFxMaterial(0.58));
+      petal.scale.set(1.4, 0.58, 0.38);
+      petal.position.set(Math.cos(angle) * 0.54, 1.28 + Math.sin(angle) * 0.54, 2.08);
+      petal.rotation.z = angle;
+      interactionFx.add(petal);
+    }
+  } else {
+    const revealFrame = mesh(roundedPanelGeometry(0.98, 0.68, 0.02, 0.08), addFxMaterial(0.34));
+    revealFrame.position.set(0, 1.2, 2.04);
+    interactionFx.add(revealFrame);
+  }
+  const fxLight = ["key", "lamp", "flower", "plant"].includes(featuredKind)
+    ? new THREE.PointLight(fxColor, 0, 6, 2)
+    : null;
+  if (fxLight) {
+    fxLight.position.set(0, 1.45, 2.4);
+    interactionFx.add(fxLight);
+  }
+  group.add(interactionFx);
+  group.userData.entries = entries;
+  group.userData.handoffArc = handoffArc;
+  group.userData.sparkles = sparkles;
+  group.userData.interactionFx = interactionFx;
+  group.userData.fxMaterials = fxMaterials;
+  group.userData.fxLight = fxLight;
+  group.userData.featuredKind = featuredKind;
+  return group;
+}
+
+function createRendezvousSet(stageIndex, accent, items = []) {
+  const group = new THREE.Group();
+  const floorColor = new THREE.Color(0x11191c).lerp(new THREE.Color(accent), 0.055);
+  const floor = mesh(new THREE.CircleGeometry(8.2, 48), new THREE.MeshBasicMaterial({ color: floorColor, transparent: true, opacity: 0.72 }), false, false);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0.012;
+  group.add(floor);
+  const animated = [];
+
+  if (stageIndex === 0) {
+    const shelter = createShelter(accent);
+    shelter.scale.setScalar(1.06);
+    shelter.position.set(0.8, 0, -1.8);
+    const bench = createBench();
+    bench.position.set(0.7, 0, -0.5);
+    const tree = createTree(accent);
+    tree.position.set(-3.6, 0, -1.2);
+    const lamp = createLamp(accent);
+    lamp.position.set(3.6, 0, -1.3);
+    group.add(shelter, bench, tree, lamp);
+  } else if (stageIndex === 1) {
+    const bench = createBench();
+    bench.position.set(-1.9, 0, -0.6);
+    const railing = createRailing();
+    railing.position.set(0, 0, -2.7);
+    const lights = createStringLights(accent, 8, 4.3);
+    lights.position.z = -0.3;
+    const displayBook = createStoryProp({ kind: "book", color: "coral" }, accent, null, true);
+    displayBook.scale.setScalar(0.72);
+    displayBook.position.set(2.5, 1.05, -0.9);
+    displayBook.rotation.set(-0.12, -0.28, 0.08);
+    animated.push(...lights.userData.bulbs);
+    group.add(bench, railing, lights, displayBook);
+  } else if (stageIndex === 2) {
+    const cinema = createCinemaFront(accent);
+    cinema.scale.setScalar(0.72);
+    cinema.position.set(0, 0, -3.25);
+    const lights = createStringLights(accent, 8.2, 5.75);
+    lights.scale.setScalar(0.82);
+    lights.position.set(0, 0, -2.35);
+    animated.push(cinema.userData.sign, ...lights.userData.bulbs);
+    group.add(cinema, lights);
+  } else if (stageIndex === 3) {
+    const marketLeft = createMarket(0xff657f);
+    marketLeft.scale.setScalar(0.78);
+    marketLeft.position.set(-3.4, 0, -2.5);
+    marketLeft.rotation.y = 0.12;
+    const marketRight = createMarket(0xffb04c);
+    marketRight.scale.setScalar(0.78);
+    marketRight.position.set(3.4, 0, -2.5);
+    marketRight.rotation.y = -0.12;
+    const railing = createRailing();
+    railing.position.set(0, 0, -3);
+    const bench = createBench();
+    bench.position.set(0.5, 0, -1.05);
+    const lights = createStringLights(accent, 9, 4.1);
+    animated.push(...lights.userData.bulbs);
+    group.add(marketLeft, marketRight, railing, bench, lights);
+  } else if (stageIndex === 4) {
+    const kitchenTable = new THREE.Group();
+    const tableTop = mesh(new THREE.BoxGeometry(3.5, 0.14, 1.35), material(0x765139, { roughness: 0.72 }), true);
+    tableTop.position.set(0.4, 1.02, -1.85);
+    [-1.25, 1.25].forEach((x) => {
+      const leg = mesh(new THREE.BoxGeometry(0.13, 1, 0.13), material(0x3b2d27, { roughness: 0.82 }), true);
+      leg.position.set(0.4 + x, 0.5, -1.85);
+      kitchenTable.add(leg);
+    });
+    const tableGlow = new THREE.PointLight(0xffc67b, 7, 8, 2);
+    tableGlow.position.set(0.4, 2.1, -1.3);
+    kitchenTable.add(tableTop, tableGlow);
+    const plant = createStoryProp({ kind: "plant", color: "green" }, accent, null, true);
+    plant.scale.setScalar(0.9);
+    plant.position.set(2.45, 1.25, -1.45);
+    group.add(kitchenTable, plant);
+  } else if (stageIndex === 5) {
+    const shelter = createShelter(accent);
+    shelter.scale.set(1.12, 1.05, 1.1);
+    shelter.position.set(0, 0, -2.4);
+    const railing = createRailing();
+    railing.scale.x = 1.65;
+    railing.position.set(0, 0, -2.8);
+    const warningLeft = createWarning(accent);
+    warningLeft.scale.setScalar(0.7);
+    warningLeft.position.set(-4.2, 0, -1.6);
+    const warningRight = createWarning(accent);
+    warningRight.scale.setScalar(0.7);
+    warningRight.position.set(4.2, 0, -1.6);
+    const lamp = createLamp(0xffc785);
+    lamp.position.set(3.5, 0, -2.1);
+    group.add(shelter, railing, warningLeft, warningRight, lamp);
+  } else {
+    const tree = createTree(0x8db884);
+    tree.position.set(-4.2, 0, -1.7);
+    const lamp = createLamp(0xffd28b);
+    lamp.position.set(4.25, 0, -1.6);
+    const pathLights = createStringLights(0xffd28b, 8.8, 5.1);
+    pathLights.position.z = -0.9;
+    animated.push(...pathLights.userData.bulbs);
+    group.add(tree, lamp, pathLights);
+  }
+
+  const keyLight = new THREE.PointLight(accent, stageIndex === 5 ? 7 : 9, 18, 2);
+  keyLight.position.set(-1.8, 4.2, 2.2);
+  group.add(keyLight);
+  const itemDisplay = createArrivalItemDisplay(items, accent, stageIndex);
+  group.add(itemDisplay);
+  group.userData.animated = animated;
+  group.userData.itemDisplay = itemDisplay;
+  group.userData.keyLight = keyLight;
+  group.userData.stageIndex = stageIndex;
+  group.position.set(0, 0, -2.2);
   return group;
 }
 
@@ -1958,6 +2488,7 @@ class CinematicRunnerRenderer {
     this.platformTexture = makePlatformTexture();
     this.particleTexture = makeParticleTexture();
     this.stageTextures = Array(STAGE_CONFIGS.length).fill(null);
+    this.arrivalStageTextures = Array(STAGE_CONFIGS.length).fill(null);
     this.backdropMaterials = [0, 1].map(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, fog: false, color: 0xffffff }));
     this.backdrops = this.backdropMaterials.map((backdropMaterial, index) => {
       const backdrop = mesh(new THREE.PlaneGeometry(76, 136), backdropMaterial);
@@ -1968,6 +2499,18 @@ class CinematicRunnerRenderer {
     });
     this.activeBackdrop = 0;
     this.backdropBlend = 1;
+    this.arrivalBackdropMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: false
+    });
+    this.arrivalBackdrop = mesh(new THREE.PlaneGeometry(17.2, 27), this.arrivalBackdropMaterial);
+    this.arrivalBackdrop.position.set(0, 6.8, -8.6);
+    this.arrivalBackdrop.renderOrder = -1;
+    this.arrivalBackdrop.visible = false;
+    this.scene.add(this.arrivalBackdrop);
 
     this.hemisphere = new THREE.HemisphereLight(0xcfe8e2, 0x1d2925, 1.65);
     this.keyLight = new THREE.DirectionalLight(STAGE_CONFIGS[0].key, 3.8);
@@ -2007,6 +2550,13 @@ class CinematicRunnerRenderer {
     this.sleeperMaterial = material(0x4a3b31, { roughness: 0.96 });
     this.powerRailMaterial = material(new THREE.Color(STAGE_CONFIGS[0].accent).multiplyScalar(0.42), { emissive: STAGE_CONFIGS[0].accent, emissiveIntensity: 0.16, roughness: 0.48 });
     this.safetyLineMaterial = material(0xe3c953, { emissive: 0x8b7224, emissiveIntensity: 0.28, roughness: 0.62 });
+    this.laneGuideMaterial = material(0xc9e5df, {
+      emissive: STAGE_CONFIGS[0].accent,
+      emissiveIntensity: 0.28,
+      transparent: true,
+      opacity: 0.72,
+      roughness: 0.5
+    });
     this.ground = mesh(new THREE.PlaneGeometry(86, 410), this.groundMaterial, false, true);
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.position.set(0, -0.075, -120);
@@ -2021,6 +2571,7 @@ class CinematicRunnerRenderer {
     this.companion = createCharacter({ skin: 0xe0ad8c, cloth: 0xdf6074, clothDark: 0x733247, hair: 0x2b211f, accent: 0xffd28c, feminine: true, scale: 0.84 });
     this.player.position.set(0, 0, PLAYER_Z);
     this.companion.position.set(-2.7, 0, -19);
+    this.companion.visible = false;
     this.playerTrail = createRunnerFootTrail(STAGE_CONFIGS[0].accent);
     this.landingRing = mesh(new THREE.RingGeometry(0.22, 0.31, 32), new THREE.MeshBasicMaterial({
       color: STAGE_CONFIGS[0].accent,
@@ -2032,7 +2583,12 @@ class CinematicRunnerRenderer {
     }));
     this.landingRing.rotation.x = -Math.PI / 2;
     this.landingRing.position.set(0, 0.035, PLAYER_Z);
-    this.scene.add(this.playerTrail, this.landingRing, this.player, this.companion);
+    this.carryGroup = new THREE.Group();
+    this.carriedItems = [];
+    this.arrivalSet = null;
+    this.arrivalData = null;
+    this.arrivalProgress = 0;
+    this.scene.add(this.playerTrail, this.landingRing, this.player, this.companion, this.carryGroup);
 
     this.entityObjects = new Map();
     this.entityPool = new Map();
@@ -2055,6 +2611,7 @@ class CinematicRunnerRenderer {
     this.cssHeight = 1;
     this.maxPixelRatio = 1;
     this.stageIndex = -1;
+    this.routePhase = 0;
     this.stageElapsed = 0;
     this.currentDistance = 0;
     this.currentLaneX = 0;
@@ -2102,9 +2659,12 @@ class CinematicRunnerRenderer {
         }, motionGltf.animations);
         riggedPlayer.position.copy(this.player.position);
         riggedCompanion.position.copy(this.companion.position);
-        this.fallbackPlayer = this.player;
-        this.fallbackCompanion = this.companion;
-        this.scene.remove(this.player, this.companion);
+        riggedCompanion.visible = Boolean(this.arrivalData);
+        const oldPlayer = this.player;
+        const oldCompanion = this.companion;
+        this.scene.remove(oldPlayer, oldCompanion);
+        disposeObject(oldPlayer);
+        disposeObject(oldCompanion);
         this.player = riggedPlayer;
         this.companion = riggedCompanion;
         this.scene.add(this.player, this.companion);
@@ -2145,7 +2705,8 @@ class CinematicRunnerRenderer {
       rails: new THREE.InstancedMesh(new THREE.BoxGeometry(0.085, 0.105, SEGMENT_LENGTH), this.railMaterial, SEGMENT_COUNT * 6),
       thirdRails: new THREE.InstancedMesh(new THREE.BoxGeometry(0.07, 0.075, SEGMENT_LENGTH), this.powerRailMaterial, SEGMENT_COUNT * 3),
       walks: new THREE.InstancedMesh(new THREE.BoxGeometry(2.45, 0.34, SEGMENT_LENGTH), this.platformMaterial, SEGMENT_COUNT * 2),
-      safetyLines: new THREE.InstancedMesh(new THREE.BoxGeometry(0.11, 0.025, SEGMENT_LENGTH), this.safetyLineMaterial, SEGMENT_COUNT * 2)
+      safetyLines: new THREE.InstancedMesh(new THREE.BoxGeometry(0.11, 0.025, SEGMENT_LENGTH), this.safetyLineMaterial, SEGMENT_COUNT * 2),
+      laneGuides: new THREE.InstancedMesh(new THREE.BoxGeometry(0.045, 0.024, 0.82), this.laneGuideMaterial, SEGMENT_COUNT * 24)
     };
     Object.values(this.roadBatches).forEach((batch) => {
       batch.instanceMatrix.setUsage(THREE.StaticDrawUsage);
@@ -2198,6 +2759,12 @@ class CinematicRunnerRenderer {
         transform.makeTranslation(side * 4.46, 0.3, z);
         this.roadBatches.safetyLines.setMatrixAt(segmentIndex * 2 + sideIndex, transform);
       });
+      [-LANE_WIDTH / 2, LANE_WIDTH / 2].forEach((x, boundaryIndex) => {
+        for (let row = 0; row < 12; row += 1) {
+          transform.makeTranslation(x, 0.048, z - 7.25 + row * 1.32);
+          this.roadBatches.laneGuides.setMatrixAt(segmentIndex * 24 + boundaryIndex * 12 + row, transform);
+        }
+      });
     });
     Object.values(this.roadBatches).forEach((batch) => {
       batch.instanceMatrix.needsUpdate = true;
@@ -2206,6 +2773,7 @@ class CinematicRunnerRenderer {
 
   rebuildDecor() {
     const config = STAGE_CONFIGS[this.stageIndex];
+    const phase = this.routePhase || 0;
     this.roadSegments.forEach((segment, index) => {
       const oldDecor = segment.userData.decor;
       segment.remove(oldDecor);
@@ -2220,8 +2788,8 @@ class CinematicRunnerRenderer {
       if (index < 10) {
         const tracksideProps = STAGE_TRACKSIDE_PROPS[this.stageIndex] || STAGE_TRACKSIDE_PROPS[0];
         [-1, 1].forEach((side, sideIndex) => {
-          const type = tracksideProps[(index + sideIndex * 2) % tracksideProps.length];
-          const prop = createProp(type, config.accent, index * 7 + sideIndex * 3 + this.stageIndex);
+          const type = tracksideProps[(index + sideIndex * 2 + phase) % tracksideProps.length];
+          const prop = createProp(type, config.accent, index * 7 + sideIndex * 3 + this.stageIndex + phase * 11);
           const compact = ["lamp", "signal", "tree", "bench", "warning"].includes(type);
           prop.scale.setScalar(compact ? 0.86 : 0.74 + (index % 3) * 0.035);
           prop.position.set(side * (5.95 + (index % 3) * 0.28), 0.18, sideIndex ? -2.8 : 2.4);
@@ -2229,12 +2797,12 @@ class CinematicRunnerRenderer {
           decor.add(prop);
         });
       }
-      if (index % 6 === 0) {
+      if (index % Math.max(4, 6 - phase) === 0) {
         const gantry = createGantry(config.accent, this.stageIndex === 5);
         gantry.position.z = -4.8;
         decor.add(gantry);
       }
-      if (index < 10 && index % 5 === 4) {
+      if (index < 10 && index % 5 === (4 - phase + 5) % 5) {
         const stageSpan = createStageSpan(this.stageIndex, config.accent, index);
         stageSpan.position.z = 3.4;
         decor.add(stageSpan);
@@ -2321,6 +2889,21 @@ class CinematicRunnerRenderer {
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
         const imageAspect = texture.image.width / texture.image.height;
+        const arrivalTexture = texture.clone();
+        arrivalTexture.colorSpace = THREE.SRGBColorSpace;
+        arrivalTexture.minFilter = THREE.LinearFilter;
+        arrivalTexture.magFilter = THREE.LinearFilter;
+        arrivalTexture.matrixAutoUpdate = false;
+        const arrivalAspect = 17.2 / 27;
+        if (imageAspect > arrivalAspect) {
+          arrivalTexture.repeat.set(arrivalAspect / imageAspect, 1);
+          arrivalTexture.offset.set((1 - arrivalTexture.repeat.x) / 2, 0);
+        } else {
+          arrivalTexture.repeat.set(1, imageAspect / arrivalAspect);
+          arrivalTexture.offset.set(0, (1 - arrivalTexture.repeat.y) / 2);
+        }
+        arrivalTexture.updateMatrix();
+        arrivalTexture.needsUpdate = true;
         const planeAspect = 76 / 136;
         texture.matrixAutoUpdate = false;
         if (imageAspect > planeAspect) {
@@ -2334,6 +2917,11 @@ class CinematicRunnerRenderer {
         texture.offset.y = 1 - texture.repeat.y;
         texture.updateMatrix();
         this.stageTextures[index] = texture;
+        this.arrivalStageTextures[index] = arrivalTexture;
+        if (this.arrivalData?.stageIndex === index) {
+          this.arrivalBackdropMaterial.map = arrivalTexture;
+          this.arrivalBackdropMaterial.needsUpdate = true;
+        }
         if (index === this.stageIndex) this.activateBackdrop(index, this.stageIndex === 0 && this.backdropMaterials[0].map === null);
       });
     });
@@ -2359,6 +2947,7 @@ class CinematicRunnerRenderer {
     const nextIndex = clamp(Math.trunc(index), 0, STAGE_CONFIGS.length - 1);
     if (nextIndex === this.stageIndex && !immediate) return;
     this.stageIndex = nextIndex;
+    this.routePhase = 0;
     this.stageElapsed = 0;
     const config = STAGE_CONFIGS[this.stageIndex];
     this.targetBackground.setHex(config.sky);
@@ -2385,7 +2974,18 @@ class CinematicRunnerRenderer {
     this.powerRailMaterial.emissiveIntensity = 0.16;
     this.safetyLineMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xf0cf58), 0.55));
     this.safetyLineMaterial.emissive.copy(new THREE.Color(config.accent).multiplyScalar(0.42));
+    this.laneGuideMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xffffff), 0.72));
+    this.laneGuideMaterial.emissive.setHex(config.accent);
     this.groundMaterial.color.setHex(config.ground);
+    const railRoute = config.routeStyle === "metro" || config.routeStyle === "terminal";
+    if (this.roadBatches) {
+      this.roadBatches.sleepers.visible = railRoute;
+      this.roadBatches.rails.visible = railRoute;
+      this.roadBatches.thirdRails.visible = railRoute;
+      this.roadBatches.safetyLines.visible = !railRoute;
+      this.roadBatches.laneGuides.visible = !railRoute;
+      this.roadBatches.walks.visible = true;
+    }
     this.ambientParticles.material.color.setHex(config.accent);
     this.playerTrail.material.color.setHex(config.accent);
     this.landingRing.material.color.setHex(config.accent);
@@ -2431,6 +3031,14 @@ class CinematicRunnerRenderer {
     }
   }
 
+  setRoutePhase(value) {
+    const nextPhase = clamp(Math.trunc(Number(value) || 0), 0, 2);
+    if (nextPhase === this.routePhase) return;
+    this.routePhase = nextPhase;
+    this.laneGuideMaterial.opacity = 0.6 + nextPhase * 0.08;
+    this.rebuildDecor();
+  }
+
   resize(width, height, devicePixelRatio = 1) {
     const cssWidth = Math.max(1, Number(width) || 720);
     const cssHeight = Math.max(1, Number(height) || 1280);
@@ -2459,15 +3067,20 @@ class CinematicRunnerRenderer {
   }
 
   acquireEntity(entity, config) {
-    const signature = `${this.stageIndex}:${entity.type}:${entity.subtype || entity.avoid || entity.cue || "default"}:${Number(entity.variant) % 2}`;
+    const signature = `${this.stageIndex}:${entity.type}:${entity.itemId || entity.data?.itemId || entity.subtype || entity.avoid || entity.cue || "default"}:${Number(entity.variant) % 2}`;
     const bucket = this.entityPool.get(signature);
     let object = bucket?.pop();
     if (!object) {
       if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
+      else if (entity.type === "story-item" || entity.type === "route-choice") object = createStoryProp({
+        id: entity.itemId || entity.data?.itemId,
+        kind: entity.data?.kind,
+        color: entity.data?.color
+      }, config.accent, this.particleTexture, false);
       else if (entity.type === "obstacle") object = createObstacle(this.stageIndex, entity.avoid, config.accent, entity.subtype, entity.variant);
-      else object = createCompanionCue(entity.cue, config.accent);
+      else object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
       object.userData.poolKey = signature;
-      object.userData.sharedTexture = entity.type === "collectible" ? this.particleTexture : null;
+      object.userData.sharedTexture = entity.type === "obstacle" ? null : this.particleTexture;
     }
     object.visible = true;
     object.userData.entityType = entity.type;
@@ -2529,7 +3142,18 @@ class CinematicRunnerRenderer {
       }
       object.position.x = entity.lane * LANE_WIDTH;
       object.position.z = PLAYER_Z + (COLLISION_Z - entity.z) * WORLD_Z_SCALE;
-      object.position.y = 0;
+      const storyItem = entity.type === "story-item" || entity.type === "route-choice";
+      object.position.y = storyItem ? 1.06 + (Number(entity.height) || 0) + Math.sin(time * 4.2 + entity.id) * 0.09 : 0;
+      if (storyItem) {
+        object.rotation.y = Math.sin(time * 1.25 + entity.id) * 0.24;
+        object.rotation.z = Math.sin(time * 1.8 + entity.id) * 0.045;
+        if (object.userData.halo) object.userData.halo.material.opacity = 0.45 + Math.sin(time * 5 + entity.id) * 0.13;
+        if (object.userData.markerRing) {
+          object.userData.markerRing.rotation.z = time * 0.8 + entity.lane * 0.7;
+          object.userData.markerRing.material.opacity = 0.42 + Math.sin(time * 4.2 + entity.id) * 0.14;
+        }
+        if (object.userData.markerBeam) object.userData.markerBeam.material.opacity = 0.07 + Math.sin(time * 3.3 + entity.id) * 0.025;
+      }
       if (object.userData.kind === "train") object.rotation.z = Math.sin(time * 7 + entity.id) * 0.0025;
       if (object.userData.kind === "service-cart") object.rotation.y = Math.sin(time * 5.4 + entity.id) * 0.012;
       object.userData.warningBeacons?.forEach((beacon, beaconIndex) => {
@@ -2605,7 +3229,7 @@ class CinematicRunnerRenderer {
       train.position.y = 0.04 + Math.sin(time * 4.4 + index) * 0.012;
       if (train.position.z > 15) train.position.z = -92 - index * 24;
       train.rotation.y = direction > 0 ? 0 : Math.PI;
-      train.visible = this.stageIndex > 0 || index === 0;
+      train.visible = config.routeStyle === "metro" || config.routeStyle === "terminal";
     });
     const nightFactor = ["neon", "rain", "storm", "starlight"].includes(config.weather) ? 1 : 0.72;
     if (windowLights) windowLights.material.size = 0.24 + nightFactor * 0.1;
@@ -2654,6 +3278,63 @@ class CinematicRunnerRenderer {
     });
   }
 
+  carry(item) {
+    if (!item?.id || this.carriedItems.some((entry) => entry.item.id === item.id)) return;
+    const prop = createStoryProp(item, STAGE_CONFIGS[this.stageIndex].accent, null, true);
+    prop.userData.carried = true;
+    this.carryGroup.add(prop);
+    this.carriedItems.push({ item: { ...item }, prop });
+    while (this.carriedItems.length > 3) {
+      const removed = this.carriedItems.shift();
+      this.carryGroup.remove(removed.prop);
+      disposeObject(removed.prop);
+    }
+    this.carriedItems.forEach((entry, index, list) => {
+      const offset = index - (list.length - 1) / 2;
+      entry.prop.position.set(offset * 0.42, index % 2 ? 0.14 : 0, -index * 0.05);
+      entry.prop.rotation.set(-0.08, offset * 0.2, offset * -0.12);
+      entry.prop.scale.setScalar(entry.item.kind === "umbrella" ? 0.4 : entry.item.kind === "flower" ? 0.52 : 0.46);
+    });
+  }
+
+  clearCarry() {
+    this.carriedItems.forEach((entry) => {
+      this.carryGroup.remove(entry.prop);
+      disposeObject(entry.prop);
+    });
+    this.carriedItems.length = 0;
+  }
+
+  beginArrival(data) {
+    this.endArrival();
+    this.arrivalData = { ...data };
+    this.arrivalProgress = 0;
+    this.arrivalSet = createRendezvousSet(data.stageIndex, STAGE_CONFIGS[data.stageIndex].accent, data.items);
+    this.scene.add(this.arrivalSet);
+    this.arrivalBackdropMaterial.map = this.arrivalStageTextures[data.stageIndex] || this.stageTextures[data.stageIndex] || null;
+    this.arrivalBackdropMaterial.opacity = 0;
+    this.arrivalBackdropMaterial.needsUpdate = true;
+    this.arrivalBackdrop.visible = true;
+    this.companion.visible = true;
+    this.flash = Math.max(this.flash, 0.16);
+    this.flashMaterial.color.setHex(STAGE_CONFIGS[data.stageIndex].accent);
+  }
+
+  endArrival() {
+    if (this.arrivalSet) {
+      this.scene.remove(this.arrivalSet);
+      disposeObject(this.arrivalSet);
+    }
+    this.arrivalSet = null;
+    this.arrivalData = null;
+    this.arrivalProgress = 0;
+    this.arrivalBackdrop.visible = false;
+    this.arrivalBackdropMaterial.opacity = 0;
+    this.companion.visible = false;
+    this.companion.position.set(-2.7, 0, -19);
+    this.companion.rotation.set(0, 0, 0);
+  }
+
   effect(type, detail = {}) {
     if (type === "miss") {
       this.shake = Math.max(this.shake, 0.82);
@@ -2666,30 +3347,36 @@ class CinematicRunnerRenderer {
       this.flashMaterial.color.setHex(STAGE_CONFIGS[this.stageIndex].accent);
       return;
     }
+    if (type === "story-missed") {
+      this.speedPulse = Math.max(this.speedPulse, 0.16);
+      return;
+    }
     if (type === "near-miss") {
       this.shake = Math.max(this.shake, 0.26);
       this.speedPulse = Math.max(this.speedPulse, 1);
     } else if (type === "dodge") {
       this.speedPulse = Math.max(this.speedPulse, 0.62);
     }
-    const count = type === "perfect" || type === "companion-sync" ? 34 : type === "near-miss" ? 26 : 20;
+    const storyColor = detail.item ? storyPropColor(detail.item, STAGE_CONFIGS[this.stageIndex].accent) : STAGE_CONFIGS[this.stageIndex].accent;
+    const count = type === "story-pickup" ? 42 : type === "perfect" ? 34 : type === "near-miss" ? 26 : 20;
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count * 3);
     for (let index = 0; index < count; index += 1) {
       const angle = index / count * Math.PI * 2;
-      const spread = 0.35 + (index % 5) * 0.08;
-      positions[index * 3] = 0;
-      positions[index * 3 + 1] = 0;
-      positions[index * 3 + 2] = 0;
-      velocities[index * 3] = Math.cos(angle) * spread;
+      const spread = (type === "story-pickup" ? 0.48 : 0.35) + (index % 5) * 0.08;
+      const spiral = type === "story-pickup" ? index / count * 0.52 : 0;
+      positions[index * 3] = Math.cos(angle) * spiral;
+      positions[index * 3 + 1] = spiral * 0.6;
+      positions[index * 3 + 2] = Math.sin(angle) * spiral;
+      velocities[index * 3] = Math.cos(angle + (type === "story-pickup" ? 0.72 : 0)) * spread;
       velocities[index * 3 + 1] = 0.55 + (index % 7) * 0.09;
-      velocities[index * 3 + 2] = Math.sin(angle) * spread;
+      velocities[index * 3 + 2] = Math.sin(angle + (type === "story-pickup" ? 0.72 : 0)) * spread;
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const pointMaterial = new THREE.PointsMaterial({
       map: this.particleTexture,
-      color: type === "companion-sync" ? 0x9ff1df : STAGE_CONFIGS[this.stageIndex].accent,
+      color: type === "story-pickup" ? storyColor : STAGE_CONFIGS[this.stageIndex].accent,
       size: 0.16,
       transparent: true,
       opacity: 1,
@@ -2702,9 +3389,9 @@ class CinematicRunnerRenderer {
     points.position.set(effectX, type === "dodge" ? 0.75 : 1.25, effectZ);
     this.scene.add(points);
     this.bursts.push({ points, velocities, life: 0.85, duration: 0.85 });
-    if (["dodge", "near-miss", "perfect", "companion-sync"].includes(type)) {
+    if (["dodge", "near-miss", "perfect", "story-pickup"].includes(type)) {
       const ringMaterial = new THREE.MeshBasicMaterial({
-        color: type === "near-miss" ? 0xffd169 : type === "companion-sync" ? 0x9ff1df : STAGE_CONFIGS[this.stageIndex].accent,
+        color: type === "near-miss" ? 0xffd169 : type === "story-pickup" ? storyColor : STAGE_CONFIGS[this.stageIndex].accent,
         transparent: true,
         opacity: 0.82,
         blending: THREE.AdditiveBlending,
@@ -2716,6 +3403,14 @@ class CinematicRunnerRenderer {
       ring.rotation.x = Math.PI / 2;
       this.scene.add(ring);
       this.rings.push({ mesh: ring, life: 0.48, duration: 0.48, spin: type === "near-miss" ? 4 : 1.6 });
+      if (type === "story-pickup") {
+        const orbit = mesh(new THREE.TorusGeometry(0.7, 0.026, 8, 44), ringMaterial.clone());
+        orbit.position.copy(ring.position);
+        orbit.rotation.set(Math.PI / 2 + 0.4, 0.55, 0.2);
+        this.scene.add(orbit);
+        this.rings.push({ mesh: orbit, life: 0.66, duration: 0.66, spin: -2.4 });
+        this.speedPulse = Math.max(this.speedPulse, 0.42);
+      }
     }
   }
 
@@ -2727,6 +3422,9 @@ class CinematicRunnerRenderer {
     this.qualityElapsed += delta;
     this.stageElapsed += delta;
     if (frame.stageIndex !== this.stageIndex) this.setStage(frame.stageIndex);
+    if (Number.isFinite(Number(frame.routePhase)) && Number(frame.routePhase) !== this.routePhase) this.setRoutePhase(frame.routePhase);
+    if (frame.arrival && !this.arrivalData) this.beginArrival(frame.arrival);
+    if (!frame.arrival && this.arrivalData && frame.mode !== "arrival") this.endArrival();
     const motion = frame.motion || {};
     const runState = frame.runState || {};
     const speed = Number(motion.speed) || 10.5;
@@ -2736,13 +3434,24 @@ class CinematicRunnerRenderer {
     this.syncRoad(this.currentDistance);
     this.syncEntities(motion.entities || [], time);
 
+    const arriving = frame.mode === "arrival" && Boolean(frame.arrival);
+    const arrivalProgress = arriving ? clamp(Number(frame.arrival.progress) || 0, 0, 1) : 0;
+    this.arrivalProgress = arrivalProgress;
+    const arrivalEase = arrivalProgress * arrivalProgress * (3 - arrivalProgress * 2);
+    this.roadGroup.visible = !arriving;
+    this.ground.visible = !arriving;
+    this.backdrops.forEach((backdrop) => { backdrop.visible = !arriving; });
+    this.arrivalBackdrop.visible = arriving;
+    this.arrivalBackdropMaterial.opacity = arriving ? Math.min(0.86, arrivalProgress * 2.4) : 0;
+    this.arrivalBackdrop.scale.setScalar(arriving ? 1.035 - arrivalEase * 0.055 : 1);
+    this.arrivalBackdrop.position.x = arriving ? Math.sin(arrivalProgress * Math.PI) * (this.stageIndex % 2 ? -0.24 : 0.24) : 0;
     const lanePosition = Number.isFinite(Number(motion.lanePosition)) ? Number(motion.lanePosition) : Number(motion.lane) || 0;
-    const targetPlayerX = lanePosition * LANE_WIDTH;
+    const targetPlayerX = arriving ? -0.66 : lanePosition * LANE_WIDTH;
     this.previousLaneX = this.currentLaneX;
-    this.currentLaneX = damp(this.currentLaneX, targetPlayerX, 28, delta);
+    this.currentLaneX = damp(this.currentLaneX, targetPlayerX, arriving ? 4.8 : 28, delta);
     this.lateralVelocity = damp(this.lateralVelocity, (this.currentLaneX - this.previousLaneX) / Math.max(delta, 1 / 120) / LANE_WIDTH, 18, delta);
     this.player.position.x = this.currentLaneX;
-    this.player.position.z = PLAYER_Z;
+    this.player.position.z = arriving ? damp(this.player.position.z, -0.12, 2.8, delta) : PLAYER_Z;
     const stumble = clamp((Number(motion.stumbleTime) || 0) / 0.62, 0, 1);
     const vertical = Number(motion.vertical) || 0;
     if (this.previousVertical > 0.16 && vertical <= 0.025 && motion.action !== "jump") {
@@ -2750,12 +3459,14 @@ class CinematicRunnerRenderer {
       this.shake = Math.max(this.shake, 0.12);
     }
     this.previousVertical = vertical;
+    const playerAction = arriving && arrivalProgress > 0.26 ? "idle" : motion.action || "run";
     if (this.player.userData.modelRunner) {
-      animateRiggedRunner(this.player, delta, motion.action || "run", vertical, speed / 17, this.lateralVelocity, stumble);
+      animateRiggedRunner(this.player, delta, playerAction, arriving ? 0 : vertical, arriving ? 0.12 : speed / 17, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
     } else {
-      animateCharacter(this.player, time, motion.action || "run", vertical, speed / 17, 0, this.lateralVelocity, stumble);
+      animateCharacter(this.player, time, playerAction, arriving ? 0 : vertical, arriving ? 0.05 : speed / 17, 0, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
     }
-    updateRunnerFootTrail(this.playerTrail, this.player, time, speed, delta);
+    updateRunnerFootTrail(this.playerTrail, this.player, time, arriving ? Math.max(1, speed * (1 - arrivalProgress * 1.2)) : speed, delta);
+    this.playerTrail.material.opacity = damp(this.playerTrail.material.opacity, arriving ? Math.max(0, 0.38 - arrivalProgress) : 0.64, 5, delta);
     this.landingPulse = Math.max(0, this.landingPulse - delta * 2.8);
     const landingProgress = 1 - this.landingPulse;
     this.landingRing.position.x = this.currentLaneX;
@@ -2763,36 +3474,83 @@ class CinematicRunnerRenderer {
     this.landingRing.material.opacity = this.landingPulse * 0.72;
 
     const config = STAGE_CONFIGS[this.stageIndex];
-    const heartbeat = Number(runState.heartbeat) || 60;
-    let companionX = config.companion.x;
-    let companionZ = config.companion.z;
-    if (this.stageIndex === 5) {
-      const distanceFactor = clamp((72 - heartbeat) / 34, 0, 1);
-      companionX += distanceFactor * 1.35;
-      companionZ -= distanceFactor * 1.8;
-    }
-    this.companion.position.x = damp(this.companion.position.x, companionX, 2.9, delta);
-    this.companion.position.z = damp(this.companion.position.z, companionZ, 2.9, delta);
-    const companionCue = motion.companion?.cue?.action;
-    const companionAction = companionCue === "jump" || companionCue === "slide" ? companionCue : "run";
-    if (this.companion.userData.modelRunner) {
-      animateRiggedRunner(this.companion, delta, companionAction, companionAction === "jump" ? 0.75 : 0, speed / 17, 0, 0);
+    this.companion.visible = arriving;
+    if (arriving) {
+      const meetingX = 0.66;
+      const meetingZ = -0.2;
+      this.companion.position.x = damp(this.companion.position.x, meetingX, 5.2, delta);
+      this.companion.position.z = damp(this.companion.position.z, meetingZ, 5.2, delta);
+      this.player.rotation.y = damp(this.player.rotation.y, Math.PI * 1.32, 4.6, delta);
+      this.companion.rotation.y = damp(this.companion.rotation.y, Math.PI * 0.68, 4.6, delta);
+      if (this.companion.userData.modelRunner) animateRiggedRunner(this.companion, delta, "idle", 0, 0.1, 0, 0);
+      else animateCharacter(this.companion, time, "idle", 0, 0.04, 1.2, 0, 0);
+      this.arrivalSet?.userData.animated?.forEach((light, index) => {
+        if (light.material?.emissiveIntensity !== undefined) light.material.emissiveIntensity = 2.2 + Math.sin(time * 2.8 + index) * 0.8;
+        if (light.material?.opacity !== undefined) light.material.opacity = 0.68 + Math.sin(time * 2.1 + index) * 0.12;
+      });
+      if (this.arrivalSet?.userData.keyLight) this.arrivalSet.userData.keyLight.intensity = 8 + Math.sin(time * 1.4) * 1.5;
+      const itemDisplay = this.arrivalSet?.userData.itemDisplay;
+      itemDisplay?.userData.entries?.forEach((entry, index) => {
+        const reveal = clamp((arrivalProgress - 0.4 - entry.revealOrder * 0.055) / 0.18, 0, 1);
+        const bounce = 1 + Math.sin(reveal * Math.PI) * 0.22;
+        const baseScale = entry.item.kind === "umbrella" ? 0.78 : entry.item.kind === "flower" ? 0.72 : 0.62;
+        entry.prop.scale.setScalar(Math.max(0.001, reveal * baseScale * bounce));
+        entry.prop.rotation.y += delta * (0.18 + index * 0.06);
+        entry.halo.scale.setScalar(Math.max(0.001, reveal * (1.2 + index * 0.08)));
+        entry.halo.material.opacity = reveal * (0.22 + Math.sin(time * 2.8 + index) * 0.08);
+      });
+      if (itemDisplay?.userData.handoffArc) {
+        itemDisplay.userData.handoffArc.material.opacity = Math.sin(clamp((arrivalProgress - 0.22) / 0.52, 0, 1) * Math.PI) * 0.66;
+      }
+      if (itemDisplay?.userData.sparkles) {
+        itemDisplay.userData.sparkles.material.opacity = clamp((arrivalProgress - 0.38) * 2.6, 0, 0.72) * (0.78 + Math.sin(time * 2.3) * 0.18);
+        itemDisplay.userData.sparkles.rotation.y = time * 0.12;
+      }
+      if (itemDisplay?.userData.interactionFx) {
+        const fxReveal = clamp((arrivalProgress - 0.42) / 0.2, 0, 1);
+        const cameraPulse = ["camera", "photo"].includes(itemDisplay.userData.featuredKind)
+          ? Math.max(0, 1 - Math.abs(fxReveal - 0.45) * 2.2)
+          : 0.72 + Math.sin(time * 3.1) * 0.18;
+        itemDisplay.userData.fxMaterials.forEach((entry) => {
+          entry.material.opacity = fxReveal * entry.maxOpacity * cameraPulse;
+        });
+        itemDisplay.userData.interactionFx.scale.setScalar(0.82 + fxReveal * 0.18);
+        itemDisplay.userData.interactionFx.rotation.z = ["record", "wristband", "key", "lamp"].includes(itemDisplay.userData.featuredKind)
+          ? time * 0.18
+          : Math.sin(time * 0.8) * 0.025;
+        if (itemDisplay.userData.fxLight) itemDisplay.userData.fxLight.intensity = fxReveal * (5.5 + Math.sin(time * 3.2) * 1.2);
+      }
     } else {
-      animateCharacter(this.companion, time, companionAction, companionAction === "jump" ? 0.75 : 0, speed / 17, 0.9, 0, 0);
+      this.player.rotation.y = damp(this.player.rotation.y, 0, 8, delta);
     }
-    this.companion.rotation.y = this.stageIndex === 0 ? -0.08 : 0;
 
-    const cameraTargetX = this.currentLaneX * 0.42 + (this.stageIndex >= 4 ? 0.08 : 0);
+    if (this.carriedItems.length) {
+      const transfer = clamp((arrivalProgress - 0.34) / 0.34, 0, 1);
+      const transferEase = transfer * transfer * (3 - transfer * 2);
+      const carryX = arriving ? THREE.MathUtils.lerp(this.player.position.x + 0.5, this.companion.position.x - 0.42, transferEase) : this.player.position.x + 0.5;
+      const carryY = arriving ? 1.2 + Math.sin(transferEase * Math.PI) * 0.42 : this.player.position.y + 1.22;
+      const carryZ = arriving ? THREE.MathUtils.lerp(this.player.position.z + 0.03, this.companion.position.z + 0.18, transferEase) : this.player.position.z + 0.03;
+      this.carryGroup.position.set(carryX, carryY, carryZ);
+      this.carryGroup.rotation.y = arriving ? Math.PI * transferEase : 0;
+      this.carryGroup.visible = !arriving || arrivalProgress < 0.88;
+    } else {
+      this.carryGroup.visible = false;
+    }
+
+    const cameraTargetX = arriving ? (this.stageIndex % 2 ? -1.15 : 1.15) * arrivalEase : this.currentLaneX * 0.42 + (this.stageIndex >= 4 ? 0.08 : 0);
     const cameraBob = frame.mode === "playing" ? Math.sin(time * 8.5) * 0.026 : Math.sin(time * 0.8) * 0.018;
     const shakeX = (Math.sin(time * 83) + Math.sin(time * 41)) * this.shake * 0.07;
     const shakeY = Math.sin(time * 67) * this.shake * 0.055;
-    this.camera.position.x = damp(this.camera.position.x, cameraTargetX, 6, delta) + shakeX;
-    this.camera.position.y = damp(this.camera.position.y, 5.02 + cameraBob - (motion.action === "slide" ? 0.16 : 0), 8, delta) + shakeY;
-    this.camera.position.z = damp(this.camera.position.z, motion.action === "slide" ? 10.02 : 9.72, 5, delta);
-    this.camera.fov = damp(this.camera.fov, 57 + clamp((speed - 10) * 0.42, 0, 5.4) + this.speedPulse * 1.35, 4, delta);
+    this.camera.position.x = damp(this.camera.position.x, cameraTargetX, arriving ? 2.8 : 6, delta) + shakeX;
+    this.camera.position.y = damp(this.camera.position.y, arriving ? 3.78 + cameraBob : 5.02 + cameraBob - (motion.action === "slide" ? 0.16 : 0), arriving ? 3.2 : 8, delta) + shakeY;
+    this.camera.position.z = damp(this.camera.position.z, arriving ? 8.4 : motion.action === "slide" ? 10.02 : 9.72, arriving ? 2.8 : 5, delta);
+    this.camera.fov = damp(this.camera.fov, arriving ? 52 : 57 + clamp((speed - 10) * 0.42, 0, 5.4) + this.speedPulse * 1.35, arriving ? 3 : 4, delta);
     this.camera.updateProjectionMatrix();
-    this.camera.lookAt(this.currentLaneX * 0.33, 0.58, -13.8);
-    this.camera.rotation.z += clamp(-this.lateralVelocity * 0.014, -0.045, 0.045);
+    if (arriving) this.camera.lookAt(0.02, 1.38, -0.72);
+    else {
+      this.camera.lookAt(this.currentLaneX * 0.33, 0.58, -13.8);
+      this.camera.rotation.z += clamp(-this.lateralVelocity * 0.014, -0.045, 0.045);
+    }
     this.shake = Math.max(0, this.shake - delta * 2.8);
     this.flash = Math.max(0, this.flash - delta * 1.8);
     this.flashMaterial.opacity = this.flash;
@@ -2802,12 +3560,19 @@ class CinematicRunnerRenderer {
     this.scene.fog.color.lerp(this.targetFog, 1 - Math.exp(-2.2 * delta));
     this.scene.fog.density = damp(this.scene.fog.density, this.targetFogDensity, 2.5, delta);
     this.renderer.toneMappingExposure = damp(this.renderer.toneMappingExposure, this.targetExposure, 2.2, delta);
-    this.keyLight.intensity = config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : 3.15;
-    this.warmLight.intensity = this.stageIndex >= 3 ? 21 : 14;
+    this.keyLight.intensity = arriving ? 2.35 : config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : 3.15;
+    this.warmLight.intensity = arriving ? 7.5 : this.stageIndex >= 3 ? 21 : 14;
+    this.runnerFillLight.intensity = arriving ? 4.8 : 8.5;
     this.warmLight.position.x = Math.sin(time * 0.18) * 2;
 
     this.updateDistrictWorld(delta, time, this.currentDistance, speed);
     this.updateWeather(delta, time, speed, Number(runState.combo) || 0);
+    if (arriving) {
+      this.metroDistricts.forEach((district) => { district.visible = false; });
+      this.premiumDistricts?.forEach((district) => { district.visible = false; });
+      this.ambientTrains.forEach((train) => { train.visible = false; });
+      this.speedStreaks.material.opacity = 0;
+    }
     this.updateBackdrops(delta);
     this.updateBursts(delta);
     this.renderer.render(this.scene, this.camera);
@@ -2847,12 +3612,17 @@ class CinematicRunnerRenderer {
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,
       rainOpacity: this.rain.material.opacity,
-      companion: { x: this.companion.position.x, z: this.companion.position.z }
+      carriedItems: this.carriedItems.map((entry) => entry.item.id),
+      rendezvousVisible: this.companion.visible,
+      arrivalProgress: this.arrivalProgress,
+      routePhase: this.routePhase
     };
   }
 
   dispose() {
     this.disposed = true;
+    this.endArrival();
+    this.clearCarry();
     this.entityObjects.forEach((object) => disposeObject(object));
     this.entityPool.forEach((bucket) => bucket.forEach((object) => disposeObject(object)));
     this.renderer.dispose();
@@ -2861,11 +3631,12 @@ class CinematicRunnerRenderer {
     this.particleTexture.dispose();
     this.environmentTexture.dispose();
     this.stageTextures.forEach((texture) => texture?.dispose());
+    this.arrivalStageTextures.forEach((texture) => texture?.dispose());
   }
 }
 
 const api = Object.freeze({
-  version: "three-0.185.1-cinematic-runner",
+  version: "three-0.185.1-rendezvous-runner-v2",
   stageAssets: Object.freeze(STAGE_CONFIGS.map((stage) => stage.asset)),
   create(canvas) {
     return new CinematicRunnerRenderer(canvas);

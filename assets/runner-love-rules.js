@@ -14,241 +14,307 @@
   }
 
   const STAGES = deepFreeze([
-    { index: 0, number: 1, id: "courage", name: "勇气", target: 32, checkpoint: 19, duration: 55, perfectWindow: 90, failEnding: "未能迈出第一步" },
-    { index: 1, number: 2, id: "resonance", name: "共鸣", target: 38, checkpoint: 23, duration: 60, perfectWindow: 90, failEnding: "频率渐行渐远" },
-    { index: 2, number: 3, id: "response", name: "回应", target: 44, checkpoint: 26, duration: 65, perfectWindow: 90, failEnding: "心意没有回音" },
-    { index: 3, number: 4, id: "rapport", name: "默契", target: 50, checkpoint: 30, duration: 70, perfectWindow: 90, failEnding: "脚步错开彼此" },
-    { index: 4, number: 5, id: "trust", name: "信任", target: 56, checkpoint: 34, duration: 75, perfectWindow: 90, failEnding: "信任停在半途" },
-    { index: 5, number: 6, id: "understanding", name: "理解", target: 62, checkpoint: 37, duration: 80, perfectWindow: 90, failEnding: "没能读懂真心" },
-    { index: 6, number: 7, id: "promise", name: "约定", target: 68, checkpoint: 41, duration: 85, perfectWindow: 90, failEnding: "约定未能抵达" }
+    { index: 0, number: 1, id: "encounter", name: "再遇见", target: 30, checkpoint: 15, expectedSeconds: 180, destination: "图书馆路口" },
+    { index: 1, number: 2, id: "familiar", name: "渐渐熟悉", target: 30, checkpoint: 15, expectedSeconds: 180, destination: "桥下书店" },
+    { index: 2, number: 3, id: "first-date", name: "第一次赴约", target: 31, checkpoint: 15, expectedSeconds: 180, destination: "旧城电影院" },
+    { index: 3, number: 4, id: "date-night", name: "约会正发生", target: 31, checkpoint: 15, expectedSeconds: 180, destination: "河岸长椅" },
+    { index: 4, number: 5, id: "everyday", name: "成为日常", target: 32, checkpoint: 16, expectedSeconds: 180, destination: "亮灯的厨房" },
+    { index: 5, number: 6, id: "after-rain", name: "雨夜之后", target: 32, checkpoint: 16, expectedSeconds: 180, destination: "河桥雨棚" },
+    { index: 6, number: 7, id: "next-stop", name: "下一站", target: 32, checkpoint: 16, expectedSeconds: 180, destination: "有灯的家" }
   ]);
 
   const RULES = deepFreeze({
     title: "心动跑酷",
-    version: 1,
-    saveVersion: 1,
-    stageCount: 7,
-    initialHeartbeat: 60,
-    minimumHeartbeat: 0,
-    maximumHeartbeat: 100,
-    compensationSeconds: 20,
-    perfectThreshold: 0.9,
-    revealMinimumGrade: "A",
-    heartbeat: { perfect: 5, good: 3, miss: -12, comboStep: 5, comboBonus: 1, comboBonusCap: 5 },
-    rating: { sScore: 90, aScore: 85, completionWeight: 45, accuracyWeight: 35, heartbeatWeight: 20 }
+    subtitle: "今晚见",
+    version: 5,
+    stageCount: STAGES.length,
+    startCondition: 100,
+    collisionLoss: 4,
+    missedActionLoss: 4,
+    goodRecovery: 2,
+    perfectRecovery: 4,
+    stageRecovery: 18,
+    retryCondition: 68
   });
 
-  const OUTCOMES = deepFreeze(["perfect", "good", "miss"]);
-  const GRADES = deepFreeze(["S", "A", "B"]);
-
-  function isRecord(value) {
-    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-    const prototype = Object.getPrototypeOf(value);
-    return prototype === null || Object.getPrototypeOf(prototype) === null;
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
   }
 
-  function integer(value, label, min, max) {
-    if (!Number.isSafeInteger(value)) throw new TypeError(label + " must be an integer");
-    if (value < min || value > max) throw new RangeError(label + " is out of range");
+  function stageState(index, carry) {
+    const definition = STAGES[index];
+    return {
+      id: definition.id,
+      progress: Math.min(definition.target, Math.max(0, Number(carry?.progress) || 0)),
+      target: definition.target,
+      expectedSeconds: definition.expectedSeconds,
+      elapsed: Math.max(0, Number(carry?.elapsed) || 0),
+      attempts: Math.max(0, Number(carry?.attempts) || 0),
+      perfect: Math.max(0, Number(carry?.perfect) || 0),
+      items: Array.isArray(carry?.items) ? [...new Set(carry.items)] : [],
+      choices: Array.isArray(carry?.choices) ? [...new Set(carry.choices)] : []
+    };
   }
 
-  function finite(value, label, min, max) {
-    if (!Number.isFinite(value)) throw new TypeError(label + " must be finite");
-    if (value < min || value > max) throw new RangeError(label + " is out of range");
+  function createRunState(options = {}) {
+    const state = {
+      version: RULES.version,
+      status: "playing",
+      stageIndex: 0,
+      condition: RULES.startCondition,
+      heartbeat: RULES.startCondition,
+      combo: 0,
+      bestCombo: 0,
+      totalAttempts: 0,
+      successfulMoments: 0,
+      perfectMoments: 0,
+      collisions: 0,
+      nearMisses: 0,
+      elapsed: 0,
+      stage: stageState(0),
+      completedStages: [],
+      arrivals: [],
+      checkpoints: [],
+      collectedItems: [],
+      routeChoices: [],
+      stageRecords: [],
+      grade: null,
+      ending: null,
+      newGamePlus: Boolean(options.newGamePlus)
+    };
+    return deepFreeze(state);
   }
 
-  function exactKeys(value, keys, label) {
-    if (!isRecord(value) || Object.keys(value).length !== keys.length || keys.some((key) => !Object.prototype.hasOwnProperty.call(value, key))) {
-      throw new TypeError(label + " has an invalid shape");
-    }
+  function assertPlaying(state) {
+    if (!state || typeof state !== "object") throw new TypeError("state is required");
+    if (state.status !== "playing") throw new RangeError("run is not active");
   }
 
-  function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
-  function round(value) { return Math.round(value * 1000) / 1000; }
-  function cloneFreeze(value) { return deepFreeze(JSON.parse(JSON.stringify(value))); }
-  function currentDefinition(state) { return state.stageIndex < STAGES.length ? STAGES[state.stageIndex] : null; }
-
-  function freshStage() {
-    return { progress: 0, elapsed: 0, compensation: false, compensationRemaining: 0, hits: 0, perfects: 0, misses: 0 };
+  function normalizeMoment(value) {
+    if (typeof value === "string") return { outcome: value };
+    if (!value || typeof value !== "object") throw new TypeError("moment is required");
+    return value;
   }
 
-  function createRunState(options) {
-    if (options === undefined) options = {};
-    exactKeys(options, Object.keys(options).filter((key) => key === "newGamePlus"), "options");
-    const newGamePlus = options.newGamePlus === undefined ? false : options.newGamePlus;
-    if (typeof newGamePlus !== "boolean") throw new TypeError("options.newGamePlus must be boolean");
+  function calculateRating(state, completedOverride) {
+    if (!state || typeof state !== "object") throw new TypeError("state is required");
+    const attempts = Math.max(1, Number(state.totalAttempts) || 0);
+    const accuracy = Math.round((Number(state.successfulMoments) || 0) / attempts * 100);
+    const completion = Math.round(((state.completedStages?.length || 0) + (state.status === "playing" ? (state.stage?.progress || 0) / Math.max(1, state.stage?.target || 1) : 0)) / STAGES.length * 100);
+    const completed = completedOverride === undefined ? state.status === "completed" : Boolean(completedOverride);
+    let grade = "B";
+    if (completed && accuracy >= 90 && (state.collisions || 0) <= 3 && (state.collectedItems?.length || 0) >= 18) grade = "S";
+    else if (completed && accuracy >= 72 && (state.condition || state.heartbeat || 0) >= 35) grade = "A";
     return deepFreeze({
-      version: RULES.version, status: "playing", stageIndex: 0, stage: freshStage(), heartbeat: RULES.initialHeartbeat,
-      combo: 0, bestCombo: 0, totalBeats: 0, perfectBeats: 0, goodBeats: 0, misses: 0,
-      perfectStages: [], checkpoints: [], completedStages: [], heartStamps: [], usedCompensation: false,
-      newGamePlus, ending: null, grade: null, revealEligible: false
+      grade,
+      completion: Math.min(100, completion),
+      accuracy: Math.min(100, accuracy),
+      condition: Number(state.condition ?? state.heartbeat) || 0,
+      heartbeat: Number(state.condition ?? state.heartbeat) || 0,
+      items: state.collectedItems?.length || 0,
+      collisions: state.collisions || 0,
+      bestCombo: state.bestCombo || 0,
+      arrivals: state.arrivals?.length || 0
     });
   }
 
-  const STATE_KEYS = ["version", "status", "stageIndex", "stage", "heartbeat", "combo", "bestCombo", "totalBeats", "perfectBeats", "goodBeats", "misses", "perfectStages", "checkpoints", "completedStages", "heartStamps", "usedCompensation", "newGamePlus", "ending", "grade", "revealEligible"];
-  const STAGE_KEYS = ["progress", "elapsed", "compensation", "compensationRemaining", "hits", "perfects", "misses"];
-
-  function validateRunState(state) {
-    exactKeys(state, STATE_KEYS, "state");
-    if (state.version !== RULES.version) throw new RangeError("unsupported state version");
-    if (!["playing", "completed", "failed"].includes(state.status)) throw new RangeError("invalid state status");
-    integer(state.stageIndex, "state.stageIndex", 0, STAGES.length);
-    exactKeys(state.stage, STAGE_KEYS, "state.stage");
-    const target = currentDefinition(state) ? currentDefinition(state).target : 0;
-    integer(state.stage.progress, "state.stage.progress", 0, target);
-    finite(state.stage.elapsed, "state.stage.elapsed", 0, Number.MAX_SAFE_INTEGER);
-    if (typeof state.stage.compensation !== "boolean") throw new TypeError("state.stage.compensation must be boolean");
-    finite(state.stage.compensationRemaining, "state.stage.compensationRemaining", 0, RULES.compensationSeconds);
-    ["hits", "perfects", "misses"].forEach((key) => integer(state.stage[key], "state.stage." + key, 0, Number.MAX_SAFE_INTEGER));
-    integer(state.heartbeat, "state.heartbeat", 0, 100);
-    ["combo", "bestCombo", "totalBeats", "perfectBeats", "goodBeats", "misses"].forEach((key) => integer(state[key], "state." + key, 0, Number.MAX_SAFE_INTEGER));
-    if (state.bestCombo < state.combo || state.perfectBeats + state.goodBeats + state.misses !== state.totalBeats) throw new RangeError("inconsistent beat counters");
-    for (const key of ["perfectStages", "checkpoints", "completedStages", "heartStamps"]) {
-      if (!Array.isArray(state[key]) || new Set(state[key]).size !== state[key].length) throw new TypeError("state." + key + " must be a unique array");
-      state[key].forEach((id) => { if (!STAGES.some((stage) => stage.id === id)) throw new RangeError("unknown stage id"); });
-    }
-    if (typeof state.usedCompensation !== "boolean" || typeof state.newGamePlus !== "boolean" || typeof state.revealEligible !== "boolean") throw new TypeError("invalid boolean state field");
-    if (state.grade !== null && !GRADES.includes(state.grade)) throw new RangeError("invalid grade");
-    if (state.ending !== null && typeof state.ending !== "string") throw new TypeError("invalid ending");
-    if (state.status === "playing" && (state.stageIndex === STAGES.length || state.grade !== null || state.ending !== null)) throw new RangeError("inconsistent playing state");
-    if (state.status === "completed" && (state.stageIndex !== STAGES.length || state.completedStages.length !== STAGES.length || state.grade === null)) throw new RangeError("inconsistent completed state");
-    if (state.status === "failed" && (!state.ending || state.grade !== null)) throw new RangeError("inconsistent failed state");
-    return true;
-  }
-
-  function calculateRating(state, completed) {
-    validateRunState(state);
-    const complete = completed === true || state.status === "completed";
-    const progress = (state.completedStages.length + (currentDefinition(state) ? state.stage.progress / currentDefinition(state).target : 0)) / STAGES.length;
-    const accuracy = state.totalBeats ? (state.perfectBeats + state.goodBeats * 0.6) / state.totalBeats : 0;
-    const score = clamp(Math.round(progress * RULES.rating.completionWeight + accuracy * RULES.rating.accuracyWeight + state.heartbeat / 100 * RULES.rating.heartbeatWeight), 0, 100);
-    const grade = complete ? (score >= RULES.rating.sScore ? "S" : score >= RULES.rating.aScore ? "A" : "B") : null;
-    return deepFreeze({ score, grade, completion: Math.round(progress * 100), accuracy: Math.round(accuracy * 100), heartbeat: state.heartbeat, perfectStageCount: state.perfectStages.length, usedCompensation: state.usedCompensation });
-  }
-
-  function finishStage(next) {
+  function completeStage(next) {
     const definition = STAGES[next.stageIndex];
-    const ratio = next.stage.hits ? next.stage.perfects / next.stage.hits : 0;
     next.completedStages.push(definition.id);
-    if (!next.heartStamps.includes(definition.id)) next.heartStamps.push(definition.id);
-    if (ratio >= RULES.perfectThreshold) next.perfectStages.push(definition.id);
-    next.stageIndex += 1;
-    next.stage = freshStage();
-    if (next.stageIndex === STAGES.length) {
+    next.arrivals.push(definition.destination);
+    next.stageRecords.push({
+      id: definition.id,
+      destination: definition.destination,
+      items: next.stage.items.slice(),
+      choices: next.stage.choices.slice(),
+      attempts: next.stage.attempts,
+      perfect: next.stage.perfect,
+      elapsed: next.stage.elapsed
+    });
+    next.condition = Math.min(100, next.condition + RULES.stageRecovery);
+    next.heartbeat = next.condition;
+    if (next.stageIndex === STAGES.length - 1) {
       next.status = "completed";
-      next.grade = "B";
-      const provisional = deepFreeze({ ...next, perfectStages: [...next.perfectStages], checkpoints: [...next.checkpoints], completedStages: [...next.completedStages], heartStamps: [...next.heartStamps] });
-      const rating = calculateRating(provisional, true);
-      next.grade = rating.grade;
-      next.revealEligible = rating.grade === "S" || rating.grade === "A";
-      next.ending = rating.grade === "S" ? "心动如约而至" : rating.grade === "A" ? "并肩奔向明天" : "跌撞也算抵达";
+      next.grade = calculateRating(next, true).grade;
+      next.ending = next.grade;
+      return;
     }
+    next.stageIndex += 1;
+    next.stage = stageState(next.stageIndex);
+  }
+
+  function recordMoment(state, value) {
+    assertPlaying(state);
+    const moment = normalizeMoment(value);
+    const outcome = moment.outcome || "good";
+    if (!["perfect", "good", "miss"].includes(outcome)) throw new RangeError(`unknown outcome: ${outcome}`);
+    const next = clone(state);
+    next.totalAttempts += 1;
+    next.stage.attempts += 1;
+    if (outcome === "miss") {
+      const loss = moment.kind === "collision" ? RULES.collisionLoss : RULES.missedActionLoss;
+      next.condition = Math.max(0, next.condition - loss);
+      next.heartbeat = next.condition;
+      next.combo = 0;
+      if (moment.kind === "collision") next.collisions += 1;
+      if (next.condition <= 0) {
+        next.status = "failed";
+        next.ending = "这次没能准时抵达";
+      }
+      return deepFreeze(next);
+    }
+
+    next.successfulMoments += 1;
+    next.combo += 1;
+    next.bestCombo = Math.max(next.bestCombo, next.combo);
+    next.stage.progress = Math.min(next.stage.target, next.stage.progress + 1);
+    if (outcome === "perfect") {
+      next.perfectMoments += 1;
+      next.stage.perfect += 1;
+      next.condition = Math.min(100, next.condition + RULES.perfectRecovery);
+    } else {
+      next.condition = Math.min(100, next.condition + RULES.goodRecovery);
+    }
+    next.heartbeat = next.condition;
+    if (moment.itemId) {
+      if (!next.collectedItems.includes(moment.itemId)) next.collectedItems.push(moment.itemId);
+      if (!next.stage.items.includes(moment.itemId)) next.stage.items.push(moment.itemId);
+    }
+    if (moment.choiceId) {
+      if (!next.routeChoices.includes(moment.choiceId)) next.routeChoices.push(moment.choiceId);
+      if (!next.stage.choices.includes(moment.choiceId)) next.stage.choices.push(moment.choiceId);
+    }
+    const definition = STAGES[next.stageIndex];
+    if (next.stage.progress >= definition.checkpoint && !next.checkpoints.includes(definition.id)) next.checkpoints.push(definition.id);
+    if (next.stage.progress >= definition.target) completeStage(next);
+    return deepFreeze(next);
   }
 
   function recordBeat(state, outcome) {
-    validateRunState(state);
-    if (state.status !== "playing") throw new RangeError("run has ended");
-    if (!OUTCOMES.includes(outcome)) throw new RangeError("outcome must be perfect, good, or miss");
-    const next = JSON.parse(JSON.stringify(state));
-    next.totalBeats += 1;
-    next.stage.hits += 1;
-    if (outcome === "miss") {
-      next.misses += 1; next.stage.misses += 1; next.combo = 0;
-      next.heartbeat = clamp(next.heartbeat + RULES.heartbeat.miss, 0, 100);
-    } else {
-      if (outcome === "perfect") { next.perfectBeats += 1; next.stage.perfects += 1; } else next.goodBeats += 1;
-      next.combo += 1; next.bestCombo = Math.max(next.bestCombo, next.combo); next.stage.progress += 1;
-      const bonus = Math.min(RULES.heartbeat.comboBonusCap, Math.floor(next.combo / RULES.heartbeat.comboStep) * RULES.heartbeat.comboBonus);
-      next.heartbeat = clamp(next.heartbeat + RULES.heartbeat[outcome] + bonus, 0, 100);
-      const definition = currentDefinition(next);
-      if (next.stage.progress >= definition.checkpoint && !next.checkpoints.includes(definition.id)) next.checkpoints.push(definition.id);
-      if (next.stage.progress >= definition.target) finishStage(next);
-    }
-    if (next.status === "playing" && next.heartbeat === 0) {
-      next.status = "failed"; next.ending = STAGES[next.stageIndex].failEnding; next.combo = 0;
-    }
-    return cloneFreeze(next);
+    return recordMoment(state, { outcome });
+  }
+
+  function recordNearMiss(state) {
+    assertPlaying(state);
+    const next = clone(state);
+    next.nearMisses += 1;
+    next.condition = Math.min(100, next.condition + 1);
+    next.heartbeat = next.condition;
+    return deepFreeze(next);
   }
 
   function advanceTime(state, seconds) {
-    validateRunState(state);
-    if (state.status !== "playing") throw new RangeError("run has ended");
-    finite(seconds, "seconds", 0, Number.MAX_SAFE_INTEGER);
-    const next = JSON.parse(JSON.stringify(state));
-    const definition = currentDefinition(next);
-    if (next.stage.compensation) {
-      next.stage.compensationRemaining = round(Math.max(0, next.stage.compensationRemaining - seconds));
-      if (next.stage.compensationRemaining === 0) { next.status = "failed"; next.ending = definition.failEnding; next.combo = 0; }
-    } else {
-      next.stage.elapsed = round(next.stage.elapsed + seconds);
-      if (next.stage.elapsed >= definition.duration) {
-        next.stage.elapsed = definition.duration;
-        if (next.stage.progress >= definition.checkpoint) {
-          next.stage.compensation = true; next.stage.compensationRemaining = RULES.compensationSeconds; next.usedCompensation = true;
-          const overflow = seconds - (definition.duration - state.stage.elapsed);
-          if (overflow > 0) next.stage.compensationRemaining = round(Math.max(0, RULES.compensationSeconds - overflow));
-          if (next.stage.compensationRemaining === 0) { next.status = "failed"; next.ending = definition.failEnding; next.combo = 0; }
-        } else { next.status = "failed"; next.ending = definition.failEnding; next.combo = 0; }
-      }
-    }
-    return cloneFreeze(next);
+    assertPlaying(state);
+    if (!Number.isFinite(seconds) || seconds < 0) throw new TypeError("seconds must be a non-negative finite number");
+    const next = clone(state);
+    next.elapsed += seconds;
+    next.stage.elapsed += seconds;
+    return deepFreeze(next);
   }
 
   function getStageProgress(state) {
-    validateRunState(state);
-    const definition = currentDefinition(state);
-    if (!definition) return deepFreeze({ stage: null, current: 0, target: 0, percent: 100, checkpointReached: true });
-    return deepFreeze({ stage: definition, current: state.stage.progress, target: definition.target, percent: Math.round(state.stage.progress / definition.target * 100), checkpointReached: state.stage.progress >= definition.checkpoint });
+    if (!state || typeof state !== "object") throw new TypeError("state is required");
+    const definition = STAGES[Math.min(STAGES.length - 1, state.stageIndex || 0)];
+    return deepFreeze({
+      progress: state.stage.progress,
+      target: definition.target,
+      ratio: Math.min(1, state.stage.progress / definition.target),
+      checkpointReached: state.stage.progress >= definition.checkpoint,
+      expectedSeconds: definition.expectedSeconds,
+      timeRatio: Math.min(1, state.stage.elapsed / definition.expectedSeconds),
+      destination: definition.destination
+    });
   }
 
   function retryFromCheckpoint(state) {
-    validateRunState(state);
-    if (state.status !== "failed") throw new RangeError("run has not failed");
-    const next = JSON.parse(JSON.stringify(state));
-    const definition = currentDefinition(next);
-    next.status = "playing"; next.ending = null; next.combo = 0;
-    next.heartbeat = Math.max(RULES.initialHeartbeat, next.heartbeat);
-    next.stage = freshStage();
-    if (state.checkpoints.includes(definition.id)) next.stage.progress = definition.checkpoint;
-    return cloneFreeze(next);
+    if (!state || state.status !== "failed") throw new RangeError("only a failed run can retry");
+    const next = clone(state);
+    const definition = STAGES[next.stageIndex];
+    next.status = "playing";
+    next.ending = null;
+    next.grade = null;
+    next.condition = RULES.retryCondition;
+    next.heartbeat = next.condition;
+    next.combo = 0;
+    next.stage = stageState(next.stageIndex, {
+      progress: next.checkpoints.includes(definition.id) ? definition.checkpoint : 0,
+      elapsed: next.checkpoints.includes(definition.id) ? definition.expectedSeconds * 0.5 : 0,
+      items: next.stage.items,
+      choices: next.stage.choices
+    });
+    return deepFreeze(next);
   }
 
-  function hashPayload(text) {
+  function checksum(payload) {
+    const text = JSON.stringify(payload);
     let hash = 2166136261;
-    for (let index = 0; index < text.length; index += 1) { hash ^= text.charCodeAt(index); hash = Math.imul(hash, 16777619); }
-    return (hash >>> 0).toString(16).padStart(8, "0");
+    for (let index = 0; index < text.length; index += 1) hash = Math.imul(hash ^ text.charCodeAt(index), 16777619);
+    return (hash >>> 0).toString(36);
   }
 
-  function createSave(state, previousSave) {
-    validateRunState(state);
-    let prior = null;
-    if (previousSave !== undefined && previousSave !== null) prior = loadSave(previousSave);
-    const completedRuns = (prior ? prior.profile.completedRuns : 0) + (state.status === "completed" ? 1 : 0);
-    const bestGrade = [state.grade, prior && prior.profile.bestGrade].filter(Boolean).sort((a, b) => GRADES.indexOf(a) - GRADES.indexOf(b))[0] || null;
-    const collectedHeartStamps = [...new Set([...(prior ? prior.profile.collectedHeartStamps : []), ...state.heartStamps])];
-    const profile = { completedRuns, bestGrade, revealUnlocked: Boolean((prior && prior.profile.revealUnlocked) || state.revealEligible), newGamePlusUnlocked: completedRuns > 0, collectedHeartStamps };
-    const payload = { version: RULES.saveVersion, run: JSON.parse(JSON.stringify(state)), profile };
-    return deepFreeze({ ...payload, checksum: hashPayload(JSON.stringify(payload)) });
-  }
-
-  function validateSave(save) {
-    exactKeys(save, ["version", "run", "profile", "checksum"], "save");
-    if (save.version !== RULES.saveVersion) throw new RangeError("unsupported save version");
-    exactKeys(save.profile, ["completedRuns", "bestGrade", "revealUnlocked", "newGamePlusUnlocked", "collectedHeartStamps"], "save.profile");
-    integer(save.profile.completedRuns, "save.profile.completedRuns", 0, Number.MAX_SAFE_INTEGER);
-    if (save.profile.bestGrade !== null && !GRADES.includes(save.profile.bestGrade)) throw new RangeError("invalid best grade");
-    if (typeof save.profile.revealUnlocked !== "boolean" || typeof save.profile.newGamePlusUnlocked !== "boolean") throw new TypeError("invalid profile flags");
-    if (!Array.isArray(save.profile.collectedHeartStamps) || new Set(save.profile.collectedHeartStamps).size !== save.profile.collectedHeartStamps.length) throw new TypeError("save.profile.collectedHeartStamps must be unique");
-    save.profile.collectedHeartStamps.forEach((id) => { if (!STAGES.some((stage) => stage.id === id)) throw new RangeError("unknown heart stamp"); });
-    validateRunState(save.run);
-    const payload = { version: save.version, run: save.run, profile: save.profile };
-    if (save.checksum !== hashPayload(JSON.stringify(payload))) throw new RangeError("save checksum mismatch");
+  function validateRunState(state) {
+    if (!state || typeof state !== "object" || state.version !== RULES.version) throw new RangeError("invalid run state version");
+    if (!Number.isInteger(state.stageIndex) || state.stageIndex < 0 || state.stageIndex >= STAGES.length) throw new RangeError("invalid stage index");
+    if (!Number.isFinite(state.condition) || state.condition < 0 || state.condition > 100) throw new RangeError("invalid condition");
+    if (state.heartbeat !== state.condition) throw new RangeError("condition alias mismatch");
+    if (!Array.isArray(state.collectedItems) || !Array.isArray(state.arrivals)) throw new RangeError("invalid journey collections");
     return true;
   }
 
-  function loadSave(save) { validateSave(save); return cloneFreeze(save); }
-  function canStartNewGamePlus(save) { return loadSave(save).profile.newGamePlusUnlocked; }
-  function createNewGamePlus(save) { if (!canStartNewGamePlus(save)) throw new RangeError("new game plus is locked"); return createRunState({ newGamePlus: true }); }
+  function createSave(state, previous) {
+    validateRunState(state);
+    const oldProfile = previous?.profile || {};
+    const completed = state.status === "completed";
+    const profile = {
+      completedRuns: (oldProfile.completedRuns || 0) + (completed ? 1 : 0),
+      bestGrade: completed ? (["B", "A", "S"].indexOf(state.grade) > ["B", "A", "S"].indexOf(oldProfile.bestGrade) ? state.grade : oldProfile.bestGrade || state.grade) : oldProfile.bestGrade || null,
+      discoveredItems: [...new Set([...(oldProfile.discoveredItems || []), ...state.collectedItems])],
+      visitedDestinations: [...new Set([...(oldProfile.visitedDestinations || []), ...state.arrivals])],
+      newGamePlusUnlocked: Boolean(oldProfile.newGamePlusUnlocked || completed)
+    };
+    const payload = { version: RULES.version, run: clone(state), profile };
+    return deepFreeze({ ...payload, signature: checksum(payload) });
+  }
 
-  return deepFreeze({ RULES, STAGES, OUTCOMES, GRADES, deepFreeze, createRunState, createState: createRunState, validateRunState, recordBeat, applyBeat: recordBeat, advanceTime, getStageProgress, retryFromCheckpoint, calculateRating, computeRating: calculateRating, createSave, validateSave, loadSave, canStartNewGamePlus, createNewGamePlus });
+  function validateSave(save) {
+    if (!save || typeof save !== "object" || save.version !== RULES.version || !save.run || !save.profile) throw new RangeError("invalid save");
+    const payload = { version: save.version, run: save.run, profile: save.profile };
+    if (checksum(payload) !== save.signature) throw new RangeError("save signature mismatch");
+    validateRunState(save.run);
+    return true;
+  }
+
+  function loadSave(save) {
+    validateSave(save);
+    return deepFreeze(clone(save));
+  }
+
+  function canStartNewGamePlus(save) {
+    validateSave(save);
+    return Boolean(save.profile.newGamePlusUnlocked);
+  }
+
+  function createNewGamePlus(save) {
+    if (!canStartNewGamePlus(save)) throw new RangeError("new game plus is locked");
+    return createRunState({ newGamePlus: true });
+  }
+
+  return deepFreeze({
+    RULES,
+    STAGES,
+    createRunState,
+    recordMoment,
+    recordBeat,
+    recordNearMiss,
+    advanceTime,
+    getStageProgress,
+    calculateRating,
+    retryFromCheckpoint,
+    validateRunState,
+    createSave,
+    validateSave,
+    loadSave,
+    canStartNewGamePlus,
+    createNewGamePlus
+  });
 });

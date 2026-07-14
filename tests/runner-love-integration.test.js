@@ -7,47 +7,74 @@ const test = require("node:test");
 
 const root = path.join(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "assets/runner-love-game.js"), "utf8");
+const rules = fs.readFileSync(path.join(root, "assets/runner-love-rules.js"), "utf8");
 const visuals = fs.readFileSync(path.join(root, "assets/runner-love-visuals.js"), "utf8");
 
-test("integrates rules, fixed-step motion and content rather than duplicating domain data", () => {
-  for (const token of ["window.RunnerLoveRules", "window.RunnerLoveEngine", "window.RunnerLoveContent", "engineApi.createEngine", "rules.recordBeat", "rules.advanceTime", "content.STAGE_ENDINGS", "content.getEnding"]) assert.ok(source.includes(token), token);
+test("integrates rules, fixed-step motion, authored content, and the independent renderer", () => {
+  for (const token of ["window.RunnerLoveRules", "window.RunnerLoveEngine", "window.RunnerLoveContent", "engineApi.createEngine", "rules.recordMoment", "rules.advanceTime", "content.selectArrival", "content.getEnding", "window.RunnerLoveVisuals.create(canvas)"]) assert.ok(source.includes(token), token);
 });
 
-test("connects swipe, keyboard, companion cues, scene changes and BFCache lifecycle", () => {
-  for (const action of ["left", "right", "jump", "slide"]) assert.ok(source.includes(`\"${action}\"`), action);
-  assert.match(source, /pointerdown/); assert.match(source, /pointerup/); assert.match(source, /companion-sync/);
-  assert.match(source, /01-encounter\.jpg/); assert.match(source, /02-familiar\.jpg/); assert.match(source, /03-ambiguous\.jpg/);
-  assert.match(source, /window\.addEventListener\("pagehide"/); assert.match(source, /window\.addEventListener\("pageshow"/);
+test("keeps the runner alone on the route and introduces the other character only at destinations", () => {
+  assert.doesNotMatch(source, /companion-sync|companion-missed|response-missed|paired-response/);
+  assert.doesNotMatch(source, /type:\s*"companion-cue"/);
+  assert.match(visuals, /this\.companion\.visible = arriving/);
+  assert.match(visuals, /this\.companion\.visible = false/);
+  assert.match(source, /mode = "arrival"/);
 });
 
-test("rotates a broad set of solvable metro patterns instead of repeating one obstacle row", () => {
-  const patternIds = [...source.matchAll(/Object\.freeze\(\{ id: "([^"]+)", minStage:/g)].map((match) => match[1]);
-  assert.ok(patternIds.length >= 12, patternIds.join(", "));
+test("connects swipe and keyboard controls to the classic three-lane action set", () => {
+  for (const action of ["left", "right", "jump", "slide"]) assert.ok(source.includes(`"${action}"`), action);
+  assert.match(source, /pointerdown/);
+  assert.match(source, /pointerup/);
+  assert.match(source, /pointercancel/);
+  assert.match(source, /gestureThreshold/);
+  assert.match(source, /event\.pointerId !== pointerStart\.id/);
+  assert.match(source, /ArrowLeft/);
+  assert.match(source, /ArrowUp/);
+});
+
+test("paces each route around three minutes without a hard timer gate", () => {
+  assert.equal((rules.match(/expectedSeconds:\s*180/g) || []).length, 7);
+  assert.doesNotMatch(rules, /progress >= definition\.target && next\.stage\.elapsed/);
+  assert.match(source, /spawnClock = spawned \? 5\.35 \+ \(patternCursor % 3\) \* 0\.38 : 0\.35/);
+  assert.match(source, /Math\.max\(progressRatio, timeRatio\)/);
+});
+
+test("rotates solvable obstacle patterns and offers one physical item on every lane", () => {
+  const patternIds = [...source.matchAll(/Object\.freeze\(\{ id: "([^"]+)", choiceZ:/g)].map((match) => match[1]);
+  assert.ok(patternIds.length >= 10, patternIds.join(", "));
   assert.equal(new Set(patternIds).size, patternIds.length);
-  for (const subtype of ["barrier", "signal-gate", "service-cart", "train"]) assert.ok(source.includes(`subtype: "${subtype}"`), subtype);
+  for (const subtype of ["barrier", "signal-gate", "service-cart", "train"]) assert.ok(source.includes(`form: "${subtype}"`) || source.includes(`subtype: "${subtype}"`), subtype);
   for (const movement of ["jump", "slide", "switch"]) assert.ok(source.includes(`avoid: "${movement}"`), movement);
+  assert.match(source, /\[-1, 0, 1\]\.forEach\(\(lane, laneOffset\)/);
+  assert.match(source, /type: "route-choice"/);
+  assert.match(source, /choiceGroup/);
 });
 
-test("closes finale, stage-sync, pointer cancellation and lifecycle integration gaps", () => {
-  assert.match(source, /finaleSeconds:\s*20/); assert.match(source, /!motion\.state\.finale && currentStageIndex\(\) < 6/); assert.match(source, /motion\.seekStage/);
-  assert.match(source, /event\.entity\.type === "collectible"/); assert.match(source, /companion-missed/); assert.match(source, /response-missed/);
-  assert.match(source, /gestureThreshold/); assert.match(source, /event\.pointerId !== pointerStart\.id/); assert.match(source, /pointercancel/);
-  assert.match(source, /audio\.suspend\(\)/); assert.match(source, /cancelAnimationFrame\(frameHandle\)/);
-  assert.match(source, /visualRuntime\.resize\(width, height, Number\(window\.devicePixelRatio\) \|\| 1\)/);
-  assert.match(visuals, /Math\.sqrt\(MAX_RENDER_PIXELS \/ \(cssWidth \* cssHeight\)\)/);
+test("lets story rules own stage changes throughout the full long-form run", () => {
+  assert.match(source, /duration:\s*3600/);
+  assert.match(source, /manualStages:\s*true/);
+  assert.match(source, /motion\.seekStage/);
+  assert.match(source, /motion\.syncStage/);
+  assert.match(source, /if \(arrivalElapsed >= arrivalDuration\) finishArrival\(\)/);
 });
 
-test("routes gameplay state and interaction feedback into the independent 3D renderer", () => {
-  assert.match(source, /window\.RunnerLoveVisuals\.create\(canvas\)/);
-  assert.match(source, /visual\.render\(\{/);
-  for (const effect of ["perfect", "good", "miss", "companion-sync", "stage"]) assert.ok(source.includes(`effect("${effect}"`) || source.includes(`effect(outcome`), effect);
-  assert.match(source, /runner-love-visuals-ready/);
-  assert.match(source, /visualRuntime\?\.snapshot/);
+test("routes gameplay events into carried props, audiovisual feedback, and arrival scenes", () => {
+  assert.match(source, /event\.type === "collect" && \["story-item", "route-choice"\]/);
+  assert.match(source, /visualRuntime\?\.carry\?\.\(item\)/);
+  assert.match(source, /visualRuntime\?\.effect\("story-pickup"/);
+  assert.match(source, /visualRuntime\?\.beginArrival\?\.\(arrivalData\)/);
+  assert.match(source, /audio\.cue\("arrival"/);
 });
 
-test("provides layered local WebAudio, checksummed local saves and one debug surface", () => {
-  for (const gain of ["baseGain", "warmGain", "futureGain"]) assert.ok(source.includes(`this.${gain}`), gain);
+test("provides local WebAudio, checksummed saves, adaptive resize, and BFCache lifecycle", () => {
+  for (const gain of ["master", "ambience", "melody"]) assert.ok(source.includes(`this.${gain}`), gain);
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);
-  assert.match(source, /localStorage\.setItem\(SAVE_KEY/); assert.match(source, /rules\.createSave/); assert.match(source, /rules\.loadSave/);
+  assert.match(source, /localStorage\.setItem\(SAVE_KEY/);
+  assert.match(source, /rules\.createSave/);
+  assert.match(source, /rules\.loadSave/);
+  assert.match(source, /window\.addEventListener\("pagehide"/);
+  assert.match(source, /window\.addEventListener\("pageshow"/);
+  assert.match(source, /visualRuntime\.resize\(width, height, Number\(window\.devicePixelRatio\) \|\| 1\)/);
   assert.match(source, /window\.__runnerLoveDebug = Object\.freeze/);
 });
