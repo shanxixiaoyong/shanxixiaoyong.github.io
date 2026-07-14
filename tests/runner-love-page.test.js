@@ -15,7 +15,7 @@ test("publishes the standalone runner with ordered domain modules and one full-s
   assert.match(html, /data-game="runner-love"/);
   assert.match(html, /<canvas id="runner-canvas" width="720" height="1280"/);
   const scripts = [...html.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*><\/script>/g)].map((match) => match[1].split("?", 1)[0]);
-  assert.deepEqual(scripts, ["assets/runner-love-rules.js", "assets/runner-love-content.js", "assets/runner-love-engine.js", "assets/runner-love-visuals.js", "assets/runner-love-game.js"]);
+  assert.deepEqual(scripts, ["assets/runner-love-rules.js", "assets/runner-love-content.js", "assets/runner-love-engine.js", "assets/runner-love-audio.js", "assets/runner-love-visuals.js", "assets/runner-love-game.js"]);
   assert.match(html, /<script type="module" src="assets\/runner-love-visuals\.js/);
   assert.match(html, /modulepreload[^>]+three-0\.185\.1\.module\.min\.js/);
   assert.match(css, /#runner-canvas\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?inset:\s*0;[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;/);
@@ -58,7 +58,7 @@ test("uses local cinematic scene art, local 3D models, and a cache-consistent re
   const versions = [...html.matchAll(/runner-love-[^"?]+\?v=([^"']+)/g)].map((match) => match[1]);
   assert.ok(versions.length >= 5);
   assert.equal(new Set(versions).size, 1);
-  assert.equal(versions[0], "runner-love-rendezvous-20260714d");
+  assert.equal(versions[0], "runner-love-rush-20260714c");
 });
 
 test("result and checkpoint surfaces preserve route stats and immediate replay", () => {

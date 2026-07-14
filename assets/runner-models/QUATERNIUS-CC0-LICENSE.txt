@@ -8,4 +8,5 @@ Source: https://quaternius.com/
 License: Creative Commons CC0 1.0 Universal
 License URL: https://creativecommons.org/publicdomain/zero/1.0/
 
-The source pack is published for personal and commercial use under CC0.
+The assets are dedicated to the public domain under CC0. Attribution is not
+required. The license text is available at the URL above.

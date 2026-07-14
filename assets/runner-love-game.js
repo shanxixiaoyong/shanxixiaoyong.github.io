@@ -254,7 +254,7 @@
     resume() { if (this.started && this.context?.state === "suspended") this.context.resume(); }
   }
 
-  const audio = new CityRunAudio();
+  const audio = window.RunnerLoveAudio?.create?.() || new CityRunAudio();
   let runState = rules.createRunState();
   let motion = createMotion();
   let mode = "intro";
@@ -275,6 +275,8 @@
   let arrivalDuration = 0;
   let arrivalData = null;
   let routePhase = -1;
+  let flowEnergy = 0;
+  let flowPeak = 0;
 
   function createMotion() {
     return engineApi.createEngine({
@@ -282,13 +284,14 @@
       duration: 3600,
       finaleSeconds: 0,
       manualStages: true,
-      startSpeed: 13.4,
-      maxSpeed: 25.5,
-      acceleration: 0.026,
-      laneChangeDuration: 0.135,
-      jumpDuration: 0.7,
+      startSpeed: 15.2,
+      maxSpeed: 29.5,
+      acceleration: 0.07,
+      laneChangeDuration: 0.11,
+      jumpDuration: 0.66,
       jumpHeight: 2,
-      slideDuration: 0.56,
+      slideDuration: 0.52,
+      collisionSpeedLoss: 2.4,
       moduleLength: 42,
       spawnAhead: 105,
       stages: content.STAGES.map((stage, index) => ({
@@ -336,6 +339,16 @@
   function currentStage() { return content.STAGES[currentStageIndex()]; }
   function show(node, visible) { if (node) node.hidden = !visible; }
   function announce(text) { if (ui.announcer) ui.announcer.textContent = text; }
+
+  function haptic(pattern) {
+    try { navigator.vibrate?.(pattern); } catch (_) {}
+  }
+
+  function addFlow(amount) {
+    flowEnergy = Math.max(0, Math.min(100, flowEnergy + amount));
+    flowPeak = Math.max(flowPeak, flowEnergy);
+    audio.setFlow?.(flowEnergy / 100);
+  }
 
   function toast(text, duration = 1150) {
     if (!ui.toast) return;
@@ -417,7 +430,7 @@
     show(ui.newGamePlus, Boolean(save?.profile?.newGamePlusUnlocked));
     updateCargoHud();
     updateRoutePhase(true);
-    audio.setStage(index + 1, runState.condition);
+    audio.setStage(index + 1, runState.condition, runState.combo);
   }
 
   function reset(newGamePlus) {
@@ -432,6 +445,8 @@
     arrivalDuration = 0;
     arrivalData = null;
     routePhase = -1;
+    flowEnergy = 0;
+    flowPeak = 0;
     completionSaved = false;
     clearTimeout(routeMessageTimer);
     show(ui.routeMessage, false);
@@ -475,26 +490,48 @@
   function spawnPattern() {
     if (mode !== "playing") return false;
     const activeAhead = motion.state.entities.filter((entity) => entity.active && entity.z > 8);
-    if (activeAhead.length > 24) return false;
+    if (activeAhead.length > 36) return false;
     const farthest = activeAhead.reduce((maximum, entity) => Math.max(maximum, entity.z), 0);
-    if (farthest > 72) return false;
+    if (farthest > 58) return false;
     const stageIndex = currentStageIndex();
     const blueprint = PATTERN_BLUEPRINTS[(patternCursor + stageIndex * 2) % PATTERN_BLUEPRINTS.length];
-    const baseZ = Math.max(38, farthest + 16);
+    const baseZ = Math.max(24, farthest + 10);
+    const pressure = Math.max(0.86, 1 - stageIndex * 0.012 - flowEnergy * 0.00055);
     const patternId = `${content.STAGES[stageIndex].id}-${blueprint.id}-${patternCursor}`;
     blueprint.obstacles.forEach((spec, row) => {
-      const subtype = obstacleSubtype(stageIndex, spec.form);
+      const matchingRow = blueprint.obstacles.filter((entry) => entry.z === spec.z);
+      const occupiedLanes = new Set(matchingRow.map((entry) => entry.lane));
+      const candidateLanes = [-1, 0, 1].filter((lane) => !occupiedLanes.has(lane));
+      const pairedLane = matchingRow.length === 1 && row % 2 === patternCursor % 2
+        ? candidateLanes[(patternCursor + row + stageIndex) % candidateLanes.length]
+        : null;
+      [spec.lane, pairedLane].filter((lane) => lane !== null).forEach((lane, laneIndex) => {
+        const subtype = obstacleSubtype(stageIndex, spec.form);
+        motion.spawn({
+          type: "obstacle",
+          lane,
+          z: baseZ + spec.z * pressure,
+          avoid: spec.avoid,
+          subtype,
+          variant: (patternCursor + row + stageIndex + laneIndex) % 5,
+          rewardNearMiss: spec.rewardNearMiss,
+          patternId,
+          momentId: `${patternId}-obstacle-${row}-${laneIndex}`,
+          data: { venue: content.getRoute(stageIndex + 1).venues[Math.min(2, patternCursor % 3)] }
+        });
+      });
+    });
+
+    const tokenLanes = [0, -1, -1, 0, 1, 1, 0, patternCursor % 2 ? -1 : 1, 0];
+    tokenLanes.forEach((lane, tokenIndex) => {
       motion.spawn({
-        type: "obstacle",
-        lane: spec.lane,
-        z: baseZ + spec.z,
-        avoid: spec.avoid,
-        subtype,
-        variant: (patternCursor + row + stageIndex) % 5,
-        rewardNearMiss: spec.rewardNearMiss,
+        type: "collectible",
+        lane,
+        z: baseZ + 3.2 + tokenIndex * 3.25,
+        points: 4 + stageIndex,
         patternId,
-        momentId: `${patternId}-obstacle-${row}`,
-        data: { venue: content.getRoute(stageIndex + 1).venues[Math.min(2, patternCursor % 3)] }
+        row: tokenIndex,
+        arc: Math.sin(tokenIndex / (tokenLanes.length - 1) * Math.PI) * 0.26
       });
     });
 
@@ -554,7 +591,22 @@
     visualRuntime?.effect("story-pickup", { ...entity, item });
     visualRuntime?.carry?.(item);
     audio.cue(outcome, item.kind);
-    toast(item.name, 1000);
+    addFlow(outcome === "perfect" ? 24 : 17);
+    haptic(outcome === "perfect" ? [12, 22, 16] : 12);
+    const feedback = {
+      listen: "旋律接入奔跑节拍", photo: "快门定格这一秒", share: "顺手带上一起分享",
+      shelter: "雨幕从身侧分开", drink: "接住沿途的清凉", read: "书页随风翻开",
+      gift: "稳稳接进手中", unlock: "前方灯光逐盏亮起", remember: "这一刻被认真收好",
+      dance: "脚步踩中音乐重拍", carry: "带着它继续赶路", plan: "路线在眼前展开",
+      return: "熟悉的东西重新回到手里", offer: "递出的瞬间刚好被接住", toast: "杯沿轻碰，晚风正好",
+      feed: "街角的小家伙追了上来", write: "一句话被风认真收好", admit: "犹豫终于变成了答案",
+      detour: "临时改道却遇见新的风景", wander: "拐进一条从没走过的小路", light: "一盏灯提前为你亮起",
+      breakfast: "清晨的香气跟上脚步", cook: "把今晚需要的东西带齐", place: "它有了一个合适的位置",
+      "set-table": "两个人的位置都准备好了", explain: "散乱的话终于找到顺序", warm: "冷雨被一点暖意推开",
+      care: "被忽略的细节重新接上", wait: "步子慢下来，没有错过", trust: "不看提示也敢向前",
+      home: "远处那扇窗亮了起来", grow: "新的叶子在光里舒展开"
+    };
+    toast(`${item.name} · ${feedback[item.action] || "带着它继续向前"}`, 1550);
     applyMoment({
       outcome,
       kind: "story-item",
@@ -565,18 +617,34 @@
 
   function handleMotionEvents(events) {
     events.forEach((event) => {
-      if (event.type === "collect" && ["story-item", "route-choice"].includes(event.entity.type)) {
-        collectStoryItem(event.entity);
+      if (event.type === "collect") {
+        if (["story-item", "route-choice"].includes(event.entity.type)) collectStoryItem(event.entity);
+        else if (event.entity.type === "collectible") {
+          addFlow(7 + Math.min(5, runState.combo));
+          motion.boost?.(0.7, 0.72);
+          visualRuntime?.effect("energy", event.entity);
+          audio.cue("energy");
+          haptic(5);
+        }
       } else if (event.type === "collision") {
         visualRuntime?.effect("miss", event.entity);
         audio.cue("miss");
+        addFlow(-42);
+        haptic([42, 24, 34]);
         toast("脚步乱了一下", 900);
         applyMoment({ outcome: "miss", kind: "collision" });
       } else if (event.type === "dodge") {
         visualRuntime?.effect("dodge", event.entity);
         audio.cue("good");
+        addFlow(9);
+        motion.boost?.(0.5, 0.5);
+        haptic(8);
       } else if (event.type === "near-miss") {
         visualRuntime?.effect("near-miss", event.entity);
+        audio.cue("near-miss");
+        addFlow(15);
+        motion.boost?.(1.1, 0.82);
+        haptic([8, 14, 8]);
         if (runState.status === "playing") runState = rules.recordNearMiss(runState);
         updateHud();
       } else if (event.type === "story-missed") {
@@ -688,6 +756,8 @@
     show(ui.result, false);
     spawnClock = 0;
     beatClock = 0;
+    flowEnergy = 0;
+    flowPeak = 0;
     visualRuntime?.clearCarry?.();
     syncCarryFromState();
     updateHud();
@@ -704,16 +774,17 @@
     beatClock += seconds;
     if (mode === "arrival") {
       arrivalElapsed = Math.min(arrivalDuration, arrivalElapsed + seconds);
-      audio.tick(seconds, 0, true, true);
+      audio.tick(seconds, 0, true, true, flowEnergy / 100);
       if (arrivalElapsed >= arrivalDuration) finishArrival();
       return;
     }
     if (mode !== "playing") return;
-    audio.tick(seconds, motion.state.speed, true, false);
+    flowEnergy = Math.max(0, flowEnergy - seconds * (flowEnergy > 72 ? 3.2 : 1.35));
+    audio.tick(seconds, motion.state.speed, true, false, flowEnergy / 100);
     spawnClock -= seconds;
     if (spawnClock <= 0) {
       const spawned = spawnPattern();
-      spawnClock = spawned ? 5.35 + (patternCursor % 3) * 0.38 : 0.35;
+      spawnClock = spawned ? 3.8 + (patternCursor % 3) * 0.24 : 0.24;
     }
     motion.step(seconds);
     handleMotionEvents(motion.drainEvents());
@@ -728,7 +799,9 @@
 
   function render() {
     root?.setAttribute("data-state", mode);
-    root?.style?.setProperty?.("--speed-aura-opacity", String(Math.min(0.48, 0.14 + Math.max(0, motion.state.speed - 13) * 0.018)));
+    root?.setAttribute("data-flow", flowEnergy >= 70 ? "rush" : flowEnergy >= 35 ? "warm" : "calm");
+    root?.style?.setProperty?.("--flow-intensity", String(flowEnergy / 100));
+    root?.style?.setProperty?.("--speed-aura-opacity", String(Math.min(0.68, 0.12 + Math.max(0, motion.state.speed - 13) * 0.022 + flowEnergy * 0.0032)));
     const visual = ensureVisualRuntime();
     if (!visual) return;
     visual.render({
@@ -737,6 +810,7 @@
       mode,
       motion: motion.state,
       runState,
+      flow: flowEnergy / 100,
       arrival: arrivalData ? {
         ...arrivalData,
         progress: Math.min(1, arrivalElapsed / Math.max(0.001, arrivalDuration))

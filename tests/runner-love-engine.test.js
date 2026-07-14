@@ -79,6 +79,20 @@ test("emits dodge and near-miss rewards and protects consecutive collisions", ()
   assert.ok(run.state.speed > postHitSpeed + 2.5);
 });
 
+test("applies a bounded temporary rush boost and eases back to cruise speed", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 12, acceleration: 0 });
+  run.boost(3, 0.5);
+  assert.equal(run.state.boostSpeed, 3);
+  assert.equal(run.state.boostTime, 0.5);
+  assert.ok(run.drainEvents().some((event) => event.type === "boost"));
+  run.step(0.1);
+  assert.ok(run.state.speed > 10);
+  advance(run, 1.5);
+  assert.equal(run.state.boostTime, 0);
+  assert.equal(run.state.boostSpeed, 0);
+  assert.ok(run.state.speed <= 12);
+});
+
 test("advances perspective z and resolves obstacles and collectibles", () => {
   const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
   const obstacle = run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "slide" });

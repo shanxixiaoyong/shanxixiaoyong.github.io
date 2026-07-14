@@ -10,17 +10,19 @@
   <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=yl-20260630">
   <link rel="preload" href="assets/love-scenes/campus-library.webp" as="image">
   <link rel="preload" href="assets/runner-models/runner-player.glb" as="fetch" crossorigin>
+  <link rel="preload" href="assets/runner-models/runner-companion.glb" as="fetch" crossorigin>
   <link rel="preload" href="assets/runner-models/runner-motion.glb" as="fetch" crossorigin>
   <link rel="preload" href="assets/runner-models/runner-city.glb" as="fetch" crossorigin>
   <link rel="modulepreload" href="assets/vendor/three-0.185.1.module.min.js">
   <link rel="modulepreload" href="assets/vendor/three-addons/GLTFLoader.js">
-  <link rel="modulepreload" href="assets/runner-love-visuals.js?v=runner-love-rendezvous-20260714d">
-  <link rel="stylesheet" href="assets/runner-love.css?v=runner-love-rendezvous-20260714d">
-  <script src="assets/runner-love-rules.js?v=runner-love-rendezvous-20260714d" defer></script>
-  <script src="assets/runner-love-content.js?v=runner-love-rendezvous-20260714d" defer></script>
-  <script src="assets/runner-love-engine.js?v=runner-love-rendezvous-20260714d" defer></script>
-  <script type="module" src="assets/runner-love-visuals.js?v=runner-love-rendezvous-20260714d"></script>
-  <script src="assets/runner-love-game.js?v=runner-love-rendezvous-20260714d" defer></script>
+  <link rel="modulepreload" href="assets/runner-love-visuals.js?v=runner-love-rush-20260714c">
+  <link rel="stylesheet" href="assets/runner-love.css?v=runner-love-rush-20260714c">
+  <script src="assets/runner-love-rules.js?v=runner-love-rush-20260714c" defer></script>
+  <script src="assets/runner-love-content.js?v=runner-love-rush-20260714c" defer></script>
+  <script src="assets/runner-love-engine.js?v=runner-love-rush-20260714c" defer></script>
+  <script src="assets/runner-love-audio.js?v=runner-love-rush-20260714c" defer></script>
+  <script type="module" src="assets/runner-love-visuals.js?v=runner-love-rush-20260714c"></script>
+  <script src="assets/runner-love-game.js?v=runner-love-rush-20260714c" defer></script>
 </head>
 <body>
   <main class="runner-shell" id="runner-love" data-game="runner-love">
@@ -36,7 +38,7 @@
           <span data-stage-kicker>第一程 · 再遇见</span>
           <strong data-stage-name>图书馆路口</strong>
         </div>
-        <button class="icon-button sound-button" type="button" data-sound aria-label="开启声音" title="声音">♪</button>
+        <button class="icon-button sound-button" type="button" data-sound aria-label="关闭声音" title="声音">♪</button>
       </header>
 
       <div class="runner-hud" aria-live="polite">

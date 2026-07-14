@@ -1,0 +1,11 @@
+Runner character models and motion library
+==========================================
+
+Assets: Character_6_2_2.glb, Character_11_3_1.glb and Animations.glb
+Pack: Cartoon City Massive Pack - Characters
+Creator: RG Poly
+Source: https://rg-poly.itch.io/cartoon-city-massive-pack-characters
+License: Creative Commons CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The selected character and animation assets are stored as local GLB files.

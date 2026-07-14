@@ -40,17 +40,25 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const district of ["campus-line", "glass-station", "neon-river", "date-market", "home-quarter", "storm-bridge", "sunrise-terminal"]) assert.ok(source.includes(`district: "${district}"`), district);
 });
 
-test("ships local rigged characters and a batched CC0 city instead of flat 2D runners", () => {
+test("ships local city runners and a batched CC0 city instead of flat 2D runners", () => {
   for (const model of ["runner-player.glb", "runner-companion.glb", "runner-motion.glb", "runner-city.glb"]) assert.ok(source.includes(model), model);
   assert.equal(fs.existsSync(path.join(root, "assets/runner-models/runner-city.glb")), true);
   assert.equal(fs.existsSync(path.join(root, "assets/runner-models/KENNEY-CC0-LICENSE.txt")), true);
-  for (const token of ["createRiggedRunner", "animateRiggedRunner", "createPremiumDistrict", "new THREE.InstancedMesh", "kenney-instanced"]) assert.ok(source.includes(token), token);
+  assert.equal(fs.existsSync(path.join(root, "assets/runner-models/RG-POLY-CC0-LICENSE.txt")), true);
+  for (const model of ["runner-player.glb", "runner-companion.glb"]) {
+    assert.ok(fs.statSync(path.join(root, "assets/runner-models", model)).size > 700000, model);
+  }
+  assert.ok(fs.statSync(path.join(root, "assets/runner-models/runner-motion.glb")).size > 1500000);
+  for (const token of ["createRiggedRunner", "animateRiggedRunner", "createPremiumDistrict", "new THREE.InstancedMesh", "kenney-instanced", "layers", "Runing_A", "Jump_B_Full", "FightM_Hit_C", "normalMap", "roughnessMap"]) assert.ok(source.includes(token), token);
   assert.match(source, /this\.companion\.visible = arriving/);
   assert.doesNotMatch(source, /companionAction/);
+  const sources = fs.readFileSync(path.join(root, "assets/runner-models/SOURCES.md"), "utf8");
+  assert.match(sources, /cartoon-city-massive-pack-characters/);
 });
 
 test("keeps three lanes readable while route phases rebuild the surrounding city", () => {
   assert.match(source, /laneGuides:\s*new THREE\.InstancedMesh/);
+  for (const batch of ["laneTicks", "crosswalks", "drains", "roadPatches", "manholes", "edgePosts", "planterBases", "planterLeaves"]) assert.ok(source.includes(`${batch}: new THREE.InstancedMesh`), batch);
   assert.match(source, /setRoutePhase\(value\)/);
   assert.match(source, /const phase = this\.routePhase \|\| 0/);
   assert.match(source, /this\.rebuildDecor\(\)/);
@@ -63,6 +71,13 @@ test("models carried story objects as interaction-specific 3D props", () => {
   assert.match(source, /\["coffee", "drink"\]/);
   assert.match(source, /\["camera", "photo"\]/);
   assert.match(source, /\["flower", "plant"\]/);
+});
+
+test("stages story objects as lane-aware interactions with an animated pickup handoff", () => {
+  for (const token of ["approachRibbon", "approachComets", "storyFocusTarget", "createPickupBridge", "quadraticPoint", "bridgeFade", "glintProgress", "impactProgress"]) assert.ok(source.includes(token), token);
+  assert.match(source, /const alignment = clamp\(1 - Math\.abs\(object\.position\.x - this\.currentLaneX\)/);
+  assert.match(source, /this\.scene\.add\(bridge, aura, prop\)/);
+  assert.match(source, /this\.storyFocus \* 6/);
 });
 
 test("stages all seven destination films inside the same 3D world", () => {

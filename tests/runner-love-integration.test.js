@@ -36,7 +36,7 @@ test("connects swipe and keyboard controls to the classic three-lane action set"
 test("paces each route around three minutes without a hard timer gate", () => {
   assert.equal((rules.match(/expectedSeconds:\s*180/g) || []).length, 7);
   assert.doesNotMatch(rules, /progress >= definition\.target && next\.stage\.elapsed/);
-  assert.match(source, /spawnClock = spawned \? 5\.35 \+ \(patternCursor % 3\) \* 0\.38 : 0\.35/);
+  assert.match(source, /spawnClock = spawned \? 3\.8 \+ \(patternCursor % 3\) \* 0\.24 : 0\.24/);
   assert.match(source, /Math\.max\(progressRatio, timeRatio\)/);
 });
 
@@ -60,15 +60,18 @@ test("lets story rules own stage changes throughout the full long-form run", () 
 });
 
 test("routes gameplay events into carried props, audiovisual feedback, and arrival scenes", () => {
-  assert.match(source, /event\.type === "collect" && \["story-item", "route-choice"\]/);
+  assert.match(source, /event\.type === "collect"/);
+  assert.match(source, /\["story-item", "route-choice"\]\.includes\(event\.entity\.type\)/);
   assert.match(source, /visualRuntime\?\.carry\?\.\(item\)/);
   assert.match(source, /visualRuntime\?\.effect\("story-pickup"/);
+  assert.match(source, /motion\.boost\?\.\(/);
+  assert.match(source, /addFlow\(/);
   assert.match(source, /visualRuntime\?\.beginArrival\?\.\(arrivalData\)/);
   assert.match(source, /audio\.cue\("arrival"/);
 });
 
 test("provides local WebAudio, checksummed saves, adaptive resize, and BFCache lifecycle", () => {
-  for (const gain of ["master", "ambience", "melody"]) assert.ok(source.includes(`this.${gain}`), gain);
+  assert.match(source, /window\.RunnerLoveAudio\?\.create\?\.\(\)/);
   assert.match(source, /window\.AudioContext \|\| window\.webkitAudioContext/);
   assert.match(source, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(source, /rules\.createSave/);

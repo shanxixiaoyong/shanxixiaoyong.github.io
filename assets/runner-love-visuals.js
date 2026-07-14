@@ -193,6 +193,16 @@ function damp(current, target, smoothing, delta) {
   return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-smoothing * delta));
 }
 
+function quadraticPoint(target, start, control, end, progress) {
+  const inverse = 1 - progress;
+  target.set(
+    inverse * inverse * start.x + 2 * inverse * progress * control.x + progress * progress * end.x,
+    inverse * inverse * start.y + 2 * inverse * progress * control.y + progress * progress * end.y,
+    inverse * inverse * start.z + 2 * inverse * progress * control.z + progress * progress * end.z
+  );
+  return target;
+}
+
 const SHARED_GEOMETRIES = new WeakSet();
 
 function disposeObject(object) {
@@ -279,6 +289,22 @@ function roundedPanelGeometry(width, height, depth, radius = 0.1) {
   geometry.center();
   SHARED_GEOMETRIES.add(geometry);
   roundedGeometryCache.set(key, geometry);
+  return geometry;
+}
+
+function createRoadPatchGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.7, -0.42);
+  shape.lineTo(-0.3, -0.86);
+  shape.lineTo(0.26, -0.8);
+  shape.lineTo(0.74, -0.38);
+  shape.lineTo(0.62, 0.18);
+  shape.lineTo(0.31, 0.76);
+  shape.lineTo(-0.24, 0.88);
+  shape.lineTo(-0.78, 0.36);
+  const geometry = new THREE.ShapeGeometry(shape);
+  geometry.rotateX(-Math.PI / 2);
+  SHARED_GEOMETRIES.add(geometry);
   return geometry;
 }
 
@@ -577,18 +603,295 @@ function createStoryProp(item = {}, accent = 0xffd36b, particleTexture = null, c
     const markerRing = mesh(new THREE.TorusGeometry(0.62, 0.034, 8, 42), markerMaterial);
     markerRing.rotation.x = Math.PI / 2;
     markerRing.position.y = -0.98;
-    const beam = mesh(new THREE.CylinderGeometry(0.16, 0.58, 2.45, 24, 1, true), markerMaterial.clone());
-    beam.position.y = -0.1;
-    beam.material.opacity = 0.09;
-    group.add(markerRing, beam);
+    const markerOrbit = new THREE.Group();
+    [-1, 1].forEach((direction, orbitIndex) => {
+      const points = [];
+      for (let index = 0; index <= 20; index += 1) {
+        const ratio = index / 20;
+        const angle = ratio * Math.PI * 1.7 * direction + orbitIndex * 1.35;
+        const radius = 0.58 + Math.sin(ratio * Math.PI) * 0.14;
+        points.push(new THREE.Vector3(Math.cos(angle) * radius, -0.12 + ratio * 0.62, Math.sin(angle) * radius * 0.56));
+      }
+      const orbitMaterial = markerMaterial.clone();
+      orbitMaterial.opacity = orbitIndex ? 0.3 : 0.45;
+      const orbit = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.018, 5, false), orbitMaterial);
+      orbit.userData.spin = direction * (0.44 + orbitIndex * 0.16);
+      markerOrbit.add(orbit);
+    });
+    const approachRibbon = new THREE.Group();
+    [-1, 1].forEach((direction, ribbonIndex) => {
+      const points = [];
+      for (let index = 0; index <= 26; index += 1) {
+        const ratio = index / 26;
+        const wave = Math.sin(ratio * Math.PI * 2.2 + ribbonIndex * 1.8) * (0.08 + ratio * 0.18);
+        points.push(new THREE.Vector3(
+          direction * (0.23 + ratio * 0.18) + wave,
+          -0.96 + Math.sin(ratio * Math.PI) * 0.035,
+          0.08 + ratio * 3.15
+        ));
+      }
+      const ribbonMaterial = markerMaterial.clone();
+      ribbonMaterial.opacity = 0.2;
+      const ribbon = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 28, 0.017, 5, false), ribbonMaterial);
+      ribbon.userData.phase = ribbonIndex * Math.PI;
+      approachRibbon.add(ribbon);
+    });
+    const approachComets = new THREE.Group();
+    for (let index = 0; index < 6; index += 1) {
+      const comet = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: particleTexture,
+        color,
+        transparent: true,
+        opacity: 0.42,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false
+      }));
+      comet.scale.set(0.22, 0.22, 1);
+      comet.userData.offset = index / 6;
+      approachComets.add(comet);
+    }
+    group.add(markerRing, markerOrbit, approachRibbon, approachComets);
     group.userData.markerRing = markerRing;
-    group.userData.markerBeam = beam;
+    group.userData.markerOrbit = markerOrbit;
+    group.userData.approachRibbon = approachRibbon;
+    group.userData.approachComets = approachComets;
   }
   group.userData.kind = "story-item";
   group.userData.storyKind = kind;
   group.userData.itemId = item.id || null;
   group.userData.storyColor = color;
-  group.scale.setScalar(carried ? 0.58 : 1.05);
+  group.scale.setScalar(carried ? 0.58 : 1.24);
+  return group;
+}
+
+function createCarryRig(accent) {
+  const group = new THREE.Group();
+  const shellColor = new THREE.Color(0x173143).lerp(new THREE.Color(accent), 0.08);
+  const shell = mesh(roundedPanelGeometry(0.58, 0.46, 0.24, 0.08), material(shellColor, {
+    roughness: 0.6,
+    metalness: 0.08,
+    transparent: true,
+    opacity: 0.94
+  }), true);
+  shell.position.y = -0.07;
+  const face = mesh(roundedPanelGeometry(0.49, 0.31, 0.025, 0.06), material(new THREE.Color(accent).lerp(new THREE.Color(0xffffff), 0.12), {
+    emissive: accent,
+    emissiveIntensity: 0.22,
+    roughness: 0.38,
+    metalness: 0.14
+  }), true);
+  face.position.set(0, -0.08, 0.14);
+  const handle = mesh(new THREE.TorusGeometry(0.2, 0.026, 8, 28, Math.PI), material(0xe9c878, {
+    roughness: 0.3,
+    metalness: 0.72,
+    emissive: 0x6a4315,
+    emissiveIntensity: 0.12
+  }), true);
+  handle.position.set(0, 0.23, 0.01);
+  handle.rotation.z = Math.PI;
+  const clasp = mesh(createHeartGeometry(), material(accent, { emissive: accent, emissiveIntensity: 0.72, roughness: 0.26 }), true);
+  clasp.scale.setScalar(0.13);
+  clasp.position.set(0, -0.02, 0.17);
+  group.add(shell, face, handle, clasp);
+  group.userData.clasp = clasp;
+  return group;
+}
+
+function createPickupAura(kind, color, particleTexture) {
+  const group = new THREE.Group();
+  const fadeMaterials = [];
+  const addFxMaterial = (options = {}) => {
+    const fxMaterial = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: options.opacity ?? 0.86,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    });
+    fxMaterial.userData.maxOpacity = fxMaterial.opacity;
+    fadeMaterials.push(fxMaterial);
+    return fxMaterial;
+  };
+
+  for (let ribbonIndex = 0; ribbonIndex < 3; ribbonIndex += 1) {
+    const direction = ribbonIndex % 2 ? -1 : 1;
+    const phase = ribbonIndex * 1.9;
+    const points = [];
+    for (let index = 0; index <= 28; index += 1) {
+      const ratio = index / 28;
+      const angle = phase + ratio * Math.PI * (2.2 + ribbonIndex * 0.45) * direction;
+      const radius = 0.18 + Math.sin(ratio * Math.PI) * (0.72 + ribbonIndex * 0.12);
+      points.push(new THREE.Vector3(
+        Math.cos(angle) * radius,
+        -0.58 + ratio * 1.42 + Math.sin(angle * 0.5) * 0.12,
+        Math.sin(angle) * radius * 0.5
+      ));
+    }
+    const curve = new THREE.CatmullRomCurve3(points);
+    const ribbon = mesh(new THREE.TubeGeometry(curve, 28, 0.014 + ribbonIndex * 0.003, 5, false), addFxMaterial({ opacity: 0.52 - ribbonIndex * 0.09 }));
+    ribbon.userData.spin = direction * (0.35 + ribbonIndex * 0.16);
+    group.add(ribbon);
+  }
+
+  const motif = new THREE.Group();
+  const motifMaterial = addFxMaterial({ opacity: 0.88 });
+  if (kind === "umbrella") {
+    for (let index = 0; index < 4; index += 1) {
+      const ripple = mesh(new THREE.TorusGeometry(0.3 + index * 0.15, 0.018, 7, 42), motifMaterial.clone());
+      ripple.material.userData.maxOpacity = 0.7 - index * 0.1;
+      fadeMaterials.push(ripple.material);
+      ripple.rotation.x = Math.PI / 2;
+      ripple.position.y = -0.55 + index * 0.05;
+      ripple.userData.pulseOffset = index * 0.16;
+      motif.add(ripple);
+    }
+  } else if (["camera", "photo"].includes(kind)) {
+    [[-0.56, 0.4], [0.56, 0.4], [-0.56, -0.4], [0.56, -0.4]].forEach(([x, y], index) => {
+      const corner = new THREE.Group();
+      const horizontal = mesh(new THREE.BoxGeometry(0.24, 0.025, 0.02), motifMaterial.clone());
+      const vertical = mesh(new THREE.BoxGeometry(0.025, 0.24, 0.02), motifMaterial.clone());
+      fadeMaterials.push(horizontal.material, vertical.material);
+      horizontal.position.x = x > 0 ? -0.1 : 0.1;
+      vertical.position.y = y > 0 ? -0.1 : 0.1;
+      corner.position.set(x, y, 0.1);
+      corner.rotation.z = index % 2 ? 0.04 : -0.04;
+      corner.add(horizontal, vertical);
+      motif.add(corner);
+    });
+  } else if (["record", "wristband"].includes(kind)) {
+    for (let index = 0; index < 4; index += 1) {
+      const wave = mesh(new THREE.TorusGeometry(0.3 + index * 0.17, 0.02, 8, 48), motifMaterial.clone());
+      fadeMaterials.push(wave.material);
+      wave.rotation.set(Math.PI / 2 + index * 0.2, index * 0.38, 0);
+      wave.userData.spin = index % 2 ? -1 : 1;
+      motif.add(wave);
+    }
+  } else if (["flower", "plant"].includes(kind)) {
+    for (let index = 0; index < 10; index += 1) {
+      const angle = index / 10 * Math.PI * 2;
+      const petal = mesh(new THREE.SphereGeometry(0.105, 10, 7), motifMaterial.clone());
+      fadeMaterials.push(petal.material);
+      petal.scale.set(1.5, 0.48, 0.26);
+      petal.position.set(Math.cos(angle) * 0.52, Math.sin(angle) * 0.52, 0);
+      petal.rotation.z = angle;
+      petal.userData.spin = index % 2 ? -0.7 : 0.7;
+      motif.add(petal);
+    }
+  } else if (kind === "key") {
+    const lockRing = mesh(new THREE.TorusGeometry(0.45, 0.032, 8, 46), motifMaterial);
+    motif.add(lockRing);
+    for (let index = 0; index < 12; index += 1) {
+      const angle = index / 12 * Math.PI * 2;
+      const ray = mesh(new THREE.BoxGeometry(0.022, 0.22, 0.018), addFxMaterial({ opacity: 0.66 }));
+      ray.position.set(Math.cos(angle) * 0.7, Math.sin(angle) * 0.7, 0);
+      ray.rotation.z = angle - Math.PI / 2;
+      motif.add(ray);
+    }
+  } else if (["book", "ticket", "note", "map"].includes(kind)) {
+    for (let index = 0; index < 7; index += 1) {
+      const page = mesh(roundedPanelGeometry(0.2, 0.12, 0.012, 0.018), addFxMaterial({ opacity: 0.58 }));
+      const angle = index / 7 * Math.PI * 2;
+      page.position.set(Math.cos(angle) * 0.58, Math.sin(angle) * 0.42, Math.sin(angle * 2) * 0.16);
+      page.rotation.set(angle * 0.13, angle, angle + 0.4);
+      page.userData.spin = index % 2 ? -0.8 : 0.8;
+      motif.add(page);
+    }
+  } else {
+    for (let index = 0; index < 3; index += 1) {
+      const halo = mesh(new THREE.TorusGeometry(0.34 + index * 0.18, 0.022, 8, 44), addFxMaterial({ opacity: 0.74 - index * 0.13 }));
+      halo.rotation.set(Math.PI / 2 + index * 0.35, index * 0.6, 0);
+      halo.userData.spin = index % 2 ? -0.8 : 0.8;
+      motif.add(halo);
+    }
+  }
+  group.add(motif);
+
+  const flash = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: particleTexture,
+    color,
+    transparent: true,
+    opacity: 0.46,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  }));
+  flash.material.userData.maxOpacity = 0.46;
+  fadeMaterials.push(flash.material);
+  flash.scale.set(1.75, 1.75, 1);
+  group.add(flash);
+  group.userData.motif = motif;
+  group.userData.fadeMaterials = fadeMaterials;
+  return group;
+}
+
+function createPickupBridge(start, control, end, color, particleTexture) {
+  const group = new THREE.Group();
+  const materials = [];
+  const basePoints = [];
+  const point = new THREE.Vector3();
+  for (let index = 0; index <= 34; index += 1) {
+    const ratio = index / 34;
+    quadraticPoint(point, start, control, end, ratio);
+    basePoints.push(point.clone());
+  }
+  [-1, 1].forEach((direction, ribbonIndex) => {
+    const points = basePoints.map((entry, index) => {
+      const ratio = index / (basePoints.length - 1);
+      const width = Math.sin(ratio * Math.PI) * (0.08 + ribbonIndex * 0.045);
+      return entry.clone().add(new THREE.Vector3(
+        direction * width + Math.sin(ratio * Math.PI * 4 + ribbonIndex) * 0.025,
+        Math.cos(ratio * Math.PI * 3 + ribbonIndex) * 0.025,
+        0
+      ));
+    });
+    const ribbonMaterial = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: ribbonIndex ? 0.48 : 0.72,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false
+    });
+    ribbonMaterial.userData.maxOpacity = ribbonMaterial.opacity;
+    materials.push(ribbonMaterial);
+    group.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 34, ribbonIndex ? 0.016 : 0.026, 5, false), ribbonMaterial));
+  });
+  const glints = [];
+  for (let index = 0; index < 7; index += 1) {
+    const glint = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: particleTexture,
+      color: index % 2 ? color : 0xffffff,
+      transparent: true,
+      opacity: 0.72,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false
+    }));
+    glint.scale.setScalar(0.18 + (index % 3) * 0.04);
+    glint.userData.offset = index / 7;
+    group.add(glint);
+    glints.push(glint);
+  }
+  const impactMaterial = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+  const impact = mesh(new THREE.RingGeometry(0.12, 0.2, 32), impactMaterial);
+  impact.position.copy(end);
+  impact.rotation.x = Math.PI / 2;
+  group.add(impact);
+  group.userData.materials = materials;
+  group.userData.glints = glints;
+  group.userData.impact = impact;
+  group.userData.sharedTexture = particleTexture;
   return group;
 }
 
@@ -1757,47 +2060,221 @@ function smoothGeometryNormals(sourceGeometry) {
   return geometry;
 }
 
-function createRiggedRunner(gltf, options, animationClips = gltf.animations) {
+function createRunnerFashion(accent = 0xff654f, companion = false, replaceHead = false) {
+  const group = new THREE.Group();
+  const accentColor = new THREE.Color(accent);
+  const darkColor = companion ? 0x492d4d : 0x14283a;
+  const jacketColor = companion ? 0xa3486f : 0x176b82;
+  const fabric = material(darkColor, { roughness: 0.7, metalness: 0.02 });
+  const jacketFabric = material(jacketColor, {
+    roughness: 0.58,
+    metalness: 0.06,
+    clearcoat: 0.1,
+    clearcoatRoughness: 0.64
+  });
+  const trim = material(accent, {
+    emissive: accent,
+    emissiveIntensity: 0.72,
+    roughness: 0.28,
+    metalness: 0.14
+  });
+
+  const headGroup = new THREE.Group();
+  const skin = characterMaterial(companion ? 0xe0ad8c : 0xc98c6b, { emissiveIntensity: 0.11 });
+  const hair = characterMaterial(companion ? 0x34212b : 0x21171a, { emissiveIntensity: 0.08 });
+  const head = mesh(new THREE.SphereGeometry(0.225, 24, 18), skin, true);
+  head.scale.set(0.92, 1.07, 0.94);
+  const hairCap = mesh(new THREE.SphereGeometry(0.238, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.68), hair, true);
+  hairCap.position.set(0, 0.075, 0.014);
+  hairCap.rotation.x = -0.08;
+  [-1, 0, 1].forEach((side, index) => {
+    const lock = mesh(new THREE.CapsuleGeometry(0.035 + index * 0.004, 0.12 + Math.abs(side) * 0.03, 4, 8), hair, true);
+    lock.position.set(side * 0.12, -0.04 - Math.abs(side) * 0.015, 0.19);
+    lock.rotation.z = side * 0.22;
+    headGroup.add(lock);
+  });
+  [-1, 1].forEach((side) => {
+    const ear = mesh(new THREE.SphereGeometry(0.045, 12, 9), skin, true);
+    ear.scale.set(0.62, 1, 0.72);
+    ear.position.x = side * 0.213;
+    headGroup.add(ear);
+  });
+  headGroup.position.set(0, 2.54, 0.01);
+  headGroup.add(head, hairCap);
+
+  const rearShell = mesh(roundedPanelGeometry(companion ? 0.56 : 0.62, 0.72, 0.055, 0.11), jacketFabric, true);
+  rearShell.position.set(0, 1.72, 0.238);
+  const frontShell = mesh(roundedPanelGeometry(companion ? 0.55 : 0.61, 0.7, 0.05, 0.11), jacketFabric, true);
+  frontShell.position.set(0, 1.72, -0.225);
+  const backPanel = mesh(roundedPanelGeometry(0.31, 0.28, 0.024, 0.065), fabric, true);
+  backPanel.position.set(0, 1.72, 0.276);
+  [-1, 1].forEach((side) => {
+    const sidePanel = mesh(roundedPanelGeometry(0.11, 0.58, 0.03, 0.04), fabric, true);
+    sidePanel.position.set(side * (companion ? 0.285 : 0.315), 1.68, 0);
+    sidePanel.rotation.y = Math.PI / 2;
+    group.add(sidePanel);
+  });
+  const collar = mesh(new THREE.TorusGeometry(0.25, 0.045, 8, 28), fabric, true);
+  collar.scale.z = 0.72;
+  collar.rotation.x = Math.PI / 2;
+  collar.position.set(0, 2.23, 0.005);
+  const waist = mesh(new THREE.TorusGeometry(0.34, 0.032, 7, 28), fabric, true);
+  waist.scale.z = 0.68;
+  waist.rotation.x = Math.PI / 2;
+  waist.position.set(0, 1.24, 0.01);
+  const seam = mesh(roundedPanelGeometry(0.032, 0.38, 0.014, 0.014), trim, true);
+  seam.position.set(0, 1.67, 0.304);
+  const emblem = new THREE.Group();
+  [-1, 1].forEach((side) => {
+    const stripe = mesh(roundedPanelGeometry(0.035, 0.18, 0.014, 0.012), trim, true);
+    stripe.position.set(side * 0.047, 1.76, 0.294);
+    stripe.rotation.z = side * 0.58;
+    emblem.add(stripe);
+  });
+
+  const hemMaterial = material(new THREE.Color(darkColor).lerp(accentColor, 0.14), {
+    roughness: 0.76,
+    side: THREE.DoubleSide
+  });
+  const leftHem = mesh(roundedPanelGeometry(0.17, 0.24, 0.022, 0.045), hemMaterial, true);
+  const rightHem = mesh(roundedPanelGeometry(0.17, 0.24, 0.022, 0.045), hemMaterial, true);
+  leftHem.position.set(-0.095, 1.27, 0.22);
+  rightHem.position.set(0.095, 1.27, 0.22);
+  leftHem.rotation.z = 0.04;
+  rightHem.rotation.z = -0.04;
+
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: makeParticleTexture(),
+    color: accent,
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  }));
+  glow.position.set(0, 1.58, 0.1);
+  glow.scale.set(0.88, 1.54, 1);
+  if (replaceHead) group.add(headGroup);
+  group.add(rearShell, frontShell, backPanel, collar, waist, seam, emblem, leftHem, rightHem, glow);
+  group.userData.leftHem = leftHem;
+  group.userData.rightHem = rightHem;
+  group.userData.head = replaceHead ? headGroup : null;
+  group.userData.emblem = emblem;
+  group.userData.glow = glow;
+  return group;
+}
+
+function createRiggedRunner(gltf, options, animationClips = gltf.animations, headGltf = null, accessoryGltfs = []) {
   const wrapper = new THREE.Group();
   const model = gltf.scene;
-  model.rotation.y = Math.PI;
-  model.traverse((child) => {
-    if (child.name === "Sword") child.visible = false;
-    if (!child.isMesh && !child.isSkinnedMesh) return;
-    child.geometry = smoothGeometryNormals(child.geometry);
-    child.castShadow = true;
-    child.receiveShadow = true;
-    if (child.material) {
-      child.material = child.material.clone();
-      const materialName = child.material.name || "";
-      options.recolor?.forEach(([pattern, color]) => {
-        if (pattern.test(materialName)) child.material.color.setHex(color);
-      });
-      child.material.roughness = Math.max(0.38, child.material.roughness ?? 0.58);
-      child.material.metalness = Math.min(0.26, child.material.metalness ?? 0.08);
-    }
+  let referenceSkinMaterial = null;
+  headGltf?.scene?.traverse((child) => {
+    if (referenceSkinMaterial || (!child.isMesh && !child.isSkinnedMesh)) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    referenceSkinMaterial = materials.find((entry) => /Superhero_(?:Male|Female)/i.test(entry?.name || "")) || null;
   });
+  const prepareModel = (sourceModel, applyOutfitTint = false, applyHairTint = false) => {
+    sourceModel.rotation.y = options.rotationY ?? Math.PI;
+    sourceModel.traverse((child) => {
+      if (child.name === "Sword") child.visible = false;
+      if (options.replaceHead && child.name === "Casual2_Head") {
+        child.visible = false;
+        return;
+      }
+      if (!child.isMesh && !child.isSkinnedMesh) return;
+      child.geometry = smoothGeometryNormals(child.geometry);
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if (!child.material) return;
+      const convertMaterial = (inputMaterial) => {
+        const sourceMaterial = inputMaterial.clone();
+        const materialName = sourceMaterial.name || "";
+        const skinLike = /Skin|Eye|Eyebrow|Regular_(?:Male|Female)|Superhero_(?:Male|Female)/i.test(materialName);
+        const hairLike = /Hair|LightBrown/i.test(materialName) && !options.outfitMaterial?.test?.(materialName);
+        if (skinLike && referenceSkinMaterial && /Regular_(?:Male|Female)/i.test(materialName)) {
+          sourceMaterial.color.copy(referenceSkinMaterial.color);
+          sourceMaterial.map = referenceSkinMaterial.map || sourceMaterial.map;
+          sourceMaterial.normalMap = referenceSkinMaterial.normalMap || sourceMaterial.normalMap;
+          sourceMaterial.roughnessMap = referenceSkinMaterial.roughnessMap || sourceMaterial.roughnessMap;
+        }
+        options.recolor?.forEach(([pattern, color]) => {
+          if (pattern.test(materialName)) sourceMaterial.color.setHex(color);
+        });
+        if (!skinLike && applyOutfitTint && options.outfitTint?.pattern?.test?.(materialName)) {
+          sourceMaterial.color.multiply(new THREE.Color(options.outfitTint.color));
+        }
+        if (!skinLike && applyOutfitTint && options.partTints?.length) {
+          const partTint = options.partTints.find(([pattern]) => pattern.test(child.name || ""));
+          if (partTint) sourceMaterial.color.multiply(new THREE.Color(partTint[1]));
+        }
+        if (applyHairTint && options.hairTint) sourceMaterial.color.multiply(new THREE.Color(options.hairTint));
+        return new THREE.MeshPhysicalMaterial({
+          name: materialName,
+          color: sourceMaterial.color,
+          map: sourceMaterial.map || null,
+          normalMap: sourceMaterial.normalMap || null,
+          normalScale: sourceMaterial.normalScale?.clone?.() || new THREE.Vector2(1, 1),
+          roughnessMap: sourceMaterial.roughnessMap || null,
+          metalnessMap: sourceMaterial.metalnessMap || null,
+          aoMap: sourceMaterial.aoMap || null,
+          emissiveMap: sourceMaterial.emissiveMap || null,
+          emissive: sourceMaterial.emissive || new THREE.Color(0x000000),
+          roughness: Number.isFinite(sourceMaterial.roughness)
+            ? sourceMaterial.roughness
+            : skinLike ? 0.58 : hairLike ? 0.42 : 0.68,
+          metalness: Number.isFinite(sourceMaterial.metalness) ? sourceMaterial.metalness : 0.015,
+          clearcoat: hairLike ? 0.24 : skinLike ? 0.06 : 0.13,
+          clearcoatRoughness: hairLike ? 0.35 : 0.62,
+          sheen: skinLike ? 0.08 : 0.24,
+          sheenColor: new THREE.Color(options.accent || 0xff654f).multiplyScalar(skinLike ? 0.22 : 0.38),
+          sheenRoughness: 0.7,
+          envMapIntensity: skinLike ? 0.55 : 0.9
+        });
+      };
+      child.material = Array.isArray(child.material)
+        ? child.material.map(convertMaterial)
+        : convertMaterial(child.material);
+    });
+  };
+  prepareModel(model, true);
   const initialBox = new THREE.Box3().setFromObject(model);
   const naturalHeight = Math.max(0.01, initialBox.max.y - initialBox.min.y);
-  model.scale.setScalar((options.height || 2.72) / naturalHeight);
+  const modelScale = (options.height || 2.72) / naturalHeight;
+  model.scale.set(
+    modelScale * (options.widthScale || 0.9),
+    modelScale * 1.035,
+    modelScale * (options.depthScale || 0.92)
+  );
   const scaledBox = new THREE.Box3().setFromObject(model);
   model.position.y = -scaledBox.min.y;
   wrapper.add(model);
 
-  if (options.backpack) {
-    const packMaterial = material(options.backpack, { roughness: 0.38, metalness: 0.08 });
-    const trimMaterial = material(options.backpackTrim || 0xffd04f, {
-      emissive: options.backpackTrim || 0xffd04f,
-      emissiveIntensity: 0.38,
-      roughness: 0.24
-    });
-    const backpack = mesh(roundedPanelGeometry(0.58, 0.72, 0.25, 0.13), packMaterial, true);
-    backpack.position.set(0, 1.5, 0.28);
-    const patch = mesh(roundedPanelGeometry(0.34, 0.18, 0.035, 0.06), trimMaterial, true);
-    patch.position.set(0, 1.56, 0.425);
-    wrapper.add(backpack, patch);
-    wrapper.userData.backpack = backpack;
+  const models = [model];
+  if (headGltf?.scene) {
+    const headModel = headGltf.scene;
+    prepareModel(headModel, false);
+    headModel.scale.copy(model.scale);
+    headModel.position.copy(model.position);
+    wrapper.add(headModel);
+    models.push(headModel);
   }
+  accessoryGltfs.filter((entry) => entry?.scene).forEach((entry) => {
+    const accessoryModel = entry.scene;
+    prepareModel(accessoryModel, false, true);
+    accessoryModel.scale.copy(model.scale);
+    accessoryModel.position.copy(model.position);
+    wrapper.add(accessoryModel);
+    models.push(accessoryModel);
+  });
+
+  const fashion = options.fashion === false
+    ? new THREE.Group()
+    : createRunnerFashion(
+      options.accent || options.backpackTrim || 0xff654f,
+      Boolean(options.companion),
+      Boolean(options.replaceHead)
+    );
+  wrapper.add(fashion);
 
   const shadow = mesh(
     new THREE.CircleGeometry(0.58, 28),
@@ -1807,51 +2284,92 @@ function createRiggedRunner(gltf, options, animationClips = gltf.animations) {
   shadow.position.y = 0.018;
   wrapper.add(shadow);
 
-  const mixer = new THREE.AnimationMixer(model);
-  const availableTargets = new Set();
-  model.traverse((child) => availableTargets.add(THREE.PropertyBinding.sanitizeNodeName(child.name)));
-  const findClip = (suffix) => {
-    const sourceClip = animationClips.find((clip) => clip.name.endsWith(`|${suffix}`));
-    const clip = sourceClip.clone();
-    clip.tracks = clip.tracks.filter((track) => {
-      const target = track.name.split(".", 1)[0];
-      return !["Body", "PTL", "PTR"].includes(target) && availableTargets.has(target);
+  const createAnimationLayer = (layerModel) => {
+    const mixer = new THREE.AnimationMixer(layerModel);
+    const availableTargets = new Set();
+    layerModel.traverse((child) => availableTargets.add(THREE.PropertyBinding.sanitizeNodeName(child.name)));
+    const findClip = (...names) => {
+      const sourceClip = animationClips.find((clip) => names.some((name) => (
+        clip.name === name || clip.name.endsWith(`|${name}`)
+      )));
+      if (!sourceClip) throw new Error(`Runner animation missing: ${names.join(", ")}`);
+      const clip = sourceClip.clone();
+      clip.tracks = clip.tracks.filter((track) => {
+        const target = track.name.split(".", 1)[0];
+        return !["Body", "PTL", "PTR"].includes(target) && availableTargets.has(target);
+      });
+      return clip;
+    };
+    const actions = {
+      idle: mixer.clipAction(findClip("Idle_A", "Idle_B", "Idle_Loop", "Idle_Neutral")),
+      run: mixer.clipAction(findClip("Runing_A", "Runing_B", "Sprint_Loop", "Run")),
+      jump: mixer.clipAction(findClip("Jump_B_Full", "Jump_A_InAir", "Jump_Loop", "Jump_Start")),
+      slide: mixer.clipAction(findClip("Jump_A_Landing", "FightM_Pose", "FightM_Combo_A", "Roll")),
+      stumble: mixer.clipAction(findClip("FightM_Hit_C", "FightM_Hit_A", "Hit_Chest", "HitRecieve"))
+    };
+    Object.values(actions).forEach((runnerAction) => {
+      runnerAction.enabled = true;
+      runnerAction.setEffectiveWeight(1);
     });
-    return clip;
+    actions.run.play();
+    return { model: layerModel, mixer, actions };
   };
-  const actions = {
-    idle: mixer.clipAction(findClip("Idle_Neutral")),
-    run: mixer.clipAction(findClip("Run")),
-    slide: mixer.clipAction(findClip("Roll")),
-    stumble: mixer.clipAction(findClip("HitRecieve"))
+  const layers = models.map(createAnimationLayer);
+  const primaryLayer = layers[0];
+  wrapper.userData.modelRunner = {
+    model,
+    mixer: primaryLayer.mixer,
+    actions: primaryLayer.actions,
+    layers,
+    currentAction: "run",
+    shadow,
+    fashion
   };
-  Object.values(actions).forEach((runnerAction) => {
-    runnerAction.enabled = true;
-    runnerAction.setEffectiveWeight(1);
-  });
-  actions.run.play();
-  wrapper.userData.modelRunner = { model, mixer, actions, currentAction: "run", shadow };
   return wrapper;
 }
 
 function animateRiggedRunner(character, delta, action, vertical, intensity, lateral = 0, stumble = 0) {
   const runner = character.userData.modelRunner;
-  const nextAction = stumble > 0.15 ? "stumble" : action === "idle" ? "idle" : action === "slide" ? "slide" : "run";
+  const nextAction = stumble > 0.15 ? "stumble"
+    : action === "idle" ? "idle"
+      : action === "slide" ? "slide"
+        : vertical > 0.08 ? "jump" : "run";
   if (nextAction !== runner.currentAction) {
-    const previous = runner.actions[runner.currentAction];
-    const next = runner.actions[nextAction];
-    previous?.fadeOut(0.12);
-    next?.reset().fadeIn(0.12).play();
+    runner.layers.forEach((layer) => {
+      layer.actions[runner.currentAction]?.fadeOut(0.12);
+      layer.actions[nextAction]?.reset().fadeIn(0.12).play();
+    });
     runner.currentAction = nextAction;
   }
-  runner.actions.run.setEffectiveTimeScale(clamp(0.82 + intensity * 0.22, 0.9, 1.45));
-  runner.actions.slide.setEffectiveTimeScale(1.18);
-  runner.mixer.update(delta);
-  character.position.y = vertical * 0.72 + (action === "slide" ? 0.03 : 0);
-  character.rotation.x = action === "slide" ? -0.05 : 0.035;
+  const runScale = clamp(0.98 + intensity * 0.42, 1.02, 1.78);
+  runner.layers.forEach((layer) => {
+    layer.actions.run.setEffectiveTimeScale(runScale);
+    layer.actions.jump.setEffectiveTimeScale(1.08 + intensity * 0.08);
+    layer.actions.slide.setEffectiveTimeScale(1.32);
+    layer.mixer.update(delta);
+  });
+  const sliding = action === "slide";
+  character.position.y = vertical * 0.72 + (sliding ? 0.025 : 0);
+  character.rotation.x = sliding ? -0.68 : 0.035;
   character.rotation.z = clamp(-lateral * 0.09, -0.16, 0.16);
+  character.scale.set(sliding ? 1.06 : 1, sliding ? 0.62 : 1, sliding ? 1.2 : 1);
   runner.shadow.material.opacity = clamp(0.27 - vertical * 0.11, 0.08, 0.27);
   runner.shadow.scale.setScalar(1 + vertical * 0.24);
+  const fashion = runner.fashion?.userData;
+  if (fashion?.leftHem && fashion?.rightHem) {
+    const phase = runner.mixer.time * 9.4;
+    const wind = clamp(intensity, 0.2, 1.65);
+    fashion.leftHem.rotation.x = -0.08 - wind * 0.07 + Math.sin(phase) * 0.055;
+    fashion.rightHem.rotation.x = -0.08 - wind * 0.07 - Math.sin(phase) * 0.055;
+    fashion.leftHem.rotation.z = 0.04 + Math.sin(phase * 0.52) * 0.075 - lateral * 0.025;
+    fashion.rightHem.rotation.z = -0.04 - Math.sin(phase * 0.52) * 0.075 - lateral * 0.025;
+    if (fashion.head) {
+      fashion.head.rotation.z = Math.sin(phase * 0.5) * 0.012 - lateral * 0.012;
+      fashion.head.position.y = 2.54 + Math.abs(Math.sin(phase)) * 0.012;
+    }
+    if (fashion.emblem) fashion.emblem.rotation.z = Math.sin(phase * 0.5) * 0.035;
+    if (fashion.glow) fashion.glow.material.opacity = 0.08 + clamp(intensity - 0.55, 0, 1) * 0.16;
+  }
 }
 
 function createCollectible(stageIndex, accent, particleTexture) {
@@ -2280,11 +2798,27 @@ function createArrivalItemDisplay(items, accent, stageIndex) {
       interactionFx.add(wave);
     });
   } else if (featuredKind === "umbrella") {
-    const shield = mesh(new THREE.SphereGeometry(1.08, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), addFxMaterial(0.24));
-    shield.scale.y = 0.58;
-    shield.position.set(0, 1.72, 2.14);
-    shield.material.wireframe = true;
-    interactionFx.add(shield);
+    [0.78, 0.98, 1.18].forEach((radius, index) => {
+      const canopy = mesh(new THREE.TorusGeometry(radius, 0.012 + index * 0.003, 5, 48, Math.PI), addFxMaterial(0.18 - index * 0.035));
+      canopy.position.set(0, 2.02 + index * 0.055, 2.08 - index * 0.035);
+      interactionFx.add(canopy);
+    });
+    [-1.16, -0.92, -0.68, 0.68, 0.92, 1.16].forEach((x, index) => {
+      const rainCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x, 2.24 - (index % 2) * 0.18, 2.06),
+        new THREE.Vector3(x - 0.08, 1.72 - (index % 3) * 0.12, 2.08),
+        new THREE.Vector3(x - 0.16, 1.08 - (index % 2) * 0.1, 2.1)
+      ]);
+      interactionFx.add(mesh(new THREE.TubeGeometry(rainCurve, 10, 0.009, 4, false), addFxMaterial(0.13)));
+    });
+    [-0.78, 0.78].forEach((x, sideIndex) => {
+      [0.18, 0.29].forEach((radius, ringIndex) => {
+        const ripple = mesh(new THREE.RingGeometry(radius, radius + 0.018, 32), addFxMaterial(0.15 - ringIndex * 0.035));
+        ripple.rotation.x = -Math.PI / 2;
+        ripple.position.set(x, 0.04 + sideIndex * 0.004, 2.14 + ringIndex * 0.06);
+        interactionFx.add(ripple);
+      });
+    });
   } else if (["camera", "photo"].includes(featuredKind)) {
     const flash = mesh(new THREE.PlaneGeometry(1.28, 1.28), addFxMaterial(0.74));
     flash.position.set(0, 1.28, 2.08);
@@ -2557,6 +3091,25 @@ class CinematicRunnerRenderer {
       opacity: 0.72,
       roughness: 0.5
     });
+    this.roadMarkMaterial = material(0xe9eee6, {
+      emissive: STAGE_CONFIGS[0].accent,
+      emissiveIntensity: 0.08,
+      transparent: true,
+      opacity: 0.52,
+      roughness: 0.72
+    });
+    this.roadInsetMaterial = material(0x263238, { roughness: 0.32, metalness: 0.58 });
+    this.roadPatchMaterial = material(0x435154, { roughness: 0.94, transparent: true, opacity: 0.34 });
+    this.roadUtilityMaterial = material(0x29383c, { roughness: 0.38, metalness: 0.54 });
+    this.streetFurnitureMaterial = material(0x526068, { roughness: 0.44, metalness: 0.5 });
+    this.streetGlowMaterial = material(STAGE_CONFIGS[0].accent, {
+      emissive: STAGE_CONFIGS[0].accent,
+      emissiveIntensity: 1.35,
+      roughness: 0.24,
+      metalness: 0.26
+    });
+    this.streetPlanterMaterial = material(0x39484b, { roughness: 0.76, metalness: 0.16 });
+    this.streetFoliageMaterial = material(0x5f8e65, { roughness: 0.9 });
     this.ground = mesh(new THREE.PlaneGeometry(86, 410), this.groundMaterial, false, true);
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.position.set(0, -0.075, -120);
@@ -2584,6 +3137,8 @@ class CinematicRunnerRenderer {
     this.landingRing.rotation.x = -Math.PI / 2;
     this.landingRing.position.set(0, 0.035, PLAYER_Z);
     this.carryGroup = new THREE.Group();
+    this.carryRig = createCarryRig(STAGE_CONFIGS[0].accent);
+    this.carryGroup.add(this.carryRig);
     this.carriedItems = [];
     this.arrivalSet = null;
     this.arrivalData = null;
@@ -2601,6 +3156,11 @@ class CinematicRunnerRenderer {
     this.scene.add(this.collectibleBatches.glows, this.collectibleBatches.pickupTrail, this.collectibleBatches.rims, this.collectibleBatches.hearts);
     this.bursts = [];
     this.rings = [];
+    this.pickupSequences = [];
+    this.itemPulse = null;
+    this.flow = 0;
+    this.storyFocus = 0;
+    this.storyFocusTarget = 0;
     this.shake = 0;
     this.flash = 0;
     this.speedPulse = 0;
@@ -2648,14 +3208,21 @@ class CinematicRunnerRenderer {
       .then(([playerGltf, companionGltf, motionGltf]) => {
         if (this.disposed) return;
         const riggedPlayer = createRiggedRunner(playerGltf, {
-          height: 2.86,
-          recolor: [[/Red_Dark/i, 0x202c47], [/LightBlue/i, 0x1466a8], [/White/i, 0xff6347]],
-          backpack: 0x163f72,
-          backpackTrim: 0xffd34e
+          height: 2.72,
+          accent: 0xff7866,
+          widthScale: 0.84,
+          depthScale: 0.88,
+          rotationY: 0,
+          fashion: false
         }, motionGltf.animations);
         const riggedCompanion = createRiggedRunner(companionGltf, {
-          height: 2.68,
-          recolor: [[/Orange/i, 0xffbd4a], [/Grey/i, 0x58418e], [/White/i, 0xff5f88]]
+          height: 2.62,
+          accent: 0xff668f,
+          companion: true,
+          widthScale: 0.87,
+          depthScale: 0.9,
+          rotationY: 0,
+          fashion: false
         }, motionGltf.animations);
         riggedPlayer.position.copy(this.player.position);
         riggedCompanion.position.copy(this.companion.position);
@@ -2668,10 +3235,12 @@ class CinematicRunnerRenderer {
         this.player = riggedPlayer;
         this.companion = riggedCompanion;
         this.scene.add(this.player, this.companion);
-        this.canvas.setAttribute("data-runner-model", "rigged");
+        this.canvas.setAttribute("data-runner-model", "rg-poly-rigged");
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Unable to initialize rigged runner models", error);
         this.canvas.setAttribute("data-runner-model", "procedural-fallback");
+        this.canvas.setAttribute("data-runner-model-error", error?.message || "unknown");
       });
   }
 
@@ -2706,7 +3275,16 @@ class CinematicRunnerRenderer {
       thirdRails: new THREE.InstancedMesh(new THREE.BoxGeometry(0.07, 0.075, SEGMENT_LENGTH), this.powerRailMaterial, SEGMENT_COUNT * 3),
       walks: new THREE.InstancedMesh(new THREE.BoxGeometry(2.45, 0.34, SEGMENT_LENGTH), this.platformMaterial, SEGMENT_COUNT * 2),
       safetyLines: new THREE.InstancedMesh(new THREE.BoxGeometry(0.11, 0.025, SEGMENT_LENGTH), this.safetyLineMaterial, SEGMENT_COUNT * 2),
-      laneGuides: new THREE.InstancedMesh(new THREE.BoxGeometry(0.045, 0.024, 0.82), this.laneGuideMaterial, SEGMENT_COUNT * 24)
+      laneGuides: new THREE.InstancedMesh(new THREE.BoxGeometry(0.045, 0.024, 0.82), this.laneGuideMaterial, SEGMENT_COUNT * 24),
+      laneTicks: new THREE.InstancedMesh(new THREE.BoxGeometry(1.12, 0.022, 0.12), this.roadMarkMaterial, SEGMENT_COUNT * 12),
+      crosswalks: new THREE.InstancedMesh(new THREE.BoxGeometry(7.45, 0.024, 0.34), this.roadMarkMaterial, SEGMENT_COUNT * 5),
+      drains: new THREE.InstancedMesh(new THREE.BoxGeometry(0.42, 0.026, 0.74), this.roadInsetMaterial, SEGMENT_COUNT * 4),
+      roadPatches: new THREE.InstancedMesh(createRoadPatchGeometry(), this.roadPatchMaterial, SEGMENT_COUNT * 9),
+      manholes: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.34, 0.34, 0.026, 18), this.roadUtilityMaterial, SEGMENT_COUNT * 3),
+      edgePosts: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.055, 0.075, 0.72, 8), this.streetFurnitureMaterial, SEGMENT_COUNT * 8),
+      edgePostLights: new THREE.InstancedMesh(new THREE.SphereGeometry(0.095, 8, 6), this.streetGlowMaterial, SEGMENT_COUNT * 8),
+      planterBases: new THREE.InstancedMesh(new THREE.BoxGeometry(0.72, 0.5, 0.92), this.streetPlanterMaterial, SEGMENT_COUNT * 4),
+      planterLeaves: new THREE.InstancedMesh(new THREE.SphereGeometry(0.47, 9, 7), this.streetFoliageMaterial, SEGMENT_COUNT * 4)
     };
     Object.values(this.roadBatches).forEach((batch) => {
       batch.instanceMatrix.setUsage(THREE.StaticDrawUsage);
@@ -2763,6 +3341,50 @@ class CinematicRunnerRenderer {
         for (let row = 0; row < 12; row += 1) {
           transform.makeTranslation(x, 0.048, z - 7.25 + row * 1.32);
           this.roadBatches.laneGuides.setMatrixAt(segmentIndex * 24 + boundaryIndex * 12 + row, transform);
+        }
+      });
+      [-1, 0, 1].forEach((lane, laneIndex) => {
+        for (let row = 0; row < 4; row += 1) {
+          transform.makeTranslation(lane * LANE_WIDTH, 0.046, z - 6.1 + row * 4.05 + ((segmentIndex + laneIndex) % 2) * 0.28);
+          this.roadBatches.laneTicks.setMatrixAt(segmentIndex * 12 + laneIndex * 4 + row, transform);
+        }
+        for (let row = 0; row < 3; row += 1) {
+          const patchX = lane * LANE_WIDTH + (((segmentIndex + row + laneIndex) % 3) - 1) * 0.34;
+          const patchZ = z - 5.7 + row * 5.15 + laneIndex * 0.42;
+          transform.makeRotationY(((segmentIndex * 3 + laneIndex + row) % 5 - 2) * 0.075);
+          transform.setPosition(patchX, 0.034, patchZ);
+          this.roadBatches.roadPatches.setMatrixAt(segmentIndex * 9 + laneIndex * 3 + row, transform);
+        }
+        if ((segmentIndex + laneIndex) % 3 === 0) {
+          transform.makeTranslation(lane * LANE_WIDTH + (laneIndex - 1) * 0.28, 0.052, z + 3.2 - laneIndex * 4.35);
+        } else {
+          transform.makeScale(0, 0, 0);
+        }
+        this.roadBatches.manholes.setMatrixAt(segmentIndex * 3 + laneIndex, transform);
+      });
+      for (let row = 0; row < 5; row += 1) {
+        if (segmentIndex % 3 === 1) transform.makeTranslation(0, 0.052, z - 1.45 + row * 0.72);
+        else transform.makeScale(0, 0, 0);
+        this.roadBatches.crosswalks.setMatrixAt(segmentIndex * 5 + row, transform);
+      }
+      [-1, 1].forEach((side, sideIndex) => {
+        for (let row = 0; row < 2; row += 1) {
+          transform.makeTranslation(side * 4.05, 0.046, z - 4.3 + row * 8.5 + (segmentIndex % 2) * 0.8);
+          this.roadBatches.drains.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
+        }
+        for (let row = 0; row < 4; row += 1) {
+          const postZ = z - 6 + row * 4.15 + sideIndex * 0.5;
+          transform.makeTranslation(side * 4.56, 0.54, postZ);
+          this.roadBatches.edgePosts.setMatrixAt(segmentIndex * 8 + sideIndex * 4 + row, transform);
+          transform.makeTranslation(side * 4.56, 0.92, postZ);
+          this.roadBatches.edgePostLights.setMatrixAt(segmentIndex * 8 + sideIndex * 4 + row, transform);
+        }
+        for (let row = 0; row < 2; row += 1) {
+          const planterZ = z - 5.15 + row * 9.7 + sideIndex * 1.1;
+          transform.makeTranslation(side * 5.18, 0.54, planterZ);
+          this.roadBatches.planterBases.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
+          transform.makeTranslation(side * 5.18, 1.15, planterZ);
+          this.roadBatches.planterLeaves.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
         }
       });
     });
@@ -2976,6 +3598,16 @@ class CinematicRunnerRenderer {
     this.safetyLineMaterial.emissive.copy(new THREE.Color(config.accent).multiplyScalar(0.42));
     this.laneGuideMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xffffff), 0.72));
     this.laneGuideMaterial.emissive.setHex(config.accent);
+    this.roadMarkMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(0xffffff), 0.55));
+    this.roadMarkMaterial.emissive.copy(new THREE.Color(config.accent).multiplyScalar(0.22));
+    this.roadInsetMaterial.color.copy(new THREE.Color(config.road).multiplyScalar(0.48));
+    this.roadPatchMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(config.ground), 0.36).multiplyScalar(0.8));
+    this.roadUtilityMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(config.curb), 0.42).multiplyScalar(0.62));
+    this.streetFurnitureMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(config.road), 0.62).multiplyScalar(0.72));
+    this.streetGlowMaterial.color.setHex(config.accent);
+    this.streetGlowMaterial.emissive.setHex(config.accent);
+    this.streetPlanterMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(config.ground), 0.74));
+    this.streetFoliageMaterial.color.copy(new THREE.Color(0x638f67).lerp(new THREE.Color(config.accent), 0.1));
     this.groundMaterial.color.setHex(config.ground);
     const railRoute = config.routeStyle === "metro" || config.routeStyle === "terminal";
     if (this.roadBatches) {
@@ -2984,6 +3616,10 @@ class CinematicRunnerRenderer {
       this.roadBatches.thirdRails.visible = railRoute;
       this.roadBatches.safetyLines.visible = !railRoute;
       this.roadBatches.laneGuides.visible = !railRoute;
+      this.roadBatches.laneTicks.visible = !railRoute;
+      this.roadBatches.crosswalks.visible = !railRoute;
+      this.roadBatches.roadPatches.visible = !railRoute;
+      this.roadBatches.manholes.visible = !railRoute;
       this.roadBatches.walks.visible = true;
     }
     this.ambientParticles.material.color.setHex(config.accent);
@@ -3109,6 +3745,7 @@ class CinematicRunnerRenderer {
     const glowPositions = batches.glows.geometry.attributes.position.array;
     const trailPositions = batches.pickupTrail.geometry.attributes.position.array;
     let collectibleCount = 0;
+    let storyFocusTarget = 0;
     entities.forEach((entity) => {
       if (!entity.active) return;
       if (entity.type === "collectible") {
@@ -3145,14 +3782,49 @@ class CinematicRunnerRenderer {
       const storyItem = entity.type === "story-item" || entity.type === "route-choice";
       object.position.y = storyItem ? 1.06 + (Number(entity.height) || 0) + Math.sin(time * 4.2 + entity.id) * 0.09 : 0;
       if (storyItem) {
+        const proximity = clamp((object.position.z + 9.5) / (PLAYER_Z + 9.5), 0, 1);
+        const alignment = clamp(1 - Math.abs(object.position.x - this.currentLaneX) / (LANE_WIDTH * 0.72), 0, 1);
+        const focus = proximity * (0.22 + alignment * 0.78);
+        storyFocusTarget = Math.max(storyFocusTarget, focus);
         object.rotation.y = Math.sin(time * 1.25 + entity.id) * 0.24;
         object.rotation.z = Math.sin(time * 1.8 + entity.id) * 0.045;
-        if (object.userData.halo) object.userData.halo.material.opacity = 0.45 + Math.sin(time * 5 + entity.id) * 0.13;
+        object.scale.setScalar(1.24 + focus * 0.22);
+        if (object.userData.halo) {
+          object.userData.halo.material.opacity = 0.4 + focus * 0.36 + Math.sin(time * 5 + entity.id) * 0.1;
+          object.userData.halo.scale.setScalar(1 + focus * 0.34);
+        }
         if (object.userData.markerRing) {
           object.userData.markerRing.rotation.z = time * 0.8 + entity.lane * 0.7;
-          object.userData.markerRing.material.opacity = 0.42 + Math.sin(time * 4.2 + entity.id) * 0.14;
+          object.userData.markerRing.material.opacity = 0.3 + focus * 0.45 + Math.sin(time * 4.2 + entity.id) * 0.1;
+          object.userData.markerRing.scale.setScalar(0.86 + focus * 0.42);
         }
-        if (object.userData.markerBeam) object.userData.markerBeam.material.opacity = 0.07 + Math.sin(time * 3.3 + entity.id) * 0.025;
+        if (object.userData.markerOrbit) {
+          object.userData.markerOrbit.rotation.y = time * 0.72 + entity.id * 0.24;
+          object.userData.markerOrbit.scale.setScalar(0.9 + focus * 0.28);
+          object.userData.markerOrbit.children.forEach((orbit) => {
+            orbit.rotation.y += 0.008 * orbit.userData.spin;
+            orbit.material.opacity = (0.26 + focus * 0.28) * (orbit.userData.spin > 0 ? 1 : 0.78);
+          });
+        }
+        if (object.userData.approachRibbon) {
+          object.userData.approachRibbon.children.forEach((ribbon) => {
+            ribbon.material.opacity = 0.08 + focus * (ribbon.userData.phase ? 0.32 : 0.46);
+            ribbon.position.x = Math.sin(time * 2.7 + ribbon.userData.phase) * (0.025 + focus * 0.04);
+          });
+        }
+        if (object.userData.approachComets) {
+          object.userData.approachComets.children.forEach((comet) => {
+            const travel = (time * (0.55 + focus * 1.1) + comet.userData.offset) % 1;
+            const angle = travel * Math.PI * 2 + entity.id * 0.17;
+            comet.position.set(
+              Math.sin(angle) * (0.38 + focus * 0.16),
+              -0.7 + travel * 1.65,
+              0.25 + Math.cos(angle) * 0.22
+            );
+            comet.material.opacity = (0.24 + focus * 0.62) * Math.sin(travel * Math.PI);
+            comet.scale.setScalar(0.14 + focus * 0.14 + Math.sin(travel * Math.PI) * 0.08);
+          });
+        }
       }
       if (object.userData.kind === "train") object.rotation.z = Math.sin(time * 7 + entity.id) * 0.0025;
       if (object.userData.kind === "service-cart") object.rotation.y = Math.sin(time * 5.4 + entity.id) * 0.012;
@@ -3173,6 +3845,7 @@ class CinematicRunnerRenderer {
     batches.glows.material.opacity = 0.32 + Math.sin(time * 4.8) * 0.07;
     batches.pickupTrail.geometry.setDrawRange(0, collectibleCount * 2);
     batches.pickupTrail.geometry.attributes.position.needsUpdate = true;
+    this.storyFocusTarget = storyFocusTarget;
     this.entityObjects.forEach((object, id) => {
       if (activeIds.has(id)) return;
       this.recycleEntity(object);
@@ -3206,8 +3879,9 @@ class CinematicRunnerRenderer {
     this.ambientParticles.material.size = config.weather === "starlight" ? 0.2 : 0.11;
     this.ambientParticles.rotation.y = time * 0.012;
     this.ambientParticles.position.y = Math.sin(time * 0.24) * 0.28;
-    const streakTarget = clamp((speed - 11) / 17 + combo * 0.025 + this.speedPulse * 0.28, 0, 0.42);
+    const streakTarget = clamp((speed - 11) / 15 + combo * 0.022 + this.speedPulse * 0.32 + this.flow * 0.5, 0, 0.74);
     this.speedStreaks.material.opacity = damp(this.speedStreaks.material.opacity, streakTarget, 5, delta);
+    this.speedStreaks.scale.z = 1 + this.flow * 1.4;
     this.speedStreaks.position.z = (time * speed * 0.85) % 8;
   }
 
@@ -3278,12 +3952,114 @@ class CinematicRunnerRenderer {
     });
   }
 
+  spawnPickupSequence(detail) {
+    if (!detail?.item) return;
+    const color = storyPropColor(detail.item, STAGE_CONFIGS[this.stageIndex].accent);
+    const prop = createStoryProp(detail.item, color, null, true);
+    const aura = createPickupAura(detail.item.kind, color, this.particleTexture);
+    aura.userData.sharedTexture = this.particleTexture;
+    const laneX = (Number(detail.lane) || 0) * LANE_WIDTH;
+    const start = new THREE.Vector3(laneX, 1.18, PLAYER_Z - 1.15);
+    const side = laneX >= this.currentLaneX ? 1 : -1;
+    const control = new THREE.Vector3((laneX + this.currentLaneX) * 0.5 + side * 0.72, 2.62, PLAYER_Z - 0.42);
+    const end = new THREE.Vector3(this.currentLaneX + 0.6, 1.04, PLAYER_Z + 0.12);
+    const bridge = createPickupBridge(start, control, end, color, this.particleTexture);
+    prop.position.copy(start);
+    prop.scale.setScalar(0.92);
+    aura.position.copy(start);
+    this.scene.add(bridge, aura, prop);
+    this.pickupSequences.push({
+      prop,
+      aura,
+      bridge,
+      item: detail.item,
+      start,
+      control,
+      end,
+      elapsed: 0,
+      duration: ["camera", "photo", "umbrella", "record", "key"].includes(detail.item.kind) ? 1.34 : 1.12,
+      color
+    });
+    this.itemPulse = { kind: detail.item.kind, color, life: 2.15, duration: 2.15 };
+    this.speedPulse = Math.max(this.speedPulse, 1.28);
+    this.shake = Math.max(this.shake, 0.12);
+    if (["camera", "photo"].includes(detail.item.kind)) {
+      this.flash = Math.max(this.flash, 0.68);
+      this.flashMaterial.color.setHex(0xfff7df);
+    }
+  }
+
+  updatePickupSequences(delta, time) {
+    this.pickupSequences = this.pickupSequences.filter((sequence) => {
+      sequence.elapsed += delta;
+      const ratio = clamp(sequence.elapsed / sequence.duration, 0, 1);
+      const travel = clamp(ratio / 0.78, 0, 1);
+      const eased = 1 - Math.pow(1 - travel, 3);
+      quadraticPoint(sequence.prop.position, sequence.start, sequence.control, sequence.end, eased);
+      sequence.prop.rotation.y += delta * (4.2 + ratio * 4.8);
+      sequence.prop.rotation.z = Math.sin(ratio * Math.PI * 2.6) * 0.24;
+      const propScale = ratio < 0.7 ? 0.92 + Math.sin(ratio / 0.7 * Math.PI) * 0.34 : 0.92 * (1 - (ratio - 0.7) / 0.3);
+      sequence.prop.scale.setScalar(Math.max(0.001, propScale));
+
+      const auraProgress = clamp(ratio / 0.84, 0, 1);
+      sequence.aura.position.lerpVectors(sequence.start, sequence.end, auraProgress * 0.34);
+      sequence.aura.rotation.y += delta * 1.45;
+      sequence.aura.rotation.z = Math.sin(time * 2.8) * 0.1;
+      sequence.aura.scale.setScalar(0.56 + Math.sin(auraProgress * Math.PI) * 0.46 + auraProgress * 0.1);
+      sequence.aura.children.forEach((child, index) => {
+        if (child.userData.spin) child.rotation.y += delta * child.userData.spin;
+        if (child.userData.pulseOffset !== undefined) {
+          const pulse = clamp((ratio - child.userData.pulseOffset) * 2.4, 0, 1);
+          child.scale.setScalar(0.55 + pulse * 1.7);
+        }
+      });
+      sequence.aura.userData.motif?.children?.forEach((child, index) => {
+        child.rotation.z += delta * (child.userData.spin || (index % 2 ? -0.7 : 0.7));
+      });
+      const fade = ratio < 0.72 ? 1 : 1 - (ratio - 0.72) / 0.28;
+      sequence.aura.userData.fadeMaterials.forEach((entry) => {
+        entry.opacity = (entry.userData.maxOpacity ?? 0.72) * clamp(fade, 0, 1);
+      });
+      const bridgeFade = ratio < 0.62
+        ? Math.sin(clamp(ratio / 0.62, 0, 1) * Math.PI * 0.5)
+        : 1 - (ratio - 0.62) / 0.38;
+      sequence.bridge.userData.materials.forEach((entry) => {
+        entry.opacity = (entry.userData.maxOpacity ?? 0.6) * clamp(bridgeFade, 0, 1);
+      });
+      sequence.bridge.userData.glints.forEach((glint) => {
+        const glintProgress = clamp(ratio * 1.55 - glint.userData.offset * 0.7, 0, 1);
+        quadraticPoint(glint.position, sequence.start, sequence.control, sequence.end, glintProgress);
+        const glintFade = Math.sin(glintProgress * Math.PI) * clamp(1 - Math.max(0, ratio - 0.72) / 0.28, 0, 1);
+        glint.material.opacity = glintFade * 0.82;
+        glint.scale.setScalar(0.14 + glintFade * 0.22);
+      });
+      const impactProgress = clamp((ratio - 0.58) / 0.28, 0, 1);
+      sequence.bridge.userData.impact.scale.setScalar(0.55 + impactProgress * 3.1);
+      sequence.bridge.userData.impact.material.opacity = Math.sin(impactProgress * Math.PI) * 0.88;
+      if (ratio >= 0.76) {
+        const carried = this.carriedItems.find((entry) => entry.item.id === sequence.item.id);
+        if (carried?.pending) {
+          carried.pending = false;
+          carried.prop.visible = true;
+        }
+      }
+      if (ratio < 1) return true;
+      this.scene.remove(sequence.prop, sequence.aura, sequence.bridge);
+      disposeObject(sequence.prop);
+      disposeObject(sequence.aura);
+      disposeObject(sequence.bridge);
+      return false;
+    });
+  }
+
   carry(item) {
     if (!item?.id || this.carriedItems.some((entry) => entry.item.id === item.id)) return;
     const prop = createStoryProp(item, STAGE_CONFIGS[this.stageIndex].accent, null, true);
     prop.userData.carried = true;
+    const pending = this.pickupSequences.some((sequence) => sequence.item.id === item.id);
+    prop.visible = !pending;
     this.carryGroup.add(prop);
-    this.carriedItems.push({ item: { ...item }, prop });
+    this.carriedItems.push({ item: { ...item }, prop, pending });
     while (this.carriedItems.length > 3) {
       const removed = this.carriedItems.shift();
       this.carryGroup.remove(removed.prop);
@@ -3291,9 +4067,9 @@ class CinematicRunnerRenderer {
     }
     this.carriedItems.forEach((entry, index, list) => {
       const offset = index - (list.length - 1) / 2;
-      entry.prop.position.set(offset * 0.42, index % 2 ? 0.14 : 0, -index * 0.05);
-      entry.prop.rotation.set(-0.08, offset * 0.2, offset * -0.12);
-      entry.prop.scale.setScalar(entry.item.kind === "umbrella" ? 0.4 : entry.item.kind === "flower" ? 0.52 : 0.46);
+      entry.prop.position.set(offset * 0.16, 0.13 + (index % 2) * 0.045, 0.02 - index * 0.018);
+      entry.prop.rotation.set(-0.12, offset * 0.16, offset * -0.08);
+      entry.prop.scale.setScalar(entry.item.kind === "umbrella" ? 0.2 : entry.item.kind === "flower" ? 0.27 : 0.24);
     });
   }
 
@@ -3340,7 +4116,6 @@ class CinematicRunnerRenderer {
       this.shake = Math.max(this.shake, 0.82);
       this.flash = Math.max(this.flash, 0.34);
       this.flashMaterial.color.setHex(0xff5d58);
-      return;
     }
     if (type === "stage") {
       this.flash = Math.max(this.flash, 0.5);
@@ -3351,6 +4126,8 @@ class CinematicRunnerRenderer {
       this.speedPulse = Math.max(this.speedPulse, 0.16);
       return;
     }
+    if (type === "story-pickup") this.spawnPickupSequence(detail);
+    if (type === "energy") this.speedPulse = Math.max(this.speedPulse, 0.36);
     if (type === "near-miss") {
       this.shake = Math.max(this.shake, 0.26);
       this.speedPulse = Math.max(this.speedPulse, 1);
@@ -3358,12 +4135,12 @@ class CinematicRunnerRenderer {
       this.speedPulse = Math.max(this.speedPulse, 0.62);
     }
     const storyColor = detail.item ? storyPropColor(detail.item, STAGE_CONFIGS[this.stageIndex].accent) : STAGE_CONFIGS[this.stageIndex].accent;
-    const count = type === "story-pickup" ? 42 : type === "perfect" ? 34 : type === "near-miss" ? 26 : 20;
+    const count = type === "story-pickup" ? 54 : type === "perfect" ? 38 : type === "near-miss" ? 32 : type === "miss" ? 34 : type === "energy" ? 16 : 20;
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count * 3);
     for (let index = 0; index < count; index += 1) {
       const angle = index / count * Math.PI * 2;
-      const spread = (type === "story-pickup" ? 0.48 : 0.35) + (index % 5) * 0.08;
+      const spread = (type === "story-pickup" ? 0.56 : type === "miss" ? 0.72 : 0.35) + (index % 5) * 0.08;
       const spiral = type === "story-pickup" ? index / count * 0.52 : 0;
       positions[index * 3] = Math.cos(angle) * spiral;
       positions[index * 3 + 1] = spiral * 0.6;
@@ -3389,9 +4166,9 @@ class CinematicRunnerRenderer {
     points.position.set(effectX, type === "dodge" ? 0.75 : 1.25, effectZ);
     this.scene.add(points);
     this.bursts.push({ points, velocities, life: 0.85, duration: 0.85 });
-    if (["dodge", "near-miss", "perfect", "story-pickup"].includes(type)) {
+    if (["dodge", "near-miss", "perfect", "story-pickup", "energy"].includes(type)) {
       const ringMaterial = new THREE.MeshBasicMaterial({
-        color: type === "near-miss" ? 0xffd169 : type === "story-pickup" ? storyColor : STAGE_CONFIGS[this.stageIndex].accent,
+        color: type === "near-miss" ? 0xffd169 : type === "story-pickup" ? storyColor : type === "energy" ? 0xf9ef9a : STAGE_CONFIGS[this.stageIndex].accent,
         transparent: true,
         opacity: 0.82,
         blending: THREE.AdditiveBlending,
@@ -3419,6 +4196,8 @@ class CinematicRunnerRenderer {
     const delta = clamp(this.lastTime ? time - this.lastTime : 1 / 60, 1 / 240, 0.05);
     this.lastTime = time;
     this.frameAverage = damp(this.frameAverage, delta, 1.5, delta);
+    this.flow = damp(this.flow, clamp(Number(frame.flow) || 0, 0, 1), 4.8, delta);
+    this.storyFocus = damp(this.storyFocus, this.storyFocusTarget, 9, delta);
     this.qualityElapsed += delta;
     this.stageElapsed += delta;
     if (frame.stageIndex !== this.stageIndex) this.setStage(frame.stageIndex);
@@ -3466,7 +4245,8 @@ class CinematicRunnerRenderer {
       animateCharacter(this.player, time, playerAction, arriving ? 0 : vertical, arriving ? 0.05 : speed / 17, 0, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
     }
     updateRunnerFootTrail(this.playerTrail, this.player, time, arriving ? Math.max(1, speed * (1 - arrivalProgress * 1.2)) : speed, delta);
-    this.playerTrail.material.opacity = damp(this.playerTrail.material.opacity, arriving ? Math.max(0, 0.38 - arrivalProgress) : 0.64, 5, delta);
+    this.playerTrail.material.opacity = damp(this.playerTrail.material.opacity, arriving ? Math.max(0, 0.38 - arrivalProgress) : 0.5 + this.flow * 0.42, 6, delta);
+    this.playerTrail.material.size = 0.13 + this.flow * 0.09;
     this.landingPulse = Math.max(0, this.landingPulse - delta * 2.8);
     const landingProgress = 1 - this.landingPulse;
     this.landingRing.position.x = this.currentLaneX;
@@ -3527,29 +4307,35 @@ class CinematicRunnerRenderer {
     if (this.carriedItems.length) {
       const transfer = clamp((arrivalProgress - 0.34) / 0.34, 0, 1);
       const transferEase = transfer * transfer * (3 - transfer * 2);
-      const carryX = arriving ? THREE.MathUtils.lerp(this.player.position.x + 0.5, this.companion.position.x - 0.42, transferEase) : this.player.position.x + 0.5;
-      const carryY = arriving ? 1.2 + Math.sin(transferEase * Math.PI) * 0.42 : this.player.position.y + 1.22;
+      const carryX = arriving ? THREE.MathUtils.lerp(this.player.position.x + 0.62, this.companion.position.x - 0.42, transferEase) : this.player.position.x + 0.62;
+      const carryY = arriving ? 1.02 + Math.sin(transferEase * Math.PI) * 0.42 : this.player.position.y + 0.86 + Math.sin(time * 9.4) * 0.025;
       const carryZ = arriving ? THREE.MathUtils.lerp(this.player.position.z + 0.03, this.companion.position.z + 0.18, transferEase) : this.player.position.z + 0.03;
       this.carryGroup.position.set(carryX, carryY, carryZ);
-      this.carryGroup.rotation.y = arriving ? Math.PI * transferEase : 0;
+      this.carryGroup.rotation.set(0, arriving ? Math.PI * transferEase : -0.14, arriving ? 0 : -0.06 + Math.sin(time * 9.4) * 0.018);
+      if (this.carryRig?.userData.clasp) this.carryRig.userData.clasp.material.emissiveIntensity = 0.55 + this.flow * 1.2 + Math.sin(time * 4.6) * 0.12;
       this.carryGroup.visible = !arriving || arrivalProgress < 0.88;
     } else {
       this.carryGroup.visible = false;
     }
 
     const cameraTargetX = arriving ? (this.stageIndex % 2 ? -1.15 : 1.15) * arrivalEase : this.currentLaneX * 0.42 + (this.stageIndex >= 4 ? 0.08 : 0);
-    const cameraBob = frame.mode === "playing" ? Math.sin(time * 8.5) * 0.026 : Math.sin(time * 0.8) * 0.018;
+    const cameraBob = frame.mode === "playing" ? Math.sin(time * (9.2 + speed * 0.12)) * (0.025 + this.flow * 0.018) : Math.sin(time * 0.8) * 0.018;
     const shakeX = (Math.sin(time * 83) + Math.sin(time * 41)) * this.shake * 0.07;
     const shakeY = Math.sin(time * 67) * this.shake * 0.055;
     this.camera.position.x = damp(this.camera.position.x, cameraTargetX, arriving ? 2.8 : 6, delta) + shakeX;
-    this.camera.position.y = damp(this.camera.position.y, arriving ? 3.78 + cameraBob : 5.02 + cameraBob - (motion.action === "slide" ? 0.16 : 0), arriving ? 3.2 : 8, delta) + shakeY;
-    this.camera.position.z = damp(this.camera.position.z, arriving ? 8.4 : motion.action === "slide" ? 10.02 : 9.72, arriving ? 2.8 : 5, delta);
-    this.camera.fov = damp(this.camera.fov, arriving ? 52 : 57 + clamp((speed - 10) * 0.42, 0, 5.4) + this.speedPulse * 1.35, arriving ? 3 : 4, delta);
+    this.camera.position.y = damp(this.camera.position.y, arriving ? 3.78 + cameraBob : 5.16 + cameraBob - (motion.action === "slide" ? 0.2 : 0) - this.flow * 0.08, arriving ? 3.2 : 9, delta) + shakeY;
+    this.camera.position.z = damp(this.camera.position.z, arriving ? 8.4 : motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28, arriving ? 2.8 : 6.5, delta);
+    this.camera.fov = damp(
+      this.camera.fov,
+      arriving ? 52 : 58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6 + this.storyFocus * 1.35,
+      arriving ? 3 : 6,
+      delta
+    );
     this.camera.updateProjectionMatrix();
     if (arriving) this.camera.lookAt(0.02, 1.38, -0.72);
     else {
-      this.camera.lookAt(this.currentLaneX * 0.33, 0.58, -13.8);
-      this.camera.rotation.z += clamp(-this.lateralVelocity * 0.014, -0.045, 0.045);
+      this.camera.lookAt(this.currentLaneX * 0.34, 0.62, -15.8 - this.flow * 3.2);
+      this.camera.rotation.z += clamp(-this.lateralVelocity * (0.018 + this.flow * 0.012), -0.075, 0.075);
     }
     this.shake = Math.max(0, this.shake - delta * 2.8);
     this.flash = Math.max(0, this.flash - delta * 1.8);
@@ -3559,14 +4345,36 @@ class CinematicRunnerRenderer {
     this.scene.background.lerp(this.targetBackground, 1 - Math.exp(-2.2 * delta));
     this.scene.fog.color.lerp(this.targetFog, 1 - Math.exp(-2.2 * delta));
     this.scene.fog.density = damp(this.scene.fog.density, this.targetFogDensity, 2.5, delta);
-    this.renderer.toneMappingExposure = damp(this.renderer.toneMappingExposure, this.targetExposure, 2.2, delta);
+    const itemPulseStrength = this.itemPulse ? clamp(this.itemPulse.life / this.itemPulse.duration, 0, 1) : 0;
+    this.renderer.toneMappingExposure = damp(this.renderer.toneMappingExposure, this.targetExposure + this.flow * 0.08 + itemPulseStrength * 0.045, 2.8, delta);
     this.keyLight.intensity = arriving ? 2.35 : config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : 3.15;
-    this.warmLight.intensity = arriving ? 7.5 : this.stageIndex >= 3 ? 21 : 14;
-    this.runnerFillLight.intensity = arriving ? 4.8 : 8.5;
+    this.warmLight.intensity = arriving
+      ? 7.5
+      : (this.stageIndex >= 3 ? 21 : 14) + this.flow * 8 + itemPulseStrength * 12 + this.storyFocus * 6;
+    if (this.itemPulse) this.warmLight.color.lerp(new THREE.Color(this.itemPulse.color), 1 - Math.exp(-8 * delta));
+    else this.warmLight.color.lerp(new THREE.Color(config.accent), 1 - Math.exp(-4 * delta));
+    this.runnerFillLight.intensity = arriving ? 4.8 : 8.5 + this.flow * 4.5;
     this.warmLight.position.x = Math.sin(time * 0.18) * 2;
 
     this.updateDistrictWorld(delta, time, this.currentDistance, speed);
     this.updateWeather(delta, time, speed, Number(runState.combo) || 0);
+    if (this.itemPulse) {
+      const pulse = clamp(this.itemPulse.life / this.itemPulse.duration, 0, 1);
+      if (this.itemPulse.kind === "umbrella") this.rain.material.opacity *= 1 - pulse * 0.68;
+      if (["record", "wristband"].includes(this.itemPulse.kind)) {
+        this.ambientParticles.scale.setScalar(1 + Math.sin(time * 8) * pulse * 0.18);
+        this.speedStreaks.material.opacity = Math.min(0.82, this.speedStreaks.material.opacity + pulse * 0.15);
+      } else this.ambientParticles.scale.setScalar(1);
+      if (["key", "lamp"].includes(this.itemPulse.kind)) {
+        this.powerRailMaterial.emissiveIntensity = 0.16 + pulse * 2.4;
+        this.laneGuideMaterial.emissiveIntensity = 0.28 + pulse * 1.8;
+      }
+      if (["flower", "plant"].includes(this.itemPulse.kind)) this.ambientParticles.material.size = Math.max(this.ambientParticles.material.size, 0.16 + pulse * 0.1);
+    } else {
+      this.ambientParticles.scale.setScalar(1);
+      this.powerRailMaterial.emissiveIntensity = damp(this.powerRailMaterial.emissiveIntensity, 0.16, 4, delta);
+      this.laneGuideMaterial.emissiveIntensity = damp(this.laneGuideMaterial.emissiveIntensity, 0.28, 4, delta);
+    }
     if (arriving) {
       this.metroDistricts.forEach((district) => { district.visible = false; });
       this.premiumDistricts?.forEach((district) => { district.visible = false; });
@@ -3575,6 +4383,11 @@ class CinematicRunnerRenderer {
     }
     this.updateBackdrops(delta);
     this.updateBursts(delta);
+    this.updatePickupSequences(delta, time);
+    if (this.itemPulse) {
+      this.itemPulse.life -= delta;
+      if (this.itemPulse.life <= 0) this.itemPulse = null;
+    }
     this.renderer.render(this.scene, this.camera);
     if (this.qualityElapsed >= 2.5) {
       const currentRatio = this.renderer.getPixelRatio();
@@ -3609,6 +4422,9 @@ class CinematicRunnerRenderer {
       entities: this.entityObjects.size,
       bursts: this.bursts.length,
       rings: this.rings.length,
+      pickupSequences: this.pickupSequences.length,
+      flow: this.flow,
+      storyFocus: this.storyFocus,
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,
       rainOpacity: this.rain.material.opacity,
@@ -3623,6 +4439,13 @@ class CinematicRunnerRenderer {
     this.disposed = true;
     this.endArrival();
     this.clearCarry();
+    this.pickupSequences.forEach((sequence) => {
+      this.scene.remove(sequence.prop, sequence.aura, sequence.bridge);
+      disposeObject(sequence.prop);
+      disposeObject(sequence.aura);
+      disposeObject(sequence.bridge);
+    });
+    this.pickupSequences.length = 0;
     this.entityObjects.forEach((object) => disposeObject(object));
     this.entityPool.forEach((bucket) => bucket.forEach((object) => disposeObject(object)));
     this.renderer.dispose();

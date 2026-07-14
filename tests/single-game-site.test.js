@@ -142,10 +142,11 @@ test("runner publishes its local Three.js renderer and complete dependency graph
     "assets/runner-love-rules.js",
     "assets/runner-love-content.js",
     "assets/runner-love-engine.js",
+    "assets/runner-love-audio.js",
     "assets/runner-love-visuals.js",
     "assets/runner-love-game.js"
   ]);
-  assert.equal(runner.cacheVersion, "runner-love-rendezvous-20260714d");
+  assert.equal(runner.cacheVersion, "runner-love-rush-20260714c");
   assert.equal(runner.pending, undefined);
   assert.deepEqual(runner.dependencies, [
     "assets/vendor/three-0.185.1.module.min.js",

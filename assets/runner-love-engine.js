@@ -68,6 +68,7 @@
       laneChangeTime: config.laneChangeDuration, vertical: 0, action: "run",
       actionTime: 0, entities: [], nextEntityId: 1, events: [], inputQueue: [],
       score: 0, collected: 0, hits: 0, dodges: 0, nearMisses: 0,
+      boostSpeed: 0, boostTime: 0,
       stumbleTime: 0, invulnerableTime: 0, routeChoices: {}, stageIndex: 0, stage: stage.id,
       moduleIndex: -1, modules: [], nextModuleDistance: 0, finale: false, finished: false
     };
@@ -228,6 +229,12 @@
   }
   function syncStage(state, stage) { return setStage(state, stage, true); }
   function seekStage(state, stage) { return setStage(state, stage, false); }
+  function applyBoost(state, amount, duration) {
+    state.boostSpeed = Math.max(state.boostSpeed || 0, clamp(Number(amount) || 0, 0, 5));
+    state.boostTime = Math.max(state.boostTime || 0, clamp(Number(duration) || 0, 0, 3));
+    if (state.boostSpeed > 0) emit(state, "boost", { amount: state.boostSpeed, duration: state.boostTime });
+    return state;
+  }
   function fixedUpdate(state) {
     const dt = state.config.fixedStep;
     state.ticks += 1; state.elapsed = Math.min(state.config.duration, state.elapsed + dt);
@@ -235,6 +242,8 @@
     updateAction(state, dt); updateLane(state, dt);
     state.stumbleTime = Math.max(0, state.stumbleTime - dt);
     state.invulnerableTime = Math.max(0, state.invulnerableTime - dt);
+    state.boostTime = Math.max(0, (state.boostTime || 0) - dt);
+    if (state.boostTime <= 0) state.boostSpeed = Math.max(0, (state.boostSpeed || 0) - dt * 4.5);
     const finaleAt = Math.max(0, state.config.duration - state.config.finaleSeconds);
     if (!state.finale && state.elapsed >= finaleAt) {
       state.finale = true;
@@ -246,7 +255,8 @@
       const stageInfo = stageIndexAt(state.config, state.elapsed);
       if (stageInfo.index !== state.stageIndex) syncStage(state, stageInfo.index);
     }
-    const targetSpeed = Math.min(state.config.maxSpeed, state.config.startSpeed + state.config.acceleration * state.elapsed);
+    const cruiseSpeed = Math.min(state.config.maxSpeed, state.config.startSpeed + state.config.acceleration * state.elapsed);
+    const targetSpeed = Math.min(state.config.maxSpeed + 3.5, cruiseSpeed + (state.boostSpeed || 0));
     const recovery = Math.max(1.1, state.config.acceleration * 2.4);
     state.speed = Math.min(targetSpeed, state.speed + recovery * dt);
     const dz = state.speed * dt; state.distance += dz;
@@ -275,9 +285,10 @@
     scheduleModules(state); state.events = [];
     return { state, step: (delta, actions) => step(state, delta, actions), input: (action) => queueInput(state, action),
       syncStage: (stage) => syncStage(state, stage), seekStage: (stage) => seekStage(state, stage),
+      boost: (amount, duration) => applyBoost(state, amount, duration),
       spawn: (spec) => addEntity(state, spec), drainEvents: () => { const events = state.events.slice(); state.events = []; return events; } };
   }
 
   return Object.freeze({ LANES, ACTIONS, DEFAULTS, DEFAULT_STAGES, createState, createEngine,
-    step, fixedUpdate, queueInput, addEntity, stageIndexAt, syncStage, seekStage, hashSeed });
+    step, fixedUpdate, queueInput, addEntity, stageIndexAt, syncStage, seekStage, applyBoost, hashSeed });
 });
