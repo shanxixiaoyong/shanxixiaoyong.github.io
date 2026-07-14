@@ -7,7 +7,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const Content = require("../assets/runner-love-content.js");
-const CATALOGS = ["STAGES", "STORY_ITEMS", "STAGE_ITEM_IDS", "ROUTE_SET_PIECES", "ARRIVAL_SCENES", "COLLECTIBLES", "OBSTACLES", "ROAD_MODULES", "STAGE_PERFORMANCES", "STAGE_ENDINGS", "GAMEPLAY_EFFECTS", "INTERACTION_COMBINATIONS"];
+const CATALOGS = ["STAGES", "STORY_ITEMS", "STAGE_ITEM_IDS", "STAGE_BLUEPRINTS", "STAGE_SEGMENTS", "STAGE_DIRECTOR_SEGMENTS", "STAGE_COLLECTION_PHASES", "STAGE_PROPS", "STAGE_OBSTACLES", "STAGE_OBSTACLE_COMBINATIONS", "ROUTE_SET_PIECES", "ARRIVAL_SCENES", "COLLECTIBLES", "OBSTACLES", "ROAD_MODULES", "STAGE_PERFORMANCES", "STAGE_ENDINGS", "GAMEPLAY_EFFECTS", "INTERACTION_COMBINATIONS"];
 
 function assertDeepFrozen(value, label) {
   if (typeof value === "function") return;
@@ -85,6 +85,258 @@ test("gives every stage a distinct route, destination performance, and at least 
     assert.equal(Content.ARRIVAL_SCENES[index].venue, stage.destination);
     ids.forEach((id) => assert.equal(Content.getItem(id).stage, stage.order));
   }
+});
+
+test("models seven materially distinct, linked, and directly consumable stage blueprints", () => {
+  const roadIdentities = new Set();
+  const roadMaterials = new Set();
+  const paletteDescriptions = new Set();
+  const timeWeatherScripts = new Set();
+  const landmarkIds = new Set();
+  const obstacleIds = new Set();
+  const combinationIds = new Set();
+
+  Content.STAGE_BLUEPRINTS.forEach((blueprint, index) => {
+    const stage = Content.STAGES[index];
+    const expectedPreviousId = index > 0 ? Content.STAGES[index - 1].id : null;
+    const expectedNextId = index < Content.STAGES.length - 1 ? Content.STAGES[index + 1].id : null;
+    assert.strictEqual(Content.getStageBlueprint(stage.id), blueprint);
+    assert.equal(blueprint.order, stage.order);
+    assert.equal(blueprint.story.openingLine, stage.opening);
+    assert.equal(blueprint.story.arrivalLine, stage.arrival);
+    assert.equal(blueprint.story.continuity.previousStageId, expectedPreviousId);
+    assert.equal(blueprint.story.continuity.nextStageId, expectedNextId);
+    assert.ok(blueprint.story.continuity.fromPrevious.length >= 20);
+    assert.ok(blueprint.story.continuity.chapterTurn.length >= 20);
+    assert.ok(blueprint.story.continuity.toNext.length >= 20);
+    assert.match(blueprint.visual.sceneFactoryKey, /^[a-z0-9-]+$/);
+    assert.match(blueprint.visual.roadMaterialKey, /^[a-z0-9-]+$/);
+    assert.match(blueprint.visual.roadProfileKey, /^[a-z0-9-]+$/);
+    assert.equal(blueprint.visual.collectibleVisualKeys.length, 3);
+    assert.equal(blueprint.visual.phaseWorldKeys.length, 3);
+    assert.ok(blueprint.visual.introCueSequence.length >= 3);
+
+    const opening = blueprint.openingPerformance;
+    assert.ok(opening.durationMs >= 6000);
+    assert.ok(opening.trigger.length >= 14);
+    assert.ok(opening.beats.length >= 3);
+    assert.equal(opening.beats[0].atMs, 0);
+    opening.beats.forEach((beat, beatIndex) => {
+      assert.ok(beat.camera.length >= 10, `${stage.id}.${beat.id}`);
+      assert.ok(beat.action.length >= 16, `${stage.id}.${beat.id}`);
+      assert.ok(beat.line.length >= 4, `${stage.id}.${beat.id}`);
+      if (beatIndex > 0) assert.equal(beat.atMs, opening.beats[beatIndex - 1].atMs + opening.beats[beatIndex - 1].durationMs);
+    });
+    const lastBeat = opening.beats.at(-1);
+    assert.equal(lastBeat.atMs + lastBeat.durationMs, opening.durationMs);
+
+    const world = blueprint.world;
+    assert.ok(world.sceneMood.mood.length >= 12);
+    assert.ok(world.sceneMood.ambience.length >= 12);
+    assert.match(world.timeWeather.start, /^\d{2}:\d{2}$/);
+    assert.match(world.timeWeather.end, /^\d{2}:\d{2}$/);
+    assert.ok(world.timeWeather.progression.length >= 20);
+    assert.ok(world.colorPalette.transition.length >= 14);
+    assert.ok(world.roadDesign.structure.length >= 20);
+    assert.ok(world.roadDesign.movement.length >= 16);
+    roadIdentities.add(world.roadDesign.identity);
+    roadMaterials.add(world.roadDesign.material);
+    paletteDescriptions.add(world.colorPalette.description);
+    timeWeatherScripts.add(`${world.timeWeather.timeOfDay}|${world.timeWeather.condition}|${world.timeWeather.progression}`);
+
+    assert.ok(world.landmarks.length >= 3);
+    world.landmarks.forEach((landmark) => {
+      assert.ok(!landmarkIds.has(landmark.id), landmark.id);
+      landmarkIds.add(landmark.id);
+      assert.ok(blueprint.segments.some((segment) => segment.id === landmark.segmentId));
+      assert.ok(landmark.storyRole.length >= 8);
+    });
+
+    assert.ok(blueprint.obstacleDesign.obstacles.length >= 3);
+    assert.ok(blueprint.obstacleDesign.combinations.length >= 3);
+    const stageObstacleIds = new Set(blueprint.obstacleDesign.obstacles.map((obstacle) => obstacle.id));
+    blueprint.obstacleDesign.obstacles.forEach((obstacle) => {
+      assert.ok(!obstacleIds.has(obstacle.id), obstacle.id);
+      obstacleIds.add(obstacle.id);
+      assert.ok(["switch", "jump", "slide"].includes(obstacle.response));
+      assert.ok(obstacle.meaning.length >= 10);
+    });
+    blueprint.obstacleDesign.combinations.forEach((combination) => {
+      assert.ok(!combinationIds.has(combination.id), combination.id);
+      combinationIds.add(combination.id);
+      assert.ok(combination.obstacleIds.length >= 2);
+      combination.obstacleIds.forEach((obstacleId) => assert.ok(stageObstacleIds.has(obstacleId), obstacleId));
+      assert.ok(combination.storyMeaning.length >= 12);
+    });
+
+    assert.equal(blueprint.segments.length, 3);
+    assert.equal(blueprint.segments[0].progress[0], 0);
+    assert.equal(blueprint.segments.at(-1).progress[1], 1);
+    const introducedItemIds = new Set();
+    blueprint.segments.forEach((segment, segmentIndex) => {
+      assert.strictEqual(Content.getStageSegment({ stage: stage.id, progress: segment.progress[0] }), segment);
+      if (segmentIndex > 0) assert.equal(segment.progress[0], blueprint.segments[segmentIndex - 1].progress[1]);
+      assert.ok(segment.worldChange.length >= 16);
+      assert.ok(segment.roadChange.length >= 14);
+      assert.ok(segment.collectibleItemIds.length >= 2);
+      assert.equal(segment.visual.worldKey, blueprint.visual.phaseWorldKeys[segmentIndex]);
+      assert.equal(segment.visual.collectibleVisualKey, blueprint.visual.collectibleVisualKeys[segmentIndex]);
+      assert.equal(segment.visual.roadMaterialKey, blueprint.visual.roadMaterialKey);
+      segment.collectibleItemIds.forEach((itemId) => introducedItemIds.add(itemId));
+    });
+    assert.deepEqual([...introducedItemIds].sort(), [...Content.STAGE_ITEM_IDS[index]].sort());
+    const fullStageRepeats = Content.STAGE_ITEM_IDS[index].filter((itemId) => blueprint.segments.every((segment) => segment.collectibleItemIds.includes(itemId)));
+    assert.deepEqual(fullStageRepeats, []);
+
+    assert.equal(blueprint.collectionPlan.mode, "progressive-segment-pools");
+    assert.equal(blueprint.collectionPlan.phases.length, blueprint.segments.length);
+    blueprint.collectionPlan.phases.forEach((phase) => {
+      assert.strictEqual(Content.getStageCollectionPool({ stage: stage.order, progress: phase.progress[0] }), phase);
+      assert.equal(phase.props.length, phase.propIds.length);
+      assert.ok(phase.props.length >= 1);
+      phase.items.forEach((item) => {
+        assert.ok(Content.GAMEPLAY_EFFECTS.includes(item.immediateImpact.gameplay.effect));
+        assert.ok(item.immediateImpact.story.length >= 16);
+        assert.ok(item.immediateImpact.world.roadChange.length >= 12);
+        assert.ok(item.laterEcho.story.length >= 16);
+        assert.ok(item.laterEcho.memoryTags.length >= 3);
+      });
+    });
+    assert.equal(blueprint.props.length, 3);
+    blueprint.props.forEach((prop) => {
+      assert.ok(prop.storyUse.length >= 16);
+      assert.ok(prop.worldResponse.length >= 10);
+    });
+    assert.equal(blueprint.destination.name, stage.destination);
+    assert.equal(blueprint.destination.nextStageId, expectedNextId);
+    assert.ok(world.landmarks.some((landmark) => landmark.id === blueprint.destination.landmarkId));
+    assert.ok(blueprint.destination.storyPayoff.length >= 20);
+  });
+
+  assert.equal(roadIdentities.size, 7);
+  assert.equal(roadMaterials.size, 7);
+  assert.equal(paletteDescriptions.size, 7);
+  assert.equal(timeWeatherScripts.size, 7);
+  assert.equal(Content.STAGE_SEGMENTS.length, 21);
+  assert.equal(Content.STAGE_COLLECTION_PHASES.length, 21);
+  assert.equal(Content.STAGE_PROPS.length, 21);
+  assert.equal(Content.STAGE_OBSTACLE_COMBINATIONS.length, 21);
+});
+
+test("publishes a complete frozen director contract for all twenty-one acts", () => {
+  const requiredKeys = ["timeWindowSec", "visibleGoal", "actionGoal", "routeTopologyKey", "cameraRigKey", "rhythm", "bpm", "nextSegmentId", "storyVerb", "physicalState", "worldState"];
+  const expectedRouteTopologyKeys = [
+    "arcade-squeeze", "root-undulation", "crossing-converge",
+    "levee-outer-curve", "bridge-groove-split", "bookstore-step-funnel",
+    "station-braid", "platform-arc", "marquee-release",
+    "market-slalom", "music-crowd-ring", "river-singletrack",
+    "breakfast-chicane", "market-grid", "stair-switchback",
+    "flyover-zigzag", "detour-boardwalk-fork", "shelter-funnel",
+    "platform-paired", "memory-material-bands", "home-converge"
+  ];
+  const expectedCameraRigKeys = [
+    "follow-column", "shoulder-beacon", "tele-crossing",
+    "river-offset", "portal-low", "door-lock",
+    "clock-pressure", "platform-tele", "marquee-dolly",
+    "market-weave", "beat-crane", "river-breath-cam",
+    "window-glance", "market-high", "stair-tilt",
+    "storm-low", "fork-overhead", "shelter-tele",
+    "train-parallel", "memory-match", "home-dolly"
+  ];
+  const flattenedSegments = Content.STAGE_BLUEPRINTS.flatMap((blueprint) => blueprint.segments);
+
+  assert.equal(Content.STAGE_DIRECTOR_SEGMENTS.length, 21);
+  assert.deepEqual(Content.STAGE_DIRECTOR_SEGMENTS.map((entry) => entry.routeTopologyKey), expectedRouteTopologyKeys);
+  assert.deepEqual(Content.STAGE_DIRECTOR_SEGMENTS.map((entry) => entry.cameraRigKey), expectedCameraRigKeys);
+  assert.equal(new Set(Content.STAGE_DIRECTOR_SEGMENTS.map((entry) => entry.segmentId)).size, 21);
+  assert.equal(new Set(expectedRouteTopologyKeys).size, 21);
+  assert.equal(new Set(expectedCameraRigKeys).size, 21);
+  assertDeepFrozen(Content.STAGE_DIRECTOR_SEGMENTS, "STAGE_DIRECTOR_SEGMENTS");
+
+  Content.STAGE_DIRECTOR_SEGMENTS.forEach((director, index) => {
+    const stage = Content.STAGES[director.stage - 1];
+    const stageSegment = stage.segments.find((segment) => segment.id === director.segmentId);
+    const flatSegment = Content.STAGE_SEGMENTS.find((segment) => segment.id === director.segmentId);
+    const blueprintSegment = flattenedSegments.find((segment) => segment.id === director.segmentId);
+    requiredKeys.forEach((key) => assert.ok(Object.hasOwn(director, key), `${director.segmentId}.${key}`));
+    assert.strictEqual(stageSegment.director, director, director.segmentId);
+    assert.strictEqual(flatSegment.director, director, director.segmentId);
+    assert.strictEqual(blueprintSegment.director, director, director.segmentId);
+    assert.strictEqual(Content.getStageSegment({ stage: director.stageId, progress: blueprintSegment.progress[0] }).director, director);
+    assert.equal(stage.stageProps.some((prop) => prop.id === director.visibleGoal && prop.segmentId === director.segmentId), true, director.visibleGoal);
+    assert.match(director.actionGoal, /^[a-z0-9-]+$/);
+    assert.match(director.storyVerb, /^[a-z0-9-]+$/);
+    assert.ok(director.bpm >= 70 && director.bpm <= 140, director.segmentId);
+    assert.equal(director.nextSegmentId, Content.STAGE_DIRECTOR_SEGMENTS[index + 1]?.segmentId || null);
+    [director.physicalState, director.worldState].forEach((state) => {
+      assert.equal(typeof state, "object");
+      Object.values(state).forEach((value) => assert.match(value, /^[a-z0-9-]+$/));
+    });
+  });
+
+  Content.STAGE_BLUEPRINTS.forEach((blueprint) => {
+    assert.deepEqual(blueprint.segments.map((segment) => segment.director.timeWindowSec), [[0, blueprint.segments[0].director.timeWindowSec[1]], [blueprint.segments[0].director.timeWindowSec[1], blueprint.segments[1].director.timeWindowSec[1]], [blueprint.segments[1].director.timeWindowSec[1], 180]]);
+  });
+});
+
+test("encodes the misalignment, listening, and shared-responsibility arc as physical consequences", () => {
+  const stageFive = Content.getStageBlueprint("shared-days");
+  const stageSix = Content.getStageBlueprint("rough-weather");
+  const stageSeven = Content.getStageBlueprint("toward-home");
+
+  assert.deepEqual(stageFive.segments.map((segment) => segment.director.physicalState.invariant), [
+    "both-schedules-change", "key-handover-also-valid", "destinations-remain-empty"
+  ]);
+  stageFive.segments.forEach((segment) => {
+    assert.notEqual(segment.director.worldState.onSuccess, segment.director.worldState.onStrain, segment.id);
+    assert.ok(segment.director.worldState.persistent, segment.id);
+  });
+  assert.match(stageFive.story.arrivalLine, /厨房.*没有人.*交房点/);
+  assert.match(stageFive.destination.arrivalAction, /厨房与交房点|厨房.*交房点/);
+  assert.match(stageFive.destination.storyPayoff, /没有人失约/);
+
+  assert.equal(stageSix.segments[0].director.physicalState.invariant, "ink-becomes-unreadable");
+  assert.equal(stageSix.segments[1].director.actionGoal, "switch-to-shelter-side-and-hold-slow-line");
+  assert.equal(stageSix.segments[2].director.actionGoal, "wait-for-partner-signal-then-move-chain-together");
+  assert.equal(stageSix.segments[2].director.worldState.persistent, "repair-begun-not-resolved");
+  assert.match(stageSix.destination.arrivalAction, /等待.*两个人各握一侧/);
+  assert.match(stageSix.destination.storyPayoff, /没有立刻和好/);
+
+  assert.equal(stageSeven.segments[0].director.actionGoal, "handoff-heavy-luggage-on-adjacent-lane");
+  assert.equal(stageSeven.segments[0].director.physicalState.invariant, "luggage-weight-affects-stride");
+  assert.equal(stageSeven.segments[2].director.actionGoal, "open-paired-locks-then-converge");
+  assert.equal(stageSeven.segments[2].director.physicalState.invariant, "one-key-cannot-open-both");
+  assert.match(stageSeven.destination.arrivalAction, /左锁.*右锁.*交换行李/);
+  assert.deepEqual(new Set(Content.STORY_ITEMS.map((item) => item.relationshipAxis)), new Set(["attention", "mutuality", "repair"]));
+  assert.equal(Content.getItem("folded-note").relationshipAxis, "repair");
+  assert.equal(Content.getItem("home-key").relationshipAxis, "mutuality");
+});
+
+test("rotates collectible pools with stage progress and selects from them deterministically", () => {
+  const poolSignatures = new Set();
+  Content.STAGE_BLUEPRINTS.forEach((blueprint) => {
+    const [early, middle, late] = blueprint.collectionPlan.phases;
+    const earlyItems = new Set(early.itemIds);
+    const middleItems = new Set(middle.itemIds);
+    const lateItems = new Set(late.itemIds);
+    assert.notDeepEqual(early.itemIds, middle.itemIds, blueprint.id);
+    assert.notDeepEqual(middle.itemIds, late.itemIds, blueprint.id);
+    assert.deepEqual([...earlyItems].filter((itemId) => middleItems.has(itemId) && lateItems.has(itemId)), []);
+
+    blueprint.collectionPlan.phases.forEach((phase) => {
+      const signature = phase.itemIds.join("|");
+      assert.ok(!poolSignatures.has(signature), signature);
+      poolSignatures.add(signature);
+      const progress = (phase.progress[0] + phase.progress[1]) / 2;
+      const options = { stage: blueprint.id, progress, seed: "same-run" };
+      const selected = Content.selectStageProgressItem(options);
+      assert.strictEqual(selected, Content.selectStageProgressItem({ ...options }));
+      assert.strictEqual(selected, Content.selectStageItem({ ...options }));
+      assert.ok(phase.itemIds.includes(selected.id));
+      assertDeepFrozen(Content.getStageCollectionPool(options), `pool.${phase.id}`);
+    });
+    assert.equal(Content.getStageSegment({ stage: blueprint.id, progress: 1 }).id, blueprint.segments.at(-1).id);
+  });
 });
 
 test("maps obstacles, road modules, performances, and endings to valid stages", () => {
@@ -195,6 +447,12 @@ test("lookups and selectors reject invalid input", () => {
   assert.strictEqual(Content.getStage("toward-home"), Content.STAGES[6]);
   assert.strictEqual(Content.getCollectible(1), Content.COLLECTIBLES[0]);
   assert.throws(() => Content.getStage(8), RangeError);
+  assert.throws(() => Content.getStageBlueprint("missing"), RangeError);
+  assert.throws(() => Content.getStageSegment(), TypeError);
+  assert.throws(() => Content.getStageSegment({ stage: 1, progress: "0.5" }), TypeError);
+  assert.throws(() => Content.getStageSegment({ stage: 1, progress: Number.NaN }), TypeError);
+  assert.throws(() => Content.getStageSegment({ stage: 1, progress: -0.01 }), RangeError);
+  assert.throws(() => Content.getStageCollectionPool({ stage: 1, progress: 1.01 }), RangeError);
   assert.throws(() => Content.getItem("missing"), RangeError);
   assert.throws(() => Content.getInteractionProfile(null), TypeError);
   assert.throws(() => Content.getInteractionProfile("missing"), RangeError);
@@ -202,6 +460,8 @@ test("lookups and selectors reject invalid input", () => {
   assert.throws(() => Content.getEnding("C"), RangeError);
   assert.throws(() => Content.selectStageItem({ stage: 1, seed: 0, excludeIds: "bad" }), TypeError);
   assert.throws(() => Content.selectStageItem({ stage: 1, seed: 0, excludeIds: Content.STAGE_ITEM_IDS[0] }), RangeError);
+  assert.throws(() => Content.selectStageProgressItem({ stage: 1, progress: 0, excludeIds: "bad" }), TypeError);
+  assert.throws(() => Content.selectStageProgressItem({ stage: 1, progress: 0, excludeIds: Content.STAGE_COLLECTION_PHASES[0].itemIds }), RangeError);
   assert.throws(() => Content.selectArrival({ stage: 8 }), RangeError);
   assert.throws(() => Content.resolveCollectionInteraction(), TypeError);
   assert.throws(() => Content.resolveCollectionInteraction({ itemId: "paperback", collectedItemIds: "record" }), TypeError);
@@ -219,10 +479,16 @@ test("publishes the same deeply frozen API through browser UMD", () => {
   assert.ok(browser.window.RunnerLoveContent);
   assert.deepEqual(Object.keys(browser.window.RunnerLoveContent), Object.keys(Content));
   assert.equal(browser.window.RunnerLoveContent.STORY_ITEMS.length, Content.STORY_ITEMS.length);
+  assert.equal(browser.window.RunnerLoveContent.STAGE_BLUEPRINTS.length, 7);
   assert.ok(Object.isFrozen(browser.window.RunnerLoveContent.ARRIVAL_SCENES));
+  const segment = browser.window.RunnerLoveContent.getStageSegment({ stage: "heart-spoken", progress: 0.5 });
+  const pool = browser.window.RunnerLoveContent.getStageCollectionPool({ stage: "heart-spoken", progress: 0.5 });
   const profile = browser.window.RunnerLoveContent.getInteractionProfile("window-lamp");
   const resolved = browser.window.RunnerLoveContent.resolveCollectionInteraction({ itemId: "window-lamp", collectedItemIds: ["riverside-lamp"], combo: 9, stageIndex: 6 });
   assert.equal(profile.music.layer, "window-light");
+  assert.equal(segment.id, "music-crowd");
+  assert.ok(pool.itemIds.includes("instant-camera"));
+  assert.ok(Object.isFrozen(pool.items[0].immediateImpact));
   assert.equal(resolved.synergy.active[0].id, "lights-toward-home");
   assert.ok(Object.isFrozen(resolved.narrative.memoryTags));
 });

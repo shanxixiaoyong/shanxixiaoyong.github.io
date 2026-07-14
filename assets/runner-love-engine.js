@@ -21,6 +21,8 @@
     stumbleDuration: 0.62, invulnerabilityDuration: 1.05, collisionSpeedLoss: 3.2,
     magnetDuration: 6, shieldDuration: 8, multiplierDuration: 6, overdriveDuration: 2.5,
     scoreMultiplier: 2, overdriveSpeed: 5, overdriveAcceleration: 10, speedEaseOut: 5.5,
+    inputBufferDuration: 0.14, paceEase: 3.8,
+    choiceReadDistance: 14,
     stages: DEFAULT_STAGES
   });
 
@@ -86,35 +88,53 @@
       distance: 0, runProgress: 0, progress: 0, speed: config.startSpeed, speedProgress: 0, speedTier: 0,
       lane: 0, laneFrom: 0, lanePosition: 0,
       laneChangeTime: config.laneChangeDuration, vertical: 0, action: "run",
-      actionTime: 0, entities: [], nextEntityId: 1, events: [], inputQueue: [],
+      actionTime: 0, bufferedAction: null, bufferedActionTime: 0,
+      inputSeq: 0, lastInput: null, entities: [], nextEntityId: 1, events: [], eventSeq: 0, inputQueue: [],
       score: 0, collected: 0, hits: 0, dodges: 0, nearMisses: 0,
-      boostSpeed: 0, boostTime: 0, powerups: createPowerups(),
+      boostSpeed: 0, boostTime: 0, paceScale: 1, paceTime: 0, powerups: createPowerups(),
       stumbleTime: 0, invulnerableTime: 0, routeChoices: {}, stageIndex: 0, stage: stage.id,
       moduleIndex: -1, modules: [], nextModuleDistance: 0, finale: false, finished: false
     };
   }
   function emit(state, type, detail) {
-    state.events.push({ type, tick: state.ticks, time: state.elapsed, ...(detail || {}) });
+    state.eventSeq = Math.max(0, Number(state.eventSeq) || 0) + 1;
+    state.events.push({ type, seq: state.eventSeq, tick: state.ticks, time: state.elapsed, ...(detail || {}) });
   }
   function queueInput(state, action) {
     if (Object.values(ACTIONS).includes(action)) state.inputQueue.push(action);
     return state;
   }
-  function performInput(state, action) {
-    if (state.finished) return;
+  function acceptInput(state, action) {
+    state.inputSeq += 1;
+    state.lastInput = { seq: state.inputSeq, action, time: state.elapsed, tick: state.ticks };
+    return state.inputSeq;
+  }
+  function performInput(state, action, allowBuffer = true) {
+    if (state.finished) return false;
     if (action === ACTIONS.LEFT || action === ACTIONS.RIGHT) {
       const before = state.lane;
       state.lane = lane(state.lane + (action === ACTIONS.LEFT ? -1 : 1));
       if (before !== state.lane) {
+        const inputSeq = acceptInput(state, action);
         state.laneFrom = state.lanePosition;
         state.laneChangeTime = 0;
-        emit(state, "lane", { lane: state.lane, from: before });
+        emit(state, "lane", { lane: state.lane, from: before, action, inputSeq });
+        return true;
       }
     } else if (action === ACTIONS.JUMP && state.action === "run") {
-      state.action = "jump"; state.actionTime = 0; emit(state, "jump");
+      const inputSeq = acceptInput(state, action);
+      state.action = "jump"; state.actionTime = 0; emit(state, "jump", { action, inputSeq });
+      return true;
     } else if (action === ACTIONS.SLIDE && state.action === "run") {
-      state.action = "slide"; state.actionTime = 0; emit(state, "slide");
+      const inputSeq = acceptInput(state, action);
+      state.action = "slide"; state.actionTime = 0; emit(state, "slide", { action, inputSeq });
+      return true;
+    } else if (allowBuffer && (action === ACTIONS.JUMP || action === ACTIONS.SLIDE)) {
+      state.bufferedAction = action;
+      state.bufferedActionTime = Math.max(state.config.fixedStep, Number(state.config.inputBufferDuration) || 0);
+      emit(state, "input-buffered", { action, expiresIn: state.bufferedActionTime });
     }
+    return false;
   }
   function addEntity(state, spec) {
     const entity = {
@@ -246,13 +266,23 @@
     for (const entity of state.entities) {
       if (!entity.active) continue;
       const previous = entity.z; entity.z -= dz;
+      if ((entity.type === "story-item" || entity.type === "route-choice")
+          && !entity.choiceWindowOpened
+          && previous > state.config.choiceReadDistance
+          && entity.z <= state.config.choiceReadDistance) {
+        entity.choiceWindowOpened = true;
+        entity.data = entity.data && typeof entity.data === "object" ? entity.data : {};
+        entity.data.inputSeqAtWindow = state.inputSeq;
+        entity.data.choiceWindowOpenedAt = state.elapsed;
+        emit(state, "choice-window", { entity, inputSeq: state.inputSeq });
+      }
       const crossed = previous > state.config.collisionDepth && entity.z <= state.config.collisionDepth;
       const laneAligned = Math.abs(entity.lane - state.lanePosition) < 0.42;
       const magnetCollect = crossed && magnetReaches(state, entity);
       if (crossed && entity.type === "obstacle" && laneAligned) {
         if (isAvoided(state, entity)) {
           state.dodges += 1;
-          emit(state, "dodge", { entity, action: state.action });
+          emit(state, "dodge", { entity, action: state.action, inputSeq: state.lastInput?.seq || 0, input: state.lastInput });
         } else if (state.invulnerableTime <= 0) {
           if (!blockWithShield(state, entity)) {
             entity.hit = true;
@@ -260,7 +290,7 @@
             state.stumbleTime = state.config.stumbleDuration;
             state.invulnerableTime = state.config.invulnerabilityDuration;
             state.speed = Math.max(state.config.startSpeed * 0.72, state.speed - state.config.collisionSpeedLoss);
-            emit(state, "collision", { entity });
+            emit(state, "collision", { entity, inputSeq: state.lastInput?.seq || 0, input: state.lastInput });
           }
         } else {
           emit(state, "protected", { entity });
@@ -275,7 +305,7 @@
         entity.nearMissed = true;
         state.nearMisses += 1;
         const reward = awardScore(state, 2);
-        emit(state, "near-miss", { entity, points: reward.awarded, multiplier: reward.multiplier });
+        emit(state, "near-miss", { entity, points: reward.awarded, multiplier: reward.multiplier, inputSeq: state.lastInput?.seq || 0, input: state.lastInput });
       }
       if (entity.z < -state.config.despawnBehind) {
         if ((entity.type === "story-item" || entity.type === "route-choice") && !entity.collected) {
@@ -295,10 +325,30 @@
   }
   function syncStage(state, stage) { return setStage(state, stage, true); }
   function seekStage(state, stage) { return setStage(state, stage, false); }
+  function clearEntities(state, options) {
+    const settings = options && typeof options === "object" ? options : {};
+    state.entities.length = 0;
+    state.events.length = 0;
+    state.inputQueue.length = 0;
+    state.routeChoices = {};
+    if (settings.modules) {
+      state.modules.length = 0;
+      state.nextModuleDistance = state.distance;
+      scheduleModules(state);
+      state.events.length = 0;
+    }
+    return state;
+  }
   function applyBoost(state, amount, duration) {
     state.boostSpeed = Math.max(state.boostSpeed || 0, clamp(Number(amount) || 0, 0, 5));
     state.boostTime = Math.max(state.boostTime || 0, clamp(Number(duration) || 0, 0, 3));
     if (state.boostSpeed > 0) emit(state, "boost", { amount: state.boostSpeed, duration: state.boostTime });
+    return state;
+  }
+  function applyPace(state, scale, duration) {
+    state.paceScale = clamp(Number(scale) || 1, 0.58, 1.18);
+    state.paceTime = Math.max(state.config.fixedStep, Number(duration) || state.config.fixedStep);
+    emit(state, "pace", { scale: state.paceScale, duration: state.paceTime });
     return state;
   }
   function optionNumber(options, names, fallback) {
@@ -367,10 +417,21 @@
     state.ticks += 1; state.elapsed = Math.min(state.config.duration, state.elapsed + dt);
     while (state.inputQueue.length) performInput(state, state.inputQueue.shift());
     updateAction(state, dt); updateLane(state, dt);
+    if (state.bufferedAction && state.action === "run" && state.bufferedActionTime > 0) {
+      const buffered = state.bufferedAction;
+      state.bufferedAction = null;
+      state.bufferedActionTime = 0;
+      performInput(state, buffered, false);
+    } else {
+      state.bufferedActionTime = Math.max(0, (state.bufferedActionTime || 0) - dt);
+      if (state.bufferedActionTime <= 0) state.bufferedAction = null;
+    }
     state.stumbleTime = Math.max(0, state.stumbleTime - dt);
     state.invulnerableTime = Math.max(0, state.invulnerableTime - dt);
     state.boostTime = Math.max(0, (state.boostTime || 0) - dt);
     if (state.boostTime <= 0) state.boostSpeed = Math.max(0, (state.boostSpeed || 0) - dt * 4.5);
+    state.paceTime = Math.max(0, (state.paceTime || 0) - dt);
+    if (state.paceTime <= 0) state.paceScale = approach(state.paceScale || 1, 1, Math.max(0.1, Number(state.config.paceEase) || 0) * dt);
     const finaleAt = Math.max(0, state.config.duration - state.config.finaleSeconds);
     if (!state.finale && state.elapsed >= finaleAt) {
       state.finale = true;
@@ -386,7 +447,7 @@
     const overdriveSpeed = overdrive?.active ? Number(overdrive.speed) || 0 : 0;
     const cruiseSpeed = cruiseSpeedAt(state);
     const boostedSpeed = Math.min(state.config.maxSpeed + 3.5, cruiseSpeed + (state.boostSpeed || 0));
-    const targetSpeed = boostedSpeed + overdriveSpeed;
+    const targetSpeed = (boostedSpeed + overdriveSpeed) * clamp(state.paceScale || 1, 0.58, 1.18);
     const recovery = Math.max(1.1, state.config.acceleration * 2.4);
     const rise = overdrive?.active ? Math.max(recovery, Number(state.config.overdriveAcceleration) || 0) : recovery;
     const fall = Math.max(recovery, Number(state.config.speedEaseOut) || 0);
@@ -397,7 +458,6 @@
     if (state.elapsed >= state.config.duration) { state.finished = true; emit(state, "finish"); }
   }
   function step(state, delta, actions) {
-    state.events = [];
     if (Array.isArray(actions)) actions.forEach((action) => queueInput(state, action));
     else if (actions) queueInput(state, actions);
     if (state.finished) return state;
@@ -418,12 +478,14 @@
     scheduleModules(state); state.events = [];
     return { state, step: (delta, actions) => step(state, delta, actions), input: (action) => queueInput(state, action),
       syncStage: (stage) => syncStage(state, stage), seekStage: (stage) => seekStage(state, stage),
+      clearEntities: (options) => clearEntities(state, options),
       boost: (amount, duration) => applyBoost(state, amount, duration),
+      pace: (scale, duration) => applyPace(state, scale, duration),
       activatePowerup: (type, options) => activatePowerup(state, type, options),
-      spawn: (spec) => addEntity(state, spec), drainEvents: () => { const events = state.events.slice(); state.events = []; return events; } };
+      spawn: (spec) => addEntity(state, spec), drainEvents: () => state.events.splice(0, state.events.length) };
   }
 
   return Object.freeze({ LANES, ACTIONS, POWERUP_TYPES, DEFAULTS, DEFAULT_STAGES, createState, createEngine,
-    step, fixedUpdate, queueInput, addEntity, stageIndexAt, syncStage, seekStage,
-    applyBoost, activatePowerup, hashSeed });
+    step, fixedUpdate, queueInput, addEntity, stageIndexAt, syncStage, seekStage, clearEntities,
+    applyBoost, applyPace, activatePowerup, hashSeed });
 });

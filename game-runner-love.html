@@ -15,14 +15,15 @@
   <link rel="preload" href="assets/runner-models/runner-city.glb" as="fetch" crossorigin>
   <link rel="modulepreload" href="assets/vendor/three-0.185.1.module.min.js">
   <link rel="modulepreload" href="assets/vendor/three-addons/GLTFLoader.js">
-  <link rel="modulepreload" href="assets/runner-love-visuals.js?v=runner-love-rush-20260714d">
-  <link rel="stylesheet" href="assets/runner-love.css?v=runner-love-rush-20260714d">
-  <script src="assets/runner-love-rules.js?v=runner-love-rush-20260714d" defer></script>
-  <script src="assets/runner-love-content.js?v=runner-love-rush-20260714d" defer></script>
-  <script src="assets/runner-love-engine.js?v=runner-love-rush-20260714d" defer></script>
-  <script src="assets/runner-love-audio.js?v=runner-love-rush-20260714d" defer></script>
-  <script type="module" src="assets/runner-love-visuals.js?v=runner-love-rush-20260714d"></script>
-  <script src="assets/runner-love-game.js?v=runner-love-rush-20260714d" defer></script>
+  <link rel="modulepreload" href="assets/runner-love-visuals.js?v=runner-love-story-20260714h">
+  <link rel="stylesheet" href="assets/runner-love.css?v=runner-love-story-20260714h">
+  <script src="assets/runner-love-rules.js?v=runner-love-story-20260714h" defer></script>
+  <script src="assets/runner-love-content.js?v=runner-love-story-20260714h" defer></script>
+  <script src="assets/runner-love-director.js?v=runner-love-story-20260714h" defer></script>
+  <script src="assets/runner-love-engine.js?v=runner-love-story-20260714h" defer></script>
+  <script src="assets/runner-love-audio.js?v=runner-love-story-20260714h" defer></script>
+  <script type="module" src="assets/runner-love-visuals.js?v=runner-love-story-20260714h"></script>
+  <script src="assets/runner-love-game.js?v=runner-love-story-20260714h" defer></script>
 </head>
 <body>
   <main class="runner-shell" id="runner-love" data-game="runner-love">
@@ -66,7 +67,27 @@
 
       <div class="runner-toast" data-toast hidden></div>
       <div class="route-message" data-route-message hidden><small data-route-time>18:12</small><span data-route-copy></span></div>
+      <aside class="runner-danger" data-danger data-level="low" hidden aria-live="assertive" aria-atomic="true">
+        <span class="danger-status"><i aria-hidden="true"></i><b data-danger-label>状态偏低</b></span>
+        <strong data-danger-value>18</strong>
+        <p data-danger-copy>脚步开始发沉，下一次碰撞会更危险。</p>
+      </aside>
       <div class="gesture-cue" data-gesture-cue aria-hidden="true"><span>↑</span><span>←</span><span>↓</span><span>→</span></div>
+
+      <section class="stage-intro" data-stage-intro hidden aria-live="polite" aria-atomic="true">
+        <header class="stage-intro-meta">
+          <span data-stage-intro-index>第一程</span>
+          <span><time data-stage-intro-time datetime="18:12">18:12</time><i aria-hidden="true"></i><b data-stage-intro-weather>雨后 · 树叶滴水</b></span>
+          <button class="stage-intro-skip" type="button" data-stage-intro-skip aria-label="跳过开场" title="跳过开场">›</button>
+        </header>
+        <div class="stage-intro-story">
+          <p data-stage-intro-place>雨后香樟路</p>
+          <h2 data-stage-intro-name>再遇见</h2>
+          <p class="stage-intro-motive"><span>此刻</span><strong data-stage-intro-motive>赶到图书馆路口，再见她一次</strong></p>
+          <p class="stage-intro-shot" data-stage-intro-copy>镜头越过湿亮的斑马线，你的脚步从放学的人潮里加速。</p>
+        </div>
+        <div class="stage-intro-progress" data-stage-intro-progress aria-hidden="true"><i></i></div>
+      </section>
 
       <section class="runner-overlay runner-intro" data-intro>
         <p class="eyebrow">TONIGHT, SEE YOU</p>
@@ -85,7 +106,24 @@
         <p data-arrival-kicker>图书馆路口</p>
         <h2 data-arrival-title>透明雨伞</h2>
         <span data-arrival-copy></span>
+        <b class="arrival-action" data-arrival-action hidden></b>
         <i aria-hidden="true"></i>
+      </section>
+
+      <section class="runner-overlay runner-failure" data-failure hidden role="dialog" aria-modal="true" aria-labelledby="runner-failure-title">
+        <p class="eyebrow" data-failure-kicker>本程中断</p>
+        <h2 id="runner-failure-title" data-failure-title>这次停在路上</h2>
+        <p class="failure-copy" data-failure-copy>最近的路口还亮着，继续时从那里出发。</p>
+        <div class="failure-checkpoint" data-failure-checkpoint-panel>
+          <div class="failure-checkpoint-heading"><span>最近检查点</span><strong data-failure-progress>15 / 30</strong></div>
+          <h3 data-failure-checkpoint>香樟道中段</h3>
+          <div class="failure-checkpoint-track" aria-hidden="true"><i data-failure-progress-fill></i></div>
+          <p data-failure-checkpoint-copy>已走过的半程会保留</p>
+        </div>
+        <div class="failure-actions">
+          <button class="primary-button" type="button" data-failure-retry>从检查点继续</button>
+          <button class="quiet-button" type="button" data-failure-restart>重跑这一程</button>
+        </div>
       </section>
 
       <section class="runner-overlay result" data-result hidden>
@@ -93,7 +131,7 @@
         <div class="grade" data-grade>S</div>
         <h2 data-ending-title>今晚，抵达</h2>
         <p data-ending-copy></p>
-        <dl class="result-stats"><div><dt>抵达</dt><dd data-stat-completion>100%</dd></div><div><dt>动作</dt><dd data-stat-accuracy>100%</dd></div><div><dt>带到终点</dt><dd data-stat-items>0</dd></div><div><dt>碰撞</dt><dd data-stat-collisions>0</dd></div></dl>
+        <dl class="result-stats"><div><dt>抵达</dt><dd data-stat-completion>100%</dd></div><div><dt>动作</dt><dd data-stat-accuracy>100%</dd></div><div><dt>回应</dt><dd data-stat-relationship>同行型</dd></div><div><dt>带到终点</dt><dd data-stat-items>0</dd></div><div><dt>碰撞</dt><dd data-stat-collisions>0</dd></div></dl>
         <button class="primary-button" type="button" data-retry>从最近路口重试</button>
         <button class="quiet-button" type="button" data-restart>换一条路线</button>
         <a class="text-button" href="index.html">回到个人天地</a>

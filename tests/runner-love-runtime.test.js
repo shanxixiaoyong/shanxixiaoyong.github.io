@@ -11,6 +11,7 @@ const source = fs.readFileSync(path.join(root, "assets/runner-love-game.js"), "u
 const RunnerLoveRules = require("../assets/runner-love-rules.js");
 const RunnerLoveEngine = require("../assets/runner-love-engine.js");
 const RunnerLoveContent = require("../assets/runner-love-content.js");
+const RunnerLoveDirector = require("../assets/runner-love-director.js");
 
 class ClassList {
   constructor() { this.values = new Set(); }
@@ -69,7 +70,7 @@ function boot() {
     setItem: (key, value) => values.set(key, String(value))
   };
   const document = { hidden: false, querySelector, createElement: () => new Node(), addEventListener() {} };
-  const window = { RunnerLoveRules, RunnerLoveEngine, RunnerLoveContent, localStorage, addEventListener() {} };
+  const window = { RunnerLoveRules, RunnerLoveEngine, RunnerLoveContent, RunnerLoveDirector, localStorage, addEventListener() {} };
   let now = 1000;
   const performance = { now: () => now };
   const sandbox = {
@@ -92,18 +93,48 @@ test("boots the real runtime in intro mode with the long-form seven-stage state"
   assert.equal(state.runState.condition, 100);
   assert.equal(state.runState.stage.expectedSeconds, 180);
   assert.equal(state.motion.stage, RunnerLoveContent.STAGES[0].id);
-  assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "finishArrival", "input", "moment", "powerup", "reset", "retry", "save", "snapshot", "spawn", "start", "step"].sort());
+  assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "fact", "fail", "finishArrival", "finishStageIntro", "input", "moment", "powerup", "reset", "retry", "save", "snapshot", "spawn", "start", "step"].sort());
+});
+
+test("cannot make relationship progress, choices, or cargo without intentional input", () => {
+  const { debug } = boot();
+  debug.start();
+  debug.finishStageIntro();
+  const state = debug.step(60000);
+  assert.equal(state.runState.stage.progress, 0);
+  assert.equal(state.runState.stage.items.length, 0);
+  assert.equal(state.runState.status, "playing");
+  assert.equal(state.motion.distance, 0);
+  assert.equal(Object.values(state.director.decisions).filter((decision) => decision.itemId).length, 0);
+  assert.equal(state.director.cargo.length, 0);
 });
 
 test("accepts swipe-equivalent actions through the fixed-step three-lane engine", () => {
   const { debug } = boot();
   debug.start();
+  assert.equal(debug.snapshot().mode, "stage-intro");
+  assert.equal(debug.input("left"), false);
+  assert.equal(debug.finishStageIntro(), true);
   debug.input("left");
   let state = debug.step(100);
   assert.equal(state.motion.lane, -1);
   debug.input("jump");
   state = debug.step(100);
   assert.equal(state.motion.action, "jump");
+});
+
+test("starts a genuinely fresh run without checkpoint-only variables or stale motion", () => {
+  const { debug } = boot();
+  debug.start();
+  debug.finishStageIntro();
+  debug.input("left");
+  debug.step(500);
+  const reset = debug.reset();
+  assert.equal(reset.mode, "intro");
+  assert.equal(reset.runState.stageIndex, 0);
+  assert.equal(reset.motion.lane, 0);
+  assert.equal(reset.motion.entities.length, 0);
+  assert.equal(reset.scheduler.patternCursor, 0);
 });
 
 test("pauses at a destination with the selected physical item before the next route", () => {
@@ -120,13 +151,19 @@ test("pauses at a destination with the selected physical item before the next ro
   assert.ok(state.runState.stageRecords[0].elapsed >= 0);
 
   assert.equal(debug.finishArrival(), true);
-  const resumed = debug.snapshot();
-  assert.equal(resumed.mode, "playing");
+  let resumed = debug.snapshot();
+  assert.equal(resumed.mode, "stage-intro");
   assert.equal(resumed.motion.stageIndex, 1);
   assert.equal(resumed.pausedStage, null);
+  assert.equal(resumed.motion.entities.length, 0);
+  assert.equal(resumed.stageIntro.stageIndex, 1);
+  debug.finishStageIntro();
+  resumed = debug.snapshot();
+  assert.equal(resumed.mode, "playing");
+  assert.equal(resumed.motion.entities.length, 0);
 });
 
-test("completes seven automatic arrival films and persists the final rating", () => {
+test("completes seven arrival films and persists the final rating", () => {
   const { debug } = boot();
   debug.start();
   for (let stage = 0; stage < 7; stage += 1) {
@@ -134,6 +171,10 @@ test("completes seven automatic arrival films and persists the final rating", ()
     assert.equal(state.mode, "arrival");
     assert.equal(state.arrival.stageIndex, stage);
     debug.finishArrival();
+    if (stage < 6) {
+      assert.equal(debug.snapshot().mode, "stage-intro");
+      debug.finishStageIntro();
+    }
   }
   const final = debug.snapshot();
   assert.equal(final.mode, "result");
@@ -143,12 +184,44 @@ test("completes seven automatic arrival films and persists the final rating", ()
   assert.equal(final.saved.profile.visitedDestinations.length, 7);
 });
 
+test("makes listening, moving the chain, two locks, and the final threshold player-controlled", () => {
+  const { debug } = boot();
+  debug.start();
+  for (let stage = 0; stage < 5; stage += 1) {
+    debug.completeStage("perfect");
+    debug.finishArrival();
+    debug.finishStageIntro();
+  }
+  let state = debug.completeStage("perfect");
+  assert.equal(state.arrival.stageIndex, 5);
+  state = debug.step(5000);
+  assert.equal(state.mode, "arrival");
+  assert.equal(state.arrivalInteraction.prompted, true);
+  assert.equal(debug.input("right"), false);
+  assert.equal(debug.input("slide"), true);
+  assert.equal(debug.input("right"), true);
+  assert.equal(debug.snapshot().arrivalInteraction.completed, true);
+  debug.step(5000);
+  assert.equal(debug.snapshot().mode, "stage-intro");
+  debug.finishStageIntro();
+
+  state = debug.completeStage("perfect");
+  assert.equal(state.arrival.stageIndex, 6);
+  debug.step(5000);
+  assert.equal(debug.input("left"), true);
+  assert.equal(debug.input("right"), true);
+  assert.equal(debug.input("jump"), true);
+  debug.step(5000);
+  assert.equal(debug.snapshot().mode, "result");
+});
+
 test("manual story stages stay synchronized across a route longer than the old engine limit", () => {
   const { debug } = boot();
   debug.start();
   for (let stage = 0; stage < 6; stage += 1) {
     debug.completeStage("perfect");
     debug.finishArrival();
+    debug.finishStageIntro();
   }
   const state = debug.snapshot();
   assert.equal(state.runState.stageIndex, 6);
@@ -163,11 +236,49 @@ test("retries a failed route from its checkpoint with half the stage time retain
   debug.start();
   for (let index = 0; index < definition.checkpoint; index += 1) debug.beat("good");
   while (debug.snapshot().runState.status === "playing") debug.moment({ outcome: "miss", kind: "collision" });
-  assert.equal(debug.snapshot().mode, "result");
+  assert.equal(debug.snapshot().mode, "failure");
+  assert.equal(debug.snapshot().conditionBand, "failed");
   debug.retry();
-  const state = debug.snapshot();
+  let state = debug.snapshot();
+  assert.equal(state.mode, "stage-intro");
+  assert.equal(state.stageIntro.reason, "retry");
+  debug.finishStageIntro();
+  state = debug.snapshot();
   assert.equal(state.mode, "playing");
   assert.equal(state.runState.stage.progress, definition.checkpoint);
-  assert.equal(state.runState.stage.elapsed, 90);
+  assert.equal(state.runState.stage.elapsed, 0);
   assert.equal(state.runState.condition, RunnerLoveRules.RULES.retryCondition);
+});
+
+test("restores checkpoint entities and scheduler exactly instead of deleting the nearby route", () => {
+  const definition = RunnerLoveRules.STAGES[0];
+  const { debug } = boot();
+  debug.start();
+  debug.finishStageIntro();
+  debug.spawn({ type: "obstacle", lane: 1, z: 47, avoid: "jump", patternId: "checkpoint-obstacle" });
+  for (let index = 0; index < definition.checkpoint; index += 1) debug.beat("good");
+  const checkpoint = debug.snapshot();
+  const expectedEntity = checkpoint.motion.entities.find((entity) => entity.patternId === "checkpoint-obstacle");
+  assert.ok(expectedEntity);
+  while (debug.snapshot().runState.status === "playing") debug.moment({ outcome: "miss", kind: "collision" });
+  debug.retry();
+  let restored = debug.snapshot();
+  assert.deepEqual(restored.motion.entities.find((entity) => entity.patternId === "checkpoint-obstacle"), expectedEntity);
+  assert.deepEqual(restored.scheduler, checkpoint.scheduler);
+  debug.finishStageIntro();
+  restored = debug.snapshot();
+  assert.deepEqual(restored.motion.entities.find((entity) => entity.patternId === "checkpoint-obstacle"), expectedEntity);
+});
+
+test("exposes a reachable failure state with escalating danger and a structured reason", () => {
+  const { debug, nodes } = boot();
+  debug.start();
+  debug.finishStageIntro();
+  const failed = debug.fail("collision");
+  assert.equal(failed.mode, "failure");
+  assert.equal(failed.runState.status, "failed");
+  assert.equal(failed.runState.condition, 0);
+  assert.equal(failed.runState.failure.code, "condition-depleted");
+  assert.equal(nodes.get("[data-failure]").hidden, false);
+  assert.equal(nodes.get("[data-result]").hidden, true);
 });

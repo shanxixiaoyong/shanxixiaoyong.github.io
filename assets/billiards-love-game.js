@@ -18,6 +18,7 @@
   let context = canvas.getContext("2d", { alpha: true });
   let tableCacheCanvas = null;
   let tableCacheDirty = true;
+  let tableCacheRevision = 0;
   let dateMapDarkCanvas = null;
   let dateMapClearCanvas = null;
   let dateMapFrameCanvas = null;
@@ -25,12 +26,26 @@
   let dateMapFrameUpdatedAt = -Infinity;
   let dateMapFrameDirty = true;
   let dateMapFramesSinceRebuild = 0;
+  let dateMapStateRevision = 0;
+  let dateMapFrameStateRevision = -1;
+  let dateMapFrameWaterRevision = -1;
+  let dateMapFrameRevision = 0;
+  let dateMapHadActivity = false;
   let cushionLightFrameCanvas = null;
   let cushionLightFrameContext = null;
   let cushionLightFrameUpdatedAt = -Infinity;
   let cushionLightFrameDirty = true;
   let cushionLightFramesSinceRebuild = 0;
   let cushionLightHadActivity = false;
+  let cushionLightStateRevision = 0;
+  let cushionLightFrameStateRevision = -1;
+  let cushionLightFrameRevision = 0;
+  let cushionLightGeometry = [];
+  let pocketRailDistances = [];
+  let baseCompositeCanvas = null;
+  let baseCompositeContext = null;
+  let baseCompositeRevision = 0;
+  let baseCompositeLayerKey = "";
   let sceneLightingFrameCanvas = null;
   let sceneLightingFrameContext = null;
   let sceneLightingFrameUpdatedAt = -Infinity;
@@ -137,12 +152,15 @@
   const MAX_BALL_RENDER_SCALE = 1.6;
   const BALL_RENDER_SCALE_RATIO = 1;
   const DATE_MAP_REFRESH_MS = 1000 / 30;
+  const CANVAS_REFRESH_MS = 1000 / 60;
   const SCENE_PORTAL_DURATION_MS = 1120;
   const WATER_GRID_WIDTH = 128;
   const WATER_GRID_HEIGHT = 256;
   const WATER_STEP_MS = 1000 / 30;
   const WATER_DAMPING = 0.986;
   const WATER_MAX_HEIGHT = 3.2;
+  const WATER_IDLE_ENERGY = 0.00012;
+  const WATER_IDLE_PIGMENT = 0.00012;
   const MAX_WATER_WAKE_DEPOSITS_PER_STEP = 6;
   const RAIL_LED_SEGMENT_LENGTH = 18;
   const COLLISION_SPRITE_BASE_RADIUS = 72;
@@ -157,6 +175,28 @@
   const SETTINGS_KEY = "yl-heartbeat-billiards-settings-v2";
   const RECORD_KEY = "yl-heartbeat-billiards-record-v2";
   const VIEWED_KEY = "yl-heartbeat-billiards-viewed-v2";
+  const renderTelemetry = {
+    animationFrames: 0,
+    physicsSteps: 0,
+    canvasFrames: 0,
+    canvasFrameSkips: 0,
+    tableCacheRebuilds: 0,
+    tableCacheReuses: 0,
+    dateMapRebuilds: 0,
+    dateMapReuses: 0,
+    cushionLightRebuilds: 0,
+    cushionLightReuses: 0,
+    baseCompositeRebuilds: 0,
+    baseCompositeReuses: 0,
+    waterSimulationSteps: 0,
+    waterSimulationIdleSkips: 0,
+    waterRasterizations: 0,
+    waterRasterReuses: 0,
+    surfaceRendererFrames: 0,
+    ballRendererSyncs: 0,
+    ballRendererSyncSkips: 0,
+    ballRendererFrames: 0
+  };
   const BALL_COLORS = Object.freeze({
     1: "#6d8cff", 2: "#ff6a20", 3: "#8be8ff", 4: "#39e7ff",
     5: "#d5a35d", 6: "#aa74ff", 7: "#ed4dce", 8: "#17120f",
@@ -454,7 +494,6 @@
     image.decoding = "async";
     image.addEventListener("load", () => {
       tableCacheDirty = true;
-      dateMapFrameDirty = true;
       sceneLightingFrameDirty = true;
     }, { once: true });
     image.src = source;
@@ -574,6 +613,7 @@
     );
     canvas.width = Math.max(1, Math.round(cssWidth * renderScale));
     canvas.height = Math.max(1, Math.round(cssHeight * renderScale));
+    lastCanvasFrameTick = -1;
     resizeBallRenderer();
   }
 
@@ -873,8 +913,27 @@
   let ballRendererCanvas = null;
   let ballRendererFailed = false;
   let ballRendererDirty = true;
+  let ballStateRevision = 0;
+  let ballRendererSyncedRevision = -1;
   let surfaceRenderer = null;
   let surfaceRendererFailed = false;
+  let lastCanvasFrameTick = -1;
+  const colorChannelCache = new Map();
+
+  function markDateMapDirty() {
+    dateMapStateRevision += 1;
+    dateMapFrameDirty = true;
+  }
+
+  function markCushionLightDirty() {
+    cushionLightStateRevision += 1;
+    cushionLightFrameDirty = true;
+  }
+
+  function markBallRendererDirty() {
+    ballStateRevision += 1;
+    ballRendererDirty = true;
+  }
 
   function motifForBall(number) {
     const source = content.BALL_DATE_MOTIFS;
@@ -972,6 +1031,7 @@
       secondary: material.railSecondary || theme.secondary,
       intensity: 0.92,
       rgb: colorChannels(material.rail),
+      secondaryRgb: colorChannels(material.railSecondary || theme.secondary),
       speed: RAIL_WAVE_SPEED * material.railSpeed,
       width: 190 * material.railWidth,
       duration: RAIL_WAVE_LIFETIME_MS * (material.id === "ink" || material.id === "jade-mist" ? 1.38 : material.id === "circuit" ? 0.82 : 1.08),
@@ -1044,7 +1104,8 @@
       spawnSurfaceMaterialWave(material, origin, theme);
       lastStoryWorldOrigin = { x: origin.x, y: origin.y };
       screenFlash = Math.max(screenFlash, material.id === "eclipse" ? 0.42 : material.id === "ink" ? 0.24 : 0.18);
-      dateMapFrameDirty = true;
+      markDateMapDirty();
+      markCushionLightDirty();
       sceneLightingFrameDirty = true;
     }
     return true;
@@ -1110,7 +1171,7 @@
     if (detail && typeof detail === "object" && Object.isExtensible(detail)) detail.dateRouteId = route.id;
     dateMapState.routes.push(route);
     if (dateMapState.routes.length > 15) dateMapState.routes.shift();
-    dateMapFrameDirty = true;
+    markDateMapDirty();
     sceneLightingFrameDirty = true;
     if (zone) {
       zone.reveal = clamp(zone.reveal + (zone.visits ? 0.22 : 0.48), 0, 1);
@@ -1304,6 +1365,7 @@
       secondary: effect.secondary,
       intensity: clamp(impactSpeed / 18 * surface.railGain, 0.25, 1),
       rgb: colorChannels(railColor),
+      secondaryRgb: colorChannels(effect.secondary || surface.railSecondary || railColor),
       speed: profile.speed * surface.railSpeed * (0.82 + clamp(impactSpeed / 30, 0, 1) * 0.36),
       width: profile.width * surface.railWidth,
       duration: profile.duration,
@@ -1316,7 +1378,8 @@
     }
     disturbWaterWorld(contact.x - normal.x * 10, contact.y - normal.y * 10,
       clamp(impactSpeed / 16, 0.32, 1.35), 20 + clamp(impactSpeed, 0, 22));
-    dateMapFrameDirty = true;
+    markDateMapDirty();
+    markCushionLightDirty();
     sceneLightingFrameDirty = true;
   }
 
@@ -1336,6 +1399,7 @@
       secondary: effect.secondary,
       intensity: clamp(intensity * surface.railGain, 0, 1),
       rgb: colorChannels(railColor),
+      secondaryRgb: colorChannels(effect.secondary || surface.railSecondary || railColor),
       speed: RAIL_WAVE_SPEED * surface.railSpeed * (effect.id === "lightning" ? 1.45 : effect.id === "aurora" ? 0.68 : 1),
       width: (effect.id === "aurora" ? 260 : effect.id === "lightning" ? 88 : 172) * surface.railWidth,
       duration: effect.id === "aurora" ? 2850 : RAIL_WAVE_LIFETIME_MS,
@@ -1346,6 +1410,7 @@
     if (dateMapState.railBursts.length > 36) {
       dateMapState.railBursts.splice(0, dateMapState.railBursts.length - 36);
     }
+    markCushionLightDirty();
   }
 
   function createRail(x, y, width, height, id, angle = 0, kind = "cushion") {
@@ -1450,6 +1515,7 @@
       createRail(TABLE_OUTER.left - 20, WORLD.height / 2, 24, TABLE_OUTER.bottom - TABLE_OUTER.top + 96, "guard-left", 0, "guard"),
       createRail(TABLE_OUTER.right + 20, WORLD.height / 2, 24, TABLE_OUTER.bottom - TABLE_OUTER.top + 96, "guard-right", 0, "guard")
     ];
+    rebuildCushionLightGeometry();
     Composite.add(engine.world, rails);
   }
 
@@ -1492,6 +1558,7 @@
     balls.push(body);
     Composite.add(engine.world, body);
     if (number === 0) cueBall = body;
+    markBallRendererDirty();
     return body;
   }
 
@@ -1499,6 +1566,7 @@
     balls.slice().forEach((ball) => Composite.remove(engine.world, ball));
     balls = [];
     cueBall = null;
+    markBallRendererDirty();
   }
 
   function rackBalls() {
@@ -1555,6 +1623,7 @@
     if (index >= 0) balls.splice(index, 1);
     Composite.remove(engine.world, body);
     if (body === cueBall) cueBall = null;
+    markBallRendererDirty();
   }
 
   function resetShotRailHits() {
@@ -1603,16 +1672,23 @@
     surfaceMaterialId = "ink";
     dateMapState = createDateMapState();
     resetWaterSurface();
-    dateMapFrameDirty = true;
+    markDateMapDirty();
     dateMapFrameUpdatedAt = -Infinity;
     dateMapFramesSinceRebuild = 0;
+    dateMapFrameStateRevision = -1;
+    dateMapFrameWaterRevision = -1;
+    dateMapHadActivity = false;
     cushionLightFrameUpdatedAt = -Infinity;
-    cushionLightFrameDirty = true;
+    markCushionLightDirty();
     cushionLightFramesSinceRebuild = 0;
     cushionLightHadActivity = false;
+    cushionLightFrameStateRevision = -1;
+    baseCompositeLayerKey = "";
     sceneLightingFrameDirty = true;
     sceneLightingFrameUpdatedAt = -Infinity;
-    ballRendererDirty = true;
+    markBallRendererDirty();
+    ballRendererSyncedRevision = -1;
+    lastCanvasFrameTick = -1;
     finalRevealActive = false;
     clearTimeout(microTimer);
     clearTimeout(judgementTimer);
@@ -1783,11 +1859,11 @@
     const lastRoute = dateMapState.routes.at(-1);
     const activeTheme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
     const activeEffect = dateMapState.activeEffect;
-    if (stageNumber !== cachedStageNumber) tableCacheDirty = true;
+    const previousSelectedBallNumber = selectedBallNumber;
+    const availableTargetsChanged = targets.length !== cachedAvailableTargets.size
+      || targets.some((number) => !cachedAvailableTargets.has(number));
     cachedStageNumber = stageNumber;
     cachedAvailableTargets = new Set(targets);
-    dateMapFrameDirty = true;
-    ballRendererDirty = true;
     root.dataset.stage = String(stageNumber);
     elements.stageKicker.textContent = runState.endState.ended
       ? "幻彩清台 · 能量闭环"
@@ -1837,6 +1913,7 @@
         ? "保持连进，轨迹、边条与环境光会持续升档"
         : activeEffect ? "下一颗球会换色，下一处袋口会换特效" : "六个袋口各自携带不同运动效果";
     }
+    if (availableTargetsChanged || selectedBallNumber !== previousSelectedBallNumber) markBallRendererDirty();
     syncSurfaceMaterialUI();
     elements.aimToggle.setAttribute("aria-pressed", String(aimAssist));
     elements.aimToggle.setAttribute("aria-label", aimAssist ? "关闭瞄准辅助" : "开启瞄准辅助");
@@ -1992,6 +2069,7 @@
     elements.call.classList.add("is-quiet");
     audio.cue("strike", 0.75 + power * 0.5);
     screenShake = Math.max(screenShake, power * 2.2);
+    markBallRendererDirty();
     return true;
   }
 
@@ -2293,7 +2371,7 @@
           if (dateMapState.rollingTrails.length > 180) {
             dateMapState.rollingTrails.splice(0, dateMapState.rollingTrails.length - 180);
           }
-          dateMapFrameDirty = true;
+          markDateMapDirty();
         }
       }
       if (ball.physics) {
@@ -2650,7 +2728,8 @@
       life: 1,
       success
     };
-    dateMapFrameDirty = true;
+    markDateMapDirty();
+    markCushionLightDirty();
     sceneLightingFrameDirty = true;
     setDateFlow(success ? Math.max(5, outcome.state.bestPotStreak) : 0, !success);
     root.dataset.state = "map-finale";
@@ -2751,6 +2830,7 @@
       ? { x: cueBall.position.x, y: cueBall.position.y }
       : null;
     shotState = null;
+    markBallRendererDirty();
     stableSteps = 0;
     let outcome;
     try {
@@ -3338,15 +3418,24 @@
     }
     tableCacheCanvas = cache;
     tableCacheDirty = false;
+    tableCacheRevision += 1;
+    renderTelemetry.tableCacheRebuilds += 1;
+    return true;
+  }
+
+  function ensureTableCache() {
+    if (tableCacheDirty || !tableCacheCanvas) return rebuildTableCache();
+    renderTelemetry.tableCacheReuses += 1;
     return true;
   }
 
   function drawTableLayer() {
-    if ((tableCacheDirty || !tableCacheCanvas) && !rebuildTableCache()) {
+    if (!ensureTableCache()) {
       drawTable();
-      return;
+      return false;
     }
     context.drawImage(tableCacheCanvas, 0, 0, WORLD.width, WORLD.height);
+    return true;
   }
 
   function makeDateMapCache(filter, roseVeil) {
@@ -4021,10 +4110,15 @@
   }
 
   function colorChannels(color) {
-    const hex = String(color || "#000000").replace("#", "");
+    const key = String(color || "#000000");
+    const cached = colorChannelCache.get(key);
+    if (cached) return cached;
+    const hex = key.replace("#", "");
     const expanded = hex.length === 3 ? hex.split("").map((value) => value + value).join("") : hex;
     const number = Number.parseInt(expanded, 16) || 0;
-    return [number >> 16 & 255, number >> 8 & 255, number & 255];
+    const channels = Object.freeze([number >> 16 & 255, number >> 8 & 255, number & 255]);
+    colorChannelCache.set(key, channels);
+    return channels;
   }
 
   function smoothStep(edge0, edge1, value) {
@@ -4525,13 +4619,15 @@
       record.ready = Boolean(image.naturalWidth && image.naturalHeight);
       record.failed = !record.ready;
       surfaceArtworkCache.delete(materialId);
-      dateMapFrameDirty = true;
-      sceneLightingFrameDirty = true;
+      if (materialId === surfaceMaterialId) {
+        markDateMapDirty();
+        sceneLightingFrameDirty = true;
+      }
     };
     image.onerror = () => {
       record.failed = true;
       surfaceArtworkCache.delete(materialId);
-      dateMapFrameDirty = true;
+      if (materialId === surfaceMaterialId) markDateMapDirty();
     };
     image.src = source;
     if (image.complete && image.naturalWidth && image.naturalHeight) record.ready = true;
@@ -4665,9 +4761,11 @@
       accumulatorMs: 0,
       stepCount: 0,
       energy: 0,
+      pigmentEnergy: 0,
       lastBlackEightImpulse: -1,
       lastSurfaceTransitionImpulse: -1,
       revision: 0,
+      rasterKey: "",
       wakeBudgetStep: -1,
       wakeDepositsThisStep: 0
     };
@@ -4686,9 +4784,11 @@
     waterSurface.accumulatorMs = 0;
     waterSurface.stepCount = 0;
     waterSurface.energy = 0;
+    waterSurface.pigmentEnergy = 0;
     waterSurface.lastBlackEightImpulse = -1;
     waterSurface.lastSurfaceTransitionImpulse = -1;
     waterSurface.revision += 1;
+    waterSurface.rasterKey = "";
     waterSurface.wakeBudgetStep = -1;
     waterSurface.wakeDepositsThisStep = 0;
     const centerX = TABLE.left + (TABLE.right - TABLE.left) * 0.5;
@@ -4711,7 +4811,6 @@
       || worldY < TABLE.top - materialRadius || worldY > TABLE.bottom + materialRadius) return;
     waterSurface.energy = Math.max(waterSurface.energy, Math.min(1, Math.abs(materialAmplitude) * 0.55));
     dateMapState.waterEnergy = Math.max(dateMapState.waterEnergy || 0, waterSurface.energy);
-    dateMapFrameDirty = true;
     if (!waterSurface.renderable) return;
     const point = waterGridPoint(worldX, worldY);
     const cellScale = ((TABLE.right - TABLE.left) / waterSurface.width
@@ -4746,7 +4845,15 @@
         changed = true;
       }
     }
-    if (changed) waterSurface.revision += 1;
+    if (changed) {
+      waterSurface.revision += 1;
+      if (material.traceDeposit > 0) {
+        waterSurface.pigmentEnergy = Math.max(
+          waterSurface.pigmentEnergy,
+          Math.min(1, Math.abs(materialAmplitude) * material.traceDeposit * 0.025)
+        );
+      }
+    }
   }
 
   function disturbMaterialWorld(worldX, worldY, amplitude, radiusXWorld, radiusYWorld, angle, phase = 0) {
@@ -4759,7 +4866,6 @@
       || worldY < TABLE.top - reach || worldY > TABLE.bottom + reach) return;
     waterSurface.energy = Math.max(waterSurface.energy, Math.min(1, Math.abs(materialAmplitude) * 0.64));
     dateMapState.waterEnergy = Math.max(dateMapState.waterEnergy || 0, waterSurface.energy);
-    dateMapFrameDirty = true;
     if (!waterSurface.renderable) return;
     const point = waterGridPoint(worldX, worldY);
     const cellWidth = (TABLE.right - TABLE.left) / (waterSurface.width - 1);
@@ -4805,7 +4911,15 @@
         changed = true;
       }
     }
-    if (changed) waterSurface.revision += 1;
+    if (changed) {
+      waterSurface.revision += 1;
+      if (material.traceDeposit > 0) {
+        waterSurface.pigmentEnergy = Math.max(
+          waterSurface.pigmentEnergy,
+          Math.min(1, Math.abs(materialAmplitude) * material.traceDeposit * 0.04)
+        );
+      }
+    }
   }
 
   function depositRollingWaterWake(ball, data, dx, dy, travel) {
@@ -4904,6 +5018,7 @@
     const material = activeSurfaceMaterial();
     const damping = material.damping || WATER_DAMPING;
     let energy = 0;
+    let pigmentEnergy = 0;
     for (let y = 1; y < height - 1; y += 1) {
       const row = y * width;
       for (let x = 1; x < width - 1; x += 1) {
@@ -4914,12 +5029,14 @@
         next[index] = value;
         const pigmentAverage = (pigment[index - 1] + pigment[index + 1]
           + pigment[index - width] + pigment[index + width]) * 0.25;
-        pigmentNext[index] = clamp(
+        const pigmentValue = clamp(
           pigment[index] * material.traceDecay + pigmentAverage * material.traceDiffuse,
           0,
           1
         );
+        pigmentNext[index] = pigmentValue;
         energy += Math.abs(value);
+        pigmentEnergy += pigmentValue;
       }
     }
     waterSurface.previous = current;
@@ -4932,14 +5049,38 @@
     waterSurface.stepCount += 1;
     waterSurface.revision += 1;
     waterSurface.energy = clamp(energy / (width * height * 0.34), 0, 1);
+    waterSurface.pigmentEnergy = clamp(pigmentEnergy / ((width - 2) * (height - 2)), 0, 1);
     dateMapState.waterEnergy = waterSurface.energy;
+    renderTelemetry.waterSimulationSteps += 1;
+  }
+
+  function surfaceTransitionIsActive(timestamp) {
+    const transition = dateMapState.surfaceTransition;
+    if (!transition) return false;
+    const origins = transition.origins?.length ? transition.origins : [transition];
+    return origins.some((origin) => timestamp - (origin.bornAt || transition.startedAt)
+      < (origin.duration || transition.duration));
   }
 
   function advanceWaterSurface(deltaMs) {
     if (!waterSurface) return;
     if (!waterSurface.renderable) {
-      waterSurface.energy *= 0.985;
+      if (waterSurface.energy > WATER_IDLE_ENERGY) waterSurface.energy *= 0.985;
+      else {
+        waterSurface.energy = 0;
+        renderTelemetry.waterSimulationIdleSkips += 1;
+      }
       dateMapState.waterEnergy = waterSurface.energy;
+      return;
+    }
+    const now = performance.now();
+    const simulationActive = waterSurface.energy > WATER_IDLE_ENERGY
+      || waterSurface.pigmentEnergy > WATER_IDLE_PIGMENT
+      || surfaceTransitionIsActive(now)
+      || Boolean(dateMapState.blackEightBlast);
+    if (!simulationActive) {
+      waterSurface.accumulatorMs = 0;
+      renderTelemetry.waterSimulationIdleSkips += 1;
       return;
     }
     waterSurface.accumulatorMs += deltaMs;
@@ -4947,7 +5088,7 @@
       waterSurface.accumulatorMs -= WATER_STEP_MS;
       if (dateMapState.surfaceTransition) {
         const transition = dateMapState.surfaceTransition;
-        const age = Math.max(0, performance.now() - transition.startedAt);
+        const age = Math.max(0, now - transition.startedAt);
         const transitionProgress = clamp(age / transition.duration, 0, 1);
         const phase = Math.floor(age / 82);
         const origins = transition.origins?.length ? transition.origins : [transition];
@@ -4955,7 +5096,7 @@
         if (impulseKey !== waterSurface.lastSurfaceTransitionImpulse && transitionProgress < 0.96) {
           waterSurface.lastSurfaceTransitionImpulse = impulseKey;
           origins.forEach((transitionOrigin, originIndex) => {
-            const originAge = Math.max(0, performance.now() - (transitionOrigin.bornAt || transition.startedAt));
+            const originAge = Math.max(0, now - (transitionOrigin.bornAt || transition.startedAt));
             const originProgress = clamp(originAge / (transitionOrigin.duration || transition.duration), 0, 1);
             const sweep = phase * 2.399963 + (transitionOrigin.ballNumber || 0) * 0.47 + originIndex * 1.37;
             const eased = 1 - Math.pow(1 - originProgress, 2.4);
@@ -5015,6 +5156,20 @@
     context.restore();
   }
 
+  function dateMapAnimationActive(timestamp) {
+    const themeTransition = dateMapState.themeTransition;
+    return Boolean(
+      dateMapState.blackEightBlast
+      || dateMapState.rollingTrails.length
+      || surfaceTransitionIsActive(timestamp)
+      || themeTransition && timestamp - themeTransition.startedAt < themeTransition.duration
+      || waterSurface?.renderable && (
+        waterSurface.energy > WATER_IDLE_ENERGY
+        || waterSurface.pigmentEnergy > WATER_IDLE_PIGMENT
+      )
+    );
+  }
+
   function renderWaterSurface(timestamp) {
     const theme = dateMapState.activeTheme || BALL_CHROMA_THEMES[0];
     const previousTheme = dateMapState.previousTheme || theme;
@@ -5022,9 +5177,9 @@
     const height = TABLE.bottom - TABLE.top;
     const surfaceMaterialId = activeSurfaceMaterial().id;
     const artwork = surfaceArtworkFor(surfaceMaterialId);
+    const surfaceTransition = dateMapState.surfaceTransition;
     root.dataset.surfaceTextureState = surfaceTextureCache.get(surfaceMaterialId)?.ready ? "ready" : "fallback";
     if (surfaceRenderer && artwork) {
-      const surfaceTransition = dateMapState.surfaceTransition;
       const transitionOrigins = surfaceTransition
         ? (surfaceTransition.origins?.length ? surfaceTransition.origins : [surfaceTransition]).map((origin) => ({
             ...origin,
@@ -5081,6 +5236,7 @@
           }))
         } : null
       });
+      renderTelemetry.surfaceRendererFrames += 1;
       if (renderedSurface) {
         root.dataset.surfaceBackend = "webgl";
         context.save();
@@ -5105,13 +5261,22 @@
       context.fillRect(TABLE.left, TABLE.top, width, height);
       return;
     }
+    const rasterTimeRevision = dateMapAnimationActive(timestamp)
+      ? Math.floor(timestamp / DATE_MAP_REFRESH_MS)
+      : 0;
+    const rasterKey = [
+      waterSurface.revision,
+      surfaceMaterialId,
+      theme.id,
+      previousTheme.id,
+      rasterTimeRevision
+    ].join(":");
+    if (waterSurface.rasterKey !== rasterKey) {
     const current = waterSurface.current;
     const pigment = waterSurface.pigment;
     const pixels = waterSurface.imageData.data;
-    const targetDeep = colorChannels(theme.deep);
     const targetPrimary = colorChannels(theme.primary);
     const targetSecondary = colorChannels(theme.secondary);
-    const sourceDeep = colorChannels(previousTheme.deep);
     const sourcePrimary = colorChannels(previousTheme.primary);
     const sourceSecondary = colorChannels(previousTheme.secondary);
     const blast = dateMapState.blackEightBlast;
@@ -5119,8 +5284,18 @@
     const spectralStrength = blast
       ? smoothStep(0.18, 0.46, blastProgress) * (1 - smoothStep(0.82, 1, blastProgress))
       : 0;
-    const surfaceMaterial = activeSurfaceMaterial();
-    const specularGain = blast ? 104 : 66;
+    const eclipse = blast
+      ? 1 - smoothStep(0, 0.2, blastProgress) * 0.5 + smoothStep(0.7, 0.84, blastProgress) * 0.45
+      : 1;
+    const warmSurface = ["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId);
+    const deepSurface = ["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(surfaceMaterialId);
+    const circuitSurface = surfaceMaterialId === "circuit";
+    const crystalSurface = ["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId);
+    const responseAlpha = circuitSurface ? 180
+      : warmSurface ? 220
+        : crystalSurface ? 168
+          : surfaceMaterialId === "ink" ? 196
+            : 184;
     const transition = dateMapState.themeTransition;
     const transitionState = transition ? {
       progress: clamp((timestamp - transition.startedAt) / transition.duration, 0, 1),
@@ -5128,7 +5303,6 @@
     } : null;
     const time = timestamp * 0.001;
     for (let y = 1; y < waterSurface.height - 1; y += 1) {
-      const v = y / (waterSurface.height - 1);
       for (let x = 1; x < waterSurface.width - 1; x += 1) {
         const index = y * waterSurface.width + x;
         const offset = index * 4;
@@ -5148,28 +5322,21 @@
         const flowA = Math.sin(x * 0.231 + Math.sin(y * 0.059 - time * 0.62) * 2.2 + time * 0.86);
         const flowB = Math.cos(y * 0.187 + Math.sin(x * 0.047 + time * 0.54) * 2.5 - time * 0.72);
         const flowC = Math.sin((x - y) * 0.113 + Math.sin((x + y) * 0.031 + time * 0.33) * 2.8);
-        const causticField = 0.5 + (flowA * flowB * 0.68 + flowC * 0.32) * 0.5 + surfaceHeight * 0.055;
-        const caustic = Math.pow(clamp(causticField, 0, 1), 11) * (0.16 + slope * 0.58);
-        const mix = waterThemeTransitionMix(timestamp, x, y, surfaceHeight, transitionState);
-        const deepR = sourceDeep[0] + (targetDeep[0] - sourceDeep[0]) * mix;
-        const deepG = sourceDeep[1] + (targetDeep[1] - sourceDeep[1]) * mix;
-        const deepB = sourceDeep[2] + (targetDeep[2] - sourceDeep[2]) * mix;
-        const primaryR = sourcePrimary[0] + (targetPrimary[0] - sourcePrimary[0]) * mix;
-        const primaryG = sourcePrimary[1] + (targetPrimary[1] - sourcePrimary[1]) * mix;
-        const primaryB = sourcePrimary[2] + (targetPrimary[2] - sourcePrimary[2]) * mix;
-        const secondaryR = sourceSecondary[0] + (targetSecondary[0] - sourceSecondary[0]) * mix;
-        const secondaryG = sourceSecondary[1] + (targetSecondary[1] - sourceSecondary[1]) * mix;
-        const secondaryB = sourceSecondary[2] + (targetSecondary[2] - sourceSecondary[2]) * mix;
-        const depthShade = clamp(0.38 + diffuse * 0.42 + surfaceHeight * 0.035, 0.18, 0.82);
-        const edgeShade = 1 - Math.pow(Math.abs(v - 0.5) * 1.42, 2) * 0.2;
-        const spectralPhase = x * 0.083 + y * 0.039
-          + Math.sin(y * 0.043 - time * 0.5) * 2.1
-          + Math.sin(x * 0.031 + time * 0.42) * 1.7
-          + time * 1.45 + surfaceHeight;
-        const eclipse = blast ? 1 - smoothStep(0, 0.2, blastProgress) * 0.5 + smoothStep(0.7, 0.84, blastProgress) * 0.45 : 1;
-        const themedRed = (deepR * 0.72 + primaryR * 0.18 + secondaryR * 0.05) * depthShade * edgeShade;
-        const themedGreen = (deepG * 0.72 + primaryG * 0.18 + secondaryG * 0.05) * depthShade * edgeShade;
-        const themedBlue = (deepB * 0.72 + primaryB * 0.18 + secondaryB * 0.05) * depthShade * edgeShade;
+        let primaryR = targetPrimary[0];
+        let primaryG = targetPrimary[1];
+        let primaryB = targetPrimary[2];
+        let secondaryR = targetSecondary[0];
+        let secondaryG = targetSecondary[1];
+        let secondaryB = targetSecondary[2];
+        if (transitionState) {
+          const mix = waterThemeTransitionMix(timestamp, x, y, surfaceHeight, transitionState);
+          primaryR = sourcePrimary[0] + (targetPrimary[0] - sourcePrimary[0]) * mix;
+          primaryG = sourcePrimary[1] + (targetPrimary[1] - sourcePrimary[1]) * mix;
+          primaryB = sourcePrimary[2] + (targetPrimary[2] - sourcePrimary[2]) * mix;
+          secondaryR = sourceSecondary[0] + (targetSecondary[0] - sourceSecondary[0]) * mix;
+          secondaryG = sourceSecondary[1] + (targetSecondary[1] - sourceSecondary[1]) * mix;
+          secondaryB = sourceSecondary[2] + (targetSecondary[2] - sourceSecondary[2]) * mix;
+        }
         let red;
         let green;
         let blue;
@@ -5178,7 +5345,7 @@
         const traceGradient = Math.abs(pigment[index + 1] - pigment[index - 1])
           + Math.abs(pigment[index + waterSurface.width] - pigment[index - waterSurface.width]);
         let responseStrength = 0;
-        if (["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId)) {
+        if (warmSurface) {
           const fissureField = Math.abs(flowA * 0.48 + flowB * 0.34 + flowC * 0.18);
           const fissure = Math.pow(clamp(fissureField + surfaceHeight * 0.035, 0, 1), 8.5);
           const heat = clamp(traceValue * 0.96 + slope * 0.4 + Math.abs(surfaceHeight) * 0.12 + fissure * 0.34, 0, 1);
@@ -5187,14 +5354,14 @@
           green = 4 + diffuse * 3 + heat * 45 + moltenCore * 112 + specular * 14;
           blue = 3 + heat * 6 + moltenCore * 18;
           responseStrength = clamp(traceGradient * 3.4 + physicalSlope * 1.62 + traceValue * 0.12, 0, 1);
-        } else if (["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(surfaceMaterialId)) {
+        } else if (deepSurface) {
           const nebula = clamp(0.5 + flowA * 0.22 + flowB * 0.18 + flowC * 0.14, 0, 1);
           const wake = clamp(traceValue * 0.9 + slope * 0.34 + Math.abs(surfaceHeight) * 0.08, 0, 1);
           red = 3 + nebula * 17 + primaryR * wake * 0.43 + secondaryR * wake * 0.22;
           green = 7 + nebula * 23 + primaryG * wake * 0.42 + secondaryG * wake * 0.18;
           blue = 24 + nebula * 46 + primaryB * wake * 0.55 + secondaryB * wake * 0.3;
           responseStrength = clamp(traceValue * 0.46 + traceGradient * 1.12 + physicalSlope * 1.2 + Math.abs(surfaceHeight) * 0.12, 0, 1);
-        } else if (surfaceMaterialId === "circuit") {
+        } else if (circuitSurface) {
           const gridX = Math.pow(clamp(1 - Math.abs(x % 12 - 6) / 6, 0, 1), 18);
           const gridY = Math.pow(clamp(1 - Math.abs(y % 12 - 6) / 6, 0, 1), 18);
           const grid = Math.max(gridX, gridY);
@@ -5204,7 +5371,7 @@
           green = 8 + grid * 24 + primaryG * charge * (0.54 + pulse * 0.26) + specular * 45;
           blue = 24 + grid * 48 + primaryB * charge * 0.72 + secondaryB * charge * 0.24 + specular * 68;
           responseStrength = clamp(traceValue * 0.08 + traceGradient * 2.7 + physicalSlope * 1.92, 0, 1);
-        } else if (["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId)) {
+        } else if (crystalSurface) {
           const crystal = Math.abs(flowA * 0.5 + flowB * 0.31 + flowC * 0.19 + surfaceHeight * 0.05);
           const facet = Math.pow(clamp(crystal, 0, 1), 7.4);
           const iceEdge = clamp(slope * 0.9 + Math.abs(surfaceHeight) * 0.09 + traceValue * 0.56, 0, 1);
@@ -5229,20 +5396,40 @@
           responseStrength = clamp(traceValue * 1.08 + physicalSlope * 0.86 + Math.abs(surfaceHeight) * 0.1, 0, 1);
         }
 
-        const blastWave = 0.58 + Math.sin(spectralPhase) * 0.42;
-        const blastTint = ["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId) ? [76, 26, 3]
-          : ["galaxy", "abyss", "emerald", "jade-mist", "eclipse"].includes(surfaceMaterialId) ? [34 + blastWave * 20, 38 + (1 - blastWave) * 26, 84]
-            : surfaceMaterialId === "circuit" ? [34 + (1 - blastWave) * 52, 78, 82 + blastWave * 28]
-              : ["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId) ? [74, 46, 106]
-                : [42, 42, 38];
-        pixels[offset] = clamp(red * eclipse + spectralStrength * blastTint[0], 0, 255);
-        pixels[offset + 1] = clamp(green * eclipse + spectralStrength * blastTint[1], 0, 255);
-        pixels[offset + 2] = clamp(blue * eclipse + spectralStrength * blastTint[2], 0, 255);
-        const responseAlpha = surfaceMaterialId === "circuit" ? 180
-          : ["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"].includes(surfaceMaterialId) ? 220
-            : ["amethyst", "burgundy", "rose-quartz"].includes(surfaceMaterialId) ? 168
-              : surfaceMaterialId === "ink" ? 196
-                : 184;
+        let blastRed = 0;
+        let blastGreen = 0;
+        let blastBlue = 0;
+        if (spectralStrength > 0) {
+          const spectralPhase = x * 0.083 + y * 0.039
+            + Math.sin(y * 0.043 - time * 0.5) * 2.1
+            + Math.sin(x * 0.031 + time * 0.42) * 1.7
+            + time * 1.45 + surfaceHeight;
+          const blastWave = 0.58 + Math.sin(spectralPhase) * 0.42;
+          if (warmSurface) {
+            blastRed = 76;
+            blastGreen = 26;
+            blastBlue = 3;
+          } else if (deepSurface) {
+            blastRed = 34 + blastWave * 20;
+            blastGreen = 38 + (1 - blastWave) * 26;
+            blastBlue = 84;
+          } else if (circuitSurface) {
+            blastRed = 34 + (1 - blastWave) * 52;
+            blastGreen = 78;
+            blastBlue = 82 + blastWave * 28;
+          } else if (crystalSurface) {
+            blastRed = 74;
+            blastGreen = 46;
+            blastBlue = 106;
+          } else {
+            blastRed = 42;
+            blastGreen = 42;
+            blastBlue = 38;
+          }
+        }
+        pixels[offset] = clamp(red * eclipse + spectralStrength * blastRed, 0, 255);
+        pixels[offset + 1] = clamp(green * eclipse + spectralStrength * blastGreen, 0, 255);
+        pixels[offset + 2] = clamp(blue * eclipse + spectralStrength * blastBlue, 0, 255);
         pixels[offset + 3] = clamp(
           smoothStep(0.025, surfaceMaterialId === "ink" ? 0.66 : 0.58, responseStrength) * responseAlpha
             + spectralStrength * 235,
@@ -5252,6 +5439,11 @@
       }
     }
     waterSurface.context.putImageData(waterSurface.imageData, 0, 0);
+    waterSurface.rasterKey = rasterKey;
+    renderTelemetry.waterRasterizations += 1;
+    } else {
+      renderTelemetry.waterRasterReuses += 1;
+    }
     context.save();
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
@@ -5278,6 +5470,11 @@
     context.globalAlpha = 1;
     context.restore();
     drawSurfaceReflectedLight(surfaceMaterialId, width, height);
+    if (surfaceTransition && !surfaceTransitionIsActive(timestamp)) dateMapState.surfaceTransition = null;
+    if (dateMapState.themeTransition
+        && timestamp - dateMapState.themeTransition.startedAt >= dateMapState.themeTransition.duration) {
+      dateMapState.themeTransition = null;
+    }
   }
 
   function railBounds() {
@@ -5311,6 +5508,31 @@
   function circularRailDistance(left, right, perimeter = railPerimeterLength()) {
     const direct = Math.abs(left - right) % perimeter;
     return Math.min(direct, perimeter - direct);
+  }
+
+  function rebuildCushionLightGeometry() {
+    cushionLightGeometry = rails
+      .filter((rail) => rail.plugin.heartbeatRail?.kind === "cushion")
+      .map((rail) => {
+        const railShape = rail.plugin.heartbeatRail;
+        const horizontal = railShape.width >= railShape.height;
+        const length = horizontal ? railShape.width : railShape.height;
+        const thickness = horizontal ? railShape.height : railShape.width;
+        const sampleCount = Math.max(10, Math.ceil(length / (RAIL_LED_SEGMENT_LENGTH * 2)));
+        const samplePoints = [];
+        for (let sampleIndex = 0; sampleIndex <= sampleCount; sampleIndex += 1) {
+          const ratio = sampleIndex / sampleCount;
+          const x = horizontal
+            ? rail.position.x - railShape.width / 2 + railShape.width * ratio
+            : rail.position.x;
+          const y = horizontal
+            ? rail.position.y
+            : rail.position.y - railShape.height / 2 + railShape.height * ratio;
+          samplePoints.push(Object.freeze({ ratio, centerDistance: railDistanceForContact(x, y) }));
+        }
+        return Object.freeze({ rail, railShape, horizontal, length, thickness, samplePoints: Object.freeze(samplePoints) });
+      });
+    pocketRailDistances = POCKETS.map((pocket) => railDistanceForContact(pocket.x, pocket.y));
   }
 
   function renderCushionLightResponse(timestamp) {
@@ -5386,7 +5608,8 @@
         if (contribution > dominant) {
           dominant = contribution;
           const wavePrimary = wave.rgb || colorChannels(wave.color || surface.rail);
-          const waveSecondary = colorChannels(wave.secondary || surface.railSecondary || surface.rail);
+          const waveSecondary = wave.secondaryRgb
+            || colorChannels(wave.secondary || surface.railSecondary || surface.rail);
           red = wavePrimary[0] + (waveSecondary[0] - wavePrimary[0]) * spectralMix;
           green = wavePrimary[1] + (waveSecondary[1] - wavePrimary[1]) * spectralMix;
           blue = wavePrimary[2] + (waveSecondary[2] - wavePrimary[2]) * spectralMix;
@@ -5396,10 +5619,15 @@
 
       if (blast) {
         const pocketIndex = Math.floor(blastProgress * 7.5);
-        const nearestPocketIndex = POCKETS.reduce((best, pocket, pocketPosition) => {
-          const pocketDistance = circularRailDistance(centerDistance, railDistanceForContact(pocket.x, pocket.y), perimeter);
-          return pocketDistance < best.distance ? { distance: pocketDistance, index: pocketPosition } : best;
-        }, { distance: Infinity, index: 0 }).index;
+        let nearestPocketIndex = 0;
+        let nearestPocketDistance = Infinity;
+        pocketRailDistances.forEach((pocketDistanceAlongRail, pocketPosition) => {
+          const pocketDistance = circularRailDistance(centerDistance, pocketDistanceAlongRail, perimeter);
+          if (pocketDistance < nearestPocketDistance) {
+            nearestPocketDistance = pocketDistance;
+            nearestPocketIndex = pocketPosition;
+          }
+        });
         const pocketIgnition = smoothStep(nearestPocketIndex / 8, nearestPocketIndex / 8 + 0.1, blastProgress);
         const chase = smoothStep(0.12, 0.3, blastProgress) * (1 - smoothStep(0.8, 0.94, blastProgress));
         const chaseFront = (timestamp * 1.08 + blastProgress * perimeter * 2.8) % perimeter;
@@ -5436,21 +5664,11 @@
 
     context.save();
     context.globalCompositeOperation = "screen";
-    const lightRails = rails.filter((rail) => rail.plugin.heartbeatRail?.kind === "cushion");
-    lightRails.forEach((rail) => {
-      const railShape = rail.plugin.heartbeatRail;
-      const horizontal = railShape.width >= railShape.height;
-      const length = horizontal ? railShape.width : railShape.height;
-      const thickness = horizontal ? railShape.height : railShape.width;
-      const sampleCount = Math.max(10, Math.ceil(length / (RAIL_LED_SEGMENT_LENGTH * 2)));
+    cushionLightGeometry.forEach(({ rail, railShape, horizontal, length, thickness, samplePoints }) => {
       const samples = [];
-      for (let sampleIndex = 0; sampleIndex <= sampleCount; sampleIndex += 1) {
-        const ratio = sampleIndex / sampleCount;
-        const point = horizontal
-          ? { x: rail.position.x - railShape.width / 2 + railShape.width * ratio, y: rail.position.y }
-          : { x: rail.position.x, y: rail.position.y - railShape.height / 2 + railShape.height * ratio };
-        samples.push({ ratio, ...sampleLight(railDistanceForContact(point.x, point.y)) });
-      }
+      samplePoints.forEach(({ ratio, centerDistance }) => {
+        samples.push({ ratio, ...sampleLight(centerDistance) });
+      });
       const railPeak = samples.reduce((highest, sample) => Math.max(highest, sample.brightness), 0);
       if (railPeak < 0.025) return;
 
@@ -5551,22 +5769,33 @@
     cushionLightFrameUpdatedAt = timestamp;
     cushionLightFrameDirty = false;
     cushionLightFramesSinceRebuild = 0;
+    cushionLightFrameStateRevision = cushionLightStateRevision;
+    cushionLightFrameRevision += 1;
+    renderTelemetry.cushionLightRebuilds += 1;
     return true;
   }
 
-  function drawCushionLightResponse(timestamp) {
+  function updateCushionLightFrame(timestamp) {
     cushionLightFramesSinceRebuild += 1;
     const active = dateMapState.railBursts.length > 0 || Boolean(dateMapState.blackEightBlast);
     const needsFinalClear = cushionLightHadActivity && !active;
     const refreshDue = timestamp - cushionLightFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
     const frameBudgetReady = cushionLightFramesSinceRebuild >= 2;
-    if ((!cushionLightFrameCanvas
-        || (active || needsFinalClear || cushionLightFrameDirty) && refreshDue && frameBudgetReady)
-        && !rebuildCushionLightFrame(timestamp)) {
+    const stateDirty = cushionLightFrameDirty
+      || cushionLightFrameStateRevision !== cushionLightStateRevision;
+    const shouldRebuild = !cushionLightFrameCanvas
+      || (active || needsFinalClear || stateDirty) && refreshDue && frameBudgetReady;
+    if (shouldRebuild && !rebuildCushionLightFrame(timestamp)) return false;
+    if (!shouldRebuild) renderTelemetry.cushionLightReuses += 1;
+    cushionLightHadActivity = active;
+    return Boolean(cushionLightFrameCanvas);
+  }
+
+  function drawCushionLightResponse(timestamp) {
+    if (!updateCushionLightFrame(timestamp)) {
       renderCushionLightResponse(timestamp);
       return;
     }
-    cushionLightHadActivity = active;
     context.drawImage(cushionLightFrameCanvas, 0, 0, WORLD.width, WORLD.height);
   }
 
@@ -6936,18 +7165,100 @@
     dateMapFrameUpdatedAt = timestamp;
     dateMapFrameDirty = false;
     dateMapFramesSinceRebuild = 0;
+    dateMapFrameStateRevision = dateMapStateRevision;
+    dateMapFrameWaterRevision = waterSurface?.revision ?? -1;
+    dateMapFrameRevision += 1;
+    renderTelemetry.dateMapRebuilds += 1;
     return true;
   }
 
-  function drawDateMapLayer(timestamp) {
+  function updateDateMapFrame(timestamp) {
     dateMapFramesSinceRebuild += 1;
+    const active = dateMapAnimationActive(timestamp);
+    const needsFinalFrame = dateMapHadActivity && !active;
     const refreshDue = timestamp - dateMapFrameUpdatedAt >= DATE_MAP_REFRESH_MS;
     const frameBudgetReady = dateMapFramesSinceRebuild >= 2;
-    if ((!dateMapFrameCanvas || refreshDue && frameBudgetReady) && !rebuildDateMapFrame(timestamp)) {
+    const stateDirty = dateMapFrameDirty || dateMapFrameStateRevision !== dateMapStateRevision;
+    const waterDirty = dateMapFrameWaterRevision !== (waterSurface?.revision ?? -1);
+    const shouldRebuild = !dateMapFrameCanvas
+      || refreshDue && frameBudgetReady && (stateDirty || waterDirty || active || needsFinalFrame);
+    if (shouldRebuild && !rebuildDateMapFrame(timestamp)) return false;
+    if (!shouldRebuild) renderTelemetry.dateMapReuses += 1;
+    dateMapHadActivity = active;
+    return Boolean(dateMapFrameCanvas);
+  }
+
+  function drawDateMapLayer(timestamp) {
+    if (!updateDateMapFrame(timestamp)) {
       drawDateMap(timestamp);
       return;
     }
     context.drawImage(dateMapFrameCanvas, 0, 0, WORLD.width, WORLD.height);
+  }
+
+  function ensureBaseCompositeCanvas() {
+    if (baseCompositeCanvas && baseCompositeContext) return true;
+    const cache = document.createElement("canvas");
+    if (typeof cache.getContext !== "function") return false;
+    cache.width = MAX_RENDER_WIDTH;
+    cache.height = MAX_RENDER_HEIGHT;
+    const cacheContext = cache.getContext("2d", { alpha: true });
+    if (!cacheContext) return false;
+    baseCompositeCanvas = cache;
+    baseCompositeContext = cacheContext;
+    baseCompositeLayerKey = "";
+    return true;
+  }
+
+  function rebuildBaseCompositeFrame(layerKey) {
+    if (!ensureBaseCompositeCanvas()) return false;
+    const liveContext = context;
+    try {
+      context = baseCompositeContext;
+      context.setTransform(
+        baseCompositeCanvas.width / WORLD.width,
+        0,
+        0,
+        baseCompositeCanvas.height / WORLD.height,
+        0,
+        0
+      );
+      context.clearRect(0, 0, WORLD.width, WORLD.height);
+      context.drawImage(tableCacheCanvas, 0, 0, WORLD.width, WORLD.height);
+      context.drawImage(dateMapFrameCanvas, 0, 0, WORLD.width, WORLD.height);
+      context.drawImage(cushionLightFrameCanvas, 0, 0, WORLD.width, WORLD.height);
+      POCKETS.forEach(drawLeatherPocket);
+    } finally {
+      context = liveContext;
+    }
+    baseCompositeLayerKey = layerKey;
+    baseCompositeRevision += 1;
+    renderTelemetry.baseCompositeRebuilds += 1;
+    return true;
+  }
+
+  function updateBaseCompositeFrame(timestamp) {
+    const tableReady = ensureTableCache();
+    const dateMapReady = updateDateMapFrame(timestamp);
+    const cushionLightReady = updateCushionLightFrame(timestamp);
+    if (!tableReady || !dateMapReady || !cushionLightReady) return false;
+    const layerKey = `${tableCacheRevision}:${dateMapFrameRevision}:${cushionLightFrameRevision}`;
+    if (!baseCompositeCanvas || baseCompositeLayerKey !== layerKey) {
+      return rebuildBaseCompositeFrame(layerKey);
+    }
+    renderTelemetry.baseCompositeReuses += 1;
+    return true;
+  }
+
+  function drawBaseComposite(timestamp) {
+    if (updateBaseCompositeFrame(timestamp)) {
+      context.drawImage(baseCompositeCanvas, 0, 0, WORLD.width, WORLD.height);
+      return;
+    }
+    drawTableLayer();
+    drawDateMapLayer(timestamp);
+    drawCushionLightResponse(timestamp);
+    POCKETS.forEach(drawLeatherPocket);
   }
 
   function drawBallSeparationLayer(ball) {
@@ -7109,6 +7420,7 @@
     ballRenderer = null;
     ballRendererCanvas = null;
     ballRendererFailed = true;
+    ballRendererSyncedRevision = -1;
     if (failedCanvas?.style) failedCanvas.style.visibility = "hidden";
     try {
       failedRenderer?.dispose?.();
@@ -7124,7 +7436,7 @@
       const pixelRatio = clamp(renderScale * BALL_RENDER_SCALE_RATIO, MIN_BALL_RENDER_SCALE, MAX_BALL_RENDER_SCALE);
       ballRenderer.resize(Math.max(1, rect.width), Math.max(1, rect.height), pixelRatio);
       if (ballRenderer.supported === false) throw new Error("BilliardsBallRenderer resize failed");
-      ballRendererDirty = true;
+      markBallRendererDirty();
       return true;
     } catch {
       disableBallRenderer();
@@ -7157,7 +7469,7 @@
           || ballRenderer.supported === false) {
         throw new Error("BilliardsBallRenderer adapter is incomplete");
       }
-      ballRendererDirty = true;
+      markBallRendererDirty();
       return resizeBallRenderer();
     } catch {
       disableBallRenderer();
@@ -7174,7 +7486,7 @@
         throw new Error("BilliardsSurfaceRenderer adapter is incomplete");
       }
       surfaceRendererFailed = false;
-      dateMapFrameDirty = true;
+      markDateMapDirty();
       return true;
     } catch {
       surfaceRenderer = null;
@@ -7185,11 +7497,10 @@
 
   function syncBallRenderer(timestamp) {
     if (!ballRenderer) return false;
-    const hasDynamicBall = Boolean(shotState || resolvingShot || balls.some((ball) => {
-      const data = bodyData(ball);
-      return data?.pocketing || data?.compression > 0.001 || data?.impactGlow > 0.01 || ball.speed > NATURAL_STOP_SPEED;
-    }));
-    if (!ballRendererDirty && !hasDynamicBall) return true;
+    if (!ballRendererDirty && ballRendererSyncedRevision === ballStateRevision) {
+      renderTelemetry.ballRendererSyncSkips += 1;
+      return true;
+    }
     try {
       const renderBalls = balls
         .filter((ball) => !bodyData(ball)?.potted)
@@ -7219,16 +7530,19 @@
         table: TABLE,
         ballRadius: BALL_RADIUS
       });
+      renderTelemetry.ballRendererSyncs += 1;
       if (ballRenderer.supported === false) {
         disableBallRenderer();
         return false;
       }
       const rendered = ballRenderer.render(timestamp);
+      renderTelemetry.ballRendererFrames += 1;
       if (rendered === false || ballRenderer.supported === false) {
         disableBallRenderer();
         return false;
       }
       ballRendererDirty = false;
+      ballRendererSyncedRevision = ballStateRevision;
       return true;
     } catch {
       disableBallRenderer();
@@ -7668,10 +7982,7 @@
     context.clearRect(0, 0, WORLD.width, WORLD.height);
     context.save();
     if (screenShake > 0.08) context.translate(Math.sin(timestamp * 0.1) * screenShake, Math.cos(timestamp * 0.13) * screenShake * 0.55);
-    drawTableLayer();
-    drawDateMapLayer(timestamp);
-    drawCushionLightResponse(timestamp);
-    POCKETS.forEach(drawLeatherPocket);
+    drawBaseComposite(timestamp);
     drawPocketLightPorts(timestamp);
     balls.forEach(drawBallSeparationLayer);
     const renderedByBallRenderer = syncBallRenderer(timestamp);
@@ -7701,9 +8012,21 @@
       context.fillRect(0, 0, WORLD.width, WORLD.height);
       context.restore();
     }
+    renderTelemetry.canvasFrames += 1;
+  }
+
+  function ballsHaveDynamicVisualState() {
+    return balls.some((ball) => {
+      const data = bodyData(ball);
+      return Boolean(data?.pocketing
+        || data?.compression > 0
+        || data?.impactGlow > 0
+        || ball.speed > 0.0001);
+    });
   }
 
   function physicsStep() {
+    const ballsWereDynamic = ballsHaveDynamicVisualState();
     captureBallPositions();
     Engine.update(engine, FIXED_STEP);
     simulationTime += FIXED_STEP;
@@ -7713,9 +8036,12 @@
     containLooseBalls();
     settleBalls();
     updateEffects();
+    if (ballsWereDynamic || ballsHaveDynamicVisualState()) markBallRendererDirty();
+    renderTelemetry.physicsSteps += 1;
   }
 
   function frame(timestamp) {
+    renderTelemetry.animationFrames += 1;
     const delta = Math.min(50, Math.max(0, timestamp - lastFrameAt));
     lastFrameAt = timestamp;
     if (!cinematicActive && !resultVisible) {
@@ -7730,10 +8056,17 @@
       if (steps === MAX_STEPS_PER_FRAME) accumulator = 0;
     } else {
       accumulator = 0;
-      updateEffects();
     }
     // The completed canvas remains visible without repainting beneath the result dock.
-    if (!cinematicActive && !resultVisible) draw(timestamp);
+    if (!cinematicActive && !resultVisible) {
+      const canvasFrameTick = Math.floor(timestamp / CANVAS_REFRESH_MS);
+      if (canvasFrameTick !== lastCanvasFrameTick) {
+        lastCanvasFrameTick = canvasFrameTick;
+        draw(timestamp);
+      } else {
+        renderTelemetry.canvasFrameSkips += 1;
+      }
+    }
     frameHandle = requestAnimationFrame(frame);
   }
 
@@ -7870,6 +8203,7 @@
   function resetFrameTiming() {
     accumulator = 0;
     lastFrameAt = performance.now();
+    lastCanvasFrameTick = -1;
   }
 
   document.addEventListener("visibilitychange", resetFrameTiming);
@@ -8073,6 +8407,27 @@
           canvas: Boolean(ballRendererCanvas)
         }),
         render: Object.freeze({ width: canvas.width, height: canvas.height, scale: renderScale }),
+        performance: Object.freeze({
+          ...renderTelemetry,
+          canvasRefreshHz: Math.round(1000 / CANVAS_REFRESH_MS),
+          revisions: Object.freeze({
+            table: tableCacheRevision,
+            dateMapState: dateMapStateRevision,
+            dateMapFrame: dateMapFrameRevision,
+            water: waterSurface?.revision ?? -1,
+            cushionLightState: cushionLightStateRevision,
+            cushionLightFrame: cushionLightFrameRevision,
+            baseComposite: baseCompositeRevision,
+            balls: ballStateRevision,
+            ballsSynced: ballRendererSyncedRevision
+          }),
+          dirty: Object.freeze({
+            table: tableCacheDirty,
+            dateMap: dateMapFrameDirty,
+            cushionLight: cushionLightFrameDirty,
+            balls: ballRendererDirty
+          })
+        }),
         ballNumbers: Object.freeze(balls.map((ball) => bodyData(ball).number).sort((a, b) => a - b)),
         balls: Object.freeze(balls.map((ball) => Object.freeze({
           number: bodyData(ball).number,
@@ -8152,6 +8507,7 @@
         data.lastSafePosition = { x: point.x, y: point.y };
       }
       data.outsideSteps = 0;
+      markBallRendererDirty();
       return true;
     },
     isolateBall(number = 0) {
@@ -8162,6 +8518,7 @@
       });
       balls = [ball];
       cueBall = number === 0 ? ball : null;
+      markBallRendererDirty();
       return true;
     },
     presentShot(shot) {

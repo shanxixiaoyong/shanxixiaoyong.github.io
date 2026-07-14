@@ -4336,29 +4336,63 @@ function Cm(i,t,e,n,s){
   let l=new ns(r);
   return l.name="billiards-ball-"+e+"-equirectangular-map",l.wrapS=bi,l.wrapT=Xe,l.colorSpace=Ae,l.anisotropy=Math.min(8,t.capabilities.getMaxAnisotropy()),l.needsUpdate=!0,l;
 }
-function Rm(i,t,e,n){if(!i.hasPosition){i.lastX=t,i.lastY=e,i.hasPosition=!0;return}let s=t-i.lastX,r=e-i.lastY,a=Math.hypot(s,r);i.lastX=t,i.lastY=e,!(a<=Zc)&&(i.rollAxis.set(r,-s,0).normalize(),i.rollStep.setFromAxisAngle(i.rollAxis,a/n),i.quaternion.premultiply(i.rollStep).normalize())}
+function Rm(i,t,e,n){if(!i.hasPosition){i.lastX=t,i.lastY=e,i.hasPosition=!0;return!1}let s=t-i.lastX,r=e-i.lastY,a=Math.hypot(s,r);if(i.lastX=t,i.lastY=e,a<=Zc)return!1;return i.rollAxis.set(r,-s,0).normalize(),i.rollStep.setFromAxisAngle(i.rollAxis,a/n),i.quaternion.premultiply(i.rollStep).normalize(),!0}
+function bbrMotifStateHash(i){return JSON.stringify([i.enabled?1:0,i.opacity,i.scale,i.color,...i.assignments])}
+function bbrBallStateHash(i,t,e,n,s,r,a){return[i,t,e,n?1:0,s,r,a].join("|")}
 function ws(){return Object.freeze({supported:!1,resize(){return this},sync(){return this},setMotifs(){return this},render(){return!1},dispose(){}})}
 var nl=class{
   constructor(t,e,n){
-    this.supported=!0,this.canvas=t.canvas,this.renderer=e,this.context=n,this.worldWidth=oi(t.worldWidth,720),this.worldHeight=oi(t.worldHeight,1440),this.ballRadius=oi(t.ballRadius,14.85),this.colors=t.colors||null,this.motifs=bbrNormalizeMotifs(t.motifs),this.states=new Map,this.scene=new Qi,this.scene.background=null;
+    this.supported=!0,this.canvas=t.canvas,this.renderer=e,this.context=n,this.worldWidth=oi(t.worldWidth,720),this.worldHeight=oi(t.worldHeight,1440),this.ballRadius=oi(t.ballRadius,14.85),this.colors=t.colors||null,this.motifs=bbrNormalizeMotifs(t.motifs),this.motifStateHash=bbrMotifStateHash(this.motifs),this.states=new Map,this.syncRevision=0,this.inputRevision=null,this.sceneRevision=1,this.renderedRevision=0,this.renderWidth=0,this.renderHeight=0,this.pixelRatio=0,this.scene=new Qi,this.scene.background=null,this.scene.matrixAutoUpdate=!1;
     let s=Math.max(this.worldWidth,this.worldHeight)*2;
-    this.camera=new kn(0,this.worldWidth,this.worldHeight,0,.1,s*3),this.camera.position.set(0,0,s),this.camera.updateProjectionMatrix(),this.sphereGeometry=new as(this.ballRadius,40,24),this.shadowGeometry=new ss(1,48),this.configureLighting(s),this.renderer.setClearColor(0,0),this.renderer.setClearAlpha(0),this.renderer.outputColorSpace=Ae,this.renderer.toneMapping=ps,this.renderer.toneMappingExposure=1.18,this.renderer.autoClear=!0;
+    this.camera=new kn(0,this.worldWidth,this.worldHeight,0,.1,s*3),this.camera.position.set(0,0,s),this.camera.updateProjectionMatrix(),this.camera.updateMatrix(),this.camera.updateMatrixWorld(!0),this.camera.matrixAutoUpdate=!1,this.sphereGeometry=new as(this.ballRadius,40,24),this.shadowGeometry=new ss(1,48),this.configureLighting(s),this.scene.updateMatrixWorld(!0),this.renderer.setClearColor(0,0),this.renderer.setClearAlpha(0),this.renderer.outputColorSpace=Ae,this.renderer.toneMapping=ps,this.renderer.toneMappingExposure=1.18,this.renderer.autoClear=!0;
   }
-  configureLighting(t){let e=new cs(16317439,2505266,1.72);e.name="billiards-hemisphere-fill",this.scene.add(e);let n=new ds(16777215,3.15);n.name="billiards-key-light",n.position.set(this.worldWidth*.16,this.worldHeight*.92,t*.58),n.target.position.set(this.worldWidth*.5,this.worldHeight*.5,0),this.scene.add(n,n.target);let s=new us(16766896,Math.max(this.worldWidth,this.worldHeight)*38,Math.max(this.worldWidth,this.worldHeight)*1.7,2);s.name="billiards-warm-rim-light",s.position.set(this.worldWidth*.82,this.worldHeight*.7,this.ballRadius*24),this.scene.add(s)}
-  createBallState(t){let e=wm(this.colors,t),n=bbrStyleFor(t),s=Cm(this.canvas,this.renderer,t,e,this.motifs),r=new os({name:"billiards-ball-"+t+"-world-material",color:16777215,map:s,roughness:n.roughness,metalness:n.metalness,emissive:n.emissive||"#000000",emissiveIntensity:Math.min(n.emissiveIntensity||0,.04),transparent:!0,opacity:1}),a=new Ie(this.sphereGeometry,r);a.name="billiards-ball-"+t,a.renderOrder=10;let o=new on;o.name="billiards-ball-"+t+"-impact-counter-rotation",o.add(a);let c=new on;c.name="billiards-ball-"+t+"-deformation",c.add(o),this.scene.add(c);let l=new ii({name:"billiards-ball-"+t+"-shadow-material",color:132612,transparent:!0,opacity:.46,depthWrite:!1}),u=new Ie(this.shadowGeometry,l);u.name="billiards-ball-"+t+"-independent-shadow",u.renderOrder=0,this.scene.add(u);let f={number:t,color:e,texture:s,material:r,mesh:a,deformation:c,counterRotation:o,shadow:u,shadowMaterial:l,quaternion:new ze,rollAxis:new U,rollStep:new ze,lastX:0,lastY:0,hasPosition:!1,seen:!1};return this.states.set(t,f),f}
+  configureLighting(t){let e=new cs(16317439,2505266,1.72);e.name="billiards-hemisphere-fill",e.matrixAutoUpdate=!1,this.scene.add(e);let n=new ds(16777215,3.15);n.name="billiards-key-light",n.position.set(this.worldWidth*.16,this.worldHeight*.92,t*.58),n.target.position.set(this.worldWidth*.5,this.worldHeight*.5,0),n.updateMatrix(),n.target.updateMatrix(),n.matrixAutoUpdate=n.target.matrixAutoUpdate=!1,this.scene.add(n,n.target);let s=new us(16766896,Math.max(this.worldWidth,this.worldHeight)*38,Math.max(this.worldWidth,this.worldHeight)*1.7,2);s.name="billiards-warm-rim-light",s.position.set(this.worldWidth*.82,this.worldHeight*.7,this.ballRadius*24),s.updateMatrix(),s.matrixAutoUpdate=!1,this.scene.add(s)}
+  createBallState(t){let e=wm(this.colors,t),n=bbrStyleFor(t),s=Cm(this.canvas,this.renderer,t,e,this.motifs),r=new os({name:"billiards-ball-"+t+"-world-material",color:16777215,map:s,roughness:n.roughness,metalness:n.metalness,emissive:n.emissive||"#000000",emissiveIntensity:Math.min(n.emissiveIntensity||0,.04),transparent:!0,opacity:1}),a=new Ie(this.sphereGeometry,r);a.name="billiards-ball-"+t,a.renderOrder=10,a.matrixAutoUpdate=!1;let o=new on;o.name="billiards-ball-"+t+"-impact-counter-rotation",o.matrixAutoUpdate=!1,o.add(a);let c=new on;c.name="billiards-ball-"+t+"-deformation",c.matrixAutoUpdate=!1,c.add(o),this.scene.add(c);let l=new ii({name:"billiards-ball-"+t+"-shadow-material",color:132612,transparent:!0,opacity:.46,depthWrite:!1}),u=new Ie(this.shadowGeometry,l);u.name="billiards-ball-"+t+"-independent-shadow",u.renderOrder=0,u.matrixAutoUpdate=!1,this.scene.add(u);let f={number:t,color:e,texture:s,material:r,mesh:a,deformation:c,counterRotation:o,shadow:u,shadowMaterial:l,quaternion:new ze,rollAxis:new U,rollStep:new ze,lastX:0,lastY:0,hasPosition:!1,seenRevision:0,stateHash:null,visualInitialized:!1,x:0,y:0,scale:1,visible:!0,depth:0,compression:0,impactAngle:0};return this.states.set(t,f),f}
+  markDirty(){this.sceneRevision+=1}
   setMotifs(t){
     if(!this.supported)return this;
-    let e=bbrNormalizeMotifs(t),n=[];
+    let e=bbrNormalizeMotifs(t),n=bbrMotifStateHash(e),s=[];
+    if(n===this.motifStateHash)return this;
     try{
-      for(let s of this.states.values())n.push([s,Cm(this.canvas,this.renderer,s.number,s.color,e)]);
-      for(let[s,r]of n){let a=s.texture;s.texture=r,s.material.map=r,s.material.needsUpdate=!0,a.dispose()}
-      this.motifs=e;
-    }catch{for(let[,s]of n)try{s.dispose()}catch{}}
+      for(let r of this.states.values())s.push([r,Cm(this.canvas,this.renderer,r.number,r.color,e)]);
+      for(let[r,a]of s){let o=r.texture;r.texture=a,r.material.map=a,o.dispose()}
+      this.motifs=e,this.motifStateHash=n,s.length&&this.markDirty();
+    }catch{for(let[,r]of s)try{r.dispose()}catch{}}
     return this;
   }
-  resize(t,e,n=1){if(!this.supported)return this;let s=oi(t,this.canvas.clientWidth||this.canvas.width||this.worldWidth),r=oi(e,this.canvas.clientHeight||this.canvas.height||this.worldHeight),a=Vi(oi(n,1),.25,4);try{this.renderer.setPixelRatio(a),this.renderer.setSize(Math.max(1,Math.round(s)),Math.max(1,Math.round(r)),!1)}catch{this.supported=!1}return this}
-  sync(t){if(!this.supported)return this;for(let e of this.states.values())e.seen=!1;if(!t||typeof t[Symbol.iterator]!="function"){for(let e of this.states.values())e.deformation.visible=!1,e.shadow.visible=!1,e.hasPosition=!1;return this}try{for(let e of t){if(!e)continue;let n=Math.trunc(Number(e.number)),s=Number(e.x),r=Number(e.y);if(!Number.isInteger(n)||n<0||!Number.isFinite(s)||!Number.isFinite(r))continue;let a=this.states.get(n)||this.createBallState(n);if(a.seen)continue;a.seen=!0,Rm(a,s,r,this.ballRadius);let o=Vi(wa(Number(e.scale),1),0,8),c=e.visible!==!1&&o>Zc,l=Vi(wa(Number(e.depth),0),0,2),u=Vi(wa(Number(e.compression),0),0,.45),f=wa(Number(e.impactAngle),0);a.deformation.visible=c,a.deformation.position.set(s,this.worldHeight-r-l*this.ballRadius*.875,this.ballRadius*o*(1-l)),a.deformation.rotation.z=-f,a.deformation.scale.set(o*(1-u),o*(1+u*.52),o*(1+u*.16)),a.counterRotation.rotation.z=f,a.mesh.quaternion.set(-a.quaternion.x,a.quaternion.y,-a.quaternion.z,a.quaternion.w),a.material.opacity=Vi(1-l*.52,0,1),a.shadow.visible=c,a.shadow.position.set(s+this.ballRadius*(.15+l*.08),this.worldHeight-r-this.ballRadius*(.22+l*.62),-this.ballRadius*.035),a.shadow.scale.set(this.ballRadius*o*(1.16+l*.12),this.ballRadius*o*(.42+l*.1),1),a.shadowMaterial.opacity=.46*Vi(1-l*.76,0,1)}for(let e of this.states.values())e.seen||(e.deformation.visible=!1,e.shadow.visible=!1,e.hasPosition=!1)}catch{this.supported=!1}return this}
-  render(){if(!this.supported)return!1;try{return this.context.isContextLost?.()?!1:(this.renderer.render(this.scene,this.camera),!0)}catch{return this.supported=!1,!1}}
+  resize(t,e,n=1){if(!this.supported)return this;let s=Math.max(1,Math.round(oi(t,this.canvas.clientWidth||this.canvas.width||this.worldWidth))),r=Math.max(1,Math.round(oi(e,this.canvas.clientHeight||this.canvas.height||this.worldHeight))),a=Vi(oi(n,1),.25,4),o=s!==this.renderWidth||r!==this.renderHeight,c=a!==this.pixelRatio;if(!o&&!c)return this;try{c&&this.renderer.setPixelRatio(a),o&&this.renderer.setSize(s,r,!1),this.renderWidth=s,this.renderHeight=r,this.pixelRatio=a,this.markDirty()}catch{this.supported=!1}return this}
+  sync(t,e){
+    if(!this.supported)return this;
+    let n=e?.stateRevision??e?.revision;
+    if(n!=null&&n===this.inputRevision)return this;
+    this.inputRevision=n??null;
+    let s=++this.syncRevision,r=!1;
+    try{
+      if(t&&typeof t[Symbol.iterator]==="function")for(let e of t){
+        if(!e)continue;
+        let n=Math.trunc(Number(e.number)),a=Number(e.x),o=Number(e.y);
+        if(!Number.isInteger(n)||n<0||!Number.isFinite(a)||!Number.isFinite(o))continue;
+        let c=this.states.get(n)||this.createBallState(n);
+        if(c.seenRevision===s)continue;
+        c.seenRevision=s;
+        let l=Vi(wa(Number(e.scale),1),0,8),u=e.visible!==!1&&l>Zc,f=Vi(wa(Number(e.depth),0),0,2),h=Vi(wa(Number(e.compression),0),0,.45),g=wa(Number(e.impactAngle),0),x=bbrBallStateHash(a,o,l,u,f,h,g);
+        if(x===c.stateHash&&c.hasPosition)continue;
+        let S=!c.visualInitialized,m=!c.hasPosition||a!==c.x||o!==c.y,d=S||l!==c.scale||f!==c.depth||h!==c.compression||g!==c.impactAngle||m,E=S||g!==c.impactAngle,C=S||l!==c.scale||f!==c.depth||m,y=Rm(c,a,o,this.ballRadius);
+        if(c.deformation.visible!==u)c.deformation.visible=u,r=!0;
+        if(c.shadow.visible!==u)c.shadow.visible=u,r=!0;
+        if(d)c.deformation.position.set(a,this.worldHeight-o-f*this.ballRadius*.875,this.ballRadius*l*(1-f)),c.deformation.rotation.z=-g,c.deformation.scale.set(l*(1-h),l*(1+h*.52),l*(1+h*.16)),c.deformation.updateMatrix();
+        if(E)c.counterRotation.rotation.z=g,c.counterRotation.updateMatrix();
+        if(y)c.mesh.quaternion.set(-c.quaternion.x,c.quaternion.y,-c.quaternion.z,c.quaternion.w),c.mesh.updateMatrix();
+        if(S||f!==c.depth)c.material.opacity=Vi(1-f*.52,0,1),c.shadowMaterial.opacity=.46*Vi(1-f*.76,0,1);
+        if(C)c.shadow.position.set(a+this.ballRadius*(.15+f*.08),this.worldHeight-o-this.ballRadius*(.22+f*.62),-this.ballRadius*.035),c.shadow.scale.set(this.ballRadius*l*(1.16+f*.12),this.ballRadius*l*(.42+f*.1),1),c.shadow.updateMatrix();
+        c.x=a,c.y=o,c.scale=l,c.visible=u,c.depth=f,c.compression=h,c.impactAngle=g,c.stateHash=x,c.visualInitialized=!0,r=!0;
+      }
+      for(let e of this.states.values())if(e.seenRevision!==s){if(e.deformation.visible||e.shadow.visible)e.deformation.visible=!1,e.shadow.visible=!1,r=!0;e.hasPosition=!1,e.stateHash=null}
+      r&&this.markDirty();
+    }catch{this.supported=!1}
+    return this;
+  }
+  render(){if(!this.supported)return!1;try{if(this.context.isContextLost?.())return!1;if(this.renderedRevision===this.sceneRevision)return!0;return this.renderer.render(this.scene,this.camera),this.renderedRevision=this.sceneRevision,!0}catch{return this.supported=!1,!1}}
   dispose(){if(this.renderer){for(let t of this.states.values())this.scene.remove(t.deformation,t.shadow),t.texture.dispose(),t.material.dispose(),t.shadowMaterial.dispose();this.states.clear(),this.sphereGeometry.dispose(),this.shadowGeometry.dispose(),this.renderer.dispose(),this.renderer=null,this.context=null,this.supported=!1}}
 };
 function Im(i={}){let t=null;try{if(Li!==Tm)return ws();let e=i?.canvas;if(!e||typeof e.getContext!="function")return ws();let n=e.getContext("webgl2",Am);if(!n)return ws();Jc(e,2,1),t=new Ta({canvas:e,context:n,alpha:!0,antialias:!1,premultipliedAlpha:!0,powerPreference:"high-performance"});let s=new nl(i,t,n),r=e.clientWidth||e.width||s.worldWidth,a=e.clientHeight||e.height||s.worldHeight,o=oi(i.pixelRatio,window.devicePixelRatio||1);return s.resize(r,a,o),s.supported?s:(s.dispose(),ws())}catch{try{t?.dispose()}catch{}return ws()}}

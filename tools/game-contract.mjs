@@ -38,11 +38,12 @@ export const GAME_CONTRACTS = [
     file: RUNNER_GAME_PAGE,
     name: "心动跑酷",
     portalAsset: "assets/portal/heartbeat-runner-hd.jpg",
-    cacheVersion: "runner-love-rush-20260714d",
+    cacheVersion: "runner-love-story-20260714h",
     styles: ["assets/runner-love.css"],
     scripts: [
       "assets/runner-love-rules.js",
       "assets/runner-love-content.js",
+      "assets/runner-love-director.js",
       "assets/runner-love-engine.js",
       "assets/runner-love-audio.js",
       "assets/runner-love-visuals.js",

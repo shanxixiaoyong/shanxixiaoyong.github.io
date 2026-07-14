@@ -138,9 +138,15 @@ test("renders layered wood, wool, rubber, metal, leather, and deep pocket materi
 test("pre-renders the static material table instead of rebuilding it every frame", () => {
   assert.match(source, /function rebuildTableCache\(\)/);
   assert.match(source, /cache\.width = WORLD\.width \* 2/);
+  assert.match(source, /tableCacheRevision \+= 1/);
+  assert.match(source, /function ensureTableCache\(\)/);
   assert.match(source, /function drawTableLayer\(\)/);
   assert.match(source, /context\.drawImage\(tableCacheCanvas, 0, 0, WORLD\.width, WORLD\.height\)/);
-  assert.match(source, /drawTableLayer\(\);/);
+  assert.match(source, /function rebuildBaseCompositeFrame\(layerKey\)/);
+  assert.match(source, /cache\.width = MAX_RENDER_WIDTH;\s*cache\.height = MAX_RENDER_HEIGHT;/);
+  assert.match(source, /baseCompositeCanvas\.width \/ WORLD\.width/);
+  assert.match(source, /const layerKey = `\$\{tableCacheRevision\}:\$\{dateMapFrameRevision\}:\$\{cushionLightFrameRevision\}`/);
+  assert.match(source, /context\.drawImage\(baseCompositeCanvas, 0, 0, WORLD\.width, WORLD\.height\)/);
 });
 
 test("adapts to an optional Three ball renderer and retains a per-frame 2D fallback", () => {
@@ -348,11 +354,21 @@ test("budgets material wake work and throttles expensive cloth redraws", () => {
   assert.match(source, /collisionFeedbacks\.length > 12/);
   assert.match(source, /let dateMapFramesSinceRebuild = 0/);
   assert.match(source, /const frameBudgetReady = dateMapFramesSinceRebuild >= 2/);
-  assert.match(source, /if \(\(!dateMapFrameCanvas \|\| refreshDue && frameBudgetReady\) && !rebuildDateMapFrame\(timestamp\)\)/);
-  assert.doesNotMatch(source, /dateMapFrameDirty \|\| refreshDue \|\| !dateMapFrameCanvas/);
+  assert.match(source, /const stateDirty = dateMapFrameDirty \|\| dateMapFrameStateRevision !== dateMapStateRevision/);
+  assert.match(source, /const waterDirty = dateMapFrameWaterRevision !== \(waterSurface\?\.revision \?\? -1\)/);
+  assert.match(source, /refreshDue && frameBudgetReady && \(stateDirty \|\| waterDirty \|\| active \|\| needsFinalFrame\)/);
+  assert.match(source, /const WATER_IDLE_ENERGY = 0\.00012/);
+  assert.match(source, /const WATER_IDLE_PIGMENT = 0\.00012/);
+  assert.match(source, /if \(!simulationActive\) \{[\s\S]*waterSimulationIdleSkips \+= 1/);
+  assert.match(source, /waterSurface\.rasterKey !== rasterKey/);
+  assert.match(source, /renderTelemetry\.waterRasterReuses \+= 1/);
   assert.match(source, /const RAIL_LED_SEGMENT_LENGTH = 18/);
+  assert.match(source, /function rebuildCushionLightGeometry\(\)/);
+  assert.match(source, /samplePoints\.push\(Object\.freeze\(\{ ratio, centerDistance:/);
   assert.match(source, /function rebuildCushionLightFrame\(timestamp\)/);
   assert.match(source, /context\.drawImage\(cushionLightFrameCanvas, 0, 0, WORLD\.width, WORLD\.height\)/);
+  assert.match(source, /function updateBaseCompositeFrame\(timestamp\)/);
+  assert.match(source, /renderTelemetry\.baseCompositeReuses \+= 1/);
   assert.match(source, /const collisionFeedbackSpriteCache = new Map\(\)/);
   assert.match(source, /const COLLISION_SPRITE_CACHE_LIMIT = 9/);
   assert.match(source, /function collisionFeedbackSpriteFor\(feedback\)/);
@@ -465,9 +481,12 @@ test("turns rolling balls into water wakes and rail impacts into bidirectional p
     "each rail wave should travel clockwise from its contact point"
   );
   assert.match(cushionLight, /wave\.originS - front/, "each rail wave should also travel counterclockwise");
-  assert.match(cushionLight, /rails\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.match(source, /function rebuildCushionLightGeometry\(\)/);
+  assert.match(source, /\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.doesNotMatch(cushionLight, /rails\.filter\(/, "fixed cushion geometry must not be sampled again per light frame");
   assert.doesNotMatch(cushionLight, /roundRectPath|railPositionFromDistance/);
-  assert.match(activeRendering, /\bdrawCushionLightResponse\(timestamp/);
+  assert.match(source, /const cushionLightReady = updateCushionLightFrame\(timestamp\)/);
+  assert.match(activeRendering, /\bdrawBaseComposite\(timestamp/);
   assert.match(activeRendering, /\bdrawMaterialMotionTrails\(timestamp\)/);
   assert.match(materialInfluence, /const influenceNodes =/);
   assert.match(materialInfluence, /\["lava", "gold", "amber", "crimson-storm", "copper", "solar-porcelain"\]\.includes\(materialId\)/);
@@ -499,14 +518,16 @@ test("renders each physical cushion as one continuous material-matched light wav
 test("choreographs the black-eight finale through physical cushions and visible pockets", () => {
   const activeTableRenderer = implementationOf(source, "drawDateMap");
   const activeFrameRenderer = implementationOf(source, "draw");
+  const baseComposite = implementationOf(source, "rebuildBaseCompositeFrame");
   const cushionLight = `${implementationOf(source, "renderCushionLightResponse")}\n${implementationOf(source, "drawCushionLightResponse")}`;
   const sceneLighting = implementationOf(source, "drawScenePortalLightingFrame");
 
   assert.match(activeTableRenderer, /if \(blackEightActive\) drawBlackEightBlast\(timestamp\)/);
-  assert.match(activeFrameRenderer, /drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.match(activeFrameRenderer, /drawBaseComposite\(timestamp\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.match(baseComposite, /context\.drawImage\(cushionLightFrameCanvas[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)/);
   assert.match(cushionLight, /dateMapState\.blackEightBlast/);
   assert.match(cushionLight, /\bblastProgress\b/);
-  assert.match(cushionLight, /rails\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.match(source, /pocketRailDistances = POCKETS\.map\(\(pocket\) => railDistanceForContact/);
   assert.match(surfaceRendererSource, /uniform float uBlastProgress;/);
   assert.match(surfaceRendererSource, /uniform vec2 uBlastOrigin;/);
   assert.match(surfaceRendererSource, /float filaments = smoothstep/);
@@ -515,8 +536,14 @@ test("choreographs the black-eight finale through physical cushions and visible 
   assert.doesNotMatch(sceneLighting, /roundRectPath\(context, TABLE\.left -/);
 });
 test("freezes full-screen cinematics and preserves the completed canvas without repainting under results", () => {
-  assert.match(source, /if \(!cinematicActive && !resultVisible\) draw\(timestamp\);/);
-  assert.match(source, /if \(!ballRendererDirty && !hasDynamicBall\) return true/);
+  const frameLoop = implementationOf(source, "frame");
+  const ballSync = implementationOf(source, "syncBallRenderer");
+  assert.match(frameLoop, /if \(!cinematicActive && !resultVisible\) \{/);
+  assert.match(frameLoop, /const canvasFrameTick = Math\.floor\(timestamp \/ CANVAS_REFRESH_MS\)/);
+  assert.match(frameLoop, /renderTelemetry\.canvasFrameSkips \+= 1/);
+  assert.doesNotMatch(frameLoop, /else \{\s*accumulator = 0;\s*updateEffects\(\)/);
+  assert.match(ballSync, /ballRendererSyncedRevision === ballStateRevision/);
+  assert.match(ballSync, /renderTelemetry\.ballRendererSyncSkips \+= 1/);
 });
 
 test("starts immediately with no start gate or pause state", () => {

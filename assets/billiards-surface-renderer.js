@@ -523,66 +523,155 @@
     configureTexture(gl, baseTexture);
     configureTexture(gl, previousBaseTexture);
     configureTexture(gl, fieldTexture);
+    gl.useProgram(program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, baseTexture);
+    gl.uniform1i(uniforms.base, 0);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, previousBaseTexture);
+    gl.uniform1i(uniforms.previousBase, 2);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, fieldTexture);
+    gl.uniform1i(uniforms.field, 1);
     let baseSource = null;
+    let baseRevision = null;
     let previousBaseSource = null;
+    let previousBaseRevision = null;
     let fieldPixels = null;
     let fieldWidth = 0;
     let fieldHeight = 0;
     let fieldRevision = null;
+    let stateRevision = 0;
+    let lastStateHash = null;
     let active = true;
     const transitionOriginData = new Float32Array(8);
     const transitionColorData = new Float32Array(12);
     const transitionProgressData = new Float32Array(4);
+    const uniformCache = new Map();
+
+    function setUniform1f(key, location, value) {
+      if (uniformCache.has(key) && uniformCache.get(key) === value) return;
+      gl.uniform1f(location, value);
+      uniformCache.set(key, value);
+    }
+
+    function setUniform1i(key, location, value) {
+      if (uniformCache.has(key) && uniformCache.get(key) === value) return;
+      gl.uniform1i(location, value);
+      uniformCache.set(key, value);
+    }
+
+    function setUniform2f(key, location, x, y) {
+      const cached = uniformCache.get(key);
+      if (cached && cached[0] === x && cached[1] === y) return;
+      gl.uniform2f(location, x, y);
+      if (cached) {
+        cached[0] = x;
+        cached[1] = y;
+      } else {
+        uniformCache.set(key, [x, y]);
+      }
+    }
+
+    function setUniform3f(key, location, x, y, z) {
+      const cached = uniformCache.get(key);
+      if (cached && cached[0] === x && cached[1] === y && cached[2] === z) return;
+      gl.uniform3f(location, x, y, z);
+      if (cached) {
+        cached[0] = x;
+        cached[1] = y;
+        cached[2] = z;
+      } else {
+        uniformCache.set(key, [x, y, z]);
+      }
+    }
+
+    function setUniformArray(key, location, values, method) {
+      let cached = uniformCache.get(key);
+      let changed = !cached;
+      if (!cached) cached = new Float32Array(values.length);
+      if (!changed) {
+        for (let index = 0; index < values.length; index += 1) {
+          if (cached[index] !== values[index]) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      if (!changed) return;
+      gl[method](location, values);
+      cached.set(values);
+      uniformCache.set(key, cached);
+    }
 
     function resize(width, height) {
       const nextWidth = Math.max(2, Math.round(width));
       const nextHeight = Math.max(2, Math.round(height));
-      if (canvas.width === nextWidth && canvas.height === nextHeight) return;
+      if (canvas.width === nextWidth && canvas.height === nextHeight) return false;
       canvas.width = nextWidth;
       canvas.height = nextHeight;
       gl.viewport(0, 0, nextWidth, nextHeight);
+      stateRevision += 1;
+      return true;
     }
 
-    function uploadBase(source) {
-      if (!source || source === baseSource) return;
+    function uploadBase(source, revision) {
+      if (!source || (source === baseSource && (revision == null || revision === baseRevision))) return false;
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, baseTexture);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       baseSource = source;
+      baseRevision = revision ?? null;
+      stateRevision += 1;
+      return true;
     }
 
-    function uploadPreviousBase(source) {
-      if (!source || source === previousBaseSource) return;
+    function uploadPreviousBase(source, revision) {
+      if (!source || (source === previousBaseSource && (revision == null || revision === previousBaseRevision))) return false;
       gl.activeTexture(gl.TEXTURE2);
       gl.bindTexture(gl.TEXTURE_2D, previousBaseTexture);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       previousBaseSource = source;
+      previousBaseRevision = revision ?? null;
+      stateRevision += 1;
+      return true;
     }
 
     function uploadField(current, pigment, width, height, revision) {
       const dimensionsChanged = !fieldPixels || fieldWidth !== width || fieldHeight !== height;
-      if (!dimensionsChanged && revision != null && revision === fieldRevision) return;
+      if (!dimensionsChanged && revision != null && revision === fieldRevision) return false;
       if (dimensionsChanged) {
         fieldWidth = width;
         fieldHeight = height;
         fieldPixels = new Uint8Array(width * height * 4);
       }
+      let pixelsChanged = dimensionsChanged;
       for (let y = 0; y < height; y += 1) {
         const destinationY = height - 1 - y;
         for (let x = 0; x < width; x += 1) {
           const sourceIndex = y * width + x;
           const destination = (destinationY * width + x) * 4;
           const heightValue = Math.max(-1, Math.min(1, (current[sourceIndex] || 0) / 3.2));
-          fieldPixels[destination] = Math.round((heightValue * 0.5 + 0.5) * 255);
-          fieldPixels[destination + 1] = Math.round(Math.max(0, Math.min(1, pigment[sourceIndex] || 0)) * 255);
-          fieldPixels[destination + 2] = 0;
-          fieldPixels[destination + 3] = 255;
+          const heightByte = Math.round((heightValue * 0.5 + 0.5) * 255);
+          const pigmentByte = Math.round(Math.max(0, Math.min(1, pigment[sourceIndex] || 0)) * 255);
+          if (fieldPixels[destination] !== heightByte
+              || fieldPixels[destination + 1] !== pigmentByte
+              || fieldPixels[destination + 2] !== 0
+              || fieldPixels[destination + 3] !== 255) {
+            pixelsChanged = true;
+            fieldPixels[destination] = heightByte;
+            fieldPixels[destination + 1] = pigmentByte;
+            fieldPixels[destination + 2] = 0;
+            fieldPixels[destination + 3] = 255;
+          }
         }
       }
+      fieldRevision = revision ?? null;
+      if (!pixelsChanged) return false;
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, fieldTexture);
       if (dimensionsChanged) {
@@ -590,67 +679,79 @@
       } else {
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, fieldPixels);
       }
-      fieldRevision = revision ?? null;
+      stateRevision += 1;
+      return true;
     }
 
     function render(frame) {
       if (!active || !frame?.base || !frame.current || !frame.pigment) return null;
       try {
         resize(frame.width, frame.height);
-        uploadBase(frame.base);
-        uploadPreviousBase(frame.previousBase || frame.base);
+        uploadBase(frame.base, frame.baseRevision);
+        const previousBase = frame.previousBase || frame.base;
+        const previousRevision = frame.previousBaseRevision
+          ?? (previousBase === frame.base ? frame.baseRevision : undefined);
+        uploadPreviousBase(previousBase, previousRevision);
         uploadField(frame.current, frame.pigment, frame.fieldWidth, frame.fieldHeight, frame.fieldRevision);
-        gl.useProgram(program);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, baseTexture);
-        gl.uniform1i(uniforms.base, 0);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, previousBaseTexture);
-        gl.uniform1i(uniforms.previousBase, 2);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, fieldTexture);
-        gl.uniform1i(uniforms.field, 1);
-        gl.uniform2f(uniforms.baseTexel, 1 / canvas.width, 1 / canvas.height);
-        gl.uniform2f(uniforms.fieldTexel, 1 / frame.fieldWidth, 1 / frame.fieldHeight);
-        gl.uniform1f(uniforms.time, (frame.time || 0) * 0.001);
-        gl.uniform1f(uniforms.energy, Math.max(0, Math.min(1, frame.energy || 0)));
-        gl.uniform1f(uniforms.blast, Math.max(0, Math.min(1, frame.blast || 0)));
-        gl.uniform1f(uniforms.blastProgress, Math.max(0, Math.min(1, frame.blastProgress || 0)));
-        gl.uniform2f(uniforms.blastOrigin, frame.blastOriginX ?? 0.5, frame.blastOriginY ?? 0.5);
+        const time = (frame.time || 0) * 0.001;
+        const energy = Math.max(0, Math.min(1, frame.energy || 0));
+        const blast = Math.max(0, Math.min(1, frame.blast || 0));
+        const blastProgress = Math.max(0, Math.min(1, frame.blastProgress || 0));
+        const blastOriginX = frame.blastOriginX ?? 0.5;
+        const blastOriginY = frame.blastOriginY ?? 0.5;
         const transition = frame.transition;
-        gl.uniform1f(uniforms.transitionActive, transition ? 1 : 0);
-        gl.uniform1f(uniforms.transitionProgress, Math.max(0, Math.min(1, transition?.progress || 0)));
-        gl.uniform2f(uniforms.transitionOrigin, transition?.originX ?? 0.5, transition?.originY ?? 0.5);
-        gl.uniform3f(uniforms.transitionColor,
-          transition?.color?.[0] ?? 1,
-          transition?.color?.[1] ?? 1,
-          transition?.color?.[2] ?? 1);
-        const transitionOrigins = transition?.origins?.length
-          ? transition.origins.slice(0, 4)
-          : transition ? [{
-              originX: transition.originX ?? 0.5,
-              originY: transition.originY ?? 0.5,
-              progress: transition.progress || 0,
-              color: transition.color || [1, 1, 1]
-            }] : [];
+        const transitionActive = transition ? 1 : 0;
+        const transitionProgress = Math.max(0, Math.min(1, transition?.progress || 0));
+        const transitionOriginX = transition?.originX ?? 0.5;
+        const transitionOriginY = transition?.originY ?? 0.5;
+        const transitionColorR = transition?.color?.[0] ?? 1;
+        const transitionColorG = transition?.color?.[1] ?? 1;
+        const transitionColorB = transition?.color?.[2] ?? 1;
+        const suppliedOrigins = transition?.origins;
+        const transitionOriginCount = transition
+          ? Math.min(4, suppliedOrigins?.length || 1)
+          : 0;
         transitionOriginData.fill(0);
         transitionColorData.fill(0);
         transitionProgressData.fill(0);
-        transitionOrigins.forEach((origin, index) => {
-          transitionOriginData[index * 2] = origin.originX ?? 0.5;
-          transitionOriginData[index * 2 + 1] = origin.originY ?? 0.5;
-          transitionColorData[index * 3] = origin.color?.[0] ?? 1;
-          transitionColorData[index * 3 + 1] = origin.color?.[1] ?? 1;
-          transitionColorData[index * 3 + 2] = origin.color?.[2] ?? 1;
-          transitionProgressData[index] = Math.max(0, Math.min(1, origin.progress || 0));
-        });
-        gl.uniform1i(uniforms.transitionOriginCount, transitionOrigins.length);
-        gl.uniform2fv(uniforms.transitionOrigins, transitionOriginData);
-        gl.uniform3fv(uniforms.transitionColors, transitionColorData);
-        gl.uniform1fv(uniforms.transitionProgresses, transitionProgressData);
-        gl.uniform1f(uniforms.aspect, canvas.width / canvas.height);
-        gl.uniform1i(uniforms.material, MATERIAL_INDEX[frame.materialId] ?? 0);
+        for (let index = 0; index < transitionOriginCount; index += 1) {
+          const origin = suppliedOrigins?.length ? suppliedOrigins[index] : transition;
+          transitionOriginData[index * 2] = origin?.originX ?? 0.5;
+          transitionOriginData[index * 2 + 1] = origin?.originY ?? 0.5;
+          transitionColorData[index * 3] = origin?.color?.[0] ?? 1;
+          transitionColorData[index * 3 + 1] = origin?.color?.[1] ?? 1;
+          transitionColorData[index * 3 + 2] = origin?.color?.[2] ?? 1;
+          transitionProgressData[index] = Math.max(0, Math.min(1, origin?.progress || 0));
+        }
+        const material = MATERIAL_INDEX[frame.materialId] ?? 0;
+        const animated = energy > 0 || blast > 0 || transitionActive > 0;
+        const stateHash = [
+          stateRevision, animated ? time : 0, energy, blast, blastProgress,
+          blastOriginX, blastOriginY, transitionActive, transitionProgress,
+          transitionOriginX, transitionOriginY, transitionColorR, transitionColorG,
+          transitionColorB, transitionOriginCount, material,
+          ...transitionOriginData, ...transitionColorData, ...transitionProgressData
+        ].join("|");
+        if (stateHash === lastStateHash) return canvas;
+        setUniform2f("baseTexel", uniforms.baseTexel, 1 / canvas.width, 1 / canvas.height);
+        setUniform2f("fieldTexel", uniforms.fieldTexel, 1 / frame.fieldWidth, 1 / frame.fieldHeight);
+        setUniform1f("time", uniforms.time, time);
+        setUniform1f("energy", uniforms.energy, energy);
+        setUniform1f("blast", uniforms.blast, blast);
+        setUniform1f("blastProgress", uniforms.blastProgress, blastProgress);
+        setUniform2f("blastOrigin", uniforms.blastOrigin, blastOriginX, blastOriginY);
+        setUniform1f("transitionActive", uniforms.transitionActive, transitionActive);
+        setUniform1f("transitionProgress", uniforms.transitionProgress, transitionProgress);
+        setUniform2f("transitionOrigin", uniforms.transitionOrigin, transitionOriginX, transitionOriginY);
+        setUniform3f("transitionColor", uniforms.transitionColor, transitionColorR, transitionColorG, transitionColorB);
+        setUniform1i("transitionOriginCount", uniforms.transitionOriginCount, transitionOriginCount);
+        setUniformArray("transitionOrigins", uniforms.transitionOrigins, transitionOriginData, "uniform2fv");
+        setUniformArray("transitionColors", uniforms.transitionColors, transitionColorData, "uniform3fv");
+        setUniformArray("transitionProgresses", uniforms.transitionProgresses, transitionProgressData, "uniform1fv");
+        setUniform1f("aspect", uniforms.aspect, canvas.width / canvas.height);
+        setUniform1i("material", uniforms.material, material);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+        lastStateHash = stateHash;
         return canvas;
       } catch (error) {
         active = false;

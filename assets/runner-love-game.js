@@ -4,7 +4,8 @@
   const rules = window.RunnerLoveRules;
   const engineApi = window.RunnerLoveEngine;
   const content = window.RunnerLoveContent;
-  if (!rules || !engineApi || !content) return;
+  const directorApi = window.RunnerLoveDirector;
+  if (!rules || !engineApi || !content || !directorApi) return;
 
   const $ = (selector) => document.querySelector(selector);
   const root = $("#runner-love");
@@ -93,9 +94,56 @@
     overdrive: Object.freeze({ glyph: "»", label: "奔赴", color: "#ff7f6b" })
   });
   const SPEED_LABELS = Object.freeze(["起跑", "加速", "疾行", "冲刺", "极速"]);
+  const STAGE_RUNTIME_FALLBACKS = Object.freeze([
+    Object.freeze({ chapter: "第一章 · 雨后再遇", introTitle: "香樟路尽头，她也停下了脚步", tone: "雨后校园", phases: Object.freeze([
+      Object.freeze({ venue: "香樟道", worldCue: "湿润树荫与放学人潮", collectibleKinds: Object.freeze(["rain-glint", "ginkgo-note", "courage-spark"]), obstacleForms: Object.freeze(["crowd", "puddle", "barrier"]) }),
+      Object.freeze({ venue: "玻璃连廊", worldCue: "雨滴玻璃与倒映长廊", collectibleKinds: Object.freeze(["photo-corner", "window-light", "umbrella-drop"]), obstacleForms: Object.freeze(["umbrella-rack", "puddle", "signal-gate"]) }),
+      Object.freeze({ venue: "图书馆路口", worldCue: "红灯、屋檐与晚风", collectibleKinds: Object.freeze(["warm-can", "bookmark", "crosswalk-light"]), obstacleForms: Object.freeze(["crowd", "barrier", "service-cart"]) })
+    ]) }),
+    Object.freeze({ chapter: "第二章 · 话题有了回声", introTitle: "沿着河堤，把昨晚没聊完的话继续下去", tone: "晨雾书店", phases: Object.freeze([
+      Object.freeze({ venue: "河堤", worldCue: "薄雾河面与晨跑步道", collectibleKinds: Object.freeze(["music-note", "river-postcard", "soda-bubble"]), obstacleForms: Object.freeze(["bicycle", "bench", "puddle"]) }),
+      Object.freeze({ venue: "唱片店", worldCue: "旋转唱片与窄巷橱窗", collectibleKinds: Object.freeze(["vinyl-groove", "headphone-beat", "album-star"]), obstacleForms: Object.freeze(["record-crate", "awning", "service-cart"]) }),
+      Object.freeze({ venue: "桥下书店", worldCue: "旧书架与暖色纸页", collectibleKinds: Object.freeze(["paperback-page", "coffee-steam", "cat-paw"]), obstacleForms: Object.freeze(["book-cart", "low-shelf", "bicycle"]) })
+    ]) }),
+    Object.freeze({ chapter: "第三章 · 准时赴约", introTitle: "七点四十之前，穿过整座亮起的城", tone: "霓虹站前", phases: Object.freeze([
+      Object.freeze({ venue: "站前街", worldCue: "晚高峰车灯与电子路牌", collectibleKinds: Object.freeze(["clock-tick", "message-pulse", "ticket-stub"]), obstacleForms: Object.freeze(["service-cart", "signal-gate", "crowd"]) }),
+      Object.freeze({ venue: "地铁站", worldCue: "列车风压与站台灯带", collectibleKinds: Object.freeze(["metro-token", "platform-light", "last-train-pass"]), obstacleForms: Object.freeze(["train", "signal-gate", "luggage"]) }),
+      Object.freeze({ venue: "旧城电影院", worldCue: "雨雾灯牌与红色幕光", collectibleKinds: Object.freeze(["cinema-ticket", "film-frame", "coffee-pair"]), obstacleForms: Object.freeze(["poster-stand", "barrier", "awning"]) })
+    ]) }),
+    Object.freeze({ chapter: "第四章 · 今晚不急着结束", introTitle: "电影散场后，夜色才刚刚开始", tone: "夜市河岸", phases: Object.freeze([
+      Object.freeze({ venue: "夜市", worldCue: "烟火摊位与流动灯笼", collectibleKinds: Object.freeze(["snack-spark", "lantern-glow", "gift-ribbon"]), obstacleForms: Object.freeze(["stall", "crowd", "service-cart"]) }),
+      Object.freeze({ venue: "音乐广场", worldCue: "舞台光束与跃动节拍", collectibleKinds: Object.freeze(["wristband-beat", "music-wave", "camera-flash"]), obstacleForms: Object.freeze(["speaker-stack", "signal-gate", "barrier"]) }),
+      Object.freeze({ venue: "河岸长椅", worldCue: "水面倒影与安静晚风", collectibleKinds: Object.freeze(["river-star", "photo-light", "camp-lamp"]), obstacleForms: Object.freeze(["bench", "railing", "awning"]) })
+    ]) }),
+    Object.freeze({ chapter: "第五章 · 日常也会发光", introTitle: "这一次，目的地是一盏为你留着的灯", tone: "清晨生活", phases: Object.freeze([
+      Object.freeze({ venue: "早餐店", worldCue: "蒸汽玻璃与晨间招牌", collectibleKinds: Object.freeze(["bread-warmth", "breakfast-bag", "morning-note"]), obstacleForms: Object.freeze(["delivery-cart", "awning", "crowd"]) }),
+      Object.freeze({ venue: "清晨市场", worldCue: "鲜蔬棚架与穿行小巷", collectibleKinds: Object.freeze(["grocery-leaf", "recipe-note", "market-token"]), obstacleForms: Object.freeze(["grocery-crate", "service-cart", "low-shelf"]) }),
+      Object.freeze({ venue: "亮灯的厨房", worldCue: "住宅街树影与窗灯", collectibleKinds: Object.freeze(["brass-key", "plant-leaf", "window-lamp"]), obstacleForms: Object.freeze(["bicycle", "delivery-cart", "barrier"]) })
+    ]) }),
+    Object.freeze({ chapter: "第六章 · 穿过没有说清的雨", introTitle: "风雨把路分开，但见面仍是唯一方向", tone: "暴雨高架", phases: Object.freeze([
+      Object.freeze({ venue: "高架桥", worldCue: "侧风、雨幕与疾驰车影", collectibleKinds: Object.freeze(["rain-shard", "resolve-light", "dry-towel"]), obstacleForms: Object.freeze(["maintenance", "puddle", "barrier"]) }),
+      Object.freeze({ venue: "封路街口", worldCue: "红色警灯与改道标志", collectibleKinds: Object.freeze(["folded-note", "signal-fragment", "warm-cocoa"]), obstacleForms: Object.freeze(["warning", "service-cart", "signal-gate"]) }),
+      Object.freeze({ venue: "河桥雨棚", worldCue: "桥下水雾与渐近人影", collectibleKinds: Object.freeze(["mended-ticket", "white-flower", "shelter-light"]), obstacleForms: Object.freeze(["puddle", "railing", "awning"]) })
+    ]) }),
+    Object.freeze({ chapter: "第七章 · 向有灯的地方", introTitle: "天快亮了，这条路终于通向同一个以后", tone: "黎明归途", phases: Object.freeze([
+      Object.freeze({ venue: "黎明站台", worldCue: "列车晨雾与远行广播", collectibleKinds: Object.freeze(["travel-map", "dawn-ticket", "luggage-tag"]), obstacleForms: Object.freeze(["train", "luggage", "signal-gate"]) }),
+      Object.freeze({ venue: "熟悉长街", worldCue: "一路亮起的店铺与树影", collectibleKinds: Object.freeze(["shared-photo", "street-memory", "morning-bread"]), obstacleForms: Object.freeze(["delivery-cart", "bicycle", "barrier"]) }),
+      Object.freeze({ venue: "有灯的家", worldCue: "晨光门廊与温暖窗格", collectibleKinds: Object.freeze(["home-key", "window-lamp", "new-leaf"]), obstacleForms: Object.freeze(["luggage", "garden-gate", "awning"]) })
+    ]) })
+  ]);
 
   const ui = {
     intro: $("[data-intro]"), result: $("[data-result]"), arrival: $("[data-arrival]"), toast: $("[data-toast]"),
+    stageIntro: $("[data-stage-intro]"), stageIntroChapter: $("[data-stage-intro-index]"),
+    stageIntroTitle: $("[data-stage-intro-name]"), stageIntroScene: $("[data-stage-intro-place]"),
+    stageIntroCopy: $("[data-stage-intro-copy]"), stageIntroObjective: $("[data-stage-intro-motive]"),
+    stageIntroTime: $("[data-stage-intro-time]"), stageIntroWeather: $("[data-stage-intro-weather]"),
+    stageIntroProgress: $("[data-stage-intro-progress]"),
+    danger: $("[data-danger]"), dangerLabel: $("[data-danger-label]"), dangerValue: $("[data-danger-value]"), dangerCopy: $("[data-danger-copy]"),
+    failure: $("[data-failure]"), failureKicker: $("[data-failure-kicker]"), failureTitle: $("[data-failure-title]"),
+    failureCopy: $("[data-failure-copy]"), failureCheckpointPanel: $("[data-failure-checkpoint-panel]"),
+    failureCheckpoint: $("[data-failure-checkpoint]"), failureProgress: $("[data-failure-progress]"),
+    failureProgressFill: $("[data-failure-progress-fill]"), failureCheckpointCopy: $("[data-failure-checkpoint-copy]"),
     stageKicker: $("[data-stage-kicker]"), stageName: $("[data-stage-name]"), condition: $("[data-condition]"),
     conditionFill: $("[data-condition-fill]"), progress: $("[data-progress]"), progressFill: $("[data-progress-fill]"),
     combo: $("[data-combo]"), stageTrack: $("[data-stage-track]"), announcer: $("[data-announcer]"),
@@ -104,11 +152,37 @@
     powerupRack: $("[data-powerup-rack]"),
     routeMessage: $("[data-route-message]"), routeCopy: $("[data-route-copy]"), routeTime: $("[data-route-time]"),
     arrivalKicker: $("[data-arrival-kicker]"), arrivalTitle: $("[data-arrival-title]"), arrivalCopy: $("[data-arrival-copy]"),
+    arrivalAction: $("[data-arrival-action]"),
     grade: $("[data-grade]"), endingTitle: $("[data-ending-title]"), endingCopy: $("[data-ending-copy]"),
     completion: $("[data-stat-completion]"), accuracy: $("[data-stat-accuracy]"), resultItems: $("[data-stat-items]"),
-    resultCollisions: $("[data-stat-collisions]"), score: $("[data-score]"), distance: $("[data-distance]"),
+    relationship: $("[data-stat-relationship]"), resultCollisions: $("[data-stat-collisions]"), score: $("[data-score]"), distance: $("[data-distance]"),
     newGamePlus: $("[data-new-game-plus]"), retry: $("[data-retry]")
   };
+  const STORY_ACTS = Object.freeze([
+    Object.freeze({ id: "approach", label: "第一幕 · 靠近", start: 0, end: 2 }),
+    Object.freeze({ id: "together", label: "第二幕 · 同行与错位", start: 3, end: 4 }),
+    Object.freeze({ id: "commitment", label: "第三幕 · 倾听与共同承担", start: 5, end: 6 })
+  ]);
+  const storyActForStage = (stageIndex) => STORY_ACTS.find((act) => stageIndex >= act.start && stageIndex <= act.end) || STORY_ACTS[0];
+  const ARRIVAL_INTERACTIONS = Object.freeze({
+    5: Object.freeze({
+      sequence: Object.freeze(["slide", "right"]),
+      prompts: Object.freeze(["下滑，先把脚步慢下来", "右滑，和她一起移开落水链"]),
+      completed: "雨水改道，两个人终于站进同一片干燥处"
+    }),
+    6: Object.freeze({
+      sequence: Object.freeze(["left", "right", "jump"]),
+      prompts: Object.freeze(["左滑，转动左侧门锁", "右滑，转动右侧门锁", "上滑，一起跨过门槛"]),
+      completed: "两道锁分别亮起，中央门缝迎来晨光"
+    })
+  });
+  const RELATIONSHIP_ENDING_CODAS = Object.freeze({
+    attentive: "窗边灯先亮起来，因为你们已经学会在对方开口前看见需要。",
+    supportive: "行李在门前完成最后一次换手，谁都不必独自承担以后。",
+    restorative: "雨声退远，两道锁分别转动；修复不是回到从前，而是重新决定怎样并肩。",
+    balanced: "两条跑线保留各自方向，又在门槛前自然汇成同一步。",
+    unwritten: "晨光越过门槛，这段关系仍等着由下一次行动写下。"
+  });
 
   class CityRunAudio {
     constructor() {
@@ -267,6 +341,7 @@
   const audio = window.RunnerLoveAudio?.create?.() || new CityRunAudio();
   let runState = rules.createRunState();
   let motion = createMotion();
+  let director = directorApi.createDirector();
   let mode = "intro";
   let pausedStage = null;
   let lastFrameAt = performance.now();
@@ -284,15 +359,26 @@
   let arrivalElapsed = 0;
   let arrivalDuration = 0;
   let arrivalData = null;
+  let stageIntroElapsed = 0;
+  let stageIntroDuration = 0;
+  let stageIntroData = null;
+  let stageIntroBeat = -1;
   let routePhase = -1;
   let flowEnergy = 0;
   let flowPeak = 0;
   let storyEchoes = [];
   let lastSpeedTier = -1;
+  let lastConditionBand = "steady";
   let powerupHudSignature = "";
+  let deferredDirectorCommands = [];
+  let checkpointRuntime = null;
+  let preserveRuntimeThroughIntro = false;
+  let arrivalInteraction = null;
+  let runPrimed = false;
+  const stageExperienceCache = new Map();
 
-  function createMotion() {
-    return engineApi.createEngine({
+  function createMotion(snapshot = null) {
+    const instance = engineApi.createEngine({
       seed: "tonight-see-you-2026",
       duration: 3600,
       finaleSeconds: 0,
@@ -313,6 +399,14 @@
         modules: content.ROAD_MODULES.filter((item) => item.stage === stage.order).map((item) => item.id)
       }))
     });
+    if (snapshot && typeof snapshot === "object") {
+      const restored = clone(snapshot);
+      Object.keys(instance.state).forEach((key) => { delete instance.state[key]; });
+      Object.assign(instance.state, restored);
+      instance.state.events = [];
+      instance.state.inputQueue = [];
+    }
+    return instance;
   }
 
   function ensureVisualRuntime() {
@@ -321,6 +415,10 @@
       visualRuntime = window.RunnerLoveVisuals.create(canvas);
       root?.setAttribute("data-renderer", "webgl");
       configureCanvas();
+      if (deferredDirectorCommands.length) {
+        deferredDirectorCommands.forEach((command) => visualRuntime?.applyDirectorCommand?.(command));
+        deferredDirectorCommands = [];
+      }
     } catch (error) {
       visualFailure = error;
       root?.setAttribute("data-renderer", "static");
@@ -353,6 +451,96 @@
   function show(node, visible) { if (node) node.hidden = !visible; }
   function announce(text) { if (ui.announcer) ui.announcer.textContent = text; }
 
+  function storySnapshotFromRun(state = runState) {
+    return state?.story?.director || state?.storyState?.director || state?.story?.snapshot || state?.story || null;
+  }
+
+  function storyEnvelope(state = runState) {
+    return state?.story || state?.storyState || {};
+  }
+
+  function schedulerSnapshot() {
+    return {
+      spawnClock,
+      beatClock,
+      patternCursor,
+      routePhase,
+      flowEnergy,
+      flowPeak,
+      storyEchoes: clone(storyEchoes),
+      lastSpeedTier,
+      runPrimed
+    };
+  }
+
+  function restoreScheduler(saved = {}) {
+    spawnClock = Math.max(0, Number(saved.spawnClock) || 0);
+    beatClock = Math.max(0, Number(saved.beatClock) || 0);
+    patternCursor = Math.max(0, Math.trunc(Number(saved.patternCursor) || 0));
+    routePhase = Math.max(-1, Math.min(2, Math.trunc(Number(saved.routePhase) || 0)));
+    flowEnergy = Math.max(0, Math.min(100, Number(saved.flowEnergy) || 0));
+    flowPeak = Math.max(flowEnergy, Number(saved.flowPeak) || 0);
+    storyEchoes = Array.isArray(saved.storyEchoes) ? clone(saved.storyEchoes) : [];
+    lastSpeedTier = Number.isFinite(Number(saved.lastSpeedTier)) ? Number(saved.lastSpeedTier) : -1;
+    runPrimed = Boolean(saved.runPrimed);
+  }
+
+  function commitDirectorState(checkpoint = false, stageStart = false) {
+    if (!rules.commitStoryState) return;
+    const runtime = clone(motion.state);
+    const directorState = director.snapshot();
+    runState = rules.commitStoryState(runState, {
+      ...directorState,
+      worldState: {
+        ...(directorState.worldState || {}),
+        runtime: runtime ? clone(runtime) : null,
+        scheduler: schedulerSnapshot(),
+        patternCursor,
+        routePhase
+      }
+    }, { checkpoint, stageStart });
+    if (checkpoint) checkpointRuntime = runtime;
+  }
+
+  function applyDirectorCommands(commands) {
+    (commands || []).forEach((command) => {
+      if (["scene", "camera"].includes(command.channel)) {
+        if (visualRuntime?.applyDirectorCommand) visualRuntime.applyDirectorCommand(command);
+        else deferredDirectorCommands.push(command);
+      }
+      if (command.channel === "audio") audio.applyDirectorCommand?.(command);
+      if (command.channel === "gameplay") {
+        if (command.op === "settle") motion.pace?.(command.payload.paceScale || 0.76, command.durationMs / 1000);
+        else if (["rush", "cadence", "sync", "carry", "handoff"].includes(command.op)) {
+          motion.boost?.(Math.max(0.25, Number(command.payload.speedBoost) || 0.55), command.durationMs / 1000);
+        }
+      }
+      if (command.channel === "rules" && command.op === "progress" && runState.status === "playing") {
+        applyMoment({
+          outcome: command.payload.outcome || "good",
+          kind: command.key,
+          itemId: command.payload.itemId,
+          choiceId: command.payload.decisionId,
+          inputSeq: command.payload.inputSeq,
+          nodeId: command.payload.nodeId,
+          causeId: command.payload.causeId
+        });
+      }
+    });
+  }
+
+  function recordDirectorFact(fact) {
+    const definition = rules.STAGES[currentStageIndex()];
+    const commands = director.ingest({
+      ...fact,
+      stageProgress: runState.stage.progress,
+      stageTarget: definition.target
+    }, { elapsed: runState.stage.elapsed });
+    applyDirectorCommands(commands);
+    commitDirectorState(false);
+    return commands;
+  }
+
   function haptic(pattern) {
     try { navigator.vibrate?.(pattern); } catch (_) {}
   }
@@ -379,6 +567,236 @@
     ui.routeMessage.hidden = false;
     clearTimeout(routeMessageTimer);
     routeMessageTimer = setTimeout(() => { ui.routeMessage.hidden = true; }, duration);
+  }
+
+  function getStageExperience(stageIndex = currentStageIndex()) {
+    if (stageExperienceCache.has(stageIndex)) return stageExperienceCache.get(stageIndex);
+    const fallback = STAGE_RUNTIME_FALLBACKS[Math.max(0, Math.min(STAGE_RUNTIME_FALLBACKS.length - 1, stageIndex))];
+    const blueprint = content.getStageBlueprint?.(stageIndex + 1) || null;
+    const authored = content.getStageExperience?.(stageIndex + 1) || content.STAGE_EXPERIENCES?.[stageIndex] || blueprint || {};
+    const stage = content.STAGES[stageIndex];
+    const blueprintPhases = blueprint?.segments?.map((segment, phaseIndex) => {
+      const collectionPhase = blueprint.collectionPlan?.phases?.[phaseIndex] || {};
+      const combinationIds = new Set(segment.obstacleCombinationIds || []);
+      const combinations = blueprint.obstacleDesign?.combinations?.filter((entry) => combinationIds.has(entry.id)) || [];
+      const obstacleIds = [...new Set(combinations.flatMap((entry) => entry.obstacleIds || []))];
+      const obstacles = blueprint.obstacleDesign?.obstacles?.filter((entry) => obstacleIds.includes(entry.id)) || [];
+      return {
+        id: segment.id,
+        venue: segment.name,
+        worldCue: `${segment.storyBeat} ${segment.worldChange}`,
+        storyBeat: segment.storyBeat,
+        worldChange: segment.worldChange,
+        transition: segment.transition,
+        roadChange: segment.roadChange,
+        landmarkIds: segment.landmarkIds || [],
+        propIds: segment.propIds || [],
+        visual: segment.visual || null,
+        director: segment.director || null,
+        material: segment.visual?.roadMaterialKey || blueprint.visual?.roadMaterialKey || blueprint.world?.roadDesign?.material,
+        collectibleVisualKey: segment.visual?.collectibleVisualKey || null,
+        collectibleKinds: collectionPhase.items?.map((item) => item.kind) || fallback.phases[phaseIndex].collectibleKinds,
+        itemIds: collectionPhase.itemIds || segment.collectibleItemIds,
+        obstacleForms: obstacles.map((entry) => entry.id),
+        obstacleSemantics: obstacles,
+        obstacleCombinations: combinations,
+        props: collectionPhase.props || []
+      };
+    });
+    const phases = Array.isArray(authored.phases) && authored.phases.length >= 3
+      ? authored.phases
+      : blueprintPhases?.length >= 3 ? blueprintPhases : fallback.phases;
+    const performance = blueprint?.openingPerformance || authored.openingPerformance;
+    const performanceLines = performance?.beats?.map((beat) => beat.line || beat.action).filter(Boolean) || [];
+    const resolved = {
+      ...fallback,
+      ...authored,
+      chapter: authored.chapter || fallback.chapter,
+      introTitle: authored.introTitle || blueprint?.story?.continuity?.chapterTurn || authored.title || fallback.introTitle,
+      introCopy: authored.introCopy || authored.opening || [performance?.trigger, ...performanceLines].filter(Boolean).join(" ") || stage.opening,
+      objective: authored.objective || stage.objective,
+      tone: authored.tone || blueprint?.world?.sceneMood?.location || stage.scene || fallback.tone,
+      weather: authored.weather || blueprint?.world?.timeWeather?.progression || stage.weather,
+      palette: authored.palette || blueprint?.world?.colorPalette?.description || stage.palette,
+      blueprint,
+      openingPerformance: performance,
+      phases
+    };
+    stageExperienceCache.set(stageIndex, resolved);
+    return resolved;
+  }
+
+  function getPhaseExperience(stageIndex = currentStageIndex(), phase = routePhase) {
+    const experience = getStageExperience(stageIndex);
+    return experience.phases[Math.max(0, Math.min(2, Number.isFinite(phase) ? phase : 0))] || experience.phases[0];
+  }
+
+  function clearStageWorld() {
+    motion.clearEntities?.({ modules: true });
+    if (!motion.clearEntities) {
+      motion.state.entities.length = 0;
+      motion.state.events.length = 0;
+      motion.state.inputQueue.length = 0;
+    }
+    storyEchoes.length = 0;
+    visualRuntime?.resetRoute?.(currentStageIndex());
+  }
+
+  function conditionBand(value = runState.condition) {
+    if (value === runState.condition && ["steady", "strained", "danger", "critical", "failed"].includes(runState.conditionBand)) return runState.conditionBand;
+    if (rules.getConditionStatus) return rules.getConditionStatus(value).id;
+    if (value <= 0) return "failed";
+    if (value <= 15) return "critical";
+    if (value <= 35) return "danger";
+    if (value <= 60) return "strained";
+    return "steady";
+  }
+
+  function updateConditionFeedback(force = false) {
+    const band = conditionBand();
+    root?.setAttribute("data-condition-band", band);
+    if (!force && band === lastConditionBand) return;
+    lastConditionBand = band;
+    const messages = {
+      steady: "呼吸稳定，继续向前",
+      strained: "连续碰撞会让这段路提前结束",
+      danger: "心跳已经很乱，下一次失误会更危险",
+      critical: "只剩最后一点坚持，先稳住脚步",
+      failed: "心跳归零，这一程暂时停下"
+    };
+    const labels = { steady: "状态稳定", strained: "状态吃紧", danger: "进入危险", critical: "濒临失约", failed: "本程中断" };
+    if (ui.danger) {
+      ui.danger.setAttribute("data-level", band === "critical" || band === "failed" ? "critical" : "low");
+      ui.danger.hidden = !["danger", "critical", "failed"].includes(band);
+    }
+    if (ui.dangerLabel) ui.dangerLabel.textContent = labels[band];
+    if (ui.dangerValue) ui.dangerValue.textContent = String(Math.max(0, Math.round(runState.condition)));
+    if (ui.dangerCopy) ui.dangerCopy.textContent = messages[band];
+    if (visualRuntime?.setDanger) visualRuntime.setDanger(band, runState.condition);
+    else visualRuntime?.setLowStateVisual?.(!["steady", "strained"].includes(band), { condition: runState.condition, status: band });
+    audio.setDanger?.(band, runState.condition);
+    if (!force && mode === "playing" && band !== "steady") {
+      toast(messages[band], band === "critical" ? 2100 : 1650);
+      haptic(band === "critical" ? [28, 22, 28] : [18, 30, 12]);
+    }
+  }
+
+  function beginStageIntro(reason = "next") {
+    const stageIndex = currentStageIndex();
+    const stage = content.STAGES[stageIndex];
+    const experience = getStageExperience(stageIndex);
+    const storyAct = storyActForStage(stageIndex);
+    clearTimeout(routeMessageTimer);
+    show(ui.routeMessage, false);
+    show(ui.stageIntro, false);
+    syncMotionStage(false);
+    if (!preserveRuntimeThroughIntro) {
+      clearStageWorld();
+      routePhase = 0;
+    }
+    stageIntroElapsed = 0;
+    stageIntroDuration = reason === "retry"
+      ? 3.4
+      : Math.max(4.6, Math.min(7.2, Number(experience.openingPerformance?.durationMs) / 1000 || (reason === "resume" ? 3.8 : 4.6)));
+    stageIntroBeat = -1;
+    const clock = ["18:12", "10:06", "19:21", "21:44", "08:03", "22:17", "06:38"][stageIndex] || "NOW";
+    stageIntroData = {
+      stageIndex,
+      stageId: stage.id,
+      reason,
+      chapter: experience.chapter,
+      title: stage.name,
+      storyTitle: experience.introTitle,
+      scene: `${experience.tone} · ${experience.weather}`,
+      copy: `${experience.introTitle}。${experience.introCopy}`,
+      objective: experience.objective,
+      palette: experience.palette,
+      openingPerformance: experience.openingPerformance || null,
+      currentBeat: null,
+      progress: 0
+    };
+    applyDirectorCommands(director.enterStage({ stageIndex, stageId: stage.id, actIndex: 0, elapsed: runState.stage.elapsed }));
+    const introPhase = Math.max(0, routePhase);
+    const openingAct = experience.blueprint?.segments?.[introPhase] || experience.phases?.[introPhase] || experience.blueprint?.segments?.[0] || experience.phases?.[0];
+    applyDirectorCommands(director.enterAct({
+      actIndex: introPhase,
+      actId: openingAct?.id,
+      visual: openingAct?.visual,
+      director: openingAct?.director,
+      force: true
+    }));
+    commitDirectorState(false, runState.stage.progress === 0 && runState.checkpointSnapshot?.kind === "stage-start");
+    mode = "stage-intro";
+    root?.setAttribute("data-stage", String(stageIndex + 1));
+    root?.setAttribute("data-story-act", storyAct.id);
+    root?.setAttribute("data-stage-intro-reason", reason);
+    root?.style?.setProperty?.("--stage-intro-duration", `${Math.round(stageIntroDuration * 1000)}ms`);
+    if (ui.stageIntroChapter) ui.stageIntroChapter.textContent = `${storyAct.label} · 第${"一二三四五六七"[stageIndex]}程`;
+    if (ui.stageIntroTitle) ui.stageIntroTitle.textContent = stage.name;
+    if (ui.stageIntroScene) ui.stageIntroScene.textContent = stage.scene;
+    if (ui.stageIntroTime) {
+      ui.stageIntroTime.textContent = clock;
+      ui.stageIntroTime.setAttribute("datetime", clock);
+    }
+    if (ui.stageIntroWeather) ui.stageIntroWeather.textContent = experience.weather;
+    if (ui.stageIntroCopy) ui.stageIntroCopy.textContent = experience.openingPerformance?.trigger || `${experience.introTitle}。${experience.introCopy}`;
+    if (ui.stageIntroObjective) ui.stageIntroObjective.textContent = experience.objective;
+    show(ui.stageIntro, true);
+    show(ui.result, false);
+    show(ui.intro, false);
+    visualRuntime?.beginStageIntro?.({
+      ...stageIntroData,
+      stageContent: experience.blueprint || content.STAGES[stageIndex]
+    });
+    audio.stageIntro?.(stageIntroData);
+    updateStageIntroPerformance(true);
+    updateHud();
+    updateConditionFeedback(true);
+    announce(`${experience.chapter}，${experience.introTitle}`);
+    return stageIntroData;
+  }
+
+  function updateStageIntroPerformance(force = false) {
+    if (!stageIntroData) return;
+    const beats = stageIntroData.openingPerformance?.beats || [];
+    if (!beats.length) return;
+    const elapsedMs = stageIntroElapsed * 1000;
+    let nextBeat = 0;
+    for (let index = 1; index < beats.length; index += 1) {
+      if (elapsedMs >= beats[index].atMs) nextBeat = index;
+    }
+    if (!force && nextBeat === stageIntroBeat) return;
+    stageIntroBeat = nextBeat;
+    const beat = beats[nextBeat];
+    stageIntroData.currentBeat = { ...beat, index: nextBeat };
+    if (ui.stageIntroCopy) ui.stageIntroCopy.textContent = [beat.action, beat.line].filter(Boolean).join(" ");
+    visualRuntime?.stageIntroBeat?.({ ...stageIntroData, beat, beatIndex: nextBeat });
+    audio.stageBeat?.({ ...stageIntroData, beat, beatIndex: nextBeat });
+    if (!force && beat.line) announce(beat.line);
+  }
+
+  function finishStageIntro() {
+    if (mode !== "stage-intro") return false;
+    const resumedRuntime = preserveRuntimeThroughIntro;
+    show(ui.stageIntro, false);
+    visualRuntime?.endStageIntro?.();
+    stageIntroElapsed = 0;
+    stageIntroDuration = 0;
+    stageIntroData = null;
+    stageIntroBeat = -1;
+    syncMotionStage(false);
+    if (!preserveRuntimeThroughIntro) {
+      clearStageWorld();
+      spawnClock = 0;
+      beatClock = 0;
+    }
+    preserveRuntimeThroughIntro = false;
+    runPrimed = resumedRuntime ? runPrimed : false;
+    mode = "playing";
+    updateHud();
+    showRouteMessage(currentStage(), 1800);
+    announce(`${getPhaseExperience().venue}，出发`);
+    return true;
   }
 
   function syncMotionStage(emitChange) {
@@ -449,16 +867,27 @@
   function updateRoutePhase(force = false) {
     const definition = rules.STAGES[currentStageIndex()];
     const progressRatio = runState.stage.progress / Math.max(1, definition.target);
-    const timeRatio = runState.stage.elapsed / Math.max(1, definition.expectedSeconds || 180);
-    const ratio = Math.min(0.999, Math.max(progressRatio, timeRatio));
-    const nextPhase = Math.min(2, Math.floor(ratio * 3));
+    const phases = getStageExperience(currentStageIndex()).blueprint?.segments || getStageExperience(currentStageIndex()).phases;
+    let nextPhase = 0;
+    for (let index = 1; index < Math.min(3, phases.length); index += 1) {
+      const threshold = Number(phases[index]?.progress?.[0]);
+      if (progressRatio >= (Number.isFinite(threshold) ? threshold : index / 3)) nextPhase = index;
+    }
     if (!force && nextPhase === routePhase) return;
     routePhase = nextPhase;
     const route = content.getRoute(currentStageIndex() + 1);
     const venue = route.venues[nextPhase] || currentStage().destination;
     if (ui.destination) ui.destination.textContent = nextPhase === 2 ? `接近 ${currentStage().destination}` : `途经 ${venue}`;
     root?.setAttribute("data-route-phase", String(nextPhase + 1));
-    visualRuntime?.setRoutePhase?.(nextPhase);
+    const phase = getPhaseExperience(currentStageIndex(), nextPhase);
+    visualRuntime?.setRoutePhase?.(nextPhase, phase);
+    applyDirectorCommands(director.enterAct({
+      actIndex: nextPhase,
+      actId: phase.id,
+      visual: phase.visual,
+      director: phase.director
+    }));
+    commitDirectorState(false);
     if (!force && mode === "playing") toast(venue, 1500);
   }
 
@@ -471,12 +900,15 @@
     const index = currentStageIndex();
     const stage = content.STAGES[index];
     const definition = rules.STAGES[index];
+    const storyAct = storyActForStage(index);
     root?.setAttribute("data-stage", String(index + 1));
-    if (ui.stageKicker) ui.stageKicker.textContent = `第${"一二三四五六七"[index]}程 · ${stage.name}`;
+    root?.setAttribute("data-story-act", storyAct.id);
+    if (ui.stageKicker) ui.stageKicker.textContent = `${storyAct.label} · 第${"一二三四五六七"[index]}程`;
     if (ui.stageName) ui.stageName.textContent = stage.destination;
     if (ui.destination) ui.destination.textContent = `去 ${stage.destination}`;
     if (ui.condition) ui.condition.textContent = runState.condition;
     if (ui.conditionFill) ui.conditionFill.style.transform = `scaleX(${runState.condition / 100})`;
+    updateConditionFeedback();
     const current = runState.status === "completed" ? definition.target : runState.stage.progress;
     if (ui.progress) ui.progress.textContent = `${current} / ${definition.target}`;
     if (ui.progressFill) ui.progressFill.style.transform = `scaleX(${Math.min(1, current / definition.target)})`;
@@ -488,13 +920,14 @@
     const save = safeLoad();
     show(ui.newGamePlus, Boolean(save?.profile?.newGamePlusUnlocked));
     updateCargoHud();
-    updateRoutePhase(true);
+    updateRoutePhase(routePhase < 0);
     audio.setStage(index + 1, runState.condition, runState.combo);
   }
 
   function reset(newGamePlus) {
     runState = rules.createRunState({ newGamePlus: Boolean(newGamePlus) });
     motion = createMotion();
+    director = directorApi.createDirector();
     mode = "intro";
     pausedStage = null;
     spawnClock = 0;
@@ -503,16 +936,28 @@
     arrivalElapsed = 0;
     arrivalDuration = 0;
     arrivalData = null;
+    arrivalInteraction = null;
+    stageIntroElapsed = 0;
+    stageIntroDuration = 0;
+    stageIntroData = null;
+    stageIntroBeat = -1;
     routePhase = -1;
     flowEnergy = 0;
     flowPeak = 0;
     storyEchoes = [];
     lastSpeedTier = -1;
+    lastConditionBand = "steady";
     powerupHudSignature = "";
+    deferredDirectorCommands = [];
+    checkpointRuntime = null;
+    preserveRuntimeThroughIntro = false;
+    runPrimed = false;
     completionSaved = false;
     clearTimeout(routeMessageTimer);
     show(ui.routeMessage, false);
     show(ui.arrival, false);
+    show(ui.stageIntro, false);
+    show(ui.failure, false);
     show(ui.result, false);
     show(ui.intro, true);
     visualRuntime?.clearCarry?.();
@@ -524,26 +969,79 @@
   function start(saved) {
     audio.start();
     if (saved?.run?.status === "playing") runState = saved.run;
+    const savedStory = storyEnvelope(runState);
+    const restoredRuntime = saved?.run?.status === "playing" ? savedStory.worldState?.runtime || null : null;
+    director = directorApi.createDirector({ state: storySnapshotFromRun(runState) });
+    motion = createMotion(restoredRuntime);
+    checkpointRuntime = runState?.checkpointSnapshot?.story?.worldState?.runtime || restoredRuntime;
+    if (restoredRuntime) {
+      restoreScheduler(savedStory.worldState?.scheduler || savedStory.worldState);
+      preserveRuntimeThroughIntro = true;
+    }
     syncMotionStage(false);
-    mode = "playing";
     show(ui.intro, false);
     show(ui.result, false);
-    updateHud();
+    show(ui.failure, false);
     updateRunFeedback();
     syncCarryFromState();
-    showRouteMessage(currentStage());
-    announce(`${currentStage().destination}，出发`);
+    beginStageIntro(saved?.run?.status === "playing" ? "resume" : "start");
+  }
+
+  function updateArrivalPrompt() {
+    if (!ui.arrivalAction || !arrivalInteraction) return;
+    const active = arrivalInteraction.prompted && !arrivalInteraction.completed;
+    ui.arrivalAction.hidden = !active;
+    if (active) ui.arrivalAction.textContent = arrivalInteraction.prompts[arrivalInteraction.step];
+  }
+
+  function handleArrivalInput(action) {
+    if (!arrivalInteraction || arrivalInteraction.completed || !arrivalInteraction.prompted) return false;
+    const expected = arrivalInteraction.sequence[arrivalInteraction.step];
+    if (action !== expected) {
+      visualRuntime?.effect("arrival-interaction", { outcome: "strained", action, expected, stageIndex: pausedStage });
+      audio.cue("near-miss");
+      haptic(8);
+      return false;
+    }
+    arrivalInteraction.step += 1;
+    const completed = arrivalInteraction.step >= arrivalInteraction.sequence.length;
+    arrivalInteraction.completed = completed;
+    visualRuntime?.effect("arrival-interaction", {
+      outcome: "clean",
+      action,
+      step: arrivalInteraction.step,
+      total: arrivalInteraction.sequence.length,
+      completed,
+      stageIndex: pausedStage
+    });
+    visualRuntime?.applyDirectorCommand?.({
+      id: `arrival:${pausedStage}:${arrivalInteraction.step}`,
+      channel: "scene",
+      op: completed ? "semantic-gate-complete" : "semantic-beat",
+      key: completed ? "arrival-complete" : "arrival-step",
+      durationMs: completed ? 1600 : 850,
+      payload: { stageIndex: pausedStage, actIndex: 2, completed, semanticStep: action }
+    });
+    audio.action(action);
+    audio.cue(completed ? "arrival" : "perfect");
+    haptic(completed ? [12, 28, 18] : 10);
+    if (completed) announce(arrivalInteraction.completedCopy);
+    updateArrivalPrompt();
+    return true;
   }
 
   function input(action) {
+    if (mode === "arrival") return handleArrivalInput(action);
     if (mode !== "playing") return false;
+    runPrimed = true;
     motion.input(action);
     audio.start();
     audio.action(action);
     return true;
   }
 
-  function obstacleSubtype(stageIndex, form) {
+  function obstacleSubtype(stageIndex, form, themedForm) {
+    if (themedForm && !["barrier", "service-cart", "signal-gate", "train"].includes(themedForm)) return themedForm;
     const mapping = STAGE_OBSTACLE_FORMS[stageIndex] || STAGE_OBSTACLE_FORMS[0];
     if (form === "train") return mapping.train;
     if (form === "service-cart") return mapping.cart;
@@ -558,36 +1056,90 @@
     const farthest = activeAhead.reduce((maximum, entity) => Math.max(maximum, entity.z), 0);
     if (farthest > 58) return false;
     const stageIndex = currentStageIndex();
-    const blueprint = PATTERN_BLUEPRINTS[(patternCursor + stageIndex * 2) % PATTERN_BLUEPRINTS.length];
-    const baseZ = Math.max(24, farthest + 10);
-    const pressure = Math.max(0.86, 1 - stageIndex * 0.012 - flowEnergy * 0.00055);
+    const phaseIndex = Math.max(0, routePhase);
+    const experience = getStageExperience(stageIndex);
+    const phase = getPhaseExperience(stageIndex, phaseIndex);
+    const directorPlan = director.planPattern({
+      ordinal: patternCursor,
+      currentLane: motion.state.lane,
+      actIndex: phaseIndex
+    });
+    const semanticBlueprints = phase.obstacleCombinations?.map((combination, combinationIndex) => ({
+      id: combination.id,
+      choiceZ: 43,
+      obstacles: (combination.obstacleIds || []).map((obstacleId, obstacleIndex) => {
+        const semantic = phase.obstacleSemantics?.find((entry) => entry.id === obstacleId) || {};
+        const avoid = semantic.response === "slide" ? "slide" : semantic.response === "jump" ? "jump" : "switch";
+        return {
+          lane: [-1, 1, 0][(patternCursor + obstacleIndex + combinationIndex) % 3],
+          z: 10 + obstacleIndex * 12,
+          avoid,
+          form: avoid === "slide" ? "signal-gate" : avoid === "jump" ? "barrier" : "service-cart",
+          themeForm: obstacleId,
+          rewardNearMiss: avoid === "switch"
+        };
+      })
+    })).filter((entry) => entry.obstacles.length);
+    const authoredPatterns = Array.isArray(phase.patterns)
+      ? phase.patterns
+      : Array.isArray(experience.patterns?.[phaseIndex]) ? experience.patterns[phaseIndex] : semanticBlueprints;
+    const candidates = authoredPatterns?.filter((entry) => Array.isArray(entry?.obstacles) && entry.obstacles.length) || PATTERN_BLUEPRINTS;
+    const blueprint = candidates[(patternCursor + stageIndex * 2 + phaseIndex) % candidates.length];
+    const baseZ = Math.max(28, motion.state.speed * 1.18, farthest + 12);
+    const rowSpacing = Math.max(14.5, motion.state.speed * 0.78);
+    const zRows = [...new Set(blueprint.obstacles.map((entry) => Number(entry.z) || 0))].sort((left, right) => left - right);
     const patternId = `${content.STAGES[stageIndex].id}-${blueprint.id}-${patternCursor}`;
     blueprint.obstacles.forEach((spec, row) => {
+      const rowOrdinal = Math.max(0, zRows.indexOf(Number(spec.z) || 0));
+      const requiredAction = rowOrdinal === 0 ? directorPlan.action : spec.avoid;
       const matchingRow = blueprint.obstacles.filter((entry) => entry.z === spec.z);
+      if (rowOrdinal === 0 && matchingRow[0] !== spec) return;
       const occupiedLanes = new Set(matchingRow.map((entry) => entry.lane));
       const candidateLanes = [-1, 0, 1].filter((lane) => !occupiedLanes.has(lane));
-      const pairedLane = matchingRow.length === 1 && row % 2 === patternCursor % 2
+      const primaryLane = rowOrdinal === 0 ? motion.state.lane : spec.lane;
+      const pairedLane = rowOrdinal > 0 && matchingRow.length === 1 && row % 2 === patternCursor % 2
         ? candidateLanes[(patternCursor + row + stageIndex) % candidateLanes.length]
         : null;
-      [spec.lane, pairedLane].filter((lane) => lane !== null).forEach((lane, laneIndex) => {
-        const subtype = obstacleSubtype(stageIndex, spec.form);
+      [primaryLane, pairedLane].filter((lane) => lane !== null).forEach((lane, laneIndex) => {
+        const themedForms = phase.obstacleForms || phase.obstacles || [];
+        const themedForm = spec.themeForm || themedForms[(patternCursor + row + laneIndex) % Math.max(1, themedForms.length)];
+        const form = requiredAction === "slide" ? "signal-gate" : requiredAction === "jump" ? "barrier" : "service-cart";
+        const subtype = obstacleSubtype(stageIndex, form, themedForm);
         motion.spawn({
           type: "obstacle",
           lane,
-          z: baseZ + spec.z * pressure,
-          avoid: spec.avoid,
+          z: baseZ + rowOrdinal * rowSpacing,
+          avoid: requiredAction,
           subtype,
           variant: (patternCursor + row + stageIndex + laneIndex) % 5,
-          rewardNearMiss: spec.rewardNearMiss,
+          rewardNearMiss: requiredAction === "switch" || Boolean(spec.rewardNearMiss),
           patternId,
           momentId: `${patternId}-obstacle-${row}-${laneIndex}`,
-          data: { venue: content.getRoute(stageIndex + 1).venues[Math.min(2, patternCursor % 3)] }
+          data: {
+            venue: phase.venue || content.getRoute(stageIndex + 1).venues[phaseIndex],
+            stageId: content.STAGES[stageIndex].id,
+            stageIndex,
+            phase: phaseIndex,
+            actId: phase.id,
+            causeId: directorPlan.causeId,
+            nodeId: `${directorPlan.causeId}:action`,
+            choicePending: directorPlan.choiceDue,
+            requiredAction,
+            semanticStep: directorPlan.semanticStep,
+            semanticKey: directorPlan.semanticKey,
+            relationshipMode: directorPlan.relationshipMode,
+            worldCue: phase.worldCue,
+            themeForm: themedForm || subtype,
+            material: phase.material || experience.material || experience.tone
+          }
         });
       });
     });
 
-    const tokenLanes = [0, -1, -1, 0, 1, 1, 0, patternCursor % 2 ? -1 : 1, 0];
+    const tokenLanes = [...directorPlan.collectibleLanes, ...directorPlan.collectibleLanes.slice(1), motion.state.lane];
+    const collectibleKinds = phase.collectibleKinds || phase.collectibles || ["stage-token"];
     tokenLanes.forEach((lane, tokenIndex) => {
+      const collectibleKind = collectibleKinds[(patternCursor + tokenIndex) % collectibleKinds.length];
       motion.spawn({
         type: "collectible",
         lane,
@@ -595,20 +1147,34 @@
         points: 4 + stageIndex,
         patternId,
         row: tokenIndex,
-        arc: Math.sin(tokenIndex / (tokenLanes.length - 1) * Math.PI) * 0.26
+        arc: Math.sin(tokenIndex / (tokenLanes.length - 1) * Math.PI) * (phaseIndex === 1 ? 0.42 : 0.26),
+        data: {
+          collectibleKind,
+          stageId: content.STAGES[stageIndex].id,
+          stageIndex,
+          phase: phaseIndex,
+          venue: phase.venue,
+          worldCue: phase.worldCue,
+          color: phase.collectibleColor || experience.collectibleColor || null
+        }
       });
     });
 
-    const itemIds = content.STAGE_ITEM_IDS[stageIndex];
+    const allItemIds = content.STAGE_ITEM_IDS[stageIndex];
+    const authoredItemIds = phase.itemIds || phase.storyItemIds;
+    const third = Math.max(1, Math.ceil(allItemIds.length / 3));
+    const phaseItemIds = allItemIds.slice(phaseIndex * third, Math.min(allItemIds.length, (phaseIndex + 1) * third));
+    const itemIds = Array.isArray(authoredItemIds) && authoredItemIds.length ? authoredItemIds : phaseItemIds.length ? phaseItemIds : allItemIds;
     const choiceGroup = `${patternId}-route`;
-    [-1, 0, 1].forEach((lane, laneOffset) => {
+    const choiceZ = baseZ + Math.max(1, zRows.length) * rowSpacing + 13;
+    directorPlan.choiceLanes.forEach((lane, laneOffset) => {
       const itemId = itemIds[(patternCursor + laneOffset + stageIndex) % itemIds.length];
       const item = content.getItem(itemId);
       const interactionProfile = content.getInteractionProfile(itemId);
       motion.spawn({
         type: "route-choice",
         lane,
-        z: baseZ + blueprint.choiceZ,
+        z: choiceZ,
         itemId,
         choiceGroup,
         choiceId: `${choiceGroup}-${itemId}`,
@@ -625,7 +1191,21 @@
           color: item.color,
           label: item.name,
           line: item.line,
-          interactionProfile
+          stageId: content.STAGES[stageIndex].id,
+          stageIndex,
+          phase: phaseIndex,
+          actId: phase.id,
+          decisionId: choiceGroup,
+          alternatives: directorPlan.choiceLanes.map((_, alternativeIndex) => itemIds[(patternCursor + alternativeIndex + stageIndex) % itemIds.length]),
+          inputSeqAtSpawn: motion.state.inputSeq,
+          causeId: directorPlan.causeId,
+          nodeId: `${directorPlan.causeId}:choice`,
+          venue: phase.venue,
+          worldCue: phase.worldCue,
+          interactionProfile,
+          semanticStep: directorPlan.semanticStep,
+          semanticKey: directorPlan.semanticKey,
+          relationshipMode: directorPlan.relationshipMode
         }
       });
     });
@@ -636,8 +1216,14 @@
   function applyMoment(moment) {
     if (runState.status !== "playing") return;
     const before = runState.stageIndex;
+    const beforeProgress = runState.stage.progress;
+    const definition = rules.STAGES[before];
     const beforeItems = runState.stage.items.slice();
     runState = rules.recordMoment(runState, moment);
+    const checkpointReached = before === runState.stageIndex
+      && beforeProgress < definition.checkpoint
+      && runState.stage.progress >= definition.checkpoint;
+    commitDirectorState(checkpointReached);
     updateHud();
     persist();
     if (runState.status === "failed") {
@@ -646,21 +1232,45 @@
     }
     if (runState.stageIndex !== before || runState.status === "completed") {
       const record = runState.stageRecords.find((item) => item.id === rules.STAGES[before].id);
-      beginArrival(before, record?.items?.length ? record.items : beforeItems);
+      const commands = director.ingest({ id: `stage-complete:${before}:${runState.totalAttempts}`, type: "stage-completed", stageIndex: before });
+      applyDirectorCommands(commands);
+      beginArrival(before, record?.items?.length ? record.items : beforeItems, director.selectArrival());
     }
   }
 
   function collectStoryItem(entity) {
     const item = content.getItem(entity.itemId || entity.data?.itemId);
-    const timing = Math.abs((beatClock % 0.78) - 0.39);
-    const outcome = timing < 0.14 ? "perfect" : "good";
+    const input = motion.state.lastInput;
+    const choiceWindowOpenedAt = Number(entity.data?.choiceWindowOpenedAt);
+    const inputSeqAtWindow = Number(entity.data?.inputSeqAtWindow);
+    const intentional = Boolean(input
+      && Number.isFinite(choiceWindowOpenedAt)
+      && input.seq > (Number.isFinite(inputSeqAtWindow) ? inputSeqAtWindow : Number(entity.data?.inputSeqAtSpawn) || 0)
+      && ["left", "right"].includes(input.action)
+      && input.time >= choiceWindowOpenedAt
+      && motion.state.elapsed - input.time <= 1.35
+      && Math.abs(motion.state.lanePosition - entity.lane) < 0.42);
+    if (!intentional) {
+      recordDirectorFact({
+        id: `choice-passive:${entity.choiceGroup || entity.id}`,
+        type: "route-choice-missed",
+        decisionId: entity.data?.decisionId || entity.choiceGroup,
+        nodeId: entity.data?.nodeId,
+        inputSeq: input?.seq || 0
+      });
+      return;
+    }
+    const outcome = input.seq === (Number.isFinite(inputSeqAtWindow) ? inputSeqAtWindow : 0) + 1
+      && motion.state.elapsed - input.time <= 0.8 ? "perfect" : "good";
     const interaction = content.resolveCollectionInteraction({
       itemId: item.id,
       collectedItemIds: runState.collectedItems,
       combo: runState.combo + 1,
       stageIndex: currentStageIndex()
     });
-    const effect = interaction.gameplay.effect;
+    const effect = currentStageIndex() === 5 && interaction.gameplay.effect === "overdrive"
+      ? "shield"
+      : interaction.gameplay.effect;
     const duration = interaction.gameplay.durationMs / 1000;
     const powerupOptions = { duration };
     if (effect === "magnet") powerupOptions.laneRange = 1;
@@ -683,13 +1293,24 @@
     scheduleStoryEchoes(interaction, item);
     addFlow(outcome === "perfect" ? 24 : 17);
     haptic(outcome === "perfect" ? [12, 22, 16] : 12);
-    const synergyName = interaction.synergy.active[0]?.name;
-    toast(synergyName ? `${synergyName} · ${interaction.narrative.currentEvent}` : interaction.narrative.currentEvent, synergyName ? 2200 : 1850);
-    applyMoment({
-      outcome,
-      kind: "story-item",
+    announce(interaction.narrative.currentEvent);
+    recordDirectorFact({
+      id: `choice:${entity.choiceId || entity.id}`,
+      type: "route-choice",
+      decisionId: entity.data?.decisionId || entity.choiceGroup,
       itemId: item.id,
-      choiceId: entity.choiceId || entity.data?.choiceId
+      alternatives: entity.data?.alternatives || [],
+      resolution: outcome === "perfect" ? "clean" : "recovered",
+      quality: outcome,
+      worldEffect: getPhaseExperience().director?.worldState || getPhaseExperience().worldChange,
+      gesture: getPhaseExperience().director?.storyVerb,
+      musicCue: getPhaseExperience().director?.rhythm,
+      relationshipAxis: item.relationshipAxis,
+      semanticStep: entity.data?.semanticStep,
+      semanticKey: entity.data?.semanticKey,
+      inputSeq: input.seq,
+      nodeId: entity.data?.nodeId,
+      causeId: entity.data?.causeId
     });
   }
 
@@ -742,7 +1363,6 @@
     };
     visualRuntime?.effect("story-world", interaction);
     audio.interaction?.(interaction);
-    toast(echo.line, 2100);
     announce(echo.line);
   }
 
@@ -760,6 +1380,10 @@
           if (event.multiplier > 1) audio.powerup?.("multiplier", "sustain");
           haptic(5);
         }
+      } else if (event.type === "choice-window") {
+        visualRuntime?.effect("choice-window", event.entity);
+        audio.cue("choice");
+        haptic(4);
       } else if (event.type === "powerup-start") {
         visualRuntime?.effect("powerup-start", event);
         audio.powerup?.(event.powerup, "start");
@@ -778,33 +1402,80 @@
         addFlow(-42);
         haptic([42, 24, 34]);
         toast("脚步乱了一下", 900);
+        recordDirectorFact({
+          id: `collision:${event.seq}`,
+          type: "obstacle-hit",
+          causeId: event.entity.data?.causeId || event.entity.patternId || event.entity.id,
+          nodeId: event.entity.data?.nodeId,
+          inputSeq: event.inputSeq,
+          severity: event.entity.subtype === "train" ? "heavy" : "normal",
+          semanticStep: event.entity.data?.semanticStep,
+          semanticKey: event.entity.data?.semanticKey,
+          action: event.input?.action
+        });
         applyMoment({ outcome: "miss", kind: "collision" });
       } else if (event.type === "dodge") {
         visualRuntime?.effect("dodge", event.entity);
         audio.cue("good");
         addFlow(9);
-        motion.boost?.(0.5, 0.5);
         haptic(8);
+        recordDirectorFact({
+          id: `dodge:${event.seq}`,
+          type: "obstacle-dodged",
+          causeId: event.entity.data?.causeId || event.entity.patternId || event.entity.id,
+          nodeId: event.entity.data?.nodeId,
+          patternId: event.entity.patternId,
+          action: event.action,
+          inputSeq: event.inputSeq,
+          semanticStep: event.entity.data?.semanticStep,
+          semanticKey: event.entity.data?.semanticKey,
+          choicePending: Boolean(event.entity.data?.choicePending)
+        });
       } else if (event.type === "near-miss") {
         visualRuntime?.effect("near-miss", event.entity);
         audio.cue("near-miss");
         addFlow(15);
-        motion.boost?.(1.1, 0.82);
         haptic([8, 14, 8]);
         if (runState.status === "playing") runState = rules.recordNearMiss(runState);
+        const intentional = event.entity.avoid === "switch"
+          && ["left", "right"].includes(event.input?.action)
+          && event.time - Number(event.input?.time || -10) <= 0.72;
+        recordDirectorFact({
+          id: `near:${event.seq}`,
+          type: "near-miss",
+          causeId: event.entity.data?.causeId || event.entity.patternId || event.entity.id,
+          nodeId: event.entity.data?.nodeId,
+          patternId: event.entity.patternId,
+          action: event.input?.action,
+          inputSeq: event.inputSeq,
+          intentional,
+          semanticStep: event.entity.data?.semanticStep,
+          semanticKey: event.entity.data?.semanticKey,
+          choicePending: Boolean(event.entity.data?.choicePending)
+        });
         updateHud();
       } else if (event.type === "story-missed") {
         visualRuntime?.effect("story-missed", event.entity);
+        recordDirectorFact({
+          id: `story-missed:${event.entity.choiceGroup || event.entity.id}`,
+          type: "route-choice-missed",
+          decisionId: event.entity.data?.decisionId || event.entity.choiceGroup,
+          nodeId: event.entity.data?.nodeId,
+          inputSeq: motion.state.inputSeq
+        });
       }
     });
   }
 
-  function beginArrival(stageIndex, itemIds) {
+  function beginArrival(stageIndex, itemIds, directorArrival = director.selectArrival()) {
     pausedStage = stageIndex;
+    const authoredItems = directorArrival.featuredItemId
+      ? [directorArrival.featuredItemId]
+      : itemIds;
     arrivalData = content.selectArrival({
       stage: stageIndex + 1,
-      itemIds,
-      seed: `${patternCursor}-${runState.bestCombo}-${itemIds.join("|")}`
+      itemIds: authoredItems.length ? authoredItems : itemIds,
+      seed: `${stageIndex}-${directorArrival.featuredItemId || "arrival"}-${Object.keys(directorArrival.decisions || {}).join("|")}`
     });
     const featuredItem = content.getItem(arrivalData.itemId);
     const supportingItems = itemIds.filter((id) => id !== featuredItem.id).slice(-2).map((id) => content.getItem(id));
@@ -816,19 +1487,35 @@
       stageIndex,
       itemIds: itemIds.slice(),
       items: stagedItems,
+      director: directorArrival,
+      relationshipTail: directorArrival.tail,
       final: runState.status === "completed"
     };
     arrivalDuration = arrivalData.durationMs / 1000;
     arrivalElapsed = 0;
+    const interactionDefinition = ARRIVAL_INTERACTIONS[stageIndex];
+    arrivalInteraction = interactionDefinition ? {
+      sequence: interactionDefinition.sequence.slice(),
+      prompts: interactionDefinition.prompts.slice(),
+      completedCopy: interactionDefinition.completed,
+      step: 0,
+      prompted: false,
+      completed: false,
+      holdAt: arrivalDuration * 0.56
+    } : null;
     mode = "arrival";
     clearTimeout(routeMessageTimer);
     show(ui.routeMessage, false);
+    show(ui.stageIntro, false);
     motion.state.entities.length = 0;
-    if (ui.stageKicker) ui.stageKicker.textContent = `第${"一二三四五六七"[stageIndex]}程 · ${content.STAGES[stageIndex].name}`;
+    const storyAct = storyActForStage(stageIndex);
+    root?.setAttribute("data-story-act", storyAct.id);
+    if (ui.stageKicker) ui.stageKicker.textContent = `${storyAct.label} · 第${"一二三四五六七"[stageIndex]}程`;
     if (ui.stageName) ui.stageName.textContent = arrivalData.venue;
     if (ui.arrivalKicker) ui.arrivalKicker.textContent = arrivalData.venue;
     if (ui.arrivalTitle) ui.arrivalTitle.textContent = arrivalData.itemName;
     if (ui.arrivalCopy) ui.arrivalCopy.textContent = arrivalData.line;
+    if (ui.arrivalAction) ui.arrivalAction.hidden = true;
     show(ui.arrival, true);
     root?.setAttribute("data-arrival-stage", String(stageIndex + 1));
     visualRuntime?.beginArrival?.(arrivalData);
@@ -845,29 +1532,50 @@
     arrivalElapsed = 0;
     arrivalDuration = 0;
     arrivalData = null;
+    arrivalInteraction = null;
+    if (ui.arrivalAction) ui.arrivalAction.hidden = true;
     pausedStage = null;
     if (completed) {
       showResult();
       return;
     }
-    motion.state.entities.length = 0;
-    syncMotionStage(false);
-    spawnClock = 0;
-    mode = "playing";
-    updateHud();
-    showRouteMessage(currentStage());
-    announce(`${currentStage().destination}，继续出发`);
+    beginStageIntro("next");
   }
 
   function showFailure() {
-    mode = "result";
+    mode = "failure";
+    clearStageWorld();
     const rating = rules.calculateRating(runState, false);
     if (ui.grade) ui.grade.textContent = "—";
     if (ui.endingTitle) ui.endingTitle.textContent = runState.ending;
-    if (ui.endingCopy) ui.endingCopy.textContent = "城市还在继续。调整一下呼吸，就从最近的路口重新出发。";
+    const stage = currentStage();
+    const failure = runState.failure || {};
+    const definition = rules.STAGES[currentStageIndex()];
+    const checkpointReached = Boolean(failure.stage?.checkpointReached ?? runState.checkpoints.includes(definition.id));
+    const failureCopy = checkpointReached
+      ? `在${stage.scene}连续失去节奏，心跳归零。最近的路口已经记录，调整呼吸后可以从这里继续。`
+      : `在${stage.scene}连续碰撞，心跳归零。这一程会从开头重新开始。`;
+    if (ui.endingCopy) ui.endingCopy.textContent = failureCopy;
+    if (ui.failureKicker) ui.failureKicker.textContent = `${stage.name} · 奔跑中断`;
+    if (ui.failureTitle) ui.failureTitle.textContent = checkpointReached ? "这次停在半路" : "这次停在路上";
+    if (ui.failureCopy) ui.failureCopy.textContent = failure.message ? `${failure.message}。${failureCopy}` : failureCopy;
+    if (ui.failureCheckpoint) ui.failureCheckpoint.textContent = checkpointReached ? `${getPhaseExperience(currentStageIndex(), 1).venue}检查点` : `${getPhaseExperience(currentStageIndex(), 0).venue}起点`;
+    if (ui.failureProgress) ui.failureProgress.textContent = `${runState.stage.progress} / ${definition.target}`;
+    if (ui.failureProgressFill) ui.failureProgressFill.style.transform = `scaleX(${Math.min(1, runState.stage.progress / definition.target)})`;
+    if (ui.failureCheckpointCopy) ui.failureCheckpointCopy.textContent = checkpointReached ? "已走过的半程会保留" : "这一程将从开头重新开始";
+    show(ui.failureCheckpointPanel, true);
+    show(ui.danger, false);
     fillStats(rating);
     show(ui.retry, true);
-    show(ui.result, true);
+    show(ui.result, false);
+    show(ui.failure, true);
+    show(ui.stageIntro, false);
+    const failureVisual = { stageIndex: currentStageIndex(), stage, checkpointReached, condition: runState.condition };
+    if (visualRuntime?.showFailure) visualRuntime.showFailure(failureVisual);
+    else visualRuntime?.setFailureVisual?.(true, failureVisual);
+    audio.failure?.({ stageIndex: currentStageIndex(), checkpointReached });
+    haptic([55, 45, 70]);
+    announce(`${stage.name}，心跳归零。${checkpointReached ? "可以从检查点继续" : "准备后重新出发"}`);
     persist();
   }
 
@@ -875,6 +1583,7 @@
     if (ui.completion) ui.completion.textContent = `${rating.completion}%`;
     if (ui.accuracy) ui.accuracy.textContent = `${rating.accuracy}%`;
     if (ui.resultItems) ui.resultItems.textContent = String(rating.items);
+    if (ui.relationship) ui.relationship.textContent = runState.relationshipStyle?.label || "尚未定型";
     if (ui.resultCollisions) ui.resultCollisions.textContent = String(rating.collisions);
   }
 
@@ -884,34 +1593,64 @@
     const ending = content.getEnding(rating.grade);
     if (ui.grade) ui.grade.textContent = rating.grade;
     if (ui.endingTitle) ui.endingTitle.textContent = ending.title;
-    if (ui.endingCopy) ui.endingCopy.textContent = `${ending.line} ${ending.coda}`;
+    const relationshipId = runState.relationshipStyle?.id || "unwritten";
+    if (ui.endingCopy) ui.endingCopy.textContent = `${ending.line} ${ending.coda} ${RELATIONSHIP_ENDING_CODAS[relationshipId] || RELATIONSHIP_ENDING_CODAS.unwritten}`;
     fillStats(rating);
     show(ui.retry, false);
+    show(ui.failure, false);
     show(ui.result, true);
     persist();
     announce(`${rating.grade}级，${ending.title}`);
   }
 
-  function retryStage() {
-    if (mode !== "result" || runState.status !== "failed") return;
+  function resumeFailedStage(useCheckpoint = true) {
+    if (mode !== "failure" || runState.status !== "failed") return;
     runState = rules.retryFromCheckpoint(runState);
-    motion = createMotion();
+    if (!useCheckpoint) {
+      runState = clone(runState);
+      runState.condition = 100;
+      runState.heartbeat = 100;
+      runState.conditionBand = "steady";
+      runState.stage.progress = 0;
+      runState.stage.elapsed = 0;
+      runState.stage.attempts = 0;
+      runState.stage.perfect = 0;
+      runState.stage.misses = 0;
+      runState.stage.items = [];
+      runState.stage.choices = [];
+      runState.checkpoints = runState.checkpoints.filter((id) => id !== rules.STAGES[currentStageIndex()].id);
+    }
+    const savedStory = storyEnvelope(runState);
+    const restoredRuntime = useCheckpoint ? savedStory.worldState?.runtime || checkpointRuntime : null;
+    director = directorApi.createDirector({ state: useCheckpoint ? storySnapshotFromRun(runState) : null });
+    motion = createMotion(restoredRuntime);
+    if (restoredRuntime) {
+      restoreScheduler(savedStory.worldState?.scheduler || savedStory.worldState);
+      preserveRuntimeThroughIntro = true;
+    } else {
+      spawnClock = 0;
+      beatClock = 0;
+      flowEnergy = 0;
+      flowPeak = 0;
+      storyEchoes = [];
+      lastSpeedTier = -1;
+    }
     syncMotionStage(false);
-    mode = "playing";
     pausedStage = null;
     show(ui.result, false);
-    spawnClock = 0;
-    beatClock = 0;
-    flowEnergy = 0;
-    flowPeak = 0;
-    storyEchoes = [];
-    lastSpeedTier = -1;
+    show(ui.failure, false);
+    lastConditionBand = conditionBand();
     powerupHudSignature = "";
     visualRuntime?.clearCarry?.();
     syncCarryFromState();
-    updateHud();
+    if (visualRuntime?.clearFailure) visualRuntime.clearFailure();
+    else visualRuntime?.clearStatusVisual?.();
+    applyDirectorCommands(director.ingest({ id: `retry:${runState.retryCount}`, type: "retry" }));
     persist();
+    beginStageIntro("retry");
   }
+  function retryStage() { resumeFailedStage(true); }
+  function restartStage() { resumeFailedStage(false); }
 
   function advanceRulesTime(seconds) {
     if (mode !== "playing" || runState.status !== "playing") return;
@@ -921,21 +1660,48 @@
   function update(seconds) {
     visualTime += seconds;
     beatClock += seconds;
+    if (mode === "stage-intro") {
+      stageIntroElapsed = Math.min(stageIntroDuration, stageIntroElapsed + seconds);
+      if (stageIntroData) stageIntroData.progress = Math.min(1, stageIntroElapsed / Math.max(0.001, stageIntroDuration));
+      updateStageIntroPerformance();
+      audio.tick(seconds, 0, true, true, 0, motion.state.speedTier);
+      if (stageIntroElapsed >= stageIntroDuration) finishStageIntro();
+      return;
+    }
     if (mode === "arrival") {
-      arrivalElapsed = Math.min(arrivalDuration, arrivalElapsed + seconds);
+      if (arrivalInteraction && !arrivalInteraction.completed) {
+        arrivalElapsed = Math.min(arrivalInteraction.holdAt, arrivalElapsed + seconds);
+        if (!arrivalInteraction.prompted && arrivalElapsed >= arrivalInteraction.holdAt) {
+          arrivalInteraction.prompted = true;
+          updateArrivalPrompt();
+          announce(arrivalInteraction.prompts[0]);
+          haptic(7);
+        }
+      } else {
+        arrivalElapsed = Math.min(arrivalDuration, arrivalElapsed + seconds);
+      }
       audio.tick(seconds, 0, true, true, flowEnergy / 100, motion.state.speedTier);
       if (arrivalElapsed >= arrivalDuration) finishArrival();
       return;
     }
     if (mode !== "playing") return;
+    if (!runPrimed) {
+      audio.tick(seconds, 0, true, false, 0, motion.state.speedTier);
+      return;
+    }
     flowEnergy = Math.max(0, flowEnergy - seconds * (flowEnergy > 72 ? 3.2 : 1.35));
     spawnClock -= seconds;
     if (spawnClock <= 0) {
       const spawned = spawnPattern();
-      spawnClock = spawned ? 3.8 + (patternCursor % 3) * 0.24 : 0.24;
+      spawnClock = spawned ? 5.45 + (patternCursor % 3) * 0.22 : 0.24;
     }
     motion.step(seconds);
     handleMotionEvents(motion.drainEvents());
+    const timedCommands = director.tick(seconds);
+    if (timedCommands.length) {
+      applyDirectorCommands(timedCommands);
+      commitDirectorState(false);
+    }
     signalSpeedTier();
     processStoryEchoes();
     updateRunFeedback();
@@ -962,6 +1728,9 @@
     visual.render({
       time: visualTime,
       stageIndex: visualStageIndex(),
+      stageDefinition: getStageExperience(visualStageIndex()).blueprint || content.STAGES[visualStageIndex()],
+      stageContent: getStageExperience(visualStageIndex()).blueprint || content.STAGES[visualStageIndex()],
+      phaseDefinition: getPhaseExperience(visualStageIndex(), routePhase),
       mode,
       motion: motion.state,
       runState,
@@ -970,6 +1739,7 @@
         ...arrivalData,
         progress: Math.min(1, arrivalElapsed / Math.max(0.001, arrivalDuration))
       } : null,
+      stageIntro: stageIntroData ? { ...stageIntroData } : null,
       routePhase
     });
   }
@@ -1033,6 +1803,9 @@
   bind("[data-new-run]", "click", () => { reset(); start(); });
   bind("[data-restart]", "click", () => { reset(Boolean(safeLoad()?.profile?.newGamePlusUnlocked)); start(); });
   bind("[data-retry]", "click", retryStage);
+  bind("[data-failure-retry]", "click", retryStage);
+  bind("[data-failure-restart]", "click", restartStage);
+  bind("[data-stage-intro-skip]", "click", finishStageIntro);
   bind("[data-new-game-plus]", "click", () => { const save = safeLoad(); if (save && rules.canStartNewGamePlus(save)) { reset(true); start(); } });
   bind("[data-sound]", "click", (event) => {
     const muted = audio.toggle();
@@ -1065,6 +1838,7 @@
     return snapshot();
   }
   function completeStage(outcome = "perfect") {
+    if (mode === "stage-intro") finishStageIntro();
     const index = runState.stageIndex;
     while (runState.status === "playing" && runState.stageIndex === index) {
       const itemId = content.STAGE_ITEM_IDS[index][runState.stage.progress % content.STAGE_ITEM_IDS[index].length];
@@ -1078,13 +1852,24 @@
     finishArrival();
     return true;
   }
+  function finishStageIntroDebug() { return finishStageIntro(); }
+  function failDebug(kind = "collision") {
+    if (mode === "stage-intro") finishStageIntro();
+    while (runState.status === "playing") applyMoment({ outcome: "miss", kind });
+    return snapshot();
+  }
   function snapshot() {
     return {
       mode,
       pausedStage,
-      arrival: arrivalData ? clone(arrivalData) : null,
-      runState: clone(runState),
-      routePhase,
+      conditionBand: conditionBand(),
+          stageIntro: stageIntroData ? clone(stageIntroData) : null,
+          arrival: arrivalData ? clone(arrivalData) : null,
+          arrivalInteraction: arrivalInteraction ? clone(arrivalInteraction) : null,
+          runState: clone(runState),
+          director: clone(director.snapshot()),
+          routePhase,
+          scheduler: schedulerSnapshot(),
       motion: {
         stageIndex: motion.state.stageIndex,
         stage: motion.state.stage,
@@ -1118,9 +1903,12 @@
     spawn: (spec) => motion.spawn(spec),
     powerup: (type, options) => motion.activatePowerup(type, options),
     moment: applyMoment,
+    fact: recordDirectorFact,
     beat: (outcome) => applyMoment({ outcome }),
     completeStage,
+    finishStageIntro: finishStageIntroDebug,
     finishArrival: finishArrivalDebug,
+    fail: failDebug,
     retry: retryStage,
     save: persist
   });

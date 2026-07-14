@@ -141,6 +141,7 @@ test("stacks a transparent non-interactive ball canvas over the game canvas", ()
 test("uses a simulated water field without narrative scene photography", () => {
   const activeTableRenderer = implementationOf(game, "drawDateMap");
   const activeFrameRenderer = implementationOf(game, "draw");
+  const baseComposite = implementationOf(game, "rebuildBaseCompositeFrame");
 
   assert.match(game, /const BALL_CHROMA_THEMES = Object\.freeze\(\{/);
   assert.match(game, /const POCKET_VFX_PROFILES = Object\.freeze\(\{/);
@@ -150,7 +151,8 @@ test("uses a simulated water field without narrative scene photography", () => {
   assert.match(game, /function renderWaterSurface\(/);
   assert.match(activeTableRenderer, /renderWaterSurface\(timestamp\)/);
   assert.match(game, /function drawCushionLightResponse\(/);
-  assert.match(activeFrameRenderer, /drawDateMapLayer\(timestamp\)[\s\S]*drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.match(activeFrameRenderer, /drawBaseComposite\(timestamp\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.match(baseComposite, /tableCacheCanvas[\s\S]*dateMapFrameCanvas[\s\S]*cushionLightFrameCanvas[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)/);
   assert.doesNotMatch(activeTableRenderer, /drawCushionLightResponse|drawPocketLightPorts|drawLeatherPocket/);
   assert.doesNotMatch(
     activeTableRenderer,
@@ -404,6 +406,8 @@ test("integrates shot telemetry, persistent water and rail state, and pocket slo
   const rollingUpdate = implementationOf(game, "updateRollingState");
   const rollingWake = implementationOf(game, "depositRollingWaterWake");
   const railBurst = implementationOf(game, "spawnChromaRailBurst");
+  const cushionGeometry = implementationOf(game, "rebuildCushionLightGeometry");
+  const baseComposite = implementationOf(game, "rebuildBaseCompositeFrame");
   const cushionLight = `${implementationOf(game, "renderCushionLightResponse")}\n${implementationOf(game, "drawCushionLightResponse")}`;
   for (const token of ["hb-table-reflection", "hb-pocket-focus"]) {
     assert.match(tableStory, new RegExp(token));
@@ -437,11 +441,14 @@ test("integrates shot telemetry, persistent water and rail state, and pocket slo
   assert.match(rollingWake, /disturbMaterialWorld\(/);
   assert.match(game, /function railDistanceForContact\(/);
   assert.match(railBurst, /railDistanceForContact\(/);
-  assert.match(cushionLight, /rails\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.match(cushionGeometry, /rails[\s\S]*\.filter\(\(rail\) => rail\.plugin\.heartbeatRail\?\.kind === "cushion"\)/);
+  assert.match(cushionGeometry, /samplePoints\.push\(Object\.freeze\(\{ ratio, centerDistance:/);
+  assert.doesNotMatch(cushionLight, /rails\.filter\(/);
   assert.match(cushionLight, /wave\.originS \+ front/);
   assert.match(cushionLight, /wave\.originS - front/);
   assert.match(activeTableRenderer, /renderWaterSurface\(timestamp\)/);
-  assert.match(activeFrameRenderer, /drawDateMapLayer\(timestamp\)[\s\S]*drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)/);
+  assert.match(activeFrameRenderer, /drawBaseComposite\(timestamp\)/);
+  assert.match(baseComposite, /dateMapFrameCanvas[\s\S]*cushionLightFrameCanvas[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)/);
   assert.doesNotMatch(
     activeTableRenderer,
     /\b(?:drawChroma(?:ThemeField|Cloth|Pattern|RailBursts)|drawRollingChromaTrails)\(/
@@ -526,7 +533,9 @@ test("keeps a compact result dock and reserves the largest effect for black 8", 
   assert.match(game, /duration: success \? 4400 : 3200/);
   const cushionLight = `${implementationOf(game, "renderCushionLightResponse")}\n${implementationOf(game, "drawCushionLightResponse")}`;
   const activeFrameRenderer = implementationOf(game, "draw");
-  assert.match(activeFrameRenderer, /drawCushionLightResponse\(timestamp\)[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  const baseComposite = implementationOf(game, "rebuildBaseCompositeFrame");
+  assert.match(activeFrameRenderer, /drawBaseComposite\(timestamp\)[\s\S]*drawPocketLightPorts\(timestamp\)/);
+  assert.match(baseComposite, /cushionLightFrameCanvas[\s\S]*POCKETS\.forEach\(drawLeatherPocket\)/);
   assert.match(cushionLight, /dateMapState\.blackEightBlast/);
   assert.match(game, /screenShake = Math\.max\(screenShake, success \? 7\.2 : 4\.2\)/);
   assert.match(game, /scheduleResultAfterTable\(success \? 5000 : 3500\)/);

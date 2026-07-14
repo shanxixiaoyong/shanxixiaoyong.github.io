@@ -20,7 +20,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "after-rain",
     routeStyle: "promenade",
     destination: "library-crossing",
-    props: ["campus", "lamp", "signal", "graffiti"]
+    props: ["campus", "lamp", "signal", "graffiti"],
+    world: {
+      scene: "rain-campus",
+      landmarks: ["library-arcade", "glass-corridor", "camphor-grove"],
+      road: { geometry: "crowned-campus", material: "wet-asphalt", shoulders: "brick-walk", markings: "campus-crossing" },
+      obstacles: { style: "campus-commute", signatures: ["puddle-barricade", "bicycle-rack", "glass-gate"] },
+      lighting: { keyIntensity: 3.55, edgeIntensity: 1.55, warmIntensity: 13, environmentIntensity: 0.72, keyPosition: [-8, 15, 7], edgePosition: [8, 7, -4], warmPosition: [0, 4.4, -4] },
+      weather: { kind: "after-rain", rain: 0.045, wind: 0.45 },
+      particles: { kind: "leaf-drips", opacity: 0.3, size: 0.12 },
+      horizon: { kind: "campus-canopy", layers: ["library-roof", "tree-line", "water-tower"], parallax: [0.05, 0.16, 0.32] }
+    },
+    theme: { surface: "cool-wet", landmark: 0xd9e4d3, shadow: 0x183236, highlight: 0xffd28a }
   },
   {
     id: "familiar-steps",
@@ -40,7 +51,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "breeze",
     routeStyle: "riverside",
     destination: "bridge-bookstore",
-    props: ["station", "railing", "bench", "tree"]
+    props: ["station", "railing", "bench", "tree"],
+    world: {
+      scene: "river-bookstore",
+      landmarks: ["arched-river-bridge", "sunken-bookstore", "embankment-steps"],
+      road: { geometry: "riverside-boardwalk", material: "mist-concrete", shoulders: "timber-deck", markings: "book-spines" },
+      obstacles: { style: "bookstore-delivery", signatures: ["bicycle-wheel", "book-cart", "canvas-awning"] },
+      lighting: { keyIntensity: 3.05, edgeIntensity: 1.2, warmIntensity: 10.5, environmentIntensity: 0.76, keyPosition: [-4, 11, 5], edgePosition: [9, 4, -10], warmPosition: [-3, 3, -12] },
+      weather: { kind: "river-mist", rain: 0, wind: 0.72 },
+      particles: { kind: "paper-pages", opacity: 0.38, size: 0.15 },
+      horizon: { kind: "river-depth", layers: ["opposite-bank", "bridge-arch", "mist-towers"], parallax: [0.035, 0.12, 0.28] }
+    },
+    theme: { surface: "paper-concrete", landmark: 0xe6e1cf, shadow: 0x173438, highlight: 0xb9f1df }
   },
   {
     id: "closer-signals",
@@ -60,7 +82,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "neon",
     routeStyle: "metro",
     destination: "old-cinema",
-    props: ["building", "cafe", "neon-sign", "signal"]
+    props: ["building", "cafe", "neon-sign", "signal"],
+    world: {
+      scene: "neon-cinema",
+      landmarks: ["cinema-marquee", "metro-portals", "elevated-signage"],
+      road: { geometry: "tram-canyon", material: "neon-rail", shoulders: "platform-granite", markings: "ticket-stubs" },
+      obstacles: { style: "cinema-transit", signatures: ["velvet-barrier", "service-tram", "marquee-gate"] },
+      lighting: { keyIntensity: 2.55, edgeIntensity: 3.1, warmIntensity: 20, environmentIntensity: 0.94, keyPosition: [6, 12, 3], edgePosition: [-8, 7, -4], warmPosition: [2, 3, -8] },
+      weather: { kind: "neon-haze", rain: 0.025, wind: 0.28 },
+      particles: { kind: "neon-dust", opacity: 0.68, size: 0.17 },
+      horizon: { kind: "cinema-canyon", layers: ["rail-viaduct", "marquee-row", "neon-towers"], parallax: [0.04, 0.14, 0.38] }
+    },
+    theme: { surface: "electric-wet", landmark: 0x41385f, shadow: 0x080d23, highlight: 0xff8a71 }
   },
   {
     id: "spoken-heart",
@@ -80,7 +113,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "rain",
     routeStyle: "market",
     destination: "riverside-bench",
-    props: ["tunnel", "lamp", "shelter", "graffiti"]
+    props: ["tunnel", "lamp", "shelter", "graffiti"],
+    world: {
+      scene: "night-market-river",
+      landmarks: ["lantern-market", "music-square", "river-jetty"],
+      road: { geometry: "market-cobbles", material: "oily-stone", shoulders: "stall-thresholds", markings: "lantern-path" },
+      obstacles: { style: "market-stalls", signatures: ["basket-barrier", "food-cart", "striped-canopy"] },
+      lighting: { keyIntensity: 2.35, edgeIntensity: 2.2, warmIntensity: 24, environmentIntensity: 0.86, keyPosition: [-2, 8, 2], edgePosition: [8, 5, -12], warmPosition: [-3, 2.6, -5] },
+      weather: { kind: "river-night", rain: 0.13, wind: 0.82 },
+      particles: { kind: "lantern-embers", opacity: 0.55, size: 0.19 },
+      horizon: { kind: "market-river", layers: ["river-reflections", "stall-roofs", "apartment-lights"], parallax: [0.025, 0.2, 0.34] }
+    },
+    theme: { surface: "market-stone", landmark: 0x774456, shadow: 0x160f20, highlight: 0xffbe72 }
   },
   {
     id: "shared-days",
@@ -100,7 +144,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "warm",
     routeStyle: "neighborhood",
     destination: "warm-kitchen",
-    props: ["market", "station", "home", "tree"]
+    props: ["market", "station", "home", "tree"],
+    world: {
+      scene: "lived-in-neighborhood",
+      landmarks: ["breakfast-corner", "balcony-houses", "lit-kitchen-window"],
+      road: { geometry: "neighborhood-patchwork", material: "dry-asphalt", shoulders: "doorstep-brick", markings: "morning-crossing" },
+      obstacles: { style: "daily-delivery", signatures: ["grocery-crates", "delivery-bike", "laundry-gate"] },
+      lighting: { keyIntensity: 4.05, edgeIntensity: 1.05, warmIntensity: 18, environmentIntensity: 0.7, keyPosition: [-10, 12, 10], edgePosition: [6, 5, -6], warmPosition: [2, 3, -3] },
+      weather: { kind: "window-morning", rain: 0, wind: 0.2 },
+      particles: { kind: "kitchen-steam", opacity: 0.42, size: 0.23 },
+      horizon: { kind: "home-rooftops", layers: ["garden-walls", "tile-roofs", "water-tanks"], parallax: [0.05, 0.18, 0.3] }
+    },
+    theme: { surface: "lived-in-asphalt", landmark: 0xc5b58c, shadow: 0x21372f, highlight: 0xffd58c }
   },
   {
     id: "rough-weather",
@@ -120,7 +175,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "storm",
     routeStyle: "bridge",
     destination: "bridge-shelter",
-    props: ["maintenance", "warning", "signal", "tunnel"]
+    props: ["maintenance", "warning", "signal", "tunnel"],
+    world: {
+      scene: "storm-old-bridge",
+      landmarks: ["steel-truss", "flood-pylons", "bridge-shelter"],
+      road: { geometry: "bridge-grating", material: "flooded-steel", shoulders: "maintenance-walk", markings: "broken-warning" },
+      obstacles: { style: "storm-maintenance", signatures: ["flood-barrier", "maintenance-rig", "fallen-truss"] },
+      lighting: { keyIntensity: 1.7, edgeIntensity: 2.65, warmIntensity: 8, environmentIntensity: 0.82, keyPosition: [3, 14, 5], edgePosition: [-9, 6, -8], warmPosition: [0, 2, -12] },
+      weather: { kind: "violent-storm", rain: 0.64, wind: 3.4 },
+      particles: { kind: "storm-spray", opacity: 0.74, size: 0.11 },
+      horizon: { kind: "storm-bridge", layers: ["flood-water", "truss-repeat", "lightning-clouds"], parallax: [0.02, 0.18, 0.26] }
+    },
+    theme: { surface: "storm-steel", landmark: 0x637184, shadow: 0x0b1422, highlight: 0xff6669 }
   },
   {
     id: "toward-home",
@@ -140,7 +206,18 @@ const STAGE_CONFIGS = Object.freeze([
     weather: "starlight",
     routeStyle: "terminal",
     destination: "lit-home",
-    props: ["terminal", "home", "lamp", "tree"]
+    props: ["terminal", "home", "lamp", "tree"],
+    world: {
+      scene: "dawn-station",
+      landmarks: ["platform-clock", "glass-concourse", "departures-canopy"],
+      road: { geometry: "terminal-platforms", material: "dawn-rail", shoulders: "platform-tiles", markings: "departure-lines" },
+      obstacles: { style: "station-departure", signatures: ["luggage-stack", "platform-cart", "departure-gate"] },
+      lighting: { keyIntensity: 3.2, edgeIntensity: 2.35, warmIntensity: 16, environmentIntensity: 0.92, keyPosition: [-6, 10, -2], edgePosition: [8, 8, -14], warmPosition: [0, 4, -9] },
+      weather: { kind: "dawn-clear", rain: 0, wind: 0.38 },
+      particles: { kind: "dawn-sparks", opacity: 0.7, size: 0.16 },
+      horizon: { kind: "terminal-dawn", layers: ["rail-yard", "station-roof", "sunrise-city"], parallax: [0.035, 0.16, 0.33] }
+    },
+    theme: { surface: "dawn-platform", landmark: 0xb8b8c9, shadow: 0x151c34, highlight: 0xffd780 }
   }
 ]);
 
@@ -209,6 +286,344 @@ const POWERUP_COLORS = Object.freeze({
   overdrive: 0xffd166
 });
 const POWERUP_IMPACT_POOL_SIZE = 4;
+const TRACK_CLEARANCE = Object.freeze({
+  halfWidth: ROAD_WIDTH / 2 + 1.08,
+  decorNearZ: -3.6,
+  decorFarZ: -62,
+  premiumNearZ: -5.4,
+  premiumSway: 0.18,
+  overheadY: 4.35,
+  cameraZ: 10.9
+});
+const ENTITY_POOL_LIMIT = 5;
+const LOW_STATE_THRESHOLD = 34;
+const COMPANION_SHOULDER_X = ROAD_WIDTH / 2 - 0.38;
+const COMPANION_HAZARD_Z = 4.8;
+const TRANSIENT_BURST_POOL_SIZE = 6;
+const TRANSIENT_RING_POOL_SIZE = 10;
+const TRANSIENT_PARTICLE_CAPACITY = 54;
+const PLANT_STORY_KINDS = new Set(["flower", "plant"]);
+const MUSIC_STORY_KINDS = new Set(["record", "wristband"]);
+const LIGHT_STORY_KINDS = new Set(["key", "lamp"]);
+const DARK_WEATHER_KINDS = new Set(["neon", "rain", "storm", "starlight"]);
+const BRANCH_COLORS = Object.freeze({ attention: 0x67e8ff, mutuality: 0xff86a9, repair: 0x8df0bd });
+const MATERIAL_TEXTURE_SLOTS = Object.freeze([
+  "alphaMap", "aoMap", "anisotropyMap", "bumpMap", "clearcoatMap", "clearcoatNormalMap",
+  "clearcoatRoughnessMap", "displacementMap", "emissiveMap", "envMap", "gradientMap",
+  "iridescenceMap", "iridescenceThicknessMap", "lightMap", "map", "matcap", "metalnessMap",
+  "normalMap", "roughnessMap", "sheenColorMap", "sheenRoughnessMap", "specularColorMap",
+  "specularIntensityMap", "specularMap", "thicknessMap", "transmissionMap"
+]);
+const ROAD_SURFACE_SETTINGS = Object.freeze({
+  "wet-asphalt": Object.freeze({ roughness: 0.38, metalness: 0.04, clearcoat: 0.62, clearcoatRoughness: 0.2 }),
+  "mist-concrete": Object.freeze({ roughness: 0.82, metalness: 0.02, clearcoat: 0.16, clearcoatRoughness: 0.58 }),
+  "neon-rail": Object.freeze({ roughness: 0.3, metalness: 0.22, clearcoat: 0.72, clearcoatRoughness: 0.18 }),
+  "oily-stone": Object.freeze({ roughness: 0.58, metalness: 0.03, clearcoat: 0.44, clearcoatRoughness: 0.3 }),
+  "dry-asphalt": Object.freeze({ roughness: 0.9, metalness: 0.01, clearcoat: 0.08, clearcoatRoughness: 0.7 }),
+  "flooded-steel": Object.freeze({ roughness: 0.32, metalness: 0.34, clearcoat: 0.74, clearcoatRoughness: 0.16 }),
+  "dawn-rail": Object.freeze({ roughness: 0.48, metalness: 0.24, clearcoat: 0.38, clearcoatRoughness: 0.26 })
+});
+const INTRO_CAMERA_CUES = Object.freeze({
+  wide: Object.freeze({ x: 0, y: 5.92, z: 11.48, lookY: 0.72, lookZ: -21.5, fov: 61, action: "run" }),
+  pan: Object.freeze({ x: -1.12, y: 5.58, z: 10.92, lookY: 0.82, lookZ: -18.5, fov: 59, action: "run" }),
+  close: Object.freeze({ x: 0.72, y: 3.92, z: 8.28, lookY: 1.18, lookZ: -6.4, fov: 50, action: "idle" }),
+  follow: Object.freeze({ x: 0, y: 4.82, z: 9.72, lookY: 0.72, lookZ: -14.8, fov: 57, action: "run" }),
+  surge: Object.freeze({ x: 0, y: 4.56, z: 10.82, lookY: 0.58, lookZ: -19.8, fov: 64, action: "run" }),
+  weave: Object.freeze({ x: 0.84, y: 4.72, z: 10.08, lookY: 0.68, lookZ: -16.8, fov: 61, action: "run" })
+});
+
+const QUALITY_PROFILES = Object.freeze([
+  Object.freeze({ key: "cinematic", targetDrawCalls: 106, decorStride: 1, worldLayers: 3, premiumCity: true, shadows: true, particleScale: 1, entityRange: 58, entityMeshBudget: 12, roadDetail: 2 }),
+  Object.freeze({ key: "balanced", targetDrawCalls: 90, decorStride: 2, worldLayers: 2, premiumCity: true, shadows: true, particleScale: 0.82, entityRange: 42, entityMeshBudget: 7, roadDetail: 1 }),
+  Object.freeze({ key: "performance", targetDrawCalls: 76, decorStride: 0, worldLayers: 1, premiumCity: false, shadows: false, particleScale: 0.56, entityRange: 28, entityMeshBudget: 4, roadDetail: 0 })
+]);
+
+// Each act owns a spatial grammar. The collision lanes stay dependable while the
+// road silhouette, destination landmark, camera and relationship blocking change.
+const ACT_VISUAL_DIRECTIONS = Object.freeze([
+  Object.freeze([
+    Object.freeze({ id: "campus-release", topology: "arcade-squeeze", goal: "bell-rope", cameraRig: "follow-column", camera: [0, 5.55, 10.65, 0.7, -18.5, 59], tint: 0xb7d8d0, tintMix: 0.08, fog: 0.94, rain: 1, edge: 0.88, width: 0.96, curve: 0.08, split: 0, cadence: 4.5, goalX: -4.55, relation: "absent" }),
+    Object.freeze({ id: "sun-shower-lane", topology: "root-undulation", goal: "vending-slot", cameraRig: "shoulder-beacon", camera: [0.22, 5.08, 10.15, 0.66, -16.8, 58], tint: 0xffd69b, tintMix: 0.13, fog: 0.86, rain: 0.62, edge: 1.08, width: 1.04, curve: 0.34, split: 0.08, cadence: 3.7, goalX: 4.48, relation: "absent" }),
+    Object.freeze({ id: "library-crossing", topology: "crossing-converge", goal: "crossing-clock", cameraRig: "tele-crossing", camera: [-0.18, 5.78, 11.35, 0.78, -22, 61], tint: 0xffc776, tintMix: 0.11, fog: 0.9, rain: 0.36, edge: 1.16, width: 1.12, curve: 0.06, split: -0.22, cadence: 5.2, goalX: 4.4, relation: "absent" })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "misty-levee", topology: "levee-outer-curve", goal: "route-board", cameraRig: "river-offset", camera: [-0.28, 5.48, 10.82, 0.7, -19.5, 59], tint: 0x8ed5cf, tintMix: 0.1, fog: 1.12, rain: 0, edge: 0.82, width: 0.92, curve: 0.45, split: 0.08, cadence: 5.8, goalX: 4.72, relation: "parallel-left" }),
+    Object.freeze({ id: "record-alley", topology: "bridge-groove-split", goal: "listening-post", cameraRig: "portal-low", camera: [0.24, 4.72, 9.92, 0.62, -15.5, 56], tint: 0x74d5d5, tintMix: 0.12, fog: 0.92, rain: 0, edge: 1.1, width: 1.06, curve: 0.16, split: 0.34, cadence: 3.4, goalX: -4.66, relation: "yield-right" }),
+    Object.freeze({ id: "bookstore-threshold", topology: "bookstore-step-funnel", goal: "cat-bell", cameraRig: "door-lock", camera: [-0.16, 5.22, 10.3, 0.82, -16.2, 57], tint: 0xf5d9a7, tintMix: 0.15, fog: 0.82, rain: 0, edge: 1.18, width: 1.14, curve: 0.04, split: -0.28, cadence: 4.1, goalX: -4.58, relation: "wait-left" })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "station-rush", topology: "station-braid", goal: "departure-board", cameraRig: "clock-pressure", camera: [0, 4.82, 10.76, 0.52, -20.8, 64], tint: 0x365bc4, tintMix: 0.15, fog: 1.08, rain: 0.08, edge: 1.35, width: 0.9, curve: 0.18, split: 0.46, cadence: 2.8, goalX: 4.68, relation: "parallel-right" }),
+    Object.freeze({ id: "last-train-transfer", topology: "platform-arc", goal: "call-box", cameraRig: "platform-tele", camera: [-0.2, 5.02, 10.4, 0.64, -17.5, 61], tint: 0xc24d9c, tintMix: 0.14, fog: 0.98, rain: 0.12, edge: 1.42, width: 1.02, curve: 0.5, split: 0.14, cadence: 3.2, goalX: -4.6, relation: "pace-left" }),
+    Object.freeze({ id: "marquee-approach", topology: "marquee-release", goal: "letter-box", cameraRig: "marquee-dolly", camera: [0.18, 4.78, 9.88, 0.84, -14.8, 57], tint: 0xffac6e, tintMix: 0.18, fog: 0.82, rain: 0, edge: 1.55, width: 1.15, curve: 0.06, split: -0.18, cadence: 4.7, goalX: 4.48, relation: "handoff-right" })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "market-taste", topology: "market-slalom", goal: "stall-sign", cameraRig: "market-weave", camera: [0.3, 5.22, 10.18, 0.66, -16.8, 60], tint: 0xffa43c, tintMix: 0.16, fog: 0.9, rain: 0, edge: 1.28, width: 0.94, curve: 0.52, split: 0.08, cadence: 3.1, goalX: -4.52, relation: "parallel-left" }),
+    Object.freeze({ id: "music-crowd", topology: "music-crowd-ring", goal: "light-console", cameraRig: "beat-crane", camera: [-0.26, 5.92, 11.2, 0.72, -20.2, 63], tint: 0xeb4f87, tintMix: 0.18, fog: 0.96, rain: 0, edge: 1.62, width: 1.02, curve: 0.2, split: 0.48, cadence: 2.5, goalX: 4.62, relation: "sync-right" }),
+    Object.freeze({ id: "quiet-river", topology: "river-singletrack", goal: "coin-lamp", cameraRig: "river-breath-cam", camera: [0, 5.58, 10.7, 0.8, -18.2, 58], tint: 0x6f8fc0, tintMix: 0.15, fog: 0.8, rain: 0, edge: 0.78, width: 0.86, curve: 0.28, split: -0.36, cadence: 6.2, goalX: -4.7, relation: "close-left" })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "breakfast-block", topology: "breakfast-chicane", goal: "order-clips", cameraRig: "window-glance", camera: [0.16, 5.08, 10.12, 0.72, -16.6, 57], tint: 0xffd598, tintMix: 0.14, fog: 0.76, rain: 0, edge: 0.92, width: 0.98, curve: 0.38, split: 0.08, cadence: 4.2, goalX: 4.5, relation: "routine-right" }),
+    Object.freeze({ id: "market-list", topology: "market-grid", goal: "market-scale", cameraRig: "market-high", camera: [-0.18, 5.88, 11.28, 0.68, -21.2, 61], tint: 0x9bbb78, tintMix: 0.1, fog: 0.86, rain: 0, edge: 1.04, width: 1.1, curve: 0.06, split: 0.42, cadence: 3.6, goalX: -4.62, relation: "misalign-left" }),
+    Object.freeze({ id: "stairway-home", topology: "stair-switchback", goal: "doorbell", cameraRig: "stair-tilt", camera: [0.28, 5.38, 10.48, 0.9, -17.4, 58], tint: 0x7d8498, tintMix: 0.16, fog: 1.02, rain: 0.14, edge: 0.72, width: 0.9, curve: 0.62, split: 0.22, cadence: 3.9, goalX: 4.7, relation: "missed-right" })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "under-flyover", topology: "flyover-zigzag", goal: "pump-shutter", cameraRig: "storm-low", camera: [-0.18, 4.68, 10.2, 0.58, -16.6, 58], tint: 0x344a66, tintMix: 0.22, fog: 1.32, rain: 1.26, edge: 0.82, width: 0.9, curve: 0.46, split: 0.22, cadence: 2.9, goalX: -4.6, relation: "express-ahead" }),
+    Object.freeze({ id: "closure-detour", topology: "detour-boardwalk-fork", goal: "route-lamp", cameraRig: "fork-overhead", camera: [0.24, 5.82, 11.1, 0.72, -20.4, 61], tint: 0x546d87, tintMix: 0.2, fog: 1.18, rain: 1.08, edge: 1.14, width: 1.06, curve: 0.34, split: 0.58, cadence: 3.5, goalX: 4.72, relation: "listen-left" }),
+    Object.freeze({ id: "shelter-approach", topology: "shelter-funnel", goal: "drip-chain", cameraRig: "shelter-tele", camera: [0, 5.18, 10.4, 0.82, -16.2, 56], tint: 0xd7b879, tintMix: 0.13, fog: 0.94, rain: 0.44, edge: 1.3, width: 1.16, curve: 0.04, split: -0.38, cadence: 5.4, goalX: -4.55, relation: "clear-obstacle" })
+  ]),
+  Object.freeze([
+    Object.freeze({ id: "first-train-platform", topology: "platform-paired", goal: "train-board", cameraRig: "train-parallel", camera: [-0.16, 5.22, 10.38, 0.68, -18.2, 59], tint: 0x6ca5cf, tintMix: 0.13, fog: 0.82, rain: 0, edge: 1.22, width: 1.02, curve: 0.12, split: 0.34, cadence: 4.4, goalX: 4.66, relation: "luggage-left" }),
+    Object.freeze({ id: "familiar-memory-street", topology: "memory-material-bands", goal: "post-box", cameraRig: "memory-match", camera: [0.2, 5.52, 10.62, 0.74, -18.8, 60], tint: 0xd8a8d2, tintMix: 0.14, fog: 0.84, rain: 0.08, edge: 1.36, width: 1.08, curve: 0.3, split: 0.26, cadence: 3.8, goalX: -4.54, relation: "luggage-handoff" }),
+    Object.freeze({ id: "home-straight", topology: "home-converge", goal: "entry-tray", cameraRig: "home-dolly", camera: [0, 5.72, 11.1, 0.88, -21.8, 60], tint: 0xffd589, tintMix: 0.17, fog: 0.7, rain: 0, edge: 1.5, width: 1.18, curve: 0, split: -0.48, cadence: 6.4, goalX: 4.45, relation: "home-together" })
+  ])
+]);
+
+const RELATIONSHIP_MODES = Object.freeze({
+  absent: Object.freeze({ visible: false, lane: 0, z: -9, action: "run", weight: "none" }),
+  "parallel-left": Object.freeze({ visible: true, lane: -1, z: -5.8, action: "run", weight: "none" }),
+  "parallel-right": Object.freeze({ visible: true, lane: 1, z: -5.4, action: "run", weight: "none" }),
+  "yield-right": Object.freeze({ visible: true, lane: 1, z: -3.7, action: "run", weight: "none" }),
+  "wait-left": Object.freeze({ visible: true, lane: -1, z: -7.2, action: "idle", weight: "none" }),
+  "pace-left": Object.freeze({ visible: true, lane: -1, z: -4.6, action: "run", weight: "none" }),
+  "handoff-right": Object.freeze({ visible: true, lane: 1, z: -3.8, action: "run", weight: "handoff" }),
+  "sync-right": Object.freeze({ visible: true, lane: 1, z: -4.1, action: "run", weight: "none" }),
+  "close-left": Object.freeze({ visible: true, lane: -1, z: -2.9, action: "run", weight: "none" }),
+  "routine-right": Object.freeze({ visible: true, lane: 1, z: -5, action: "run", weight: "none" }),
+  "misalign-left": Object.freeze({ visible: true, lane: -1, z: -10.5, action: "run", weight: "none" }),
+  "missed-right": Object.freeze({ visible: true, lane: 1, z: -15.5, action: "run", weight: "none" }),
+  "express-ahead": Object.freeze({ visible: true, lane: 1, z: -7.8, action: "idle", weight: "none" }),
+  "listen-left": Object.freeze({ visible: true, lane: -1, z: -4.2, action: "idle", weight: "none" }),
+  "clear-obstacle": Object.freeze({ visible: true, lane: 1, z: -2.8, action: "idle", weight: "shared" }),
+  "luggage-left": Object.freeze({ visible: true, lane: -1, z: -4.4, action: "run", weight: "companion" }),
+  "luggage-handoff": Object.freeze({ visible: true, lane: 1, z: -3.2, action: "run", weight: "handoff" }),
+  "home-together": Object.freeze({ visible: true, lane: 1, z: -3.6, action: "run", weight: "shared" })
+});
+const RELATION_FACE_PLAYER = new Set(["wait-left", "express-ahead", "listen-left", "clear-obstacle"]);
+const RELATION_LINK_MODES = new Set(["handoff-right", "sync-right", "close-left", "listen-left", "clear-obstacle", "luggage-handoff", "home-together"]);
+const RELATION_SHARED_MODES = new Set(["clear-obstacle", "home-together"]);
+
+function introCameraCue(value) {
+  const cue = String(value || "follow").toLowerCase();
+  if (cue.includes("close")) return INTRO_CAMERA_CUES.close;
+  if (cue.includes("surge")) return INTRO_CAMERA_CUES.surge;
+  if (cue.includes("weave")) return INTRO_CAMERA_CUES.weave;
+  if (cue.includes("wide")) return INTRO_CAMERA_CUES.wide;
+  if (cue.includes("pan")) return INTRO_CAMERA_CUES.pan;
+  return INTRO_CAMERA_CUES.follow;
+}
+
+function actDirectionAt(stageIndex, actIndex, phaseContent = null) {
+  const safeStage = clamp(Math.trunc(Number(stageIndex) || 0), 0, ACT_VISUAL_DIRECTIONS.length - 1);
+  const safeAct = clamp(Math.trunc(Number(actIndex) || 0), 0, 2);
+  const base = ACT_VISUAL_DIRECTIONS[safeStage][safeAct];
+  const director = objectValue(phaseContent?.director);
+  const camera = Array.isArray(director.camera) && director.camera.length >= 6 ? director.camera.slice(0, 6) : base.camera;
+  return {
+    ...base,
+    id: phaseContent?.id || director.actId || base.id,
+    topology: director.routeTopologyKey || director.topology || base.topology,
+    goal: director.visibleGoal || director.visibleGoalKey || base.goal,
+    cameraRig: director.cameraRigKey || base.cameraRig,
+    camera,
+    relation: director.relationshipMode || director.relationshipPresence || base.relation,
+    cadence: clamp(Number(director.cadence ?? phaseContent?.cadence ?? base.cadence) || base.cadence, 2.2, 7)
+  };
+}
+
+function relationshipMode(value) {
+  const key = String(value || "absent");
+  return { key, ...(RELATIONSHIP_MODES[key] || RELATIONSHIP_MODES.absent) };
+}
+
+function directorCommandStamp(id, channel = "scene") {
+  const match = /^([^:]+):([^:]+):(\d+):(\d+):/.exec(id);
+  if (!match) return null;
+  return { scope: `${match[1]}:${match[2]}:${match[3]}:${channel}`, ordinal: Number(match[4]) };
+}
+
+function objectValue(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function firstDefined(...values) {
+  return values.find((value) => value !== undefined && value !== null);
+}
+
+function colorValue(value, fallback) {
+  if (Number.isFinite(Number(value))) return Number(value);
+  if (typeof value === "string" && /^(#|0x|rgb\(|rgba\(|hsl\(|hsla\()/i.test(value.trim())) {
+    try { return new THREE.Color(value).getHex(); } catch (_) {}
+  }
+  return fallback;
+}
+
+function contentStageAt(index, explicitStage = null) {
+  if (explicitStage && typeof explicitStage === "object") return explicitStage;
+  const stages = globalThis.RunnerLoveContent?.STAGES;
+  return Array.isArray(stages) ? stages[index] || null : null;
+}
+
+function resolveStageVisualConfig(index, explicitStage = null) {
+  const fallback = STAGE_CONFIGS[clamp(Math.trunc(Number(index) || 0), 0, STAGE_CONFIGS.length - 1)];
+  const contentStage = contentStageAt(index, explicitStage);
+  const declaredVisual = objectValue(contentStage?.visual);
+  const declaredWorld = objectValue(contentStage?.world);
+  const world = {
+    ...declaredWorld,
+    sceneMood: firstDefined(declaredWorld.sceneMood, contentStage?.sceneMood),
+    timeWeather: firstDefined(declaredWorld.timeWeather, contentStage?.timeWeather),
+    colorPalette: firstDefined(declaredWorld.colorPalette, contentStage?.colorPalette),
+    landmarks: firstDefined(declaredWorld.landmarks, contentStage?.landmarks),
+    roadDesign: firstDefined(declaredWorld.roadDesign, contentStage?.roadDesign),
+    segments: firstDefined(declaredWorld.segments, contentStage?.segments)
+  };
+  const declaredTheme = objectValue(contentStage?.theme);
+  const theme = {
+    ...declaredTheme,
+    colorPalette: firstDefined(declaredTheme.colorPalette, world.colorPalette, contentStage?.colorPalette)
+  };
+  const colors = { ...objectValue(theme.colorPalette), ...objectValue(theme.palette), ...objectValue(theme.colors) };
+  const background = objectValue(world.background);
+  const road = { ...fallback.world.road, ...objectValue(world.roadDesign), ...objectValue(world.road) };
+  const roadMaterialKey = ROAD_SURFACE_SETTINGS[declaredVisual.roadMaterialKey]
+    ? declaredVisual.roadMaterialKey
+    : ROAD_SURFACE_SETTINGS[road.material] ? road.material : fallback.world.road.material;
+  road.material = roadMaterialKey;
+  road.geometry = declaredVisual.roadProfileKey || road.geometry || fallback.world.road.geometry;
+  const lighting = { ...fallback.world.lighting, ...objectValue(world.lighting), ...objectValue(theme.lighting) };
+  const authoredWeather = objectValue(world.timeWeather);
+  const weather = typeof world.weather === "string"
+    ? { ...fallback.world.weather, ...authoredWeather, kind: world.weather }
+    : { ...fallback.world.weather, ...authoredWeather, ...objectValue(world.weather) };
+  const particles = { ...fallback.world.particles, ...objectValue(world.particles) };
+  const horizon = { ...fallback.world.horizon, ...objectValue(world.horizon), ...objectValue(world.depth) };
+  const obstacleTheme = { ...fallback.world.obstacles, ...objectValue(contentStage?.obstacleDesign), ...objectValue(world.obstacles) };
+  obstacleTheme.style = declaredVisual.obstacleVisualKey || obstacleTheme.style || fallback.world.obstacles.style;
+  const resolvedWorld = {
+    ...fallback.world,
+    ...world,
+    road,
+    lighting,
+    weather,
+    particles,
+    horizon,
+    obstacles: obstacleTheme,
+    scene: declaredVisual.sceneFactoryKey || world.scene || fallback.world.scene,
+    landmarks: Array.isArray(world.landmarks) ? world.landmarks.slice(0, 8) : fallback.world.landmarks
+  };
+  return {
+    ...fallback,
+    id: contentStage?.id || fallback.id,
+    asset: firstDefined(background.asset, world.asset, theme.backdrop, fallback.asset),
+    district: contentStage?.district || world.district || fallback.district,
+    destination: contentStage?.destination?.name || contentStage?.destination || world.destination?.name || world.destination || fallback.destination,
+    routeStyle: firstDefined(road.routeStyle, world.routeStyle, fallback.routeStyle),
+    weather: firstDefined(typeof world.weather === "string" ? world.weather : weather.preset, theme.weather, fallback.weather),
+    sky: colorValue(firstDefined(colors.sky, theme.sky, background.sky), fallback.sky),
+    skyTop: colorValue(firstDefined(colors.skyTop, theme.skyTop, background.top), fallback.skyTop),
+    skyBottom: colorValue(firstDefined(colors.skyBottom, theme.skyBottom, background.bottom), fallback.skyBottom),
+    fog: colorValue(firstDefined(colors.fog, theme.fog, background.fog), fallback.fog),
+    fogDensity: clamp(Number(firstDefined(background.fogDensity, theme.fogDensity, fallback.fogDensity)) || fallback.fogDensity, 0.001, 0.04),
+    key: colorValue(firstDefined(colors.key, theme.key), fallback.key),
+    ambient: colorValue(firstDefined(colors.ambient, theme.ambient), fallback.ambient),
+    ground: colorValue(firstDefined(colors.ground, theme.ground), fallback.ground),
+    road: colorValue(firstDefined(colors.road, theme.road, road.color), fallback.road),
+    curb: colorValue(firstDefined(colors.curb, theme.curb, road.curb), fallback.curb),
+    accent: colorValue(firstDefined(colors.accent, theme.accent), fallback.accent),
+    world: resolvedWorld,
+    theme: { ...fallback.theme, ...theme, colors },
+    visual: {
+      sceneFactoryKey: declaredVisual.sceneFactoryKey || fallback.world.scene,
+      roadMaterialKey,
+      roadProfileKey: road.geometry,
+      obstacleVisualKey: obstacleTheme.style,
+      collectibleVisualKeys: Array.isArray(declaredVisual.collectibleVisualKeys) ? declaredVisual.collectibleVisualKeys.slice(0, 3) : [],
+      introCueSequence: Array.isArray(declaredVisual.introCueSequence) ? declaredVisual.introCueSequence.slice(0, 4) : []
+    }
+  };
+}
+
+function frustumClearanceAt(z, halfExtent = 0) {
+  const nearPressure = clamp((Number(z) + 24) / (TRACK_CLEARANCE.cameraZ + 24), 0, 1);
+  return TRACK_CLEARANCE.halfWidth + halfExtent + nearPressure * 0.48;
+}
+
+function constrainTracksidePlacement(side, requestedX, requestedZ, halfWidth = 0, halfDepth = 0, parallaxTravel = 0) {
+  const direction = side < 0 ? -1 : 1;
+  const z = Math.min(Number(requestedZ) || TRACK_CLEARANCE.premiumNearZ, TRACK_CLEARANCE.premiumNearZ - halfDepth - Math.max(0, parallaxTravel));
+  const x = direction * Math.max(Math.abs(Number(requestedX) || 0), frustumClearanceAt(z, halfWidth + TRACK_CLEARANCE.premiumSway));
+  return { x, z };
+}
+
+function decorSegmentVisible(z) {
+  return z <= TRACK_CLEARANCE.decorNearZ && z >= TRACK_CLEARANCE.decorFarZ;
+}
+
+function decorBoundsVisible(segmentZ, minZ, maxZ) {
+  return decorSegmentVisible(segmentZ + Math.max(0, Number(maxZ) || 0))
+    || (segmentZ + (Number(maxZ) || 0) <= TRACK_CLEARANCE.decorNearZ
+      && segmentZ + (Number(minZ) || 0) >= TRACK_CLEARANCE.decorFarZ);
+}
+
+function fitTracksideObject(object, side, requestedX, requestedZ) {
+  object.position.set(Number(requestedX) || 0, object.position.y, Number(requestedZ) || 0);
+  object.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(object);
+  if (bounds.isEmpty()) return object;
+  const innerEdge = side < 0 ? bounds.max.x : bounds.min.x;
+  const requiredEdge = (side < 0 ? -1 : 1) * frustumClearanceAt(bounds.max.z);
+  if (side < 0 && innerEdge > requiredEdge) object.position.x -= innerEdge - requiredEdge;
+  if (side > 0 && innerEdge < requiredEdge) object.position.x += requiredEdge - innerEdge;
+  object.updateMatrixWorld(true);
+  bounds.setFromObject(object);
+  object.userData.trackClearance = {
+    side: side < 0 ? -1 : 1,
+    innerEdge: side < 0 ? bounds.max.x : bounds.min.x,
+    nearZ: bounds.max.z
+  };
+  return object;
+}
+
+function capturePoolBaseline(object) {
+  const nodes = [];
+  object.traverse((node) => {
+    nodes.push({
+      node,
+      position: node.position.clone(),
+      quaternion: node.quaternion.clone(),
+      scale: node.scale.clone(),
+      visible: node.visible,
+      opacity: node.material?.opacity,
+      emissiveIntensity: node.material?.emissiveIntensity
+    });
+  });
+  object.userData.poolBaseline = nodes;
+}
+
+function resetPooledObject(object) {
+  object.userData.poolBaseline?.forEach((entry) => {
+    entry.node.position.copy(entry.position);
+    entry.node.quaternion.copy(entry.quaternion);
+    entry.node.scale.copy(entry.scale);
+    entry.node.visible = entry.visible;
+    if (entry.opacity !== undefined && entry.node.material) entry.node.material.opacity = entry.opacity;
+    if (entry.emissiveIntensity !== undefined && entry.node.material) entry.node.material.emissiveIntensity = entry.emissiveIntensity;
+  });
+  object.visible = false;
+  object.matrixAutoUpdate = true;
+  object.updateMatrixWorld(true);
+}
+
+function validateModelEnvelope(object, limits) {
+  object.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(object);
+  if (bounds.isEmpty()) return false;
+  const size = bounds.getSize(new THREE.Vector3());
+  return [size.x, size.y, size.z].every(Number.isFinite)
+    && size.x <= limits.width
+    && size.y <= limits.height
+    && size.z <= limits.depth;
+}
 
 function normalizePowerup(value) {
   const candidate = value && typeof value === "object"
@@ -283,22 +698,94 @@ function quadraticPoint(target, start, control, end, progress) {
 }
 
 const SHARED_GEOMETRIES = new WeakSet();
+const SHARED_TEXTURES = new WeakSet();
 
 function disposeObject(object) {
+  if (!object?.traverse) return;
   const geometries = new Set();
   const materials = new Set();
   const textures = new Set();
+  const sharedTextures = new Set();
   object.traverse((child) => {
+    if (child.userData?.sharedTexture?.isTexture) sharedTextures.add(child.userData.sharedTexture);
     if (child.geometry) geometries.add(child.geometry);
-    if (!child.material || child.userData.sharedMaterial) return;
-    (Array.isArray(child.material) ? child.material : [child.material]).forEach((item) => materials.add(item));
+    if (child.userData?.qualityMaterials) {
+      for (let index = 0; index < child.userData.qualityMaterials.length; index += 1) {
+        materials.add(child.userData.qualityMaterials[index]);
+      }
+    }
+    if (!child.material || child.userData?.sharedMaterial) return;
+    const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    for (let index = 0; index < childMaterials.length; index += 1) materials.add(childMaterials[index]);
   });
+  if (object.userData?.sharedTexture?.isTexture) sharedTextures.add(object.userData.sharedTexture);
   materials.forEach((item) => {
-    if (item.map && item.map !== object.userData.sharedTexture) textures.add(item.map);
+    for (let index = 0; index < MATERIAL_TEXTURE_SLOTS.length; index += 1) {
+      const texture = item[MATERIAL_TEXTURE_SLOTS[index]];
+      if (texture?.isTexture && !sharedTextures.has(texture) && !SHARED_TEXTURES.has(texture)) textures.add(texture);
+    }
+    if (item.uniforms) {
+      for (const key in item.uniforms) {
+        const texture = item.uniforms[key]?.value;
+        if (texture?.isTexture && !sharedTextures.has(texture) && !SHARED_TEXTURES.has(texture)) textures.add(texture);
+      }
+    }
     item.dispose?.();
   });
   textures.forEach((item) => item.dispose?.());
   geometries.forEach((item) => { if (!SHARED_GEOMETRIES.has(item)) item.dispose?.(); });
+  const runner = object.userData?.modelRunner;
+  if (runner?.layers) {
+    for (let index = 0; index < runner.layers.length; index += 1) {
+      const layer = runner.layers[index];
+      layer.mixer.stopAllAction();
+      layer.mixer.uncacheRoot(layer.model);
+    }
+  }
+}
+
+function disposeGltf(gltf) {
+  if (!gltf) return;
+  const scenes = Array.isArray(gltf.scenes) && gltf.scenes.length ? gltf.scenes : gltf.scene ? [gltf.scene] : [];
+  for (let index = 0; index < scenes.length; index += 1) disposeObject(scenes[index]);
+}
+
+function prepareEntityQuality(object) {
+  const entries = [];
+  object.traverse((child) => {
+    if ((!child.isMesh && !child.isSkinnedMesh) || child.isInstancedMesh) return;
+    if (!child.geometry.boundingSphere) child.geometry.computeBoundingSphere();
+    const radius = child.geometry.boundingSphere?.radius || 0;
+    const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    let luminous = false;
+    for (let index = 0; index < childMaterials.length; index += 1) {
+      if ((Number(childMaterials[index]?.emissiveIntensity) || 0) > 0.7) luminous = true;
+    }
+    entries.push({ node: child, baselineVisible: child.visible, score: radius + (luminous ? 4 : 0), luminous });
+  });
+  entries.sort((left, right) => Number(right.luminous) - Number(left.luminous) || right.score - left.score);
+  object.userData.qualityMeshes = entries;
+}
+
+function applyEntityQuality(object, meshBudget) {
+  const entries = object.userData.qualityMeshes;
+  if (!entries?.length) return;
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    entry.node.visible = entry.baselineVisible && (index < meshBudget || entry.luminous && index < meshBudget + 2);
+  }
+}
+
+function applyCharacterRenderQuality(character, performanceMode, shadows) {
+  character.traverse((child) => {
+    if (!child.isMesh && !child.isSkinnedMesh) return;
+    child.castShadow = shadows;
+    child.receiveShadow = shadows;
+    if (!child.userData.qualityMaterials) return;
+    child.material = performanceMode
+      ? child.userData.performanceMaterial
+      : child.userData.qualityMaterials;
+  });
 }
 
 function canvasTexture(width, height, painter) {
@@ -317,6 +804,8 @@ let toonGradientTexture = null;
 const roundedGeometryCache = new Map();
 let heartGeometry = null;
 const stageTokenGeometryCache = new Map();
+const phaseTokenGeometryCache = new Map();
+const collectibleVisualStyleCache = new Map();
 
 function getToonGradientTexture() {
   if (toonGradientTexture) return toonGradientTexture;
@@ -328,6 +817,7 @@ function getToonGradientTexture() {
   });
   toonGradientTexture.minFilter = THREE.NearestFilter;
   toonGradientTexture.magFilter = THREE.NearestFilter;
+  SHARED_TEXTURES.add(toonGradientTexture);
   return toonGradientTexture;
 }
 
@@ -477,6 +967,79 @@ function createStageTokenGeometry(stageIndex) {
   SHARED_GEOMETRIES.add(geometry);
   stageTokenGeometryCache.set(stageIndex, geometry);
   return geometry;
+}
+
+function createPhaseTokenGeometry(stageIndex, phaseIndex = 0) {
+  const phase = clamp(Math.trunc(Number(phaseIndex) || 0), 0, 2);
+  const key = `${stageIndex}:${phase}`;
+  if (phaseTokenGeometryCache.has(key)) return phaseTokenGeometryCache.get(key);
+  const geometry = createStageTokenGeometry(stageIndex).clone();
+  if (phase === 1) {
+    geometry.rotateZ(Math.PI / 7);
+    geometry.scale(0.92, 1.08, 1);
+  } else if (phase === 2) {
+    geometry.rotateZ(-Math.PI / 10);
+    geometry.scale(1.08, 0.94, 1.08);
+  }
+  SHARED_GEOMETRIES.add(geometry);
+  phaseTokenGeometryCache.set(key, geometry);
+  return geometry;
+}
+
+function collectibleVisualStyle(kind, stageIndex, phaseIndex) {
+  const normalized = String(kind || "stage-token").toLowerCase();
+  const phase = clamp(Math.trunc(Number(phaseIndex) || 0), 0, 2);
+  const key = `${stageIndex}:${phase}:${normalized}`;
+  if (collectibleVisualStyleCache.has(key)) return collectibleVisualStyleCache.get(key);
+  const base = new THREE.Color(STAGE_COLLECTIBLE_COLORS[stageIndex] || 0xffffff);
+  let target = new THREE.Color(STAGE_TOKEN_COLORS[stageIndex] || 0xffffff);
+  let scaleX = 1;
+  let scaleY = 1;
+  let tilt = 0;
+  if (/rain|river|umbrella|water|soda/.test(normalized)) {
+    target.setHex(0x75e8ff);
+    scaleX = 0.86;
+    scaleY = 1.12;
+    tilt = -0.16;
+  } else if (/music|record|vinyl|headphone|beat|wristband/.test(normalized)) {
+    target.setHex(0xd986ff);
+    scaleX = 1.12;
+    scaleY = 0.9;
+    tilt = 0.24;
+  } else if (/coffee|bread|snack|drink|warm|cocoa|breakfast/.test(normalized)) {
+    target.setHex(0xffb85c);
+    scaleX = 1.08;
+    scaleY = 1.02;
+    tilt = -0.08;
+  } else if (/photo|ticket|postcard|map|film|camera/.test(normalized)) {
+    target.setHex(0xffedbd);
+    scaleX = 1.16;
+    scaleY = 0.84;
+    tilt = 0.12;
+  } else if (/plant|leaf|flower|grocery/.test(normalized)) {
+    target.setHex(0x87e887);
+    scaleX = 0.92;
+    scaleY = 1.14;
+    tilt = 0.2;
+  } else if (/key|home|window|lamp|light|star/.test(normalized)) {
+    target.setHex(0xffd76a);
+    scaleX = 1.04;
+    scaleY = 1.08;
+    tilt = -0.2;
+  } else if (/message|note|book|page|bookmark|word/.test(normalized)) {
+    target.setHex(0xaeb8ff);
+    scaleX = 1.14;
+    scaleY = 0.9;
+    tilt = 0.18;
+  }
+  const style = Object.freeze({
+    color: base.lerp(target, 0.46 + phase * 0.08).getHex(),
+    scaleX: scaleX * (phase === 1 ? 0.96 : 1),
+    scaleY: scaleY * (phase === 2 ? 1.05 : 1),
+    tilt: tilt + (phase - 1) * 0.08
+  });
+  collectibleVisualStyleCache.set(key, style);
+  return style;
 }
 
 const STORY_PROP_COLORS = Object.freeze({
@@ -1141,6 +1704,7 @@ function createPremiumDistrict(config, stageIndex, cityAssets) {
   const group = new THREE.Group();
   const districtMaterials = [];
   const windowPositions = [];
+  const clearancePlacements = [];
   const transform = new THREE.Matrix4();
   const rotation = new THREE.Quaternion();
   const scale = new THREE.Vector3();
@@ -1175,14 +1739,21 @@ function createPremiumDistrict(config, stageIndex, cityAssets) {
       const uniformScale = desiredHeight / source.height;
       scale.setScalar(uniformScale);
       const sideVariation = isTree ? 0.8 + (index % 3) * 1.15 : ((index * 5 + sourceSlot * 3) % 5) * 0.55;
-      position.set(
-        side * (isTree ? 6.7 + sideVariation : isTank ? 8.4 + sideVariation * 0.4 : layout.offset + sideVariation),
-        -0.04,
-        -8 - row * layout.spacing - sourceSlot * 1.45
-      );
+      const sourceBounds = source.geometry.boundingBox;
+      const radialExtent = Math.max(
+        Math.abs(sourceBounds.min.x), Math.abs(sourceBounds.max.x),
+        Math.abs(sourceBounds.min.z), Math.abs(sourceBounds.max.z)
+      ) * uniformScale;
+      const halfWidth = radialExtent + 0.18;
+      const halfDepth = radialExtent;
+      const requestedX = side * (isTree ? 6.7 + sideVariation : isTank ? 8.4 + sideVariation * 0.4 : layout.offset + sideVariation);
+      const requestedZ = -10 - row * layout.spacing - sourceSlot * 1.45;
+      const placement = constrainTracksidePlacement(side, requestedX, requestedZ, halfWidth, halfDepth, layout.spacing);
+      position.set(placement.x, -0.04, placement.z);
       rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), side > 0 ? -Math.PI / 2 : Math.PI / 2);
       transform.compose(position, rotation, scale);
       instances.setMatrixAt(index, transform);
+      clearancePlacements.push({ side, x: position.x, z: position.z, halfWidth, halfDepth });
       const instanceTint = isTree
         ? new THREE.Color(0x74af62).lerp(new THREE.Color(config.accent), 0.08 + (index % 3) * 0.025)
         : new THREE.Color(0xffffff)
@@ -1202,6 +1773,9 @@ function createPremiumDistrict(config, stageIndex, cityAssets) {
     }
     instances.instanceMatrix.needsUpdate = true;
     if (instances.instanceColor) instances.instanceColor.needsUpdate = true;
+    instances.computeBoundingBox();
+    instances.computeBoundingSphere();
+    instances.userData.trackClearance = true;
     districtMaterials.push(sourceMaterial);
     group.add(instances);
   });
@@ -1224,6 +1798,8 @@ function createPremiumDistrict(config, stageIndex, cityAssets) {
   group.userData.premium = true;
   group.userData.spacing = layout.spacing;
   group.userData.baseX = 0;
+  group.userData.clearancePlacements = clearancePlacements;
+  group.userData.trackClearance = true;
   return group;
 }
 
@@ -1233,16 +1809,16 @@ function createDistrictGateway(config) {
   const edgeMaterial = material(config.accent, { emissive: config.accent, emissiveIntensity: 1.8, roughness: 0.22, metalness: 0.48 });
   const label = DISTRICT_LABELS[config.district] || "CITY RUN";
   const labelTexture = makeSignTexture(label, config.accent);
-  [-4.72, 4.72].forEach((x) => {
+  [-5.66, 5.66].forEach((x) => {
     const post = mesh(new THREE.BoxGeometry(0.16, 5.7, 0.22), frameMaterial);
     post.position.set(x, 2.85, 0);
     const edge = mesh(new THREE.BoxGeometry(0.035, 5.42, 0.235), edgeMaterial);
     edge.position.set(x - Math.sign(x) * 0.075, 2.8, 0.01);
     group.add(post, edge);
   });
-  const bridge = mesh(new THREE.BoxGeometry(9.62, 0.16, 0.24), frameMaterial);
+  const bridge = mesh(new THREE.BoxGeometry(11.5, 0.16, 0.24), frameMaterial);
   bridge.position.y = 5.65;
-  const bridgeGlow = mesh(new THREE.BoxGeometry(9.36, 0.035, 0.26), edgeMaterial);
+  const bridgeGlow = mesh(new THREE.BoxGeometry(11.18, 0.035, 0.26), edgeMaterial);
   bridgeGlow.position.y = 5.56;
   const sign = mesh(new THREE.PlaneGeometry(3.16, 0.7), new THREE.MeshBasicMaterial({ map: labelTexture, transparent: true }));
   sign.position.set(0, 5.15, 0.14);
@@ -1425,6 +2001,54 @@ function makeParticleTexture() {
     gradient.addColorStop(1, "rgba(255,255,255,0)");
     context.fillStyle = gradient;
     context.fillRect(0, 0, width, height);
+  });
+}
+
+function makeWorldParticleTexture(kind, accent) {
+  return canvasTexture(48, 48, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    context.translate(width / 2, height / 2);
+    context.fillStyle = `#${new THREE.Color(accent).getHexString()}`;
+    context.strokeStyle = context.fillStyle;
+    context.lineWidth = 3;
+    if (kind === "leaf-drips") {
+      context.rotate(-0.55);
+      context.beginPath();
+      context.moveTo(0, -17);
+      context.quadraticCurveTo(15, -4, 0, 17);
+      context.quadraticCurveTo(-15, -4, 0, -17);
+      context.fill();
+    } else if (kind === "paper-pages") {
+      context.rotate(0.18);
+      context.fillRect(-14, -10, 28, 20);
+      context.clearRect(5, -10, 9, 7);
+    } else if (kind === "neon-dust") {
+      context.fillRect(-3, -18, 6, 36);
+      context.fillRect(-18, -3, 36, 6);
+    } else if (kind === "lantern-embers") {
+      context.beginPath();
+      context.ellipse(0, 0, 10, 16, 0, 0, Math.PI * 2);
+      context.fill();
+    } else if (kind === "kitchen-steam") {
+      context.globalAlpha = 0.72;
+      context.beginPath();
+      context.arc(-7, 5, 9, 0, Math.PI * 2);
+      context.arc(5, 0, 12, 0, Math.PI * 2);
+      context.arc(0, -10, 9, 0, Math.PI * 2);
+      context.fill();
+    } else if (kind === "storm-spray") {
+      context.rotate(-0.72);
+      context.fillRect(-2, -20, 4, 40);
+    } else {
+      context.beginPath();
+      for (let point = 0; point < 10; point += 1) {
+        const radius = point % 2 ? 6 : 18;
+        const angle = point / 10 * Math.PI * 2 - Math.PI / 2;
+        context.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+      }
+      context.closePath();
+      context.fill();
+    }
   });
 }
 
@@ -2013,7 +2637,7 @@ function createTerminal(accent) {
   const group = new THREE.Group();
   const archMaterial = material(0xc2c8c5, { roughness: 0.42, metalness: 0.52 });
   for (let index = -2; index <= 2; index += 1) {
-    const rib = mesh(new THREE.TorusGeometry(5.35, 0.08, 8, 40, Math.PI), archMaterial);
+    const rib = mesh(new THREE.TorusGeometry(5.72, 0.08, 8, 40, Math.PI), archMaterial);
     rib.position.set(0, 0.2, index * 1.35);
     group.add(rib);
   }
@@ -2028,14 +2652,14 @@ function createGantry(accent, compact = false) {
   const group = new THREE.Group();
   const steel = material(0x4f5c63, { roughness: 0.34, metalness: 0.76 });
   const cable = material(0x1b252a, { roughness: 0.52, metalness: 0.72 });
-  [-5.05, 5.05].forEach((x) => {
+  [-5.66, 5.66].forEach((x) => {
     const height = compact ? 5.35 : 6.2;
     const post = mesh(new THREE.BoxGeometry(0.16, height, 0.16), steel);
     post.position.set(x, height / 2, 0);
     group.add(post);
   });
   const beamY = compact ? 5.2 : 6.05;
-  const beam = mesh(new THREE.BoxGeometry(10.3, 0.15, 0.18), steel);
+  const beam = mesh(new THREE.BoxGeometry(11.5, 0.15, 0.18), steel);
   beam.position.y = beamY;
   group.add(beam);
   [-2.35, 0, 2.35].forEach((x, index) => {
@@ -2059,7 +2683,7 @@ function createStageSpan(stageIndex, accent, seed = 0) {
   if (stageIndex === 2 || stageIndex === 6) {
     const archCount = stageIndex === 6 ? 3 : 2;
     for (let index = 0; index < archCount; index += 1) {
-      const arch = mesh(new THREE.TorusGeometry(5.15, 0.065 + index * 0.012, 8, 42, Math.PI), index % 2 ? steel : glow);
+      const arch = mesh(new THREE.TorusGeometry(5.7, 0.065 + index * 0.012, 8, 42, Math.PI), index % 2 ? steel : glow);
       arch.position.set(0, 0.18, -index * 0.34);
       group.add(arch);
     }
@@ -2068,7 +2692,7 @@ function createStageSpan(stageIndex, accent, seed = 0) {
     sign.position.set(0, 4.75, 0.08);
     group.add(sign);
   } else if (stageIndex === 3 || stageIndex === 4) {
-    const cable = mesh(new THREE.CylinderGeometry(0.022, 0.022, 10.2, 6), steel);
+    const cable = mesh(new THREE.CylinderGeometry(0.022, 0.022, 11.4, 6), steel);
     cable.rotation.z = Math.PI / 2;
     cable.position.y = 4.72;
     group.add(cable);
@@ -2079,11 +2703,11 @@ function createStageSpan(stageIndex, accent, seed = 0) {
         emissiveIntensity: 4.2,
         roughness: 0.16
       }));
-      bulb.position.set(-4.45 + index * 1.11, 4.56 - Math.sin(index / 8 * Math.PI) * 0.38, 0);
+      bulb.position.set(-5 + index * 1.25, 4.56 - Math.sin(index / 8 * Math.PI) * 0.38, 0);
       group.add(bulb);
     }
   } else if (stageIndex === 5) {
-    const top = mesh(new THREE.BoxGeometry(10.5, 0.16, 0.22), steel);
+    const top = mesh(new THREE.BoxGeometry(11.5, 0.16, 0.22), steel);
     top.position.y = 5.32;
     group.add(top);
     for (let index = -4; index <= 4; index += 2) {
@@ -2093,12 +2717,12 @@ function createStageSpan(stageIndex, accent, seed = 0) {
       group.add(brace);
     }
   } else {
-    const top = mesh(new THREE.BoxGeometry(10.4, 0.11, 0.16), steel);
+    const top = mesh(new THREE.BoxGeometry(11.5, 0.11, 0.16), steel);
     top.position.y = 5.18;
-    const highlight = mesh(new THREE.BoxGeometry(10.1, 0.025, 0.18), glow);
+    const highlight = mesh(new THREE.BoxGeometry(11.18, 0.025, 0.18), glow);
     highlight.position.y = 5.08;
     group.add(top, highlight);
-    [-4.85, 4.85].forEach((x) => {
+    [-5.66, 5.66].forEach((x) => {
       const post = mesh(new THREE.CylinderGeometry(0.055, 0.075, 5.1, 8), steel);
       post.position.set(x, 2.55, 0);
       group.add(post);
@@ -2130,6 +2754,337 @@ function createProp(type, accent, seed) {
   if (type === "terminal") return createTerminal(accent);
   if (type === "gantry") return createGantry(accent);
   return createLamp(accent);
+}
+
+function createWorldRoot(config) {
+  const root = new THREE.Group();
+  const parallax = Array.isArray(config.world.horizon.parallax) ? config.world.horizon.parallax : [0.04, 0.16, 0.3];
+  const layers = ["far", "mid", "near"].map((name, index) => {
+    const group = new THREE.Group();
+    group.name = `${config.world.scene}-${name}`;
+    root.add(group);
+    return { group, parallax: Number(parallax[index]) || 0, span: 112 - index * 8 };
+  });
+  root.name = `world-${config.world.scene}`;
+  root.userData.layers = layers;
+  root.userData.scenery = [];
+  root.userData.scene = config.world.scene;
+  return root;
+}
+
+function addWorldScenery(root, layerIndex, object, options) {
+  const layer = root.userData.layers[layerIndex];
+  const side = options.side === 0 ? 0 : options.side < 0 ? -1 : 1;
+  object.position.y = Number(options.y) || 0;
+  if (options.scale) object.scale.setScalar(options.scale);
+  object.rotation.y = Number(options.rotationY) || 0;
+  if (side === 0) object.position.set(Number(options.x) || 0, object.position.y, Number(options.z) || -32);
+  else fitTracksideObject(object, side, side * Math.abs(options.x), options.z);
+  layer.group.add(object);
+  object.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(object);
+  const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+  const entry = {
+    object,
+    baseX: object.position.x,
+    baseZ: object.position.z,
+    parallax: layer.parallax,
+    span: options.span || layer.span,
+    drift: Number(options.drift) || 0,
+    side,
+    centerOffset: sphere.center.clone().sub(object.position),
+    sphere,
+    nearOffset: bounds.max.z - object.position.z,
+    farOffset: bounds.min.z - object.position.z
+  };
+  object.userData.worldScenery = entry;
+  root.userData.scenery.push(entry);
+  return object;
+}
+
+function beamBetween2D(startX, startY, endX, endY, thickness, beamMaterial) {
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const length = Math.hypot(dx, dy);
+  const beam = mesh(new THREE.BoxGeometry(thickness, length, thickness), beamMaterial);
+  beam.position.set((startX + endX) / 2, (startY + endY) / 2, 0);
+  beam.rotation.z = -Math.atan2(dx, dy);
+  return beam;
+}
+
+function createRainCampusWorld(config) {
+  const root = createWorldRoot(config);
+  const library = createCampus(config.accent);
+  const stone = material(config.theme.landmark, { roughness: 0.9 });
+  [-1.8, -0.6, 0.6, 1.8].forEach((x) => {
+    const column = mesh(new THREE.CylinderGeometry(0.12, 0.15, 3.4, 10), stone);
+    column.position.set(x, 1.72, 1.42);
+    library.add(column);
+  });
+  const pediment = mesh(new THREE.ConeGeometry(2.6, 1.05, 3), stone);
+  pediment.rotation.z = Math.PI / 2;
+  pediment.position.set(0, 4.02, 0.2);
+  library.add(pediment);
+  addWorldScenery(root, 1, library, { side: -1, x: 7.5, z: -22, scale: 1.12, rotationY: Math.PI / 2 });
+
+  const corridor = createShelter(config.accent);
+  corridor.scale.set(1.06, 1.06, 2.8);
+  addWorldScenery(root, 2, corridor, { side: 1, x: 7.2, z: -42, rotationY: -Math.PI / 2 });
+  const grove = new THREE.Group();
+  for (let index = 0; index < 4; index += 1) {
+    const tree = createTree(config.accent);
+    tree.position.set((index % 2) * 2.1, 0, -Math.floor(index / 2) * 2.4);
+    grove.add(tree);
+  }
+  addWorldScenery(root, 0, grove, { side: -1, x: 12.5, z: -72, scale: 1.35 });
+  return root;
+}
+
+function createRiverBookstoreWorld(config) {
+  const root = createWorldRoot(config);
+  const riverMaterial = new THREE.MeshPhysicalMaterial({ color: 0x4e98a6, roughness: 0.18, metalness: 0.08, clearcoat: 0.75, transparent: true, opacity: 0.72 });
+  const river = mesh(new THREE.PlaneGeometry(9, 112), riverMaterial);
+  river.rotation.x = -Math.PI / 2;
+  addWorldScenery(root, 0, river, { side: 1, x: 10.4, z: -48, y: -0.22 });
+  const bridge = new THREE.Group();
+  const bridgeMaterial = material(0xa9b5ad, { roughness: 0.74, metalness: 0.18 });
+  for (let index = 0; index < 3; index += 1) {
+    const arch = mesh(new THREE.TorusGeometry(3.4 + index * 0.16, 0.14, 8, 36, Math.PI), bridgeMaterial);
+    arch.position.z = -index * 0.42;
+    bridge.add(arch);
+  }
+  addWorldScenery(root, 0, bridge, { side: 1, x: 10.2, z: -76, y: 0.2, scale: 1.25 });
+  const bookstore = createCafe(config.accent);
+  const shelfMaterial = material(0x5c3829, { roughness: 0.92 });
+  for (let index = 0; index < 9; index += 1) {
+    const spine = mesh(new THREE.BoxGeometry(0.12 + index % 3 * 0.035, 0.58 + index % 2 * 0.18, 0.12), material(index % 2 ? 0xc76d5e : 0xe8d49a, { roughness: 0.82 }));
+    spine.position.set(-1 + index * 0.24, 1.25, 1.72);
+    bookstore.add(spine);
+  }
+  const shelf = mesh(new THREE.BoxGeometry(2.5, 0.1, 0.2), shelfMaterial);
+  shelf.position.set(0, 0.94, 1.68);
+  bookstore.add(shelf);
+  addWorldScenery(root, 2, bookstore, { side: -1, x: 7.3, z: -25, scale: 1.18, rotationY: Math.PI / 2 });
+  const steps = new THREE.Group();
+  for (let index = 0; index < 6; index += 1) {
+    const step = mesh(new THREE.BoxGeometry(3.8, 0.16, 0.62), bridgeMaterial);
+    step.position.set(0, index * 0.14, index * 0.48);
+    steps.add(step);
+  }
+  addWorldScenery(root, 1, steps, { side: 1, x: 7.3, z: -45, rotationY: -Math.PI / 2 });
+  return root;
+}
+
+function createNeonCinemaWorld(config) {
+  const root = createWorldRoot(config);
+  const cinema = createCinemaFront(config.accent);
+  addWorldScenery(root, 2, cinema, { side: -1, x: 7.4, z: -24, scale: 1.12, rotationY: Math.PI / 2 });
+  const portals = new THREE.Group();
+  const portalMaterial = material(config.accent, { emissive: config.accent, emissiveIntensity: 2.8, roughness: 0.2, metalness: 0.55 });
+  for (let index = 0; index < 4; index += 1) {
+    const portal = mesh(new THREE.TorusGeometry(1.55, 0.1, 8, 28, Math.PI), portalMaterial);
+    portal.position.set((index % 2) * 3.5, 0.12, -Math.floor(index / 2) * 3.8);
+    portals.add(portal);
+  }
+  addWorldScenery(root, 1, portals, { side: 1, x: 8.2, z: -48, scale: 1.2 });
+  const signs = new THREE.Group();
+  for (let index = 0; index < 5; index += 1) {
+    const sign = createNeonSign(index % 2 ? 0xff668f : config.accent, index);
+    sign.position.set((index % 2) * 2.5, index * 1.15, -index * 2.2);
+    signs.add(sign);
+  }
+  addWorldScenery(root, 0, signs, { side: -1, x: 12.5, z: -78, scale: 1.15 });
+  return root;
+}
+
+function createNightMarketWorld(config) {
+  const root = createWorldRoot(config);
+  const stalls = new THREE.Group();
+  for (let index = 0; index < 3; index += 1) {
+    const stall = createMarket(index % 2 ? 0xffb04f : config.accent);
+    stall.position.set(index * 3.7, 0, -index * 1.5);
+    stalls.add(stall);
+  }
+  const lights = createStringLights(config.accent, 10, 4.2);
+  lights.position.set(3.7, 0, 0.2);
+  stalls.add(lights);
+  addWorldScenery(root, 2, stalls, { side: -1, x: 8.4, z: -26, rotationY: Math.PI / 2 });
+  const stage = new THREE.Group();
+  const stageDeck = mesh(new THREE.CylinderGeometry(2.8, 3.1, 0.45, 12), material(0x312536, { roughness: 0.55, metalness: 0.35 }));
+  stageDeck.position.y = 0.22;
+  stage.add(stageDeck, createStringLights(0xffcf74, 5.6, 3.8));
+  addWorldScenery(root, 1, stage, { side: 1, x: 8.8, z: -50 });
+  const river = mesh(new THREE.PlaneGeometry(8, 112), new THREE.MeshPhysicalMaterial({ color: 0x202f4d, roughness: 0.2, clearcoat: 0.8, transparent: true, opacity: 0.78 }));
+  river.rotation.x = -Math.PI / 2;
+  addWorldScenery(root, 0, river, { side: 1, x: 11.5, z: -50, y: -0.18 });
+  return root;
+}
+
+function createNeighborhoodWorld(config) {
+  const root = createWorldRoot(config);
+  const homes = new THREE.Group();
+  for (let index = 0; index < 3; index += 1) {
+    const home = createBuilding(index === 1 ? config.accent : 0xffc87a, index + 2, true);
+    home.scale.setScalar(0.72 + index * 0.05);
+    home.position.x = index * 4.2;
+    const roof = mesh(new THREE.ConeGeometry(2.5, 1.2, 4), material(index % 2 ? 0x8f5c4b : 0x516b5a, { roughness: 0.94 }));
+    roof.rotation.y = Math.PI / 4;
+    roof.position.set(index * 4.2, 5.25 + index * 0.35, 0);
+    homes.add(home, roof);
+  }
+  addWorldScenery(root, 1, homes, { side: -1, x: 8.5, z: -44, rotationY: Math.PI / 2 });
+  const breakfast = createMarket(0xffc45e);
+  const steamMaterial = new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: 0.28, depthWrite: false });
+  for (let index = 0; index < 5; index += 1) {
+    const steam = mesh(new THREE.TorusGeometry(0.18 + index * 0.05, 0.018, 5, 16, Math.PI), steamMaterial);
+    steam.position.set(-0.8 + index * 0.4, 1.5 + index * 0.16, 0.4);
+    breakfast.add(steam);
+  }
+  addWorldScenery(root, 2, breakfast, { side: 1, x: 7.3, z: -24, scale: 1.08, rotationY: -Math.PI / 2 });
+  const kitchen = createBuilding(0xffd487, 4, true);
+  addWorldScenery(root, 0, kitchen, { side: 1, x: 12.5, z: -78, scale: 1.25, rotationY: -Math.PI / 2 });
+  return root;
+}
+
+function createStormBridgeWorld(config) {
+  const root = createWorldRoot(config);
+  const truss = new THREE.Group();
+  const steel = material(0x596878, { roughness: 0.34, metalness: 0.82 });
+  [-1, 1].forEach((side) => {
+    const sideTruss = new THREE.Group();
+    sideTruss.position.x = side * 5.8;
+    for (let index = 0; index < 4; index += 1) {
+      const post = mesh(new THREE.BoxGeometry(0.18, 5.6, 0.2), steel);
+      post.position.set(0, 2.8, -6 + index * 4);
+      sideTruss.add(post);
+      if (index < 3) {
+        const diagonal = mesh(new THREE.BoxGeometry(0.14, 6.1, 0.14), steel);
+        diagonal.position.set(0, 2.8, -4 + index * 4);
+        diagonal.rotation.x = (index + (side > 0 ? 1 : 0)) % 2 ? 0.72 : -0.72;
+        sideTruss.add(diagonal);
+      }
+    }
+    [0.55, 5.05].forEach((y) => {
+      const rail = mesh(new THREE.BoxGeometry(0.18, 0.18, 12.2), steel);
+      rail.position.set(0, y, 0);
+      sideTruss.add(rail);
+    });
+    truss.add(sideTruss);
+  });
+  truss.userData.trackClearance = true;
+  addWorldScenery(root, 2, truss, { side: 0, x: 0, z: -34, span: 92 });
+  const shelter = createShelter(config.accent);
+  addWorldScenery(root, 1, shelter, { side: -1, x: 7.5, z: -56, scale: 1.25, rotationY: Math.PI / 2 });
+  const flood = mesh(new THREE.PlaneGeometry(12, 118), new THREE.MeshPhysicalMaterial({ color: 0x17283f, roughness: 0.15, clearcoat: 0.9, transparent: true, opacity: 0.82 }));
+  flood.rotation.x = -Math.PI / 2;
+  addWorldScenery(root, 0, flood, { side: 1, x: 13, z: -52, y: -1.25 });
+  return root;
+}
+
+function createDawnStationWorld(config) {
+  const root = createWorldRoot(config);
+  const terminal = createTerminal(config.accent);
+  addWorldScenery(root, 1, terminal, { side: 1, x: 8.4, z: -48, scale: 1.1, rotationY: -Math.PI / 2 });
+  const station = createStation(config.accent);
+  addWorldScenery(root, 2, station, { side: -1, x: 7.7, z: -25, scale: 1.12, rotationY: Math.PI / 2 });
+  const clock = new THREE.Group();
+  const clockFace = mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.16, 32), material(0xf0eadb, { roughness: 0.5, metalness: 0.12 }));
+  clockFace.rotation.x = Math.PI / 2;
+  clock.add(clockFace);
+  const handMaterial = material(0x253148, { roughness: 0.46, metalness: 0.5 });
+  const hour = mesh(new THREE.BoxGeometry(0.08, 0.72, 0.08), handMaterial);
+  hour.position.set(0.22, 0.16, 0.11);
+  hour.rotation.z = -0.62;
+  const minute = mesh(new THREE.BoxGeometry(0.06, 1.02, 0.08), handMaterial);
+  minute.position.set(-0.33, 0.31, 0.12);
+  minute.rotation.z = 0.76;
+  clock.add(hour, minute);
+  addWorldScenery(root, 0, clock, { side: 1, x: 12, z: -78, y: 4.8, scale: 1.35 });
+  return root;
+}
+
+function createStageWorld(config, stageIndex) {
+  return [
+    createRainCampusWorld,
+    createRiverBookstoreWorld,
+    createNeonCinemaWorld,
+    createNightMarketWorld,
+    createNeighborhoodWorld,
+    createStormBridgeWorld,
+    createDawnStationWorld
+  ][stageIndex](config);
+}
+
+function createRepeatedRoadDetail(geometry, detailMaterial, count, compose) {
+  const batch = new THREE.InstancedMesh(geometry, detailMaterial, count);
+  const transform = new THREE.Matrix4();
+  const position = new THREE.Vector3();
+  const quaternion = new THREE.Quaternion();
+  const scale = new THREE.Vector3(1, 1, 1);
+  for (let index = 0; index < count; index += 1) {
+    compose(index, position, quaternion, scale);
+    transform.compose(position, quaternion, scale);
+    batch.setMatrixAt(index, transform);
+  }
+  batch.instanceMatrix.needsUpdate = true;
+  batch.frustumCulled = true;
+  batch.computeBoundingBox();
+  batch.computeBoundingSphere();
+  return batch;
+}
+
+function createStageRoadProfile(config, stageIndex) {
+  const root = new THREE.Group();
+  const accentMaterial = material(config.accent, { emissive: config.accent, emissiveIntensity: stageIndex === 2 ? 1.8 : 0.38, roughness: 0.34, transparent: true, opacity: 0.72 });
+  const surfaceMaterial = material(config.theme.landmark, { roughness: [0.22, 0.82, 0.28, 0.9, 0.94, 0.42, 0.58][stageIndex], metalness: stageIndex === 5 || stageIndex === 6 ? 0.56 : 0.08 });
+  const down = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+  if (stageIndex === 0) {
+    root.add(createRepeatedRoadDetail(new THREE.CircleGeometry(0.46, 18), accentMaterial, 22, (index, position, quaternion, scale) => {
+      position.set((index % 3 - 1) * LANE_WIDTH + ((index * 7) % 5 - 2) * 0.13, 0.055, 4 - index * 8.2);
+      quaternion.copy(down);
+      scale.set(0.72 + index % 4 * 0.16, 0.48 + index % 3 * 0.12, 1);
+    }));
+  } else if (stageIndex === 1) {
+    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(1.35, 0.035, 0.16), surfaceMaterial, 96, (index, position, quaternion, scale) => {
+      position.set((index % 2 ? 1 : -1) * 5.22, 0.3, 6 - Math.floor(index / 2) * 4.05);
+      quaternion.identity();
+      scale.set(1, 1, 1);
+    }));
+  } else if (stageIndex === 2) {
+    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(1.55, 0.026, 0.32), accentMaterial, 54, (index, position, quaternion, scale) => {
+      position.set((index % 3 - 1) * LANE_WIDTH, 0.255, 5 - Math.floor(index / 3) * 10.4);
+      quaternion.identity();
+      scale.set(index % 2 ? 0.55 : 1, 1, 1);
+    }));
+  } else if (stageIndex === 3) {
+    root.add(createRepeatedRoadDetail(new THREE.CylinderGeometry(0.43, 0.43, 0.025, 6), surfaceMaterial, 84, (index, position, quaternion, scale) => {
+      const row = Math.floor(index / 7);
+      position.set(-3.2 + index % 7 * 1.05 + (row % 2) * 0.45, 0.045, 5 - row * 4.8);
+      quaternion.identity();
+      scale.set(1, 1, 1.35);
+    }));
+  } else if (stageIndex === 4) {
+    root.add(createRepeatedRoadDetail(createRoadPatchGeometry(), surfaceMaterial, 38, (index, position, quaternion, scale) => {
+      position.set((index % 3 - 1) * LANE_WIDTH + (index % 2 ? 0.22 : -0.18), 0.052, 4 - index * 5.1);
+      quaternion.copy(down);
+      scale.set(0.8 + index % 4 * 0.14, 0.72 + index % 3 * 0.2, 1);
+    }));
+  } else if (stageIndex === 5) {
+    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(8.35, 0.035, 0.16), surfaceMaterial, 28, (index, position, quaternion, scale) => {
+      position.set(0, 0.07, 5 - index * 7.1);
+      quaternion.identity();
+      scale.set(1, 1, index % 4 === 0 ? 2.2 : 1);
+    }));
+  } else {
+    root.add(createRepeatedRoadDetail(new THREE.BoxGeometry(1.85, 0.026, 0.24), accentMaterial, 60, (index, position, quaternion, scale) => {
+      position.set((index % 3 - 1) * LANE_WIDTH, 0.255, 5 - Math.floor(index / 3) * 8.7);
+      quaternion.identity();
+      scale.set(index % 2 ? 0.62 : 1, 1, 1);
+    }));
+  }
+  root.name = `road-profile-${config.world.road.geometry}`;
+  root.userData.roadGeometry = config.world.road.geometry;
+  return root;
 }
 
 function createLimb(limbMaterial, upperLength, lowerLength, radius) {
@@ -2536,9 +3491,15 @@ function createRiggedRunner(gltf, options, animationClips = gltf.animations, hea
           envMapIntensity: skinLike ? 0.55 : 0.9
         });
       };
-      child.material = Array.isArray(child.material)
+      const convertedMaterials = Array.isArray(child.material)
         ? child.material.map(convertMaterial)
         : convertMaterial(child.material);
+      child.material = convertedMaterials;
+      if (Array.isArray(convertedMaterials) && convertedMaterials.length > 1) {
+        child.userData.qualityMaterials = convertedMaterials;
+        child.userData.performanceMaterial = convertedMaterials.find((entry) => /Skin|Regular|Superhero/i.test(entry.name || ""))
+          || convertedMaterials[0];
+      }
     });
   };
   prepareModel(model, true);
@@ -2756,6 +3717,13 @@ function createCollectibleBatches(particleTexture, accent) {
   hearts.count = 0;
   hearts.castShadow = true;
   hearts.frustumCulled = false;
+  const initialColor = new THREE.Color(accent);
+  for (let index = 0; index < capacity; index += 1) {
+    rims.setColorAt(index, initialColor);
+    hearts.setColorAt(index, initialColor);
+  }
+  rims.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  hearts.instanceColor.setUsage(THREE.DynamicDrawUsage);
 
   const glowGeometry = new THREE.BufferGeometry();
   glowGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(capacity * 3), 3));
@@ -2950,12 +3918,124 @@ function createServiceCart(accent) {
   return group;
 }
 
+function decorateObstacleForStage(group, stageIndex, subtype, avoid, accent) {
+  const glow = material(accent, { emissive: accent, emissiveIntensity: 2.6, roughness: 0.22, metalness: 0.18 });
+  const dark = material([0x345052, 0x564436, 0x241d36, 0x50303f, 0x486044, 0x333c48, 0x3e465c][stageIndex], { roughness: 0.62, metalness: stageIndex === 5 || stageIndex === 6 ? 0.52 : 0.16 });
+  if (stageIndex === 0) {
+    const puddle = mesh(new THREE.RingGeometry(0.52, 0.82, 22), new THREE.MeshBasicMaterial({ color: 0x9fdce2, transparent: true, opacity: 0.52, depthWrite: false, side: THREE.DoubleSide }));
+    puddle.rotation.x = -Math.PI / 2;
+    puddle.position.y = 0.025;
+    const leaf = mesh(new THREE.ConeGeometry(0.14, 0.42, 5), glow);
+    leaf.position.set(0, avoid === "slide" ? 1.72 : 1.34, 0.18);
+    leaf.rotation.z = -0.72;
+    group.add(puddle, leaf);
+    group.userData.obstacleSignature = "puddle-barricade";
+  } else if (stageIndex === 1) {
+    if (subtype === "service-cart") {
+      for (let index = 0; index < 5; index += 1) {
+        const book = mesh(new THREE.BoxGeometry(0.54, 0.1, 0.72), material(index % 2 ? 0xc9695d : 0xe6d59d, { roughness: 0.86 }));
+        book.position.set((index % 2 ? 0.22 : -0.18), 2.16 + index * 0.105, -0.18 + index % 3 * 0.16);
+        book.rotation.y = (index - 2) * 0.08;
+        group.add(book);
+      }
+    } else {
+      [-0.55, 0.55].forEach((x) => {
+        const wheel = mesh(new THREE.TorusGeometry(0.34, 0.045, 7, 20), dark);
+        wheel.position.set(x, 0.48, 0.12);
+        group.add(wheel);
+      });
+    }
+    group.userData.obstacleSignature = subtype === "service-cart" ? "book-cart" : avoid === "slide" ? "canvas-awning" : "bicycle-wheel";
+  } else if (stageIndex === 2) {
+    const ticket = mesh(roundedPanelGeometry(1.08, 0.48, 0.08, 0.08), glow);
+    ticket.position.set(0, subtype === "train" ? 2.42 : 2.28, subtype === "train" ? 3.62 : 1.18);
+    for (let index = -2; index <= 2; index += 1) {
+      const bulb = mesh(new THREE.SphereGeometry(0.045, 8, 6), material(index % 2 ? accent : 0xff8a78, { emissive: index % 2 ? accent : 0xff8a78, emissiveIntensity: 3.8 }));
+      bulb.position.set(index * 0.23, ticket.position.y + 0.2, ticket.position.z + 0.06);
+      group.add(bulb);
+    }
+    group.add(ticket);
+    group.userData.obstacleSignature = subtype === "train" ? "service-tram" : "marquee-gate";
+  } else if (stageIndex === 3) {
+    if (avoid === "slide") {
+      const canopy = mesh(new THREE.ConeGeometry(1.32, 0.72, 4), material(0xff9d61, { roughness: 0.75 }));
+      canopy.rotation.y = Math.PI / 4;
+      canopy.position.y = 2.45;
+      group.add(canopy);
+    } else {
+      for (let index = 0; index < 3; index += 1) {
+        const basket = mesh(new THREE.CylinderGeometry(0.3, 0.24, 0.36, 10), material(index % 2 ? 0xc47e43 : 0x739857, { roughness: 0.95 }));
+        basket.position.set((index - 1) * 0.52, 1.4 + index % 2 * 0.24, 1.12);
+        group.add(basket);
+      }
+    }
+    const lantern = mesh(new THREE.SphereGeometry(0.13, 10, 8), glow);
+    lantern.scale.y = 1.35;
+    lantern.position.set(0, 2.68, 0.2);
+    group.add(lantern);
+    group.userData.obstacleSignature = avoid === "slide" ? "striped-canopy" : subtype === "service-cart" ? "food-cart" : "basket-barrier";
+  } else if (stageIndex === 4) {
+    for (let index = 0; index < 4; index += 1) {
+      const crate = mesh(new THREE.BoxGeometry(0.58, 0.42, 0.5), material(index % 2 ? 0x78905a : 0xc58a52, { roughness: 0.94 }));
+      crate.position.set((index % 2 ? 0.34 : -0.34), 1.3 + Math.floor(index / 2) * 0.43, 1.08);
+      group.add(crate);
+    }
+    if (avoid === "slide") {
+      const cloth = mesh(new THREE.PlaneGeometry(1.55, 0.58), new THREE.MeshStandardMaterial({ color: 0xe7d7bd, roughness: 0.92, side: THREE.DoubleSide }));
+      cloth.position.set(0, 1.85, 0.18);
+      group.add(cloth);
+    }
+    group.userData.obstacleSignature = avoid === "slide" ? "laundry-gate" : subtype === "service-cart" ? "delivery-bike" : "grocery-crates";
+  } else if (stageIndex === 5) {
+    [-0.62, 0.62].forEach((x, index) => {
+      const brace = mesh(new THREE.BoxGeometry(0.1, 1.72, 0.12), index ? glow : dark);
+      brace.position.set(x, 1.56, 0.96);
+      brace.rotation.z = index ? -0.72 : 0.72;
+      group.add(brace);
+    });
+    const floodMark = mesh(new THREE.RingGeometry(0.28, 0.42, 18), new THREE.MeshBasicMaterial({ color: 0xffd7d2, transparent: true, opacity: 0.78, side: THREE.DoubleSide }));
+    floodMark.position.set(0, 1.75, 1.2);
+    group.add(floodMark);
+    group.userData.obstacleSignature = subtype === "train" ? "maintenance-rig" : avoid === "slide" ? "fallen-truss" : "flood-barrier";
+  } else {
+    if (subtype === "service-cart" || avoid === "switch") {
+      for (let index = 0; index < 3; index += 1) {
+        const caseMesh = mesh(roundedPanelGeometry(0.52, 0.62 + index * 0.1, 0.32, 0.08), material(index % 2 ? 0x8f6b78 : 0x6b7991, { roughness: 0.68, metalness: 0.08 }));
+        caseMesh.position.set((index - 1) * 0.5, 1.42 + index * 0.2, 1.12);
+        group.add(caseMesh);
+      }
+    }
+    const departureRing = mesh(new THREE.TorusGeometry(0.34, 0.045, 8, 24), glow);
+    departureRing.position.set(0, 2.42, subtype === "train" ? 3.6 : 1.16);
+    group.add(departureRing);
+    group.userData.obstacleSignature = subtype === "train" ? "platform-cart" : avoid === "slide" ? "departure-gate" : "luggage-stack";
+  }
+  group.userData.obstacleStyle = STAGE_CONFIGS[stageIndex].world.obstacles.style;
+  return group;
+}
+
+function resolveObstacleBaseSubtype(subtype, avoid) {
+  const semantic = String(subtype || "").toLowerCase();
+  if (/train|tram|metro|transfer/.test(semantic)) return "train";
+  if (/gate|awning|canopy|shelf|truss|arch|laundry/.test(semantic) || avoid === "slide") return "signal-gate";
+  if (/barrier|puddle|root|flood|warning|crate|grid|step|cable/.test(semantic) || avoid === "jump") return "barrier";
+  if (/cart|bike|bicycle|crowd|basket|luggage|stall|delivery|market|rig/.test(semantic)) return "service-cart";
+  return avoid === "switch" ? "service-cart" : "barrier";
+}
+
 function createObstacle(stageIndex, avoid, accent, subtype = null, variant = 0) {
-  if (subtype === "train") return createTrain(accent, variant);
-  if (subtype === "service-cart") return createServiceCart(accent);
-  if (subtype === "signal-gate" || avoid === "slide") return createSignalGate(accent);
-  if (subtype === "barrier" || avoid === "jump") return createJumpBarrier(accent);
-  return createServiceCart(accent);
+  const semanticSubtype = subtype;
+  const visualSubtype = resolveObstacleBaseSubtype(subtype, avoid);
+  let obstacle;
+  if (visualSubtype === "train") obstacle = createTrain(accent, variant);
+  else if (visualSubtype === "service-cart") obstacle = createServiceCart(accent);
+  else if (visualSubtype === "signal-gate") obstacle = createSignalGate(accent);
+  else if (visualSubtype === "barrier") obstacle = createJumpBarrier(accent);
+  else obstacle = createServiceCart(accent);
+  obstacle = decorateObstacleForStage(obstacle, stageIndex, visualSubtype, avoid, accent);
+  obstacle.userData.obstacleSemantic = semanticSubtype || visualSubtype;
+  obstacle.userData.obstacleVisualSubtype = visualSubtype;
+  return obstacle;
 }
 
 function createStringLights(accent, width = 7.4, y = 3.6) {
@@ -3279,11 +4359,398 @@ function createRendezvousSet(stageIndex, accent, items = []) {
   return group;
 }
 
+function createStageIntroVisual(particleTexture, accent) {
+  const root = new THREE.Group();
+  root.position.set(0, 2.05, -8.6);
+  root.visible = false;
+  const ringMaterial = new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const rings = [0, 1, 2].map((index) => {
+    const ring = mesh(new THREE.TorusGeometry(1.25 + index * 0.48, 0.025 + index * 0.012, 7, 42), ringMaterial.clone());
+    ring.rotation.set(Math.PI / 2, index * 0.32, index * 0.18);
+    root.add(ring);
+    return ring;
+  });
+  const tokenMaterial = material(0xffffff, { emissive: accent, emissiveIntensity: 2.8, roughness: 0.2, metalness: 0.18, transparent: true, opacity: 0 });
+  const token = mesh(createStageTokenGeometry(0), tokenMaterial);
+  token.scale.setScalar(0.72);
+  root.add(token);
+  const rayMaterial = new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const rays = [];
+  for (let index = 0; index < 8; index += 1) {
+    const ray = mesh(new THREE.PlaneGeometry(0.05, 2.4), rayMaterial.clone());
+    const angle = index / 8 * Math.PI * 2;
+    ray.position.set(Math.cos(angle) * 2.25, Math.sin(angle) * 2.25, 0.1);
+    ray.rotation.z = angle;
+    root.add(ray);
+    rays.push(ray);
+  }
+  const positions = new Float32Array(36 * 3);
+  for (let index = 0; index < 36; index += 1) {
+    const angle = index / 36 * Math.PI * 2;
+    const radius = 1.35 + (index * 17 % 19) / 10;
+    positions[index * 3] = Math.cos(angle) * radius;
+    positions[index * 3 + 1] = Math.sin(angle) * radius;
+    positions[index * 3 + 2] = 0.2 + index % 3 * 0.08;
+  }
+  const particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ map: particleTexture, color: accent, size: 0.18, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  particles.frustumCulled = false;
+  root.add(particles);
+  const light = new THREE.PointLight(accent, 0, 12, 2);
+  root.add(light);
+  return { root, rings, token, tokenMaterial, rays, particles, light };
+}
+
+function normalizeGoalVisualKey(value) {
+  const kind = String(value || "").toLowerCase();
+  if (kind.includes("cat-bell")) return "cat-bell";
+  if (kind.includes("bell-rope")) return "bell-rope";
+  if (kind.includes("vending")) return "vending-slot";
+  if (kind.includes("countdown") || kind.includes("clock")) return "crossing-clock";
+  if (kind.includes("route-board")) return "route-board";
+  if (kind.includes("listening")) return "listening-post";
+  if (kind.includes("departure") || kind.includes("flipboard") || kind.includes("train-board")) return "train-board";
+  if (kind.includes("call-box")) return "call-box";
+  if (kind.includes("letter-box")) return "letter-box";
+  if (kind.includes("stall-sign")) return "stall-sign";
+  if (kind.includes("console")) return "light-console";
+  if (kind.includes("coin-lamp")) return "coin-lamp";
+  if (kind.includes("order-clips")) return "order-clips";
+  if (kind.includes("scale")) return "market-scale";
+  if (kind.includes("doorbell")) return "doorbell";
+  if (kind.includes("shutter")) return "pump-shutter";
+  if (kind.includes("route-lamp")) return "route-lamp";
+  if (kind.includes("drip-chain")) return "drip-chain";
+  if (kind.includes("post-box")) return "post-box";
+  if (kind.includes("entry-tray") || kind.includes("tray")) return "entry-tray";
+  return kind;
+}
+
+function goalPieceLayout(value) {
+  const kind = normalizeGoalVisualKey(value);
+  const pieces = [];
+  const add = (x, y, sx, sy, rotation = 0, z = 0) => pieces.push([x, y, z, sx, sy, 1, rotation]);
+  const box = (width = 1.8, height = 1.2) => {
+    add(0, height / 2, width, 0.12);
+    add(0, -height / 2, width, 0.12);
+    add(-width / 2, 0, 0.12, height);
+    add(width / 2, 0, 0.12, height);
+  };
+  const ring = (radius = 0.82, count = 12) => {
+    for (let index = 0; index < count; index += 1) {
+      const angle = index / count * Math.PI * 2;
+      add(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.3, 0.1, angle);
+    }
+  };
+  if (kind === "cat-bell") {
+    ring(0.62, 10);
+    add(-0.42, 0.66, 0.48, 0.12, -0.72);
+    add(0.42, 0.66, 0.48, 0.12, 0.72);
+    add(0, -0.68, 0.12, 0.58);
+    add(0, -0.92, 0.26, 0.2);
+  } else if (kind === "bell-rope" || kind === "drip-chain") {
+    for (let index = 0; index < 8; index += 1) add(Math.sin(index * 0.8) * 0.08, 1.25 - index * 0.31, 0.1, 0.24, index * 0.08);
+    ring(0.34, 8);
+  } else if (["crossing-clock", "coin-lamp"].includes(kind)) {
+    ring(0.84, 14);
+    add(0, 0.18, 0.08, 0.58, -0.5);
+    add(0.2, -0.02, 0.08, 0.72, 1.05);
+    if (kind === "coin-lamp") add(0, -1.12, 0.13, 1.1);
+  } else if (["vending-slot", "call-box", "letter-box", "doorbell", "post-box"].includes(kind)) {
+    box(kind === "vending-slot" ? 1.35 : 1.65, kind === "doorbell" ? 2.15 : 1.45);
+    add(0, 0.16, 1.05, 0.12);
+    add(kind === "doorbell" ? 0.42 : -0.36, -0.22, 0.18, 0.18);
+    if (kind === "post-box") ring(0.72, 7);
+  } else if (["route-board", "departure-board", "stall-sign", "train-board"].includes(kind)) {
+    box(kind === "train-board" ? 2.35 : 1.9, 0.86);
+    add(-0.52, 0, 0.08, 0.56);
+    add(0.1, 0, 0.08, 0.56);
+    add(0.68, 0, 0.08, 0.56);
+    add(0, -1.05, 0.14, 1.05);
+  } else if (kind === "market-scale") {
+    add(0, -0.05, 0.14, 2.1);
+    add(0, 0.76, 2.2, 0.12);
+    add(-0.82, 0.12, 0.08, 1.08, -0.22);
+    add(0.82, 0.12, 0.08, 1.08, 0.22);
+    add(-0.84, -0.5, 0.74, 0.1);
+    add(0.84, -0.5, 0.74, 0.1);
+  } else if (["listening-post", "route-lamp"].includes(kind)) {
+    add(0, -0.15, 0.15, 2.4);
+    add(0, 0.88, 1.35, 0.1);
+    add(-0.52, 0.54, 0.72, 0.1, 0.6);
+    add(0.52, 0.54, 0.72, 0.1, -0.6);
+    ring(0.33, 7);
+  } else if (["light-console", "pump-shutter"].includes(kind)) {
+    box(2.15, 1.3);
+    for (let index = 0; index < 5; index += 1) add(-0.72 + index * 0.36, 0.18 + Math.sin(index) * 0.22, 0.2, 0.2, index * 0.2);
+    add(0, -0.92, 1.5, 0.12);
+  } else if (kind === "order-clips") {
+    add(0, 0.82, 2.2, 0.1);
+    for (let index = 0; index < 6; index += 1) {
+      add(-0.88 + index * 0.35, 0.38, 0.08, 0.58);
+      add(-0.88 + index * 0.35, -0.02, 0.25, 0.08);
+    }
+  } else if (kind === "entry-tray") {
+    add(0, -0.58, 2.2, 0.14);
+    add(-1.02, -0.16, 0.14, 0.82);
+    add(1.02, -0.16, 0.14, 0.82);
+    add(-0.42, -0.1, 0.38, 0.12, 0.42);
+    add(0.34, -0.02, 0.42, 0.12, -0.36);
+  } else {
+    ring(0.72, 10);
+    add(0, 0, 1.45, 0.12, 0.62);
+    add(0, 0, 1.45, 0.12, -0.62);
+  }
+  return pieces.slice(0, 28);
+}
+
+function createDirectorVisualRig(particleTexture) {
+  const root = new THREE.Group();
+  root.name = "director-visual-rig";
+  root.userData.sharedTexture = particleTexture;
+  const routeRoot = new THREE.Group();
+  const contourMaterial = material(0x7de6dd, { emissive: 0x7de6dd, emissiveIntensity: 1.15, roughness: 0.34, transparent: true, opacity: 0.68 });
+  const inlayMaterial = material(0xffffff, { emissive: 0x7de6dd, emissiveIntensity: 0.72, roughness: 0.56, transparent: true, opacity: 0.42 });
+  const goalMaterial = material(0xffd281, { emissive: 0xffd281, emissiveIntensity: 2.2, roughness: 0.24, metalness: 0.34, transparent: true, opacity: 0.9 });
+  const contour = new THREE.InstancedMesh(new THREE.BoxGeometry(0.095, 0.045, 2.7), contourMaterial, 40);
+  const inlays = new THREE.InstancedMesh(new THREE.BoxGeometry(0.72, 0.024, 0.13), inlayMaterial, 30);
+  const goalPieces = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 0.1), goalMaterial, 28);
+  [contour, inlays, goalPieces].forEach((batch) => {
+    batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    batch.frustumCulled = false;
+    batch.castShadow = false;
+    batch.receiveShadow = false;
+  });
+  routeRoot.add(contour, inlays);
+  const goalAnchor = new THREE.Group();
+  const goalCoreMaterial = new THREE.MeshBasicMaterial({ color: 0xffefc8, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending });
+  const goalCore = mesh(new THREE.SphereGeometry(0.18, 12, 9), goalCoreMaterial);
+  const goalHaloMaterial = new THREE.PointsMaterial({ map: particleTexture, color: 0xffd281, size: 0.18, transparent: true, opacity: 0.64, depthWrite: false, blending: THREE.AdditiveBlending });
+  const goalHaloGeometry = new THREE.BufferGeometry();
+  const haloPositions = new Float32Array(18 * 3);
+  for (let index = 0; index < 18; index += 1) {
+    const angle = index / 18 * Math.PI * 2;
+    haloPositions[index * 3] = Math.cos(angle) * (1.1 + index % 3 * 0.15);
+    haloPositions[index * 3 + 1] = Math.sin(angle) * (0.9 + index % 2 * 0.14);
+    haloPositions[index * 3 + 2] = index % 2 * 0.08;
+  }
+  goalHaloGeometry.setAttribute("position", new THREE.BufferAttribute(haloPositions, 3));
+  const goalHalo = new THREE.Points(goalHaloGeometry, goalHaloMaterial);
+  goalAnchor.add(goalPieces, goalCore, goalHalo);
+
+  const consequenceMaterial = new THREE.MeshBasicMaterial({ color: 0xff8e72, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const consequenceRings = new THREE.InstancedMesh(new THREE.TorusGeometry(0.34, 0.025, 7, 28), consequenceMaterial, 10);
+  consequenceRings.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  consequenceRings.frustumCulled = false;
+  const relationshipMaterial = new THREE.MeshBasicMaterial({ color: 0xffd59d, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  const relationshipBeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.055, 8, 6), relationshipMaterial, 14);
+  relationshipBeads.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  relationshipBeads.frustumCulled = false;
+  const branchMaterial = new THREE.MeshBasicMaterial({ color: 0x67e8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  const branchMarkers = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.075, 0), branchMaterial, 18);
+  branchMarkers.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  branchMarkers.frustumCulled = false;
+
+  const parcelMaterial = material(0x805b4e, { roughness: 0.72, metalness: 0.12 });
+  const parcelAccent = material(0xffd281, { emissive: 0xffd281, emissiveIntensity: 0.72, roughness: 0.28, metalness: 0.42 });
+  const relationshipParcel = new THREE.Group();
+  relationshipParcel.add(mesh(roundedPanelGeometry(0.56, 0.42, 0.2, 0.08), parcelMaterial));
+  const parcelHandle = mesh(new THREE.TorusGeometry(0.16, 0.025, 7, 16, Math.PI), parcelAccent);
+  parcelHandle.position.y = 0.25;
+  relationshipParcel.add(parcelHandle);
+  relationshipParcel.visible = false;
+
+  const sharedObstacle = new THREE.Group();
+  const obstacleMaterial = material(0x6b7580, { roughness: 0.44, metalness: 0.62 });
+  const obstacleGlow = material(0xffd281, { emissive: 0xffd281, emissiveIntensity: 1.3, roughness: 0.3 });
+  const obstacleBar = mesh(new THREE.BoxGeometry(3.1, 0.18, 0.18), obstacleMaterial);
+  obstacleBar.rotation.z = -0.2;
+  const obstacleLamp = mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 10), obstacleGlow);
+  obstacleLamp.position.set(1.18, 0.12, 0);
+  sharedObstacle.add(obstacleBar, obstacleLamp);
+  sharedObstacle.visible = false;
+
+  root.add(routeRoot, goalAnchor, consequenceRings, relationshipBeads, branchMarkers, relationshipParcel, sharedObstacle);
+  const dummy = new THREE.Object3D();
+  const colorScratch = new THREE.Color();
+  return {
+    root,
+    routeRoot,
+    contour,
+    inlays,
+    goalAnchor,
+    goalPieces,
+    goalCore,
+    goalHalo,
+    consequenceRings,
+    relationshipBeads,
+    branchMarkers,
+    relationshipParcel,
+    sharedObstacle,
+    materials: { contourMaterial, inlayMaterial, goalMaterial, goalCoreMaterial, goalHaloMaterial, consequenceMaterial, relationshipMaterial, branchMaterial, parcelAccent, obstacleGlow },
+    dummy,
+    colorScratch,
+    profile: null
+  };
+}
+
+function configureDirectorVisualRig(rig, profile, accent) {
+  rig.profile = profile;
+  const color = rig.colorScratch.setHex(accent);
+  rig.materials.contourMaterial.color.copy(color);
+  rig.materials.contourMaterial.emissive.copy(color);
+  rig.materials.inlayMaterial.emissive.copy(color);
+  rig.materials.goalMaterial.color.copy(color).lerp(new THREE.Color(0xffffff), 0.22);
+  rig.materials.goalMaterial.emissive.copy(color);
+  rig.materials.goalCoreMaterial.color.copy(color).lerp(new THREE.Color(0xffffff), 0.56);
+  rig.materials.goalHaloMaterial.color.copy(color);
+  rig.materials.relationshipMaterial.color.copy(color).lerp(new THREE.Color(0xffe3c0), 0.42);
+  rig.materials.parcelAccent.color.copy(color);
+  rig.materials.parcelAccent.emissive.copy(color);
+  rig.materials.obstacleGlow.color.copy(color);
+  rig.materials.obstacleGlow.emissive.copy(color);
+  const dummy = rig.dummy;
+  const routeSeed = [...String(profile.topology)].reduce((sum, letter) => sum + letter.charCodeAt(0), 0) % 19;
+  for (let index = 0; index < 20; index += 1) {
+    const t = index / 19;
+    const z = -3.5 - index * 4.45;
+    const phase = t * Math.PI * 2 * (1.1 + routeSeed % 4 * 0.17);
+    const center = Math.sin(phase + routeSeed * 0.21) * profile.curve;
+    const spread = profile.split * (t - 0.35) * 1.55;
+    const halfWidth = ROAD_WIDTH * 0.5 * profile.width + spread;
+    for (let sideIndex = 0; sideIndex < 2; sideIndex += 1) {
+      const side = sideIndex ? 1 : -1;
+      dummy.position.set(center + side * halfWidth, 0.04, z);
+      dummy.rotation.set(0, -Math.cos(phase) * profile.curve * 0.08, 0);
+      dummy.scale.set(1, 1, 0.76 + (index + routeSeed) % 3 * 0.18);
+      dummy.updateMatrix();
+      rig.contour.setMatrixAt(index * 2 + sideIndex, dummy.matrix);
+    }
+  }
+  rig.contour.instanceMatrix.needsUpdate = true;
+  for (let index = 0; index < 30; index += 1) {
+    const lane = index % 3 - 1;
+    const row = Math.floor(index / 3);
+    const t = row / 9;
+    const phase = t * Math.PI * 2 + routeSeed * 0.2;
+    const center = Math.sin(phase) * profile.curve * 0.62;
+    const spread = profile.split * (t - 0.25) * 0.62;
+    dummy.position.set(center + lane * (LANE_WIDTH + spread), 0.062, -5 - row * 8.7 - lane * 0.35);
+    dummy.rotation.set(0, Math.sin(phase) * profile.curve * 0.08, 0);
+    const rhythm = 0.72 + ((row + routeSeed + lane + 4) % 4) * 0.18;
+    dummy.scale.set(rhythm, 1, profile.topology.includes("singletrack") && lane !== 0 ? 0.001 : 1);
+    dummy.updateMatrix();
+    rig.inlays.setMatrixAt(index, dummy.matrix);
+  }
+  rig.inlays.instanceMatrix.needsUpdate = true;
+  for (let index = 0; index < 18; index += 1) {
+    const side = index % 2 ? 1 : -1;
+    const row = Math.floor(index / 2);
+    const z = -5.5 - row * (6.2 + profile.cadence * 0.18);
+    dummy.position.set(side * (COMPANION_SHOULDER_X + 0.32), 0.12 + (row % 3) * 0.035, z);
+    dummy.rotation.set(row * 0.21, row * 0.35, side * 0.18);
+    dummy.scale.setScalar(0.82 + (row % 3) * 0.2);
+    dummy.updateMatrix();
+    rig.branchMarkers.setMatrixAt(index, dummy.matrix);
+  }
+  rig.branchMarkers.instanceMatrix.needsUpdate = true;
+  const pieces = goalPieceLayout(profile.goal);
+  for (let index = 0; index < 28; index += 1) {
+    const piece = pieces[index];
+    if (piece) {
+      dummy.position.set(piece[0], piece[1], piece[2]);
+      dummy.rotation.set(0, 0, piece[6]);
+      dummy.scale.set(piece[3], piece[4], piece[5]);
+    } else {
+      dummy.position.set(0, 0, 0);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(0.001);
+    }
+    dummy.updateMatrix();
+    rig.goalPieces.setMatrixAt(index, dummy.matrix);
+  }
+  rig.goalPieces.instanceMatrix.needsUpdate = true;
+  rig.goalAnchor.position.set(profile.goalX, 1.58, -28);
+  rig.root.visible = true;
+}
+
+function createStatusVisualRig() {
+  const vignetteTexture = canvasTexture(128, 128, (context, width, height) => {
+    const gradient = context.createRadialGradient(width / 2, height / 2, width * 0.18, width / 2, height / 2, width * 0.7);
+    gradient.addColorStop(0, "rgba(255,255,255,0)");
+    gradient.addColorStop(0.56, "rgba(255,255,255,.04)");
+    gradient.addColorStop(1, "rgba(255,255,255,.95)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+  });
+  const vignetteMaterial = new THREE.SpriteMaterial({ map: vignetteTexture, color: 0xff765f, transparent: true, opacity: 0, depthWrite: false, blending: THREE.MultiplyBlending, premultipliedAlpha: true });
+  const vignette = new THREE.Sprite(vignetteMaterial);
+  vignette.position.set(0, 0, -0.82);
+  vignette.scale.set(2.3, 4.2, 1);
+  const root = new THREE.Group();
+  root.visible = false;
+  const rings = [0, 1, 2].map((index) => {
+    const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xff765f, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    const ring = mesh(new THREE.RingGeometry(0.42 + index * 0.24, 0.47 + index * 0.24, 32, 1, index * 0.48, Math.PI * 1.55), ringMaterial);
+    ring.rotation.x = -Math.PI / 2;
+    root.add(ring);
+    return ring;
+  });
+  const guideLight = new THREE.PointLight(0xff765f, 0, 7, 2);
+  guideLight.position.y = 0.5;
+  root.add(guideLight);
+  return { root, rings, guideLight, vignette, vignetteMaterial, vignetteTexture };
+}
+
+function createTransientEffectPool(particleTexture) {
+  const root = new THREE.Group();
+  root.name = "transient-effect-pool";
+  root.userData.sharedTexture = particleTexture;
+  const bursts = [];
+  for (let index = 0; index < TRANSIENT_BURST_POOL_SIZE; index += 1) {
+    const positions = new Float32Array(TRANSIENT_PARTICLE_CAPACITY * 3);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setDrawRange(0, 0);
+    const material = new THREE.PointsMaterial({
+      map: particleTexture,
+      color: 0xffffff,
+      size: 0.16,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const points = new THREE.Points(geometry, material);
+    points.visible = false;
+    root.add(points);
+    bursts.push({ points, positions, velocities: new Float32Array(TRANSIENT_PARTICLE_CAPACITY * 3), count: 0, life: 0, duration: 0 });
+  }
+  const ringGeometry = new THREE.TorusGeometry(0.45, 0.035, 8, 36);
+  const rings = [];
+  for (let index = 0; index < TRANSIENT_RING_POOL_SIZE; index += 1) {
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const ring = mesh(ringGeometry, material);
+    ring.visible = false;
+    root.add(ring);
+    rings.push({ mesh: ring, life: 0, duration: 0, spin: 0, baseScale: 1 });
+  }
+  return { root, bursts, rings };
+}
+
 class CinematicRunnerRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.canvas.setAttribute("data-three-version", "0.185.1");
-    this.canvas.setAttribute("data-render-quality", "arcade");
+    this.canvas.setAttribute("data-render-quality", "balanced");
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -3367,6 +4834,7 @@ class CinematicRunnerRenderer {
     this.edgeLight.position.set(8, 7, -4);
     this.warmLight = new THREE.PointLight(STAGE_CONFIGS[0].accent, 18, 28, 2);
     this.warmLight.position.set(0, 4.4, -4);
+    this.warmLightBasePosition = this.warmLight.position.clone();
     this.runnerFillLight = new THREE.PointLight(0xffe8cc, 8.5, 14, 2);
     this.runnerFillLight.position.set(-2.8, 3.2, -4.2);
     this.camera.add(this.runnerFillLight);
@@ -3452,15 +4920,21 @@ class CinematicRunnerRenderer {
 
     this.entityObjects = new Map();
     this.entityPool = new Map();
+    this.activeEntityIds = new Set();
     this.collectibleBatches = createCollectibleBatches(this.particleTexture, STAGE_COLLECTIBLE_COLORS[0]);
     this.collectibleMatrix = new THREE.Matrix4();
     this.collectibleQuaternion = new THREE.Quaternion();
     this.collectibleEuler = new THREE.Euler();
     this.collectibleScale = new THREE.Vector3(0.54, 0.54, 0.54);
     this.collectiblePosition = new THREE.Vector3();
+    this.collectibleColor = new THREE.Color();
     this.scene.add(this.collectibleBatches.glows, this.collectibleBatches.pickupTrail, this.collectibleBatches.rims, this.collectibleBatches.hearts);
+    this.transientEffects = createTransientEffectPool(this.particleTexture);
+    this.scene.add(this.transientEffects.root);
     this.bursts = [];
     this.rings = [];
+    this.burstPoolCursor = 0;
+    this.ringPoolCursor = 0;
     this.pickupSequences = [];
     this.itemPulse = null;
     this.flow = 0;
@@ -3470,13 +4944,37 @@ class CinematicRunnerRenderer {
     this.flash = 0;
     this.speedPulse = 0;
     this.lastTime = 0;
+    this.lastRenderMode = "";
     this.frameAverage = 1 / 60;
     this.qualityElapsed = 0;
+    this.qualityGoodWindows = 0;
+    this.qualityProfileIndex = 1;
+    this.qualityProfile = QUALITY_PROFILES[this.qualityProfileIndex];
+    this.frameSnapshot = { powerups: { magnet: 0, shield: 0, multiplier: 0, overdrive: 0 }, carriedItems: [] };
     this.cssWidth = 1;
     this.cssHeight = 1;
     this.maxPixelRatio = 1;
     this.stageIndex = -1;
+    this.stageVisualConfigs = STAGE_CONFIGS.map((_, index) => resolveStageVisualConfig(index));
+    this.stageConfig = this.stageVisualConfigs[0];
+    this.stageWorlds = this.stageVisualConfigs.map((config, index) => {
+      const world = createStageWorld(config, index);
+      world.visible = false;
+      this.scene.add(world);
+      return world;
+    });
+    this.stageRoadProfiles = this.stageVisualConfigs.map((config, index) => {
+      const profile = createStageRoadProfile(config, index);
+      profile.visible = false;
+      this.roadBaseGroup.add(profile);
+      return profile;
+    });
+    this.activeStageWorld = this.stageWorlds[0];
     this.routePhase = 0;
+    this.phaseContentRef = null;
+    this.poolGeneration = 0;
+    this.viewFrustum = new THREE.Frustum();
+    this.projectionViewMatrix = new THREE.Matrix4();
     this.stageElapsed = 0;
     this.currentDistance = 0;
     this.currentLaneX = 0;
@@ -3484,6 +4982,8 @@ class CinematicRunnerRenderer {
     this.lateralVelocity = 0;
     this.previousVertical = 0;
     this.landingPulse = 0;
+    this.companionHazardProximity = 0;
+    this.cadencePhase = 0;
     this.targetExposure = 1.08;
     this.targetBackground = new THREE.Color(STAGE_CONFIGS[0].sky);
     this.targetFog = new THREE.Color(STAGE_CONFIGS[0].fog);
@@ -3514,42 +5014,125 @@ class CinematicRunnerRenderer {
     this.storyWorldState = { life: 0, duration: 0, elapsed: 0, intensity: 1, kind: "", gesture: "focus", emotion: "", color: STAGE_CONFIGS[0].accent };
     this.synergyState = { life: 0, duration: 0, elapsed: 0, intensity: 1, color: STAGE_CONFIGS[0].accent };
     this.scene.add(this.powerupVisuals.root);
+    this.directorVisualRig = createDirectorVisualRig(this.particleTexture);
+    this.directorState = {
+      stageIndex: 0,
+      actIndex: 0,
+      act: actDirectionAt(0, 0),
+      elapsed: 0,
+      revealLife: 0,
+      revealStrength: 0,
+      consequenceLife: 0,
+      consequenceStrength: 0,
+      consequenceOutcome: "clean",
+      recoverLife: 0,
+      recoverStrength: 0,
+      semanticLife: 0,
+      semanticStrength: 0,
+      semanticOutcome: "idle",
+      semanticStep: "",
+      semanticMatched: 0,
+      semanticRequired: 0,
+      gatePendingLife: 0,
+      gatePendingStrength: 0,
+      branch: { axis: null, itemId: null, worldEffect: null, strength: 0, target: 0, color: new THREE.Color(BRANCH_COLORS.attention) },
+      relationship: relationshipMode("absent"),
+      relationshipStrength: 0,
+      processedCommandIds: new Set(),
+      commandHighWater: new Map(),
+      backgroundTarget: new THREE.Color(STAGE_CONFIGS[0].sky),
+      fogTarget: new THREE.Color(STAGE_CONFIGS[0].fog),
+      accentTarget: new THREE.Color(STAGE_CONFIGS[0].accent),
+      camera: { x: 0, y: 5.55, z: 10.65, lookY: 0.7, lookZ: -18.5, fov: 59, maxLaneOffset: 0.35 }
+    };
+    this.directorScratchColor = new THREE.Color();
+    this.choiceWindowState = { life: 0, duration: 0, lane: 0, strength: 0 };
+    this.arrivalInteractionState = { life: 0, duration: 0, strength: 0, outcome: "idle", completed: false };
+    this.scene.add(this.directorVisualRig.root);
+    this.stageIntroVisual = createStageIntroVisual(this.particleTexture, STAGE_CONFIGS[0].accent);
+    this.stageIntroState = {
+      active: false,
+      elapsed: 0,
+      duration: 2.4,
+      stageIndex: 0,
+      intensity: 0,
+      beatIndex: 0,
+      beatElapsed: 0,
+      cameraCue: "street-wide",
+      actionCue: "run"
+    };
+    this.scene.add(this.stageIntroVisual.root);
+    this.statusVisuals = createStatusVisualRig();
+    this.statusVisualState = { mode: "normal", target: 0, strength: 0, condition: 100, pulse: 0 };
+    this.camera.add(this.statusVisuals.vignette);
+    this.scene.add(this.statusVisuals.root);
+    this.disposed = false;
+    this.loadedCitySources = [];
     this.preloadBackdrops();
     this.setStage(0, true);
+    this.applyQualityProfile("balanced", true);
     this.modelLoader = new GLTFLoader();
-    this.disposed = false;
+    this.runnerLoadToken = 0;
+    this.cityLoadToken = 0;
     this.loadRiggedCharacters();
     this.loadPremiumCity();
   }
 
   loadRiggedCharacters() {
+    const loadToken = ++this.runnerLoadToken;
     Promise.all([
       this.modelLoader.loadAsync("assets/runner-models/runner-player.glb"),
       this.modelLoader.loadAsync("assets/runner-models/runner-companion.glb"),
       this.modelLoader.loadAsync("assets/runner-models/runner-motion.glb")
     ])
       .then(([playerGltf, companionGltf, motionGltf]) => {
-        if (this.disposed) return;
-        const riggedPlayer = createRiggedRunner(playerGltf, {
-          height: 2.72,
-          accent: 0xff7866,
-          widthScale: 0.84,
-          depthScale: 0.88,
-          rotationY: 0,
-          fashion: false
-        }, motionGltf.animations);
-        const riggedCompanion = createRiggedRunner(companionGltf, {
-          height: 2.62,
-          accent: 0xff668f,
-          companion: true,
-          widthScale: 0.87,
-          depthScale: 0.9,
-          rotationY: 0,
-          fashion: false
-        }, motionGltf.animations);
+        if (this.disposed || loadToken !== this.runnerLoadToken) {
+          disposeGltf(playerGltf);
+          disposeGltf(companionGltf);
+          disposeGltf(motionGltf);
+          return;
+        }
+        let riggedPlayer = null;
+        let riggedCompanion = null;
+        try {
+          riggedPlayer = createRiggedRunner(playerGltf, {
+            height: 2.72,
+            accent: 0xff7866,
+            widthScale: 0.84,
+            depthScale: 0.88,
+            rotationY: 0,
+            fashion: false
+          }, motionGltf.animations);
+          riggedCompanion = createRiggedRunner(companionGltf, {
+            height: 2.62,
+            accent: 0xff668f,
+            companion: true,
+            widthScale: 0.87,
+            depthScale: 0.9,
+            rotationY: 0,
+            fashion: false
+          }, motionGltf.animations);
+        } catch (error) {
+          if (riggedPlayer) disposeObject(riggedPlayer);
+          else disposeGltf(playerGltf);
+          if (riggedCompanion) disposeObject(riggedCompanion);
+          else disposeGltf(companionGltf);
+          throw error;
+        } finally {
+          disposeGltf(motionGltf);
+        }
+        // The authored run pose extends the hands beyond the idle silhouette.
+        // Keep it inside one lane without rejecting the correctly normalized rig.
+        const runnerEnvelope = { width: 3.2, height: 3.6, depth: 3.4 };
+        if (!validateModelEnvelope(riggedPlayer, runnerEnvelope)
+          || !validateModelEnvelope(riggedCompanion, runnerEnvelope)) {
+          disposeObject(riggedPlayer);
+          disposeObject(riggedCompanion);
+          throw new Error("runner model violates the foreground envelope");
+        }
         riggedPlayer.position.copy(this.player.position);
         riggedCompanion.position.copy(this.companion.position);
-        riggedCompanion.visible = Boolean(this.arrivalData);
+        riggedCompanion.visible = Boolean(this.arrivalData) || Boolean(this.directorState?.relationship?.visible);
         const oldPlayer = this.player;
         const oldCompanion = this.companion;
         this.scene.remove(oldPlayer, oldCompanion);
@@ -3558,9 +5141,12 @@ class CinematicRunnerRenderer {
         this.player = riggedPlayer;
         this.companion = riggedCompanion;
         this.scene.add(this.player, this.companion);
+        applyCharacterRenderQuality(this.player, this.qualityProfile.key === "performance", this.qualityProfile.shadows);
+        applyCharacterRenderQuality(this.companion, this.qualityProfile.key === "performance", this.qualityProfile.shadows);
         this.canvas.setAttribute("data-runner-model", "rg-poly-rigged");
       })
       .catch((error) => {
+        if (this.disposed || loadToken !== this.runnerLoadToken) return;
         console.error("Unable to initialize rigged runner models", error);
         this.canvas.setAttribute("data-runner-model", "procedural-fallback");
         this.canvas.setAttribute("data-runner-model-error", error?.message || "unknown");
@@ -3568,22 +5154,44 @@ class CinematicRunnerRenderer {
   }
 
   loadPremiumCity() {
+    const loadToken = ++this.cityLoadToken;
     this.modelLoader.loadAsync("assets/runner-models/runner-city.glb")
       .then((cityGltf) => {
-        if (this.disposed) return;
+        if (this.disposed || loadToken !== this.cityLoadToken) {
+          disposeGltf(cityGltf);
+          return;
+        }
         const cityAssets = cityGltf.scenes.map((scene) => extractCityAsset(scene));
-        const premiumDistricts = STAGE_CONFIGS.map((config, stageIndex) => {
+        const premiumDistricts = this.stageVisualConfigs.map((config, stageIndex) => {
           const district = createPremiumDistrict(config, stageIndex, cityAssets);
-          district.visible = stageIndex === this.stageIndex;
+          district.visible = false;
           return district;
         });
+        if (this.disposed || loadToken !== this.cityLoadToken) {
+          premiumDistricts.forEach(disposeObject);
+          disposeGltf(cityGltf);
+          return;
+        }
+        this.premiumDistricts?.forEach((district) => {
+          this.scene.remove(district);
+          disposeObject(district);
+        });
+        for (let index = 0; index < this.loadedCitySources.length; index += 1) disposeObject(this.loadedCitySources[index]);
+        this.loadedCitySources = cityGltf.scenes.slice();
         this.premiumDistricts = premiumDistricts;
         this.metroDistricts.forEach((district) => { district.visible = false; });
         this.scene.add(...premiumDistricts);
-        this.setStage(this.stageIndex, true);
+        premiumDistricts.forEach((district, districtIndex) => {
+          district.visible = districtIndex === this.stageIndex;
+        });
+        this.metroSkyline = premiumDistricts[this.stageIndex];
+        const config = this.stageConfig || this.stageVisualConfigs[this.stageIndex];
+        this.metroSkyline.userData.windowLights?.material.color.setHex(config.accent);
         this.canvas.setAttribute("data-city-model", "kenney-instanced");
+        this.syncQualityVisibility(false);
       })
       .catch(() => {
+        if (this.disposed || loadToken !== this.cityLoadToken) return;
         this.canvas.setAttribute("data-city-model", "procedural-fallback");
       });
   }
@@ -3717,17 +5325,19 @@ class CinematicRunnerRenderer {
   }
 
   rebuildDecor() {
-    const config = STAGE_CONFIGS[this.stageIndex];
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
     const phase = this.routePhase || 0;
+    const preserveCenterSightline = this.stageIndex === 1;
     this.roadSegments.forEach((segment, index) => {
       const oldDecor = segment.userData.decor;
       segment.remove(oldDecor);
       disposeObject(oldDecor);
       const decor = new THREE.Group();
       const spanningType = config.props.find((type) => type === "tunnel" || type === "terminal" || type === "overpass");
-      if (index < 10 && spanningType && index % 7 === 3) {
+      if (!preserveCenterSightline && index < 10 && spanningType && index % 7 === 3) {
         const spanning = createProp(spanningType, config.accent, index + this.stageIndex);
         spanning.position.set(0, 0.18, 0);
+        spanning.userData.overheadClearance = TRACK_CLEARANCE.overheadY;
         decor.add(spanning);
       }
       if (index < 10) {
@@ -3736,34 +5346,44 @@ class CinematicRunnerRenderer {
           const type = tracksideProps[(index + sideIndex * 2 + phase) % tracksideProps.length];
           const prop = createProp(type, config.accent, index * 7 + sideIndex * 3 + this.stageIndex + phase * 11);
           const compact = ["lamp", "signal", "tree", "bench", "warning"].includes(type);
-          prop.scale.setScalar(compact ? 0.86 : 0.74 + (index % 3) * 0.035);
-          prop.position.set(side * (5.95 + (index % 3) * 0.28), 0.18, sideIndex ? -2.8 : 2.4);
+          prop.scale.setScalar((compact ? 0.86 : 0.74 + (index % 3) * 0.035) * (preserveCenterSightline ? 0.82 : 1));
+          prop.position.y = 0.18;
           prop.rotation.y = type === "railing" ? 0 : side < 0 ? Math.PI / 2 : -Math.PI / 2;
+          fitTracksideObject(prop, side, side * ((preserveCenterSightline ? 6.7 : 5.95) + (index % 3) * 0.28), sideIndex ? -2.8 : 2.4);
           decor.add(prop);
         });
       }
-      if (index % Math.max(4, 6 - phase) === 0) {
+      if (!preserveCenterSightline && index % Math.max(4, 6 - phase) === 0) {
         const gantry = createGantry(config.accent, this.stageIndex === 5);
         gantry.position.z = -4.8;
+        gantry.userData.overheadClearance = TRACK_CLEARANCE.overheadY;
         decor.add(gantry);
       }
-      if (index < 10 && index % 5 === (4 - phase + 5) % 5) {
+      if (!preserveCenterSightline && index < 10 && index % 5 === (4 - phase + 5) % 5) {
         const stageSpan = createStageSpan(this.stageIndex, config.accent, index);
         stageSpan.position.z = 3.4;
+        stageSpan.userData.overheadClearance = TRACK_CLEARANCE.overheadY;
         decor.add(stageSpan);
       }
-      if (index === 9) {
+      if (!preserveCenterSightline && index === 9) {
         const districtGate = createDistrictGateway(config);
         districtGate.scale.setScalar(0.72);
         districtGate.position.set(0, 0.18, -3.8);
+        districtGate.userData.overheadClearance = TRACK_CLEARANCE.overheadY;
         decor.add(districtGate);
       }
+      decor.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(decor);
+      decor.userData.minZ = bounds.isEmpty() ? 0 : bounds.min.z;
+      decor.userData.maxZ = bounds.isEmpty() ? 0 : bounds.max.z;
+      decor.userData.trackClearance = true;
       segment.add(decor);
       segment.userData.decor = decor;
     });
   }
 
   buildWeather() {
+    this.worldParticleTextures = this.stageVisualConfigs.map((config) => makeWorldParticleTexture(config.world.particles.kind, config.accent));
     const rainCount = 420;
     const rainPositions = new Float32Array(rainCount * 2 * 3);
     for (let index = 0; index < rainCount; index += 1) {
@@ -3794,7 +5414,7 @@ class CinematicRunnerRenderer {
     const ambientGeometry = new THREE.BufferGeometry();
     ambientGeometry.setAttribute("position", new THREE.BufferAttribute(ambientPositions, 3));
     this.ambientParticles = new THREE.Points(ambientGeometry, new THREE.PointsMaterial({
-      map: this.particleTexture,
+      map: this.worldParticleTextures[0],
       color: STAGE_CONFIGS[0].accent,
       size: 0.13,
       transparent: true,
@@ -3927,7 +5547,7 @@ class CinematicRunnerRenderer {
     else if (/petal|flower|green|growth|plant|bloom/.test(semanticKind)) kind = "plant";
     else if (/groove|record|concert|rhythm|credit/.test(semanticKind)) kind = "record";
     else if (/light|beacon|door|key|guard|homeward/.test(semanticKind)) kind = "lamp";
-    const config = STAGE_CONFIGS[this.stageIndex];
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
     const color = storyPropColor(item, POWERUP_COLORS[gameplayPowerup] || config.accent);
     const lane = Number(interaction.lane ?? item?.lane);
     const sourceZ = Number(interaction.z ?? item?.z);
@@ -3965,7 +5585,7 @@ class CinematicRunnerRenderer {
     const item = interaction.item || interaction.storyItem || interaction;
     const world = interaction.world && typeof interaction.world === "object" ? interaction.world : {};
     const gameplayPowerup = normalizePowerup(interaction.gameplay?.effect);
-    const config = STAGE_CONFIGS[this.stageIndex];
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
     const color = storyPropColor(item, POWERUP_COLORS[gameplayPowerup] || config.accent);
     const lane = Number(interaction.lane ?? item?.lane);
     const sourceZ = Number(interaction.z ?? item?.z);
@@ -4149,15 +5769,185 @@ class CinematicRunnerRenderer {
       }
     });
 
-    const config = STAGE_CONFIGS[this.stageIndex];
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
     const baseEnvironment = ["neon", "rain", "storm", "starlight"].includes(config.weather) ? 0.9 : 0.72;
     this.scene.environmentIntensity = baseEnvironment + overdriveStrength * 0.08 + storyEnvelope * 0.1 + synergyEnvelope * 0.18;
-    this.edgeLight.intensity = 1.75 + overdriveStrength * 3.6 + synergyEnvelope * 2.4;
+    this.edgeLight.intensity = config.world.lighting.edgeIntensity + overdriveStrength * 3.6 + synergyEnvelope * 2.4;
+  }
+
+  beginStageIntro(detail = {}) {
+    const requested = detail.stageIndex ?? detail.index ?? (Number.isFinite(Number(detail.stage)) ? Number(detail.stage) - 1 : this.stageIndex);
+    const stageIndex = clamp(Math.trunc(Number(requested) || 0), 0, STAGE_CONFIGS.length - 1);
+    const stageContent = detail.stageContent || detail.content || (
+      detail.world || detail.theme || detail.sceneMood || detail.roadDesign || detail.obstacleDesign ? detail : null
+    );
+    if (stageIndex !== this.stageIndex || stageContent) this.setStage(stageIndex, Boolean(detail.immediate), stageContent);
+    const config = this.stageVisualConfigs[stageIndex] || resolveStageVisualConfig(stageIndex, stageContent);
+    const duration = clamp(Number(detail.duration) || Number(detail.durationMs) / 1000 || Number(detail.openingPerformance?.durationMs) / 1000 || 2.4, 0.6, 8);
+    this.stageIntroState.active = true;
+    this.stageIntroState.elapsed = 0;
+    this.stageIntroState.duration = duration;
+    this.stageIntroState.stageIndex = stageIndex;
+    this.stageIntroState.intensity = clamp(Number(detail.intensity) || 1, 0.2, 1.4);
+    this.stageIntroState.beatIndex = 0;
+    this.stageIntroState.beatElapsed = 0;
+    this.stageIntroState.cameraCue = config.visual?.introCueSequence?.[0] || "street-wide";
+    this.stageIntroState.actionCue = introCameraCue(this.stageIntroState.cameraCue).action;
+    const visuals = this.stageIntroVisual;
+    visuals.root.visible = true;
+    visuals.root.scale.setScalar(0.01);
+    visuals.token.geometry = createStageTokenGeometry(stageIndex);
+    visuals.tokenMaterial.color.setHex(STAGE_TOKEN_COLORS[stageIndex] || 0xffffff);
+    visuals.tokenMaterial.emissive.setHex(config.accent);
+    visuals.rings.forEach((ring) => ring.material.color.setHex(config.accent));
+    visuals.rays.forEach((ray, index) => ray.material.color.setHex(index % 2 ? config.accent : config.theme.highlight));
+    visuals.particles.material.color.setHex(config.accent);
+    visuals.light.color.setHex(config.accent);
+    this.canvas.setAttribute("data-stage-intro", String(stageIndex + 1));
+    return this.snapshot();
+  }
+
+  stageIntro(detail = {}) {
+    return this.beginStageIntro(detail);
+  }
+
+  stageIntroBeat(detail = {}) {
+    if (!this.stageIntroState.active) return;
+    const beatIndex = clamp(Math.trunc(Number(detail.beatIndex ?? detail.currentBeat?.index) || 0), 0, 8);
+    const config = this.stageVisualConfigs[this.stageIntroState.stageIndex] || this.stageConfig;
+    const cueSequence = config?.visual?.introCueSequence || [];
+    const cameraCue = detail.cameraCue || detail.currentBeat?.cameraCue || cueSequence[beatIndex % Math.max(1, cueSequence.length)] || "runner-follow";
+    this.stageIntroState.beatIndex = beatIndex;
+    this.stageIntroState.beatElapsed = 0;
+    this.stageIntroState.cameraCue = cameraCue;
+    this.stageIntroState.actionCue = detail.actionCue || detail.currentBeat?.actionCue || introCameraCue(cameraCue).action;
+    this.stageIntroState.intensity = Math.min(1.4, Math.max(this.stageIntroState.intensity, 1 + beatIndex * 0.08));
+    this.stageIntroVisual.rings.forEach((ring, index) => {
+      ring.scale.setScalar(0.72 + index * 0.12);
+      ring.material.opacity = 0.82 - index * 0.14;
+    });
+    this.stageIntroVisual.light.intensity = 22;
+    this.flash = Math.max(this.flash, 0.12 + beatIndex * 0.035);
+  }
+
+  endStageIntro() {
+    this.stageIntroState.active = false;
+    this.stageIntroState.elapsed = 0;
+    this.stageIntroState.intensity = 0;
+    this.stageIntroVisual.root.visible = false;
+    this.canvas.removeAttribute("data-stage-intro");
+  }
+
+  updateStageIntroVisual(delta, time) {
+    const state = this.stageIntroState;
+    if (!state.active) return;
+    state.elapsed += delta;
+    state.beatElapsed += delta;
+    const progress = clamp(state.elapsed / state.duration, 0, 1);
+    const enter = clamp(progress / 0.2, 0, 1);
+    const leave = clamp((1 - progress) / 0.28, 0, 1);
+    const envelope = enter * enter * (3 - enter * 2) * leave * leave * (3 - leave * 2) * state.intensity;
+    const visuals = this.stageIntroVisual;
+    visuals.root.scale.setScalar(0.72 + enter * 0.28 + Math.sin(progress * Math.PI) * 0.08);
+    visuals.root.position.x = Math.sin(progress * Math.PI) * (state.stageIndex % 2 ? -0.24 : 0.24);
+    visuals.token.rotation.y = time * 1.4;
+    visuals.token.rotation.z = Math.sin(time * 1.8) * 0.08;
+    visuals.tokenMaterial.opacity = envelope;
+    visuals.tokenMaterial.emissiveIntensity = 1.8 + envelope * 3.6;
+    visuals.rings.forEach((ring, index) => {
+      ring.rotation.z = time * (index % 2 ? -0.72 : 0.54) + index;
+      ring.scale.setScalar(0.7 + progress * (1.15 + index * 0.2));
+      ring.material.opacity = envelope * (0.72 - index * 0.14);
+    });
+    visuals.rays.forEach((ray, index) => {
+      ray.scale.y = 0.45 + progress * (1.1 + index % 3 * 0.2);
+      ray.material.opacity = envelope * (0.18 + index % 2 * 0.08);
+    });
+    visuals.particles.rotation.z = time * 0.12;
+    visuals.particles.material.opacity = envelope * 0.76;
+    visuals.particles.material.size = 0.13 + envelope * 0.12;
+    visuals.light.intensity = envelope * 18;
+    if (progress >= 1) this.endStageIntro();
+  }
+
+  setStatusVisual(status = "normal", detail = {}) {
+    const candidate = typeof status === "object" ? status.mode || status.status || status.state : status;
+    const normalized = /fail|failed|failure/.test(String(candidate).toLowerCase())
+      ? "failed"
+      : /low|critical|danger|weak/.test(String(candidate).toLowerCase()) ? "low" : "normal";
+    const state = this.statusVisualState;
+    state.mode = normalized;
+    state.target = normalized === "normal" ? 0 : clamp(Number(detail.intensity) || (normalized === "failed" ? 1 : 0.68), 0.15, 1);
+    state.condition = clamp(Number(detail.condition ?? detail.value ?? state.condition) || 0, 0, 100);
+    const color = normalized === "failed" ? 0xff514f : normalized === "low" ? 0xffa45e : 0xffffff;
+    this.statusVisuals.vignetteMaterial.color.setHex(color);
+    this.statusVisuals.rings.forEach((ring) => ring.material.color.setHex(color));
+    this.statusVisuals.guideLight.color.setHex(color);
+    this.canvas.setAttribute("data-visual-status", normalized);
+    return this.snapshot();
+  }
+
+  setLowStateVisual(active = true, detail = {}) {
+    return this.setStatusVisual(active ? "low" : "normal", detail);
+  }
+
+  setDanger(band = "steady", condition = 100) {
+    const mode = band === "failed" ? "failed" : ["danger", "critical"].includes(band) ? "low" : "normal";
+    return this.setStatusVisual(mode, { condition, status: band, intensity: band === "critical" ? 0.92 : 0.68 });
+  }
+
+  setFailureVisual(active = true, detail = {}) {
+    return this.setStatusVisual(active ? "failed" : "normal", detail);
+  }
+
+  showFailure(detail = {}) {
+    return this.setFailureVisual(true, detail);
+  }
+
+  clearFailure() {
+    return this.clearStatusVisual();
+  }
+
+  clearStatusVisual() {
+    return this.setStatusVisual("normal", { condition: 100 });
+  }
+
+  syncStatusVisual(runState, explicitStatus) {
+    const condition = clamp(Number(runState.condition ?? runState.heartbeat ?? 100), 0, 100);
+    const explicitMode = typeof explicitStatus === "object"
+      ? explicitStatus.mode || explicitStatus.status || explicitStatus.state
+      : explicitStatus;
+    const mode = explicitMode || (runState.status === "failed" ? "failed" : condition <= LOW_STATE_THRESHOLD ? "low" : "normal");
+    const normalized = /fail/.test(String(mode).toLowerCase()) ? "failed" : /low|critical|danger|weak/.test(String(mode).toLowerCase()) ? "low" : "normal";
+    if (normalized !== this.statusVisualState.mode) this.setStatusVisual(normalized, { condition, ...(objectValue(explicitStatus)) });
+    else this.statusVisualState.condition = condition;
+  }
+
+  updateStatusVisual(delta, time, arriving) {
+    const state = this.statusVisualState;
+    state.strength = damp(state.strength, arriving ? 0 : state.target, state.mode === "failed" ? 5.5 : 3.2, delta);
+    const urgency = 1 - state.condition / 100;
+    state.pulse = Math.max(0, Math.sin(time * (state.mode === "failed" ? 4.2 : 2.6))) * state.strength;
+    const visible = state.strength > 0.002;
+    this.statusVisuals.root.visible = visible;
+    this.statusVisuals.root.position.set(this.currentLaneX, 0.035, PLAYER_Z + 0.04);
+    this.statusVisuals.vignetteMaterial.opacity = state.strength * (state.mode === "failed" ? 0.56 : 0.28) * (0.72 + state.pulse * 0.28);
+    this.statusVisuals.rings.forEach((ring, index) => {
+      const phase = (time * (0.62 + index * 0.12) + index * 0.28) % 1;
+      ring.scale.setScalar(0.72 + phase * (2.1 + urgency));
+      ring.rotation.z = time * (index % 2 ? -0.46 : 0.38) + index;
+      ring.material.opacity = state.strength * (1 - phase) * (0.48 - index * 0.07);
+    });
+    this.statusVisuals.guideLight.intensity = state.strength * (2.2 + state.pulse * 4.5);
   }
 
   preloadBackdrops() {
-    STAGE_CONFIGS.forEach((config, index) => {
+    this.stageVisualConfigs.forEach((config, index) => {
       this.textureLoader.load(config.asset, (texture) => {
+        if (this.disposed) {
+          texture.dispose();
+          return;
+        }
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
@@ -4216,13 +6006,40 @@ class CinematicRunnerRenderer {
     this.backdropBlend = 0;
   }
 
-  setStage(index, immediate = false) {
+  setStage(index, immediate = false, explicitStage = null) {
     const nextIndex = clamp(Math.trunc(index), 0, STAGE_CONFIGS.length - 1);
-    if (nextIndex === this.stageIndex && !immediate) return;
+    const stageChanged = nextIndex !== this.stageIndex;
+    const hasStructuredOverride = Boolean(explicitStage && (
+      explicitStage.world || explicitStage.theme || explicitStage.sceneMood || explicitStage.timeWeather
+      || explicitStage.colorPalette || explicitStage.landmarks || explicitStage.roadDesign || explicitStage.obstacleDesign
+    ));
+    const structuredContentChanged = hasStructuredOverride && explicitStage !== this.stageContentRef;
+    if (!stageChanged && !immediate && !hasStructuredOverride) return;
+    if (stageChanged || structuredContentChanged) this.resetEntityPoolForStage(nextIndex);
     this.stageIndex = nextIndex;
-    this.routePhase = 0;
-    this.stageElapsed = 0;
-    const config = STAGE_CONFIGS[this.stageIndex];
+    if (stageChanged) {
+      this.routePhase = 0;
+      this.phaseContentRef = null;
+      this.stageElapsed = 0;
+    }
+    const config = resolveStageVisualConfig(this.stageIndex, explicitStage);
+    this.stageContentRef = contentStageAt(this.stageIndex, explicitStage);
+    this.stageVisualConfigs[this.stageIndex] = config;
+    this.stageConfig = config;
+    if (structuredContentChanged) {
+      const previousWorld = this.stageWorlds[this.stageIndex];
+      const previousRoadProfile = this.stageRoadProfiles[this.stageIndex];
+      this.scene.remove(previousWorld);
+      this.roadBaseGroup.remove(previousRoadProfile);
+      disposeObject(previousWorld);
+      disposeObject(previousRoadProfile);
+      this.stageWorlds[this.stageIndex] = createStageWorld(config, this.stageIndex);
+      this.stageRoadProfiles[this.stageIndex] = createStageRoadProfile(config, this.stageIndex);
+      this.scene.add(this.stageWorlds[this.stageIndex]);
+      this.roadBaseGroup.add(this.stageRoadProfiles[this.stageIndex]);
+      this.worldParticleTextures[this.stageIndex]?.dispose();
+      this.worldParticleTextures[this.stageIndex] = makeWorldParticleTexture(config.world.particles.kind, config.accent);
+    }
     this.targetBackground.setHex(config.sky);
     this.targetFog.setHex(config.fog);
     this.targetFogDensity = config.fogDensity * FOG_SCALE;
@@ -4230,13 +6047,22 @@ class CinematicRunnerRenderer {
     this.hemisphere.color.setHex(config.ambient);
     this.hemisphere.groundColor.setHex(config.ground);
     this.keyLight.color.setHex(config.key);
+    this.keyLight.intensity = config.world.lighting.keyIntensity;
+    if (Array.isArray(config.world.lighting.keyPosition)) this.keyLight.position.fromArray(config.world.lighting.keyPosition);
     this.edgeLight.color.setHex(config.accent);
+    this.edgeLight.intensity = config.world.lighting.edgeIntensity;
+    if (Array.isArray(config.world.lighting.edgePosition)) this.edgeLight.position.fromArray(config.world.lighting.edgePosition);
     this.warmLight.color.setHex(config.accent);
+    this.warmLight.intensity = config.world.lighting.warmIntensity;
+    if (Array.isArray(config.world.lighting.warmPosition)) this.warmLightBasePosition.fromArray(config.world.lighting.warmPosition);
+    this.warmLight.position.copy(this.warmLightBasePosition);
     const wetStage = ["after-rain", "rain", "storm"].includes(config.weather);
+    const surfaceSettings = ROAD_SURFACE_SETTINGS[config.world.road.material] || ROAD_SURFACE_SETTINGS[wetStage ? "wet-asphalt" : "dry-asphalt"];
     this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.16));
-    this.roadMaterial.roughness = wetStage ? 0.42 : 0.72;
-    this.roadMaterial.clearcoat = wetStage ? 0.52 : 0.2;
-    this.roadMaterial.clearcoatRoughness = wetStage ? 0.26 : 0.5;
+    this.roadMaterial.roughness = clamp(Number(config.world.road.roughness) || surfaceSettings.roughness, 0.08, 1);
+    this.roadMaterial.metalness = clamp(Number(config.world.road.metalness) || surfaceSettings.metalness, 0, 0.9);
+    this.roadMaterial.clearcoat = clamp(Number(config.world.road.clearcoat) || surfaceSettings.clearcoat, 0, 1);
+    this.roadMaterial.clearcoatRoughness = clamp(Number(config.world.road.clearcoatRoughness) || surfaceSettings.clearcoatRoughness, 0.05, 1);
     this.curbMaterial.color.setHex(config.curb);
     this.platformMaterial.color.copy(new THREE.Color(config.curb).lerp(new THREE.Color(config.road), 0.62).multiplyScalar(0.82));
     this.sleeperMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0x4c3428), 0.38).multiplyScalar(0.72));
@@ -4274,6 +6100,11 @@ class CinematicRunnerRenderer {
       this.roadBatches.walks.visible = true;
     }
     this.ambientParticles.material.color.setHex(config.accent);
+    this.ambientParticles.material.map = this.worldParticleTextures[this.stageIndex] || this.particleTexture;
+    this.ambientParticles.material.blending = ["leaf-drips", "paper-pages"].includes(config.world.particles.kind)
+      ? THREE.NormalBlending
+      : THREE.AdditiveBlending;
+    this.ambientParticles.material.needsUpdate = true;
     this.playerTrail.material.color.setHex(config.accent);
     this.landingRing.material.color.setHex(config.accent);
     const collectibleColor = STAGE_COLLECTIBLE_COLORS[this.stageIndex] || config.accent;
@@ -4289,8 +6120,11 @@ class CinematicRunnerRenderer {
     this.skyDome.userData.uniforms.topColor.value.setHex(config.skyTop);
     this.skyDome.userData.uniforms.bottomColor.value.setHex(config.skyBottom);
     this.skyDome.userData.uniforms.accentColor.value.setHex(config.accent);
-    this.scene.environmentIntensity = ["neon", "rain", "storm", "starlight"].includes(config.weather) ? 0.9 : 0.72;
+    this.scene.environmentIntensity = clamp(Number(config.world.lighting.environmentIntensity) || (["neon", "rain", "storm", "starlight"].includes(config.weather) ? 0.9 : 0.72), 0.35, 1.3);
     this.runnerFillLight.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xffffff), 0.74));
+    this.stageWorlds.forEach((world, worldIndex) => { world.visible = worldIndex === this.stageIndex; });
+    this.stageRoadProfiles.forEach((profile, profileIndex) => { profile.visible = profileIndex === this.stageIndex; });
+    this.activeStageWorld = this.stageWorlds[this.stageIndex];
     const activeDistricts = this.premiumDistricts || this.metroDistricts;
     this.metroDistricts.forEach((district, districtIndex) => {
       district.visible = !this.premiumDistricts && districtIndex === this.stageIndex;
@@ -4311,6 +6145,13 @@ class CinematicRunnerRenderer {
     });
     this.activateBackdrop(this.stageIndex, immediate);
     this.rebuildDecor();
+    this.canvas.setAttribute("data-world-scene", config.world.scene);
+    this.canvas.setAttribute("data-road-geometry", config.world.road.geometry);
+    this.canvas.setAttribute("data-obstacle-style", config.world.obstacles.style);
+    this.canvas.setAttribute("data-particle-style", config.world.particles.kind);
+    this.canvas.setAttribute("data-horizon-style", config.world.horizon.kind);
+    this.setDirectorAct(this.stageIndex, this.routePhase, this.phaseContentRef, true);
+    this.syncQualityVisibility(false);
     if (immediate) {
       this.scene.background.copy(this.targetBackground);
       this.scene.fog.color.copy(this.targetFog);
@@ -4319,17 +6160,383 @@ class CinematicRunnerRenderer {
     }
   }
 
-  setRoutePhase(value) {
+  setStageContent(stageContent, immediate = true) {
+    this.setStage(this.stageIndex, immediate, stageContent);
+    return this.snapshot();
+  }
+
+  setRoutePhase(value, phaseContent = null) {
     const nextPhase = clamp(Math.trunc(Number(value) || 0), 0, 2);
-    if (nextPhase === this.routePhase) return;
+    const contentChanged = Boolean(phaseContent && phaseContent !== this.phaseContentRef);
+    if (nextPhase === this.routePhase && !contentChanged) return;
     this.routePhase = nextPhase;
+    this.phaseContentRef = phaseContent || this.phaseContentRef;
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
+    const visual = objectValue(this.phaseContentRef?.visual);
+    const materialKey = ROAD_SURFACE_SETTINGS[visual.roadMaterialKey]
+      ? visual.roadMaterialKey
+      : config.visual?.roadMaterialKey;
+    const surface = ROAD_SURFACE_SETTINGS[materialKey] || ROAD_SURFACE_SETTINGS["dry-asphalt"];
+    const phaseWarmth = nextPhase * 0.055;
+    this.roadMaterial.roughness = clamp(surface.roughness - phaseWarmth, 0.08, 1);
+    this.roadMaterial.metalness = clamp(surface.metalness + nextPhase * 0.025, 0, 0.9);
+    this.roadMaterial.clearcoat = clamp(surface.clearcoat + nextPhase * 0.06, 0, 1);
+    this.roadMaterial.clearcoatRoughness = clamp(surface.clearcoatRoughness - nextPhase * 0.025, 0.05, 1);
     this.laneGuideMaterial.opacity = 0.6 + nextPhase * 0.08;
+    this.laneGuideMaterial.emissiveIntensity = 0.24 + nextPhase * 0.13;
+    this.roadMarkMaterial.opacity = 0.46 + nextPhase * 0.08;
+    this.collectibleBatches.hearts.geometry = createPhaseTokenGeometry(this.stageIndex, nextPhase);
+    const collectibleKey = visual.collectibleVisualKey || config.visual?.collectibleVisualKeys?.[nextPhase] || "stage-token";
+    const phaseStyle = collectibleVisualStyle(collectibleKey, this.stageIndex, nextPhase);
+    this.collectibleBatches.glows.material.color.setHex(phaseStyle.color);
+    this.collectibleBatches.pickupTrail.material.color.setHex(phaseStyle.color);
+    this.canvas.setAttribute("data-route-phase", String(nextPhase + 1));
+    this.canvas.setAttribute("data-phase-world", visual.worldKey || this.phaseContentRef?.id || `phase-${nextPhase + 1}`);
+    this.canvas.setAttribute("data-collectible-style", collectibleKey);
     this.rebuildDecor();
+    this.setDirectorAct(this.stageIndex, nextPhase, this.phaseContentRef, true);
+  }
+
+  setDirectorAct(stageIndex, actIndex, phaseContent = null, immediate = false) {
+    if (!this.directorState || !this.directorVisualRig) return;
+    const state = this.directorState;
+    const profile = actDirectionAt(stageIndex, actIndex, phaseContent);
+    state.stageIndex = clamp(Math.trunc(Number(stageIndex) || 0), 0, ACT_VISUAL_DIRECTIONS.length - 1);
+    state.actIndex = clamp(Math.trunc(Number(actIndex) || 0), 0, 2);
+    state.act = profile;
+    state.elapsed = 0;
+    state.revealLife = immediate ? 0 : 1.1;
+    state.revealStrength = immediate ? 0 : 1;
+    const camera = profile.camera;
+    state.camera.x = Number(camera[0]) || 0;
+    state.camera.y = Number(camera[1]) || 5.2;
+    state.camera.z = Number(camera[2]) || 10.4;
+    state.camera.lookY = Number(camera[3]) || 0.7;
+    state.camera.lookZ = Number(camera[4]) || -17;
+    state.camera.fov = Math.max(55, Number(camera[5]) || 58);
+    state.camera.maxLaneOffset = 0.35;
+    state.backgroundTarget.copy(this.targetBackground).lerp(this.directorScratchColor.setHex(profile.tint), profile.tintMix);
+    state.fogTarget.copy(this.targetFog).lerp(this.directorScratchColor.setHex(profile.tint), profile.tintMix * 0.46);
+    state.accentTarget.setHex((this.stageConfig || STAGE_CONFIGS[state.stageIndex]).accent);
+    configureDirectorVisualRig(this.directorVisualRig, profile, state.accentTarget.getHex());
+    this.configureRelationshipPresence({ mode: profile.relation }, true);
+    this.roadMaterial.color.copy(new THREE.Color((this.stageConfig || STAGE_CONFIGS[state.stageIndex]).road).lerp(this.directorScratchColor.setHex(profile.tint), profile.tintMix * 0.34));
+    this.canvas.setAttribute("data-director-act", profile.id);
+    this.canvas.setAttribute("data-route-topology", profile.topology);
+    this.canvas.setAttribute("data-visible-goal", profile.goal);
+    this.canvas.setAttribute("data-camera-rig", profile.cameraRig);
+  }
+
+  configureRelationshipPresence(detail = {}, fromAct = false) {
+    if (!this.directorState) return;
+    const mode = String(detail.mode || detail.relationshipMode || detail.key || this.directorState.act?.relation || "absent");
+    const defaults = relationshipMode(mode);
+    const previous = this.directorState.relationship || RELATIONSHIP_MODES.absent;
+    this.directorState.relationship = {
+      ...defaults,
+      visible: this.directorState.stageIndex > 0 && (detail.visible === true || (detail.visible !== false && defaults.visible)),
+      lane: clamp(Number(detail.lane ?? defaults.lane), -1.35, 1.35),
+      z: clamp(Number(detail.z ?? defaults.z), -18, -2.4),
+      action: detail.action || defaults.action,
+      weight: detail.weight || defaults.weight,
+      duration: Math.max(0, Number(detail.durationMs || detail.duration || 0) / (detail.durationMs ? 1000 : 1)),
+      source: fromAct ? "act" : "command"
+    };
+    if (!fromAct && previous.key === mode && detail.restart !== true) this.directorState.relationshipStrength = Math.max(this.directorState.relationshipStrength, 0.35);
+    this.canvas.setAttribute("data-relationship-presence", mode);
+  }
+
+  applyDirectorCommand(command = {}) {
+    if (!command || typeof command !== "object") return this.snapshot();
+    const state = this.directorState;
+    const id = String(command.id || "");
+    const stamp = id ? directorCommandStamp(id, command.channel || "scene") : null;
+    if (id && state.processedCommandIds.has(id)) return this.snapshot();
+    if (stamp && stamp.ordinal <= (state.commandHighWater.get(stamp.scope) || 0)) return this.snapshot();
+    if (id) {
+      state.processedCommandIds.add(id);
+      if (stamp) state.commandHighWater.set(stamp.scope, stamp.ordinal);
+    }
+    const op = String(command.op || command.type || "");
+    const payload = objectValue(command.payload || command.detail);
+    const duration = Math.max(0, Number(command.durationMs ?? payload.durationMs) || 0) / 1000;
+    if (op === "set-stage") {
+      const stageIndex = clamp(Math.trunc(Number(payload.stageIndex) || 0), 0, STAGE_CONFIGS.length - 1);
+      this.setStage(stageIndex, false, payload.stageContent || null);
+      if (this.routePhase !== 0 || payload.phaseDefinition) this.setRoutePhase(0, payload.phaseDefinition || null);
+      else this.setDirectorAct(this.stageIndex, 0, null, false);
+    } else if (op === "set-act" || op === "reenter-act") {
+      const stageIndex = Number.isFinite(Number(payload.stageIndex)) ? Number(payload.stageIndex) : this.stageIndex;
+      const actIndex = Number.isFinite(Number(payload.actIndex)) ? Number(payload.actIndex) : this.routePhase;
+      if (stageIndex !== this.stageIndex) this.setStage(stageIndex, false, payload.stageContent || null);
+      const phaseContent = payload.phaseDefinition || payload.act || payload.segment || null;
+      const nextAct = clamp(Math.trunc(Number(actIndex) || 0), 0, 2);
+      if (nextAct !== this.routePhase || phaseContent) this.setRoutePhase(nextAct, phaseContent);
+      else this.setDirectorAct(this.stageIndex, nextAct, this.phaseContentRef, false);
+    } else if (op === "reveal" || op === "item-response") {
+      state.revealLife = duration || 1.05;
+      state.revealStrength = 1;
+      state.camera.maxLaneOffset = clamp(Number(payload.maxLaneOffset) || 0.35, 0, 0.35);
+      state.camera.fov = Math.max(55, Number(payload.minFov) || state.camera.fov);
+    } else if (op === "physical-consequence" || op === "pause" || op === "repair-window-closed") {
+      state.consequenceOutcome = payload.outcome || (op === "physical-consequence" ? "clean" : "strained");
+      state.consequenceLife = duration || 0.9;
+      state.consequenceStrength = 1;
+      if (state.consequenceOutcome === "strained") {
+        this.shake = Math.max(this.shake, 0.22);
+        this.speedPulse = Math.min(this.speedPulse, 0.18);
+      } else {
+        this.speedPulse = Math.max(this.speedPulse, 0.58);
+      }
+    } else if (op === "recover") {
+      state.recoverLife = duration || 1.1;
+      state.recoverStrength = 1;
+      state.consequenceLife = 0;
+      state.consequenceStrength = 0;
+      this.speedPulse = Math.max(this.speedPulse, 0.42);
+    } else if (op === "relationship-presence") {
+      this.configureRelationshipPresence({ ...payload, durationMs: command.durationMs ?? payload.durationMs });
+    } else if (op === "semantic-beat" || op === "semantic-gate-complete") {
+      state.semanticLife = duration || (op === "semantic-gate-complete" ? 1.8 : 0.92);
+      state.semanticStrength = 1;
+      state.semanticOutcome = op === "semantic-gate-complete" ? "complete" : "matched";
+      state.semanticStep = String(payload.semanticStep || payload.semanticKey || command.key || "");
+      state.semanticMatched = Math.max(0, Number(payload.matched) || 0);
+      state.semanticRequired = Math.max(state.semanticMatched, Number(payload.required) || 0);
+      state.revealLife = Math.max(state.revealLife, state.semanticLife);
+      state.revealStrength = Math.max(state.revealStrength, op === "semantic-gate-complete" ? 1 : 0.72);
+      if (payload.relationshipMode) this.configureRelationshipPresence({ mode: payload.relationshipMode }, false);
+      if (op === "semantic-gate-complete") {
+        state.recoverLife = Math.max(state.recoverLife, state.semanticLife);
+        state.recoverStrength = 1;
+        this.speedPulse = Math.max(this.speedPulse, 0.82);
+      }
+    } else if (op === "semantic-hold") {
+      state.semanticLife = duration || 0.76;
+      state.semanticStrength = 1;
+      state.semanticOutcome = "hold";
+      state.semanticStep = String(payload.expected || payload.semanticKey || command.key || "");
+      state.consequenceOutcome = "strained";
+      state.consequenceLife = Math.max(state.consequenceLife, state.semanticLife);
+      state.consequenceStrength = 1;
+      this.shake = Math.max(this.shake, 0.12);
+    } else if (op === "stage-gate-pending") {
+      state.gatePendingLife = duration || 1.2;
+      state.gatePendingStrength = 1;
+      state.semanticOutcome = "pending";
+      state.semanticStep = String(payload.missing?.[0] || command.key || "");
+    } else if (op === "branch-shift") {
+      const axis = String(payload.axis || command.key || "attention");
+      state.branch.axis = BRANCH_COLORS[axis] ? axis : "attention";
+      state.branch.itemId = payload.itemId || null;
+      state.branch.worldEffect = payload.worldEffect || null;
+      state.branch.target = 1;
+      state.branch.color.setHex(BRANCH_COLORS[state.branch.axis]);
+      state.revealLife = Math.max(state.revealLife, duration || 1.2);
+      state.revealStrength = Math.max(state.revealStrength, 0.7);
+    } else if (op === "use-item") {
+      state.revealLife = duration || 1.5;
+      state.revealStrength = 0.78;
+    }
+    return this.snapshot();
+  }
+
+  applyQualityProfile(key, force = false) {
+    const requested = QUALITY_PROFILES.findIndex((profile) => profile.key === key);
+    let nextIndex = requested >= 0 ? requested : this.qualityProfileIndex;
+    if (this.mobilePerformance && nextIndex < QUALITY_PROFILES.length - 1) nextIndex = QUALITY_PROFILES.length - 1;
+    if (!force && nextIndex === this.qualityProfileIndex) return;
+    this.qualityProfileIndex = nextIndex;
+    this.qualityProfile = QUALITY_PROFILES[nextIndex];
+    const profile = this.qualityProfile;
+    this.renderer.shadowMap.enabled = profile.shadows;
+    this.keyLight.castShadow = profile.shadows;
+    applyCharacterRenderQuality(this.player, profile.key === "performance", profile.shadows);
+    applyCharacterRenderQuality(this.companion, profile.key === "performance", profile.shadows);
+    this.entityObjects.forEach((object) => applyEntityQuality(object, profile.entityMeshBudget));
+    this.rain.geometry.setDrawRange(0, Math.floor(420 * 2 * profile.particleScale));
+    this.ambientParticles.geometry.setDrawRange(0, Math.floor(180 * profile.particleScale));
+    this.canvas.setAttribute("data-render-quality", profile.key);
+    this.canvas.setAttribute("data-render-target-calls", String(profile.targetDrawCalls));
+    this.syncQualityVisibility(Boolean(this.arrivalData));
+  }
+
+  syncQualityVisibility(arriving = false) {
+    const profile = this.qualityProfile || QUALITY_PROFILES[1];
+    const usePremium = Boolean(profile.premiumCity && this.premiumDistricts?.length);
+    for (let index = 0; index < this.metroDistricts.length; index += 1) {
+      this.metroDistricts[index].visible = !arriving && !usePremium && index === this.stageIndex;
+    }
+    if (this.premiumDistricts) {
+      for (let index = 0; index < this.premiumDistricts.length; index += 1) {
+        this.premiumDistricts[index].visible = !arriving && usePremium && index === this.stageIndex;
+      }
+    }
+    const districtSet = usePremium ? this.premiumDistricts : this.metroDistricts;
+    this.metroSkyline = districtSet?.[this.stageIndex] || this.metroDistricts[this.stageIndex];
+    const layers = this.activeStageWorld?.userData.layers || [];
+    for (let index = 0; index < layers.length; index += 1) {
+      layers[index].group.visible = !arriving && index >= layers.length - profile.worldLayers;
+    }
+    const railRoute = this.stageConfig?.routeStyle === "metro" || this.stageConfig?.routeStyle === "terminal";
+    if (this.roadBatches) {
+      const detail = profile.roadDetail;
+      this.roadBatches.ballast.visible = !arriving;
+      this.roadBatches.walks.visible = !arriving;
+      this.roadBatches.sleepers.visible = !arriving && railRoute && detail > 0;
+      this.roadBatches.rails.visible = !arriving && railRoute;
+      this.roadBatches.thirdRails.visible = !arriving && railRoute && detail > 0;
+      this.roadBatches.safetyLines.visible = !arriving && !railRoute;
+      this.roadBatches.laneGuides.visible = !arriving && !railRoute;
+      this.roadBatches.laneTicks.visible = !arriving && !railRoute && detail > 0;
+      this.roadBatches.crosswalks.visible = !arriving && !railRoute && detail > 0;
+      this.roadBatches.drains.visible = !arriving && !railRoute && detail > 1;
+      this.roadBatches.roadPatches.visible = !arriving && !railRoute && detail > 0;
+      this.roadBatches.manholes.visible = !arriving && !railRoute && detail > 1;
+      this.roadBatches.edgePosts.visible = !arriving && detail > 1;
+      this.roadBatches.edgePostLights.visible = !arriving && detail > 1;
+      this.roadBatches.planterBases.visible = !arriving && detail > 1;
+      this.roadBatches.planterLeaves.visible = !arriving && detail > 1;
+    }
+    this.canvas.setAttribute("data-secondary-world-layers", String(profile.worldLayers));
+    this.canvas.setAttribute("data-mobile-shadows", String(Boolean(profile.shadows)));
+  }
+
+  updateRelationshipPresence(delta, time, speed, arriving, introActive) {
+    const state = this.directorState;
+    const relation = state.relationship;
+    const relationAvailable = !arriving && !introActive && state.stageIndex > 0 && relation.visible;
+    state.relationshipStrength = damp(state.relationshipStrength, relationAvailable ? 1 : 0, relationAvailable ? 4.8 : 7, delta);
+    if (!relationAvailable) {
+      if (!arriving) this.companion.visible = false;
+      this.directorVisualRig.relationshipParcel.visible = false;
+      this.directorVisualRig.sharedObstacle.visible = false;
+      return false;
+    }
+    this.companion.visible = true;
+    const mode = relation.key;
+    const shoulderSide = relation.lane === 0 ? (this.currentLaneX > 0 ? -1 : 1) : Math.sign(relation.lane);
+    let targetX = shoulderSide * COMPANION_SHOULDER_X;
+    let targetZ = relation.z;
+    if (mode === "yield-right") targetX += Math.sin(Math.min(1, state.elapsed / 2.2) * Math.PI) * 0.86;
+    if (mode === "misalign-left") targetZ -= Math.min(4.4, state.elapsed * 0.22);
+    if (mode === "missed-right") targetZ -= Math.min(2.5, state.elapsed * 0.28);
+    if (mode === "listen-left") targetZ += Math.sin(Math.min(1, state.elapsed / 2.4) * Math.PI) * 0.8;
+    if (mode === "home-together") {
+      const togetherSide = this.currentLaneX > 0.8 ? -1 : 1;
+      targetX = clamp(this.currentLaneX + togetherSide * 1.48, -COMPANION_SHOULDER_X, COMPANION_SHOULDER_X);
+    }
+    targetX += shoulderSide * this.companionHazardProximity * 0.82;
+    targetZ -= this.companionHazardProximity * 2.4;
+    if (state.semanticOutcome === "hold" && state.semanticStrength > 0.05) targetZ -= state.semanticStrength * 1.35;
+    if (state.semanticOutcome === "complete" && state.semanticStrength > 0.05) targetZ += state.semanticStrength * 0.72;
+    this.companion.position.x = damp(this.companion.position.x, targetX, 4.8, delta);
+    this.companion.position.z = damp(this.companion.position.z, targetZ, 4.2, delta);
+    const facesPlayer = RELATION_FACE_PLAYER.has(mode);
+    this.companion.rotation.y = damp(this.companion.rotation.y, facesPlayer ? (targetX > this.currentLaneX ? -0.42 : 0.42) : 0, 4.6, delta);
+    const relationAction = facesPlayer || relation.action === "idle" || state.semanticOutcome === "hold" && state.semanticStrength > 0.05
+      ? "idle"
+      : relation.action || "run";
+    if (this.companion.userData.modelRunner) animateRiggedRunner(this.companion, delta, relationAction, 0, relationAction === "run" ? speed / 18 : 0.08, 0, 0);
+    else animateCharacter(this.companion, time, relationAction, 0, relationAction === "run" ? speed / 18 : 0.04, 1.3, 0, 0);
+    const rig = this.directorVisualRig;
+    const showParcel = relation.weight !== "none" || state.semanticStrength > 0.2;
+    rig.relationshipParcel.visible = showParcel;
+    if (showParcel) {
+      const handoff = relation.weight === "handoff" || state.semanticOutcome === "complete"
+        ? clamp((state.elapsed - 0.8) / 2.2 + state.semanticStrength * 0.22, 0, 1)
+        : relation.weight === "companion" ? 0 : 0.5;
+      rig.relationshipParcel.position.set(
+        THREE.MathUtils.lerp(this.companion.position.x + 0.42, this.player.position.x + 0.48, handoff),
+        0.92 + Math.sin(time * 6.4) * 0.025,
+        THREE.MathUtils.lerp(this.companion.position.z + 0.08, this.player.position.z + 0.06, handoff)
+      );
+      rig.relationshipParcel.rotation.set(-0.08, Math.PI * handoff, Math.sin(time * 5.8) * 0.025);
+    }
+    rig.sharedObstacle.visible = relation.weight === "shared" && RELATION_SHARED_MODES.has(mode);
+    if (rig.sharedObstacle.visible) {
+      const clear = mode === "clear-obstacle" ? clamp((state.elapsed - 1.1) / 2.4 + state.recoverStrength * 0.4, 0, 1) : 1;
+      rig.sharedObstacle.position.set(THREE.MathUtils.lerp(0, 4.2, clear), 0.72, -5.3);
+      rig.sharedObstacle.rotation.y = clear * 0.72;
+      rig.sharedObstacle.rotation.z = -0.12 + clear * 0.46;
+    }
+    return true;
+  }
+
+  updateDirectorVisual(delta, time, distance, arriving, relationshipVisible) {
+    const state = this.directorState;
+    const rig = this.directorVisualRig;
+    const cadence = clamp(Number(state.act.cadence) || 4, 2.2, 7);
+    const cadenceRate = Math.PI * 2 / cadence;
+    const cadencePhase = (state.elapsed * cadenceRate) % (Math.PI * 2);
+    const cadencePulse = 0.5 + 0.5 * Math.sin(cadencePhase);
+    this.cadencePhase = cadencePhase;
+    state.revealLife = Math.max(0, state.revealLife - delta);
+    state.consequenceLife = Math.max(0, state.consequenceLife - delta);
+    state.recoverLife = Math.max(0, state.recoverLife - delta);
+    state.semanticLife = Math.max(0, state.semanticLife - delta);
+    state.gatePendingLife = Math.max(0, state.gatePendingLife - delta);
+    state.revealStrength = damp(state.revealStrength, state.revealLife > 0 ? 1 : 0, state.revealLife > 0 ? 6 : 2.8, delta);
+    state.consequenceStrength = damp(state.consequenceStrength, state.consequenceLife > 0 ? 1 : 0, state.consequenceLife > 0 ? 8 : 3.5, delta);
+    state.recoverStrength = damp(state.recoverStrength, state.recoverLife > 0 ? 1 : 0, state.recoverLife > 0 ? 7 : 3, delta);
+    state.semanticStrength = damp(state.semanticStrength, state.semanticLife > 0 ? 1 : 0, state.semanticLife > 0 ? 9 : 3.2, delta);
+    state.gatePendingStrength = damp(state.gatePendingStrength, state.gatePendingLife > 0 ? 1 : 0, state.gatePendingLife > 0 ? 8 : 2.8, delta);
+    state.branch.strength = damp(state.branch.strength, state.branch.target, 1.8, delta);
+    rig.root.visible = !arriving;
+    rig.routeRoot.position.z = (distance * WORLD_Z_SCALE * (0.6 + 0.56 / cadence)) % 4.45;
+    rig.goalAnchor.position.y = 1.55 + cadencePulse * 0.13;
+    rig.goalCore.scale.setScalar(0.84 + cadencePulse * 0.22 + state.revealStrength * 0.42 + state.semanticStrength * 0.16);
+    rig.goalHalo.rotation.z = cadencePhase * 0.32;
+    rig.goalHalo.material.opacity = 0.3 + state.revealStrength * 0.38 + cadencePulse * 0.1;
+    rig.materials.contourMaterial.emissiveIntensity = 0.78 + state.revealStrength * 1.2 + state.recoverStrength * 0.72
+      + state.semanticStrength * 0.64 - state.gatePendingStrength * 0.18;
+    rig.materials.inlayMaterial.opacity = 0.32 + state.revealStrength * 0.18;
+    const effect = Math.max(state.consequenceStrength, state.recoverStrength);
+    rig.materials.consequenceMaterial.color.setHex(state.consequenceOutcome === "strained" && state.recoverStrength < 0.1 ? 0xff766d : 0xffd487);
+    rig.materials.consequenceMaterial.opacity = effect * 0.58;
+    const dummy = rig.dummy;
+    for (let index = 0; index < 10; index += 1) {
+      const phase = (state.elapsed / cadence * (1.4 + index * 0.045) + index * 0.11) % 1;
+      dummy.position.set(this.currentLaneX, 0.07 + index * 0.002, PLAYER_Z - phase * 7.8);
+      dummy.rotation.set(Math.PI / 2, 0, index * 0.28);
+      dummy.scale.setScalar(effect > 0.01 ? 0.7 + phase * (2.2 + index * 0.08) : 0.001);
+      dummy.updateMatrix();
+      rig.consequenceRings.setMatrixAt(index, dummy.matrix);
+    }
+    rig.consequenceRings.instanceMatrix.needsUpdate = true;
+    const linkVisible = relationshipVisible && RELATION_LINK_MODES.has(state.relationship.key);
+    rig.materials.relationshipMaterial.opacity = linkVisible ? 0.34 + cadencePulse * 0.14 : 0;
+    for (let index = 0; index < 14; index += 1) {
+      const ratio = (index + 1) / 15;
+      dummy.position.set(
+        THREE.MathUtils.lerp(this.player.position.x, this.companion.position.x, ratio),
+        0.62 + Math.sin(ratio * Math.PI) * 0.48,
+        THREE.MathUtils.lerp(this.player.position.z, this.companion.position.z, ratio)
+      );
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(linkVisible ? 0.68 + Math.sin(cadencePhase + index * 0.7) * 0.18 : 0.001);
+      dummy.updateMatrix();
+      rig.relationshipBeads.setMatrixAt(index, dummy.matrix);
+    }
+    rig.relationshipBeads.instanceMatrix.needsUpdate = true;
+    rig.materials.branchMaterial.color.copy(state.branch.color);
+    rig.materials.branchMaterial.opacity = state.branch.strength * (0.24 + cadencePulse * 0.22);
+    rig.branchMarkers.rotation.y = Math.sin(cadencePhase * 0.5) * 0.06;
+    rig.branchMarkers.position.z = (distance * WORLD_Z_SCALE * 0.32) % (6.2 + cadence * 0.18);
+    const branchMix = state.branch.strength * 0.56;
+    this.streetGlowMaterial.color.copy(state.accentTarget).lerp(state.branch.color, branchMix);
+    this.streetGlowMaterial.emissive.copy(this.streetGlowMaterial.color);
+    this.laneGuideMaterial.emissive.copy(state.accentTarget).lerp(state.branch.color, branchMix * 0.7);
+    this.ambientParticles.material.color.copy(state.accentTarget).lerp(state.branch.color, branchMix * 0.72);
   }
 
   resize(width, height, devicePixelRatio = 1) {
     const cssWidth = Math.max(1, Number(width) || 720);
     const cssHeight = Math.max(1, Number(height) || 1280);
+    this.mobilePerformance = cssWidth <= 800 && cssHeight >= 1000 && cssHeight > cssWidth;
+    if (this.mobilePerformance && this.qualityProfileIndex < QUALITY_PROFILES.length - 1) {
+      this.applyQualityProfile("performance");
+    }
     const pixelBudgetRatio = Math.sqrt(MAX_RENDER_PIXELS / (cssWidth * cssHeight));
     this.cssWidth = cssWidth;
     this.cssHeight = cssHeight;
@@ -4344,20 +6551,50 @@ class CinematicRunnerRenderer {
 
   syncRoad(distance) {
     const offset = (distance * WORLD_Z_SCALE) % SEGMENT_LENGTH;
+    const decorStride = this.qualityProfile?.decorStride ?? 2;
+    const cadence = this.directorState?.act?.cadence || 4;
+    const cadenceStride = Math.max(1, Math.round(cadence / 2.2));
     this.roadBaseGroup.position.z = offset;
-    this.roadSegments.forEach((segment, index) => {
+    for (let index = 0; index < this.roadSegments.length; index += 1) {
+      const segment = this.roadSegments[index];
       let z = 7 - index * SEGMENT_LENGTH + offset;
       if (z > 14) z -= SEGMENT_COUNT * SEGMENT_LENGTH;
       segment.position.z = z;
-      segment.userData.decor.visible = z < 4.8 && z > -58;
-    });
+      const decor = segment.userData.decor;
+      decor.visible = decorStride > 0
+        && index % Math.max(decorStride, cadenceStride) === 0
+        && decorBoundsVisible(z, decor.userData.minZ, decor.userData.maxZ);
+    }
     this.roadTexture.offset.y = -(distance * 0.011) % 1;
+  }
+
+  resetEntityPoolForStage(nextStage) {
+    this.poolGeneration += 1;
+    this.entityObjects.forEach((object) => {
+      this.scene.remove(object);
+      disposeObject(object);
+    });
+    this.entityObjects.clear();
+    this.entityPool.forEach((bucket) => bucket.forEach((object) => disposeObject(object)));
+    this.entityPool.clear();
+    this.collectibleBatches.rims.count = 0;
+    this.collectibleBatches.hearts.count = 0;
+    this.collectibleBatches.glows.geometry.setDrawRange(0, 0);
+    this.collectibleBatches.pickupTrail.geometry.setDrawRange(0, 0);
+    this.storyFocus = 0;
+    this.storyFocusTarget = 0;
+    this.canvas.setAttribute("data-pool-stage", String(nextStage + 1));
+    this.canvas.setAttribute("data-pool-generation", String(this.poolGeneration));
   }
 
   acquireEntity(entity, config) {
     const signature = `${this.stageIndex}:${entity.type}:${entity.itemId || entity.data?.itemId || entity.subtype || entity.avoid || entity.cue || "default"}:${Number(entity.variant) % 2}`;
     const bucket = this.entityPool.get(signature);
     let object = bucket?.pop();
+    while (object && (object.userData.poolStage !== this.stageIndex || object.userData.poolGeneration !== this.poolGeneration)) {
+      disposeObject(object);
+      object = bucket?.pop();
+    }
     if (!object) {
       if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
       else if (entity.type === "story-item" || entity.type === "route-choice") object = createStoryProp({
@@ -4369,20 +6606,30 @@ class CinematicRunnerRenderer {
       else object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
       object.userData.poolKey = signature;
       object.userData.sharedTexture = entity.type === "obstacle" ? null : this.particleTexture;
+      object.userData.poolStage = this.stageIndex;
+      object.userData.poolGeneration = this.poolGeneration;
+      capturePoolBaseline(object);
+      if (entity.type === "obstacle") prepareEntityQuality(object);
+    } else {
+      resetPooledObject(object);
     }
+    if (entity.type === "obstacle") applyEntityQuality(object, this.qualityProfile.entityMeshBudget);
     object.visible = true;
     object.userData.entityType = entity.type;
     object.userData.entitySubtype = entity.subtype || null;
+    if (entity.type === "obstacle") object.userData.obstacleStyle = config.world.obstacles.style;
     this.scene.add(object);
     return object;
   }
 
   recycleEntity(object) {
     this.scene.remove(object);
-    object.visible = false;
+    resetPooledObject(object);
     const key = object.userData.poolKey || "misc";
     const bucket = this.entityPool.get(key) || [];
-    if (bucket.length < 5) {
+    const belongsToCurrentPool = object.userData.poolStage === this.stageIndex
+      && object.userData.poolGeneration === this.poolGeneration;
+    if (belongsToCurrentPool && bucket.length < ENTITY_POOL_LIMIT) {
       bucket.push(object);
       this.entityPool.set(key, bucket);
     } else {
@@ -4390,18 +6637,24 @@ class CinematicRunnerRenderer {
     }
   }
 
-  syncEntities(entities, time) {
-    const activeIds = new Set();
-    const config = STAGE_CONFIGS[this.stageIndex];
+  syncEntities(entities, time, delta = 1 / 60) {
+    const activeIds = this.activeEntityIds;
+    activeIds.clear();
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
     const batches = this.collectibleBatches;
     const glowPositions = batches.glows.geometry.attributes.position.array;
     const trailPositions = batches.pickupTrail.geometry.attributes.position.array;
     let collectibleCount = 0;
     let storyFocusTarget = 0;
-    entities.forEach((entity) => {
-      if (!entity.active) return;
+    let companionHazard = 0;
+    const relationLane = Number(this.directorState.relationship?.lane) || 0;
+    const companionSide = relationLane === 0 ? (this.currentLaneX > 0 ? -1 : 1) : Math.sign(relationLane);
+    const companionSafetyX = companionSide * COMPANION_SHOULDER_X;
+    for (let entityIndex = 0; entityIndex < entities.length; entityIndex += 1) {
+      const entity = entities[entityIndex];
+      if (!entity.active) continue;
       if (entity.type === "collectible") {
-        if (collectibleCount >= batches.capacity) return;
+        if (collectibleCount >= batches.capacity) continue;
         const baseX = (Number(entity.lane) || 0) * LANE_WIDTH;
         let x = baseX;
         let z = PLAYER_Z + (COLLISION_Z - (Number(entity.z) || 0)) * WORLD_Z_SCALE;
@@ -4413,16 +6666,23 @@ class CinematicRunnerRenderer {
           y += Math.sin(magnetReach * Math.PI) * 0.86 * this.powerupStrengths.magnet + magnetBend * 0.12;
           z += magnetBend * 0.42;
         }
+        const collectibleKind = entity.data?.collectibleKind || entity.data?.powerupTrail || "stage-token";
+        const entityPhase = Number.isFinite(Number(entity.data?.phase)) ? Number(entity.data.phase) : this.routePhase;
+        const style = collectibleVisualStyle(collectibleKind, this.stageIndex, entityPhase);
         this.collectiblePosition.set(x, y, z);
         this.collectibleEuler.set(
           0,
           Math.sin(time * 1.7 + entity.id) * 0.18,
-          Math.sin(time * 1.2 + entity.id) * 0.08 + (this.currentLaneX - baseX) * magnetBend * 0.09
+          Math.sin(time * 1.2 + entity.id) * 0.08 + (this.currentLaneX - baseX) * magnetBend * 0.09 + style.tilt
         );
         this.collectibleQuaternion.setFromEuler(this.collectibleEuler);
+        this.collectibleScale.set(0.54 * style.scaleX, 0.54 * style.scaleY, 0.54);
         this.collectibleMatrix.compose(this.collectiblePosition, this.collectibleQuaternion, this.collectibleScale);
         batches.rims.setMatrixAt(collectibleCount, this.collectibleMatrix);
         batches.hearts.setMatrixAt(collectibleCount, this.collectibleMatrix);
+        this.collectibleColor.setHex(style.color);
+        batches.rims.setColorAt(collectibleCount, this.collectibleColor);
+        batches.hearts.setColorAt(collectibleCount, this.collectibleColor);
         glowPositions[collectibleCount * 3] = x;
         glowPositions[collectibleCount * 3 + 1] = y;
         glowPositions[collectibleCount * 3 + 2] = z - 0.05;
@@ -4433,7 +6693,7 @@ class CinematicRunnerRenderer {
           trailPositions[offset + 2] = z + 0.04 + trailIndex * 0.08;
         }
         collectibleCount += 1;
-        return;
+        continue;
       }
       activeIds.add(entity.id);
       let object = this.entityObjects.get(entity.id);
@@ -4444,6 +6704,16 @@ class CinematicRunnerRenderer {
       object.position.x = entity.lane * LANE_WIDTH;
       object.position.z = PLAYER_Z + (COLLISION_Z - entity.z) * WORLD_Z_SCALE;
       const storyItem = entity.type === "story-item" || entity.type === "route-choice";
+      const inRenderRange = storyItem || (object.position.z >= -this.qualityProfile.entityRange && object.position.z <= 11);
+      object.visible = inRenderRange;
+      if (entity.type === "obstacle") {
+        const sideDistance = Math.abs(object.position.x - companionSafetyX);
+        const depthDistance = Math.abs(object.position.z - this.companion.position.z);
+        if (sideDistance < 2.15 && depthDistance < COMPANION_HAZARD_Z) {
+          companionHazard = Math.max(companionHazard, (1 - sideDistance / 2.15) * (1 - depthDistance / COMPANION_HAZARD_Z));
+        }
+      }
+      if (!inRenderRange) continue;
       object.position.y = storyItem ? 1.06 + (Number(entity.height) || 0) + Math.sin(time * 4.2 + entity.id) * 0.09 : 0;
       if (storyItem) {
         const proximity = clamp((object.position.z + 9.5) / (PLAYER_Z + 9.5), 0, 1);
@@ -4465,19 +6735,25 @@ class CinematicRunnerRenderer {
         if (object.userData.markerOrbit) {
           object.userData.markerOrbit.rotation.y = time * 0.72 + entity.id * 0.24;
           object.userData.markerOrbit.scale.setScalar(0.9 + focus * 0.28);
-          object.userData.markerOrbit.children.forEach((orbit) => {
+          const orbits = object.userData.markerOrbit.children;
+          for (let orbitIndex = 0; orbitIndex < orbits.length; orbitIndex += 1) {
+            const orbit = orbits[orbitIndex];
             orbit.rotation.y += 0.008 * orbit.userData.spin;
             orbit.material.opacity = (0.26 + focus * 0.28) * (orbit.userData.spin > 0 ? 1 : 0.78);
-          });
+          }
         }
         if (object.userData.approachRibbon) {
-          object.userData.approachRibbon.children.forEach((ribbon) => {
+          const ribbons = object.userData.approachRibbon.children;
+          for (let ribbonIndex = 0; ribbonIndex < ribbons.length; ribbonIndex += 1) {
+            const ribbon = ribbons[ribbonIndex];
             ribbon.material.opacity = 0.08 + focus * (ribbon.userData.phase ? 0.32 : 0.46);
             ribbon.position.x = Math.sin(time * 2.7 + ribbon.userData.phase) * (0.025 + focus * 0.04);
-          });
+          }
         }
         if (object.userData.approachComets) {
-          object.userData.approachComets.children.forEach((comet) => {
+          const comets = object.userData.approachComets.children;
+          for (let cometIndex = 0; cometIndex < comets.length; cometIndex += 1) {
+            const comet = comets[cometIndex];
             const travel = (time * (0.55 + focus * 1.1) + comet.userData.offset) % 1;
             const angle = travel * Math.PI * 2 + entity.id * 0.17;
             comet.position.set(
@@ -4487,23 +6763,30 @@ class CinematicRunnerRenderer {
             );
             comet.material.opacity = (0.24 + focus * 0.62) * Math.sin(travel * Math.PI);
             comet.scale.setScalar(0.14 + focus * 0.14 + Math.sin(travel * Math.PI) * 0.08);
-          });
+          }
         }
       }
       if (object.userData.kind === "train") object.rotation.z = Math.sin(time * 7 + entity.id) * 0.0025;
       if (object.userData.kind === "service-cart") object.rotation.y = Math.sin(time * 5.4 + entity.id) * 0.012;
-      object.userData.warningBeacons?.forEach((beacon, beaconIndex) => {
+      const warningBeacons = object.userData.warningBeacons;
+      for (let beaconIndex = 0; beaconIndex < (warningBeacons?.length || 0); beaconIndex += 1) {
+        const beacon = warningBeacons[beaconIndex];
         const pulse = 2.8 + Math.max(0, Math.sin(time * 8.5 + beaconIndex * Math.PI)) * 4;
         beacon.material.emissiveIntensity = pulse;
-      });
-      object.userData.headlights?.forEach((headlight, headlightIndex) => {
+      }
+      const headlights = object.userData.headlights;
+      for (let headlightIndex = 0; headlightIndex < (headlights?.length || 0); headlightIndex += 1) {
+        const headlight = headlights[headlightIndex];
         if (headlight.material?.opacity !== undefined) headlight.material.opacity = 0.58 + Math.sin(time * 4 + headlightIndex) * 0.12;
-      });
-    });
+      }
+    }
+    this.companionHazardProximity = damp(this.companionHazardProximity, companionHazard, companionHazard > this.companionHazardProximity ? 12 : 4.5, delta);
     batches.rims.count = collectibleCount;
     batches.rims.instanceMatrix.needsUpdate = true;
+    if (batches.rims.instanceColor) batches.rims.instanceColor.needsUpdate = true;
     batches.hearts.count = collectibleCount;
     batches.hearts.instanceMatrix.needsUpdate = true;
+    if (batches.hearts.instanceColor) batches.hearts.instanceColor.needsUpdate = true;
     batches.glows.geometry.setDrawRange(0, collectibleCount);
     batches.glows.geometry.attributes.position.needsUpdate = true;
     batches.glows.material.opacity = 0.32 + Math.sin(time * 4.8) * 0.07;
@@ -4511,27 +6794,32 @@ class CinematicRunnerRenderer {
     batches.pickupTrail.geometry.setDrawRange(0, collectibleCount * 2);
     batches.pickupTrail.geometry.attributes.position.needsUpdate = true;
     batches.pickupTrail.material.size = 0.14 + (this.powerupStrengths?.magnet || 0) * 0.07;
-    this.storyFocusTarget = storyFocusTarget;
-    this.entityObjects.forEach((object, id) => {
-      if (activeIds.has(id)) return;
+    this.storyFocusTarget = Math.max(storyFocusTarget, this.choiceWindowState.strength * 0.86);
+    for (const [id, object] of this.entityObjects) {
+      if (activeIds.has(id)) continue;
       this.recycleEntity(object);
       this.entityObjects.delete(id);
-    });
+    }
   }
 
   updateWeather(delta, time, speed, combo) {
-    const config = STAGE_CONFIGS[this.stageIndex];
-    const rainy = config.weather === "rain" || config.weather === "storm" || config.weather === "after-rain";
-    const targetRain = config.weather === "storm" ? 0.56 : config.weather === "rain" ? 0.38 : config.weather === "after-rain" ? 0.045 : 0;
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
+    const weatherProfile = config.world.weather;
+    const particleProfile = config.world.particles;
+    const fallbackRain = config.weather === "storm" ? 0.56 : config.weather === "rain" ? 0.38 : config.weather === "after-rain" ? 0.045 : 0;
+    const targetRain = Number.isFinite(Number(weatherProfile.rain)) ? clamp(Number(weatherProfile.rain), 0, 0.8) : fallbackRain;
+    const rainy = targetRain > 0.001;
     this.rain.material.opacity = damp(this.rain.material.opacity, targetRain, 3.5, delta);
     if (rainy) {
       const positions = this.rain.geometry.attributes.position.array;
-      const fall = (config.weather === "storm" ? 18 : 13) * delta;
+      const stormStrength = weatherProfile.kind === "violent-storm" || config.weather === "storm" ? 1 : 0;
+      const fall = (13 + stormStrength * 7) * delta;
+      const rainWind = (Number(weatherProfile.wind) || 0.7) * delta;
       for (let index = 0; index < positions.length; index += 6) {
         positions[index + 1] -= fall;
         positions[index + 4] -= fall;
-        positions[index] -= (config.weather === "storm" ? 3.2 : 0.7) * delta;
-        positions[index + 3] -= (config.weather === "storm" ? 3.2 : 0.7) * delta;
+        positions[index] -= rainWind;
+        positions[index + 3] -= rainWind;
         if (positions[index + 1] < 0.1) {
           const lift = 12 + ((index * 17) % 30) / 10;
           positions[index + 1] += lift;
@@ -4540,11 +6828,44 @@ class CinematicRunnerRenderer {
       }
       this.rain.geometry.attributes.position.needsUpdate = true;
     }
-    const ambientTarget = config.weather === "storm" ? 0.08 : config.weather === "rain" ? 0.12 : config.weather === "starlight" ? 0.74 : 0.32;
+    const ambientTarget = clamp(Number(particleProfile.opacity) || (config.weather === "starlight" ? 0.74 : 0.32), 0.04, 0.84);
     this.ambientParticles.material.opacity = damp(this.ambientParticles.material.opacity, ambientTarget, 2.8, delta);
-    this.ambientParticles.material.size = config.weather === "starlight" ? 0.2 : 0.11;
-    this.ambientParticles.rotation.y = time * 0.012;
-    this.ambientParticles.position.y = Math.sin(time * 0.24) * 0.28;
+    this.ambientParticles.material.size = clamp(Number(particleProfile.size) || 0.13, 0.06, 0.3);
+    const ambientPositions = this.ambientParticles.geometry.attributes.position.array;
+    const particleKind = particleProfile.kind;
+    for (let offset = 0; offset < ambientPositions.length; offset += 3) {
+      const seed = offset / 3;
+      if (particleKind === "leaf-drips") {
+        ambientPositions[offset] += Math.sin(time * 0.8 + seed) * delta * 0.22;
+        ambientPositions[offset + 1] -= delta * 0.34;
+      } else if (particleKind === "paper-pages") {
+        ambientPositions[offset] += (0.34 + Math.sin(time + seed) * 0.18) * delta;
+        ambientPositions[offset + 1] += Math.sin(time * 1.4 + seed * 0.7) * delta * 0.18;
+      } else if (particleKind === "neon-dust") {
+        ambientPositions[offset + 1] += Math.sin(time * 2.2 + seed) * delta * 0.16;
+        ambientPositions[offset + 2] += delta * 0.24;
+      } else if (particleKind === "lantern-embers") {
+        ambientPositions[offset] += Math.sin(time * 1.5 + seed) * delta * 0.12;
+        ambientPositions[offset + 1] += delta * 0.42;
+      } else if (particleKind === "kitchen-steam") {
+        ambientPositions[offset] += Math.sin(time * 0.7 + seed) * delta * 0.1;
+        ambientPositions[offset + 1] += delta * 0.28;
+      } else if (particleKind === "storm-spray") {
+        ambientPositions[offset] -= delta * (2.1 + (seed % 5) * 0.18);
+        ambientPositions[offset + 1] -= delta * 0.46;
+      } else {
+        ambientPositions[offset + 1] += delta * 0.06;
+        ambientPositions[offset + 2] += delta * 0.1;
+      }
+      if (ambientPositions[offset] < -9.5) ambientPositions[offset] += 19;
+      if (ambientPositions[offset] > 9.5) ambientPositions[offset] -= 19;
+      if (ambientPositions[offset + 1] < 0.35) ambientPositions[offset + 1] += 7.2;
+      if (ambientPositions[offset + 1] > 8.2) ambientPositions[offset + 1] -= 7.2;
+      if (ambientPositions[offset + 2] > 8) ambientPositions[offset + 2] -= 72;
+    }
+    this.ambientParticles.geometry.attributes.position.needsUpdate = true;
+    this.ambientParticles.rotation.y = particleKind === "storm-spray" ? -0.18 : time * 0.004;
+    this.ambientParticles.position.y = Math.sin(time * 0.24) * (particleKind === "kitchen-steam" ? 0.42 : 0.16);
     const streakTarget = clamp(
       (speed - 11) / 15 + combo * 0.022 + this.speedPulse * 0.32 + this.flow * 0.5 + this.powerupStrengths.overdrive * 0.56,
       0,
@@ -4556,14 +6877,16 @@ class CinematicRunnerRenderer {
     if (this.storyWorldInfluence > 0) {
       if (this.storyWorldState.kind === "umbrella") this.rain.material.opacity *= 1 - this.storyWorldInfluence * 0.76;
       this.ambientParticles.material.opacity = Math.min(0.82, this.ambientParticles.material.opacity + this.storyWorldInfluence * 0.2);
-      if (["flower", "plant"].includes(this.storyWorldState.kind)) {
+      if (PLANT_STORY_KINDS.has(this.storyWorldState.kind)) {
         this.ambientParticles.material.size = Math.max(this.ambientParticles.material.size, 0.2 + this.storyWorldInfluence * 0.08);
       }
     }
   }
 
   updateDistrictWorld(delta, time, distance, speed) {
-    const config = STAGE_CONFIGS[this.stageIndex];
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
+    const cadence = clamp(Number(this.directorState.act.cadence) || 4, 2.2, 7);
+    const cadenceMotion = clamp(4.2 / cadence, 0.68, 1.7);
     this.skyDome.userData.uniforms.time.value = time;
     const windowLights = this.metroSkyline.userData.windowLights;
     if (windowLights) windowLights.material.opacity = 0.5 + Math.sin(time * 0.7) * 0.12;
@@ -4574,16 +6897,41 @@ class CinematicRunnerRenderer {
     } else {
       this.metroSkyline.position.z = (distance * 0.055) % 6;
     }
-    this.ambientTrains.forEach((train, index) => {
+    for (let index = 0; index < this.ambientTrains.length; index += 1) {
+      const train = this.ambientTrains[index];
       const direction = index ? 1 : -1;
-      train.position.z += delta * speed * (index ? 0.72 : 1.02);
-      train.position.y = 0.04 + Math.sin(time * 4.4 + index) * 0.012;
+      train.position.z += delta * speed * cadenceMotion * (index ? 0.72 : 1.02);
+      train.position.y = 0.04 + Math.sin(this.cadencePhase + index * Math.PI) * 0.012;
       if (train.position.z > 15) train.position.z = -92 - index * 24;
       train.rotation.y = direction > 0 ? 0 : Math.PI;
-      train.visible = config.routeStyle === "metro" || config.routeStyle === "terminal";
-    });
-    const nightFactor = ["neon", "rain", "storm", "starlight"].includes(config.weather) ? 1 : 0.72;
+      train.visible = (config.routeStyle === "metro" || config.routeStyle === "terminal")
+        && (this.qualityProfileIndex < 2 || index === 0);
+    }
+    const nightFactor = DARK_WEATHER_KINDS.has(config.weather) ? 1 : 0.72;
     if (windowLights) windowLights.material.size = 0.24 + nightFactor * 0.1;
+    this.camera.updateMatrixWorld(true);
+    this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
+    this.projectionViewMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    this.viewFrustum.setFromProjectionMatrix(this.projectionViewMatrix);
+    const scenery = this.activeStageWorld?.userData.scenery || [];
+    for (let index = 0; index < scenery.length; index += 1) {
+      const entry = scenery[index];
+      if (!entry.object.parent?.visible) {
+        entry.object.visible = false;
+        continue;
+      }
+      const travel = (distance * WORLD_Z_SCALE * entry.parallax) % entry.span;
+      let z = entry.baseZ + travel;
+      const nearLimit = entry.side === 0 ? TRACK_CLEARANCE.decorNearZ - entry.nearOffset : TRACK_CLEARANCE.cameraZ;
+      while (z > nearLimit) z -= entry.span;
+      entry.object.position.z = z;
+      entry.object.position.x = entry.baseX + Math.sin(this.cadencePhase * 0.35 + index) * entry.drift;
+      entry.sphere.center.copy(entry.centerOffset).add(entry.object.position);
+      const stageTwoSightlineClear = this.stageIndex !== 1 || (entry.side !== 0 && Math.abs(entry.baseX) >= 6.2);
+      const sideClear = stageTwoSightlineClear && (entry.side === 0 || Math.abs(entry.object.userData.trackClearance?.innerEdge || entry.baseX) >= TRACK_CLEARANCE.halfWidth);
+      const depthClear = entry.side !== 0 || decorBoundsVisible(z, entry.farOffset, entry.nearOffset);
+      entry.object.visible = sideClear && depthClear && this.viewFrustum.intersectsSphere(entry.sphere);
+    }
   }
 
   updateBackdrops(delta) {
@@ -4597,10 +6945,12 @@ class CinematicRunnerRenderer {
   }
 
   updateBursts(delta) {
-    this.bursts = this.bursts.filter((burst) => {
+    let burstWrite = 0;
+    for (let burstIndex = 0; burstIndex < this.bursts.length; burstIndex += 1) {
+      const burst = this.bursts[burstIndex];
       burst.life -= delta;
       const positions = burst.points.geometry.attributes.position.array;
-      for (let index = 0; index < positions.length / 3; index += 1) {
+      for (let index = 0; index < burst.count; index += 1) {
         positions[index * 3] += burst.velocities[index * 3] * delta;
         positions[index * 3 + 1] += burst.velocities[index * 3 + 1] * delta;
         positions[index * 3 + 2] += burst.velocities[index * 3 + 2] * delta;
@@ -4609,29 +6959,36 @@ class CinematicRunnerRenderer {
       burst.points.geometry.attributes.position.needsUpdate = true;
       burst.points.material.opacity = clamp(burst.life / burst.duration, 0, 1);
       burst.points.material.size = 0.12 + (1 - burst.life / burst.duration) * 0.08;
-      if (burst.life > 0) return true;
-      this.scene.remove(burst.points);
-      burst.points.geometry.dispose();
-      burst.points.material.dispose();
-      return false;
-    });
-    this.rings = this.rings.filter((ring) => {
+      if (burst.life > 0) {
+        this.bursts[burstWrite] = burst;
+        burstWrite += 1;
+      } else {
+        burst.points.visible = false;
+        burst.points.geometry.setDrawRange(0, 0);
+      }
+    }
+    this.bursts.length = burstWrite;
+    let ringWrite = 0;
+    for (let ringIndex = 0; ringIndex < this.rings.length; ringIndex += 1) {
+      const ring = this.rings[ringIndex];
       ring.life -= delta;
       const progress = 1 - clamp(ring.life / ring.duration, 0, 1);
-      ring.mesh.scale.setScalar(0.65 + progress * 2.15);
+      ring.mesh.scale.setScalar(ring.baseScale * (0.65 + progress * 2.15));
       ring.mesh.material.opacity = (1 - progress) * 0.82;
       ring.mesh.rotation.z += delta * ring.spin;
-      if (ring.life > 0) return true;
-      this.scene.remove(ring.mesh);
-      ring.mesh.geometry.dispose();
-      ring.mesh.material.dispose();
-      return false;
-    });
+      if (ring.life > 0) {
+        this.rings[ringWrite] = ring;
+        ringWrite += 1;
+      } else {
+        ring.mesh.visible = false;
+      }
+    }
+    this.rings.length = ringWrite;
   }
 
   spawnPickupSequence(detail) {
     if (!detail?.item) return;
-    const color = storyPropColor(detail.item, STAGE_CONFIGS[this.stageIndex].accent);
+    const color = storyPropColor(detail.item, (this.stageConfig || STAGE_CONFIGS[this.stageIndex]).accent);
     const prop = createStoryProp(detail.item, color, null, true);
     const aura = createPickupAura(detail.item.kind, color, this.particleTexture);
     aura.userData.sharedTexture = this.particleTexture;
@@ -4667,7 +7024,9 @@ class CinematicRunnerRenderer {
   }
 
   updatePickupSequences(delta, time) {
-    this.pickupSequences = this.pickupSequences.filter((sequence) => {
+    let writeIndex = 0;
+    for (let sequenceIndex = 0; sequenceIndex < this.pickupSequences.length; sequenceIndex += 1) {
+      const sequence = this.pickupSequences[sequenceIndex];
       sequence.elapsed += delta;
       const ratio = clamp(sequence.elapsed / sequence.duration, 0, 1);
       const travel = clamp(ratio / 0.78, 0, 1);
@@ -4720,18 +7079,22 @@ class CinematicRunnerRenderer {
           carried.prop.visible = true;
         }
       }
-      if (ratio < 1) return true;
-      this.scene.remove(sequence.prop, sequence.aura, sequence.bridge);
-      disposeObject(sequence.prop);
-      disposeObject(sequence.aura);
-      disposeObject(sequence.bridge);
-      return false;
-    });
+      if (ratio < 1) {
+        this.pickupSequences[writeIndex] = sequence;
+        writeIndex += 1;
+      } else {
+        this.scene.remove(sequence.prop, sequence.aura, sequence.bridge);
+        disposeObject(sequence.prop);
+        disposeObject(sequence.aura);
+        disposeObject(sequence.bridge);
+      }
+    }
+    this.pickupSequences.length = writeIndex;
   }
 
   carry(item) {
     if (!item?.id || this.carriedItems.some((entry) => entry.item.id === item.id)) return;
-    const prop = createStoryProp(item, STAGE_CONFIGS[this.stageIndex].accent, null, true);
+    const prop = createStoryProp(item, (this.stageConfig || STAGE_CONFIGS[this.stageIndex]).accent, null, true);
     prop.userData.carried = true;
     const pending = this.pickupSequences.some((sequence) => sequence.item.id === item.id);
     prop.visible = !pending;
@@ -4762,7 +7125,8 @@ class CinematicRunnerRenderer {
     this.endArrival();
     this.arrivalData = { ...data };
     this.arrivalProgress = 0;
-    this.arrivalSet = createRendezvousSet(data.stageIndex, STAGE_CONFIGS[data.stageIndex].accent, data.items);
+    const arrivalConfig = this.stageVisualConfigs[data.stageIndex] || resolveStageVisualConfig(data.stageIndex);
+    this.arrivalSet = createRendezvousSet(data.stageIndex, arrivalConfig.accent, data.items);
     this.scene.add(this.arrivalSet);
     this.arrivalBackdropMaterial.map = this.arrivalStageTextures[data.stageIndex] || this.stageTextures[data.stageIndex] || null;
     this.arrivalBackdropMaterial.opacity = 0;
@@ -4770,7 +7134,7 @@ class CinematicRunnerRenderer {
     this.arrivalBackdrop.visible = true;
     this.companion.visible = true;
     this.flash = Math.max(this.flash, 0.16);
-    this.flashMaterial.color.setHex(STAGE_CONFIGS[data.stageIndex].accent);
+    this.flashMaterial.color.setHex(arrivalConfig.accent);
   }
 
   endArrival() {
@@ -4790,6 +7154,50 @@ class CinematicRunnerRenderer {
 
   effect(type, detail = {}) {
     if (!detail || typeof detail !== "object") detail = {};
+    if (type === "stage-intro") {
+      this.beginStageIntro(detail);
+      return;
+    }
+    if (type === "failure" || type === "failed") {
+      this.setFailureVisual(detail.active !== false, detail);
+      return;
+    }
+    if (type === "low-state" || type === "critical-state") {
+      this.setLowStateVisual(detail.active !== false, detail);
+      return;
+    }
+    if (type === "status-visual") {
+      this.setStatusVisual(detail.mode || detail.status || "normal", detail);
+      return;
+    }
+    if (type === "choice-window") {
+      const duration = powerupDuration(detail.duration ?? detail.windowMs, 1.15);
+      this.choiceWindowState.life = duration;
+      this.choiceWindowState.duration = duration;
+      this.choiceWindowState.lane = clamp(Number(detail.lane) || 0, -1, 1);
+      this.choiceWindowState.strength = 1;
+      this.directorState.revealLife = Math.max(this.directorState.revealLife, duration);
+      this.directorState.revealStrength = Math.max(this.directorState.revealStrength, 0.72);
+      this.speedPulse = Math.max(this.speedPulse, 0.28);
+    }
+    if (type === "arrival-interaction") {
+      const duration = detail.completed ? 1.4 : 0.78;
+      this.arrivalInteractionState.life = duration;
+      this.arrivalInteractionState.duration = duration;
+      this.arrivalInteractionState.strength = 1;
+      this.arrivalInteractionState.outcome = detail.outcome || "clean";
+      this.arrivalInteractionState.completed = Boolean(detail.completed);
+      if (detail.outcome === "strained") {
+        this.shake = Math.max(this.shake, 0.14);
+        this.flash = Math.max(this.flash, 0.12);
+        this.flashMaterial.color.setHex(0xff756e);
+      } else {
+        this.speedPulse = Math.max(this.speedPulse, detail.completed ? 0.9 : 0.36);
+        this.flash = Math.max(this.flash, detail.completed ? 0.42 : 0.18);
+        this.flashMaterial.color.setHex(detail.completed ? 0xfff2c4 : (this.stageConfig || STAGE_CONFIGS[this.stageIndex]).accent);
+      }
+      return;
+    }
     if (type === "powerup-start") {
       this.startPowerup(detail);
       return;
@@ -4817,7 +7225,7 @@ class CinematicRunnerRenderer {
     }
     if (type === "stage") {
       this.flash = Math.max(this.flash, 0.5);
-      this.flashMaterial.color.setHex(STAGE_CONFIGS[this.stageIndex].accent);
+      this.flashMaterial.color.setHex((this.stageConfig || STAGE_CONFIGS[this.stageIndex]).accent);
       return;
     }
     if (type === "story-missed") {
@@ -4835,10 +7243,15 @@ class CinematicRunnerRenderer {
     } else if (type === "dodge") {
       this.speedPulse = Math.max(this.speedPulse, 0.62);
     }
-    const storyColor = detail.item ? storyPropColor(detail.item, STAGE_CONFIGS[this.stageIndex].accent) : STAGE_CONFIGS[this.stageIndex].accent;
+    const activeAccent = (this.stageConfig || STAGE_CONFIGS[this.stageIndex]).accent;
+    const storyColor = detail.item ? storyPropColor(detail.item, activeAccent) : activeAccent;
     const count = type === "story-pickup" ? 54 : type === "perfect" ? 38 : type === "near-miss" ? 32 : type === "miss" ? 34 : type === "energy" ? 16 : 20;
-    const positions = new Float32Array(count * 3);
-    const velocities = new Float32Array(count * 3);
+    const burst = this.transientEffects.bursts[this.burstPoolCursor % this.transientEffects.bursts.length];
+    this.burstPoolCursor += 1;
+    const activeBurstIndex = this.bursts.indexOf(burst);
+    if (activeBurstIndex >= 0) this.bursts.splice(activeBurstIndex, 1);
+    const positions = burst.positions;
+    const velocities = burst.velocities;
     for (let index = 0; index < count; index += 1) {
       const angle = index / count * Math.PI * 2;
       const spread = (type === "story-pickup" ? 0.56 : type === "miss" ? 0.72 : 0.35) + (index % 5) * 0.08;
@@ -4850,43 +7263,50 @@ class CinematicRunnerRenderer {
       velocities[index * 3 + 1] = 0.55 + (index % 7) * 0.09;
       velocities[index * 3 + 2] = Math.sin(angle + (type === "story-pickup" ? 0.72 : 0)) * spread;
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const pointMaterial = new THREE.PointsMaterial({
-      map: this.particleTexture,
-      color: type === "story-pickup" ? storyColor : STAGE_CONFIGS[this.stageIndex].accent,
-      size: 0.16,
-      transparent: true,
-      opacity: 1,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending
-    });
-    const points = new THREE.Points(geometry, pointMaterial);
     const effectX = (detail.lane || 0) * LANE_WIDTH;
     const effectZ = PLAYER_Z + (COLLISION_Z - (detail.z || COLLISION_Z)) * WORLD_Z_SCALE;
-    points.position.set(effectX, type === "dodge" ? 0.75 : 1.25, effectZ);
-    this.scene.add(points);
-    this.bursts.push({ points, velocities, life: 0.85, duration: 0.85 });
+    burst.count = count;
+    burst.life = 0.85;
+    burst.duration = 0.85;
+    burst.points.position.set(effectX, type === "dodge" ? 0.75 : 1.25, effectZ);
+    burst.points.material.color.setHex(type === "story-pickup" ? storyColor : activeAccent);
+    burst.points.material.opacity = 1;
+    burst.points.geometry.setDrawRange(0, count);
+    burst.points.geometry.attributes.position.needsUpdate = true;
+    burst.points.visible = true;
+    this.bursts.push(burst);
     if (["dodge", "near-miss", "perfect", "story-pickup", "energy"].includes(type)) {
-      const ringMaterial = new THREE.MeshBasicMaterial({
-        color: type === "near-miss" ? 0xffd169 : type === "story-pickup" ? storyColor : type === "energy" ? 0xf9ef9a : STAGE_CONFIGS[this.stageIndex].accent,
-        transparent: true,
-        opacity: 0.82,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide
-      });
-      const ring = mesh(new THREE.TorusGeometry(0.45, 0.035, 8, 36), ringMaterial);
-      ring.position.set(effectX, type === "dodge" ? 0.72 : 1.2, effectZ);
-      ring.rotation.x = Math.PI / 2;
-      this.scene.add(ring);
-      this.rings.push({ mesh: ring, life: 0.48, duration: 0.48, spin: type === "near-miss" ? 4 : 1.6 });
+      const ringSlot = this.transientEffects.rings[this.ringPoolCursor % this.transientEffects.rings.length];
+      this.ringPoolCursor += 1;
+      const activeRingIndex = this.rings.indexOf(ringSlot);
+      if (activeRingIndex >= 0) this.rings.splice(activeRingIndex, 1);
+      ringSlot.life = 0.48;
+      ringSlot.duration = 0.48;
+      ringSlot.spin = type === "near-miss" ? 4 : 1.6;
+      ringSlot.baseScale = 1;
+      ringSlot.mesh.position.set(effectX, type === "dodge" ? 0.72 : 1.2, effectZ);
+      ringSlot.mesh.rotation.set(Math.PI / 2, 0, 0);
+      ringSlot.mesh.scale.setScalar(1);
+      ringSlot.mesh.material.color.setHex(type === "near-miss" ? 0xffd169 : type === "story-pickup" ? storyColor : type === "energy" ? 0xf9ef9a : activeAccent);
+      ringSlot.mesh.material.opacity = 0.82;
+      ringSlot.mesh.visible = true;
+      this.rings.push(ringSlot);
       if (type === "story-pickup") {
-        const orbit = mesh(new THREE.TorusGeometry(0.7, 0.026, 8, 44), ringMaterial.clone());
-        orbit.position.copy(ring.position);
-        orbit.rotation.set(Math.PI / 2 + 0.4, 0.55, 0.2);
-        this.scene.add(orbit);
-        this.rings.push({ mesh: orbit, life: 0.66, duration: 0.66, spin: -2.4 });
+        const orbitSlot = this.transientEffects.rings[this.ringPoolCursor % this.transientEffects.rings.length];
+        this.ringPoolCursor += 1;
+        const activeOrbitIndex = this.rings.indexOf(orbitSlot);
+        if (activeOrbitIndex >= 0) this.rings.splice(activeOrbitIndex, 1);
+        orbitSlot.life = 0.66;
+        orbitSlot.duration = 0.66;
+        orbitSlot.spin = -2.4;
+        orbitSlot.baseScale = 1.55;
+        orbitSlot.mesh.position.copy(ringSlot.mesh.position);
+        orbitSlot.mesh.rotation.set(Math.PI / 2 + 0.4, 0.55, 0.2);
+        orbitSlot.mesh.scale.setScalar(orbitSlot.baseScale);
+        orbitSlot.mesh.material.color.setHex(storyColor);
+        orbitSlot.mesh.material.opacity = 0.82;
+        orbitSlot.mesh.visible = true;
+        this.rings.push(orbitSlot);
         this.speedPulse = Math.max(this.speedPulse, 0.42);
       }
     }
@@ -4899,40 +7319,68 @@ class CinematicRunnerRenderer {
     this.frameAverage = damp(this.frameAverage, delta, 1.5, delta);
     this.flow = damp(this.flow, clamp(Number(frame.flow) || 0, 0, 1), 4.8, delta);
     this.storyFocus = damp(this.storyFocus, this.storyFocusTarget, 9, delta);
+    this.choiceWindowState.life = Math.max(0, this.choiceWindowState.life - delta);
+    this.choiceWindowState.strength = damp(this.choiceWindowState.strength, this.choiceWindowState.life > 0 ? 1 : 0, this.choiceWindowState.life > 0 ? 10 : 4, delta);
+    this.arrivalInteractionState.life = Math.max(0, this.arrivalInteractionState.life - delta);
+    this.arrivalInteractionState.strength = damp(this.arrivalInteractionState.strength, this.arrivalInteractionState.life > 0 ? 1 : 0, this.arrivalInteractionState.life > 0 ? 10 : 4, delta);
     this.qualityElapsed += delta;
     this.stageElapsed += delta;
-    if (frame.stageIndex !== this.stageIndex) this.setStage(frame.stageIndex);
-    if (Number.isFinite(Number(frame.routePhase)) && Number(frame.routePhase) !== this.routePhase) this.setRoutePhase(frame.routePhase);
+    const requestedStage = Number.isFinite(Number(frame.stageIndex)) ? clamp(Math.trunc(Number(frame.stageIndex)), 0, STAGE_CONFIGS.length - 1) : this.stageIndex;
+    const frameStageContent = frame.stageContent || (frame.stage?.world || frame.stage?.theme ? frame.stage : null);
+    const stageChanged = requestedStage !== this.stageIndex;
+    if (stageChanged) this.setStage(requestedStage, false, frameStageContent);
+    else if (frameStageContent && frameStageContent !== this.stageContentRef) this.setStage(requestedStage, true, frameStageContent);
+    const enteringIntro = ["intro", "stage-intro"].includes(frame.mode) && frame.mode !== this.lastRenderMode;
+    if ((stageChanged && frame.mode !== "arrival") || enteringIntro) {
+      this.beginStageIntro({
+        stageIndex: requestedStage,
+        duration: Number(frame.stageIntro?.duration) || Number(frame.stageIntro?.openingPerformance?.durationMs) / 1000 || 2.4,
+        intensity: frame.stageIntro?.intensity || 1
+      });
+    }
+    this.lastRenderMode = frame.mode || "";
+    const framePhaseContent = frame.phaseDefinition || null;
+    if (Number.isFinite(Number(frame.routePhase)) && (
+      Number(frame.routePhase) !== this.routePhase || framePhaseContent !== this.phaseContentRef
+    )) this.setRoutePhase(frame.routePhase, framePhaseContent);
     if (frame.arrival && !this.arrivalData) this.beginArrival(frame.arrival);
     if (!frame.arrival && this.arrivalData && frame.mode !== "arrival") this.endArrival();
     const motion = frame.motion || {};
     const runState = frame.runState || {};
+    this.syncStatusVisual(runState, frame.visualStatus || frame.statusVisual);
     const speed = Number(motion.speed) || 10.5;
     const distance = Number(motion.distance) || 0;
     this.syncPowerupState(motion.powerups, delta);
     const introDistance = frame.mode === "intro" ? time * 5.2 : 0;
     this.currentDistance = distance + introDistance;
     this.syncRoad(this.currentDistance);
-    this.syncEntities(motion.entities || [], time);
+    this.syncEntities(motion.entities || [], time, delta);
 
     const arriving = frame.mode === "arrival" && Boolean(frame.arrival);
+    const introActive = frame.mode === "stage-intro" && this.stageIntroState.active;
+    const introCue = introCameraCue(this.stageIntroState.cameraCue);
     const arrivalProgress = arriving ? clamp(Number(frame.arrival.progress) || 0, 0, 1) : 0;
     this.arrivalProgress = arrivalProgress;
     const arrivalEase = arrivalProgress * arrivalProgress * (3 - arrivalProgress * 2);
     this.roadGroup.visible = !arriving;
     this.ground.visible = !arriving;
+    if (this.activeStageWorld) this.activeStageWorld.visible = !arriving;
+    this.syncQualityVisibility(arriving);
+    if (arriving) this.stageIntroVisual.root.visible = false;
     this.backdrops.forEach((backdrop) => { backdrop.visible = !arriving; });
     this.arrivalBackdrop.visible = arriving;
     this.arrivalBackdropMaterial.opacity = arriving ? Math.min(0.86, arrivalProgress * 2.4) : 0;
     this.arrivalBackdrop.scale.setScalar(arriving ? 1.035 - arrivalEase * 0.055 : 1);
     this.arrivalBackdrop.position.x = arriving ? Math.sin(arrivalProgress * Math.PI) * (this.stageIndex % 2 ? -0.24 : 0.24) : 0;
     const lanePosition = Number.isFinite(Number(motion.lanePosition)) ? Number(motion.lanePosition) : Number(motion.lane) || 0;
-    const targetPlayerX = arriving ? -0.66 : lanePosition * LANE_WIDTH;
+    const targetPlayerX = arriving ? -0.66 : introActive && introCue.action === "idle" ? 0 : lanePosition * LANE_WIDTH;
     this.previousLaneX = this.currentLaneX;
     this.currentLaneX = damp(this.currentLaneX, targetPlayerX, arriving ? 4.8 : 28, delta);
     this.lateralVelocity = damp(this.lateralVelocity, (this.currentLaneX - this.previousLaneX) / Math.max(delta, 1 / 120) / LANE_WIDTH, 18, delta);
     this.player.position.x = this.currentLaneX;
     this.player.position.z = arriving ? damp(this.player.position.z, -0.12, 2.8, delta) : PLAYER_Z;
+    this.updateStageIntroVisual(delta, time);
+    this.updateStatusVisual(delta, time, arriving);
     const stumble = clamp((Number(motion.stumbleTime) || 0) / 0.62, 0, 1);
     const vertical = Number(motion.vertical) || 0;
     if (this.previousVertical > 0.16 && vertical <= 0.025 && motion.action !== "jump") {
@@ -4940,7 +7388,9 @@ class CinematicRunnerRenderer {
       this.shake = Math.max(this.shake, 0.12);
     }
     this.previousVertical = vertical;
-    const playerAction = arriving && arrivalProgress > 0.26 ? "idle" : motion.action || "run";
+    const playerAction = arriving && arrivalProgress > 0.26
+      ? "idle"
+      : introActive ? this.stageIntroState.actionCue || introCue.action : motion.action || "run";
     if (this.player.userData.modelRunner) {
       animateRiggedRunner(this.player, delta, playerAction, arriving ? 0 : vertical, arriving ? 0.12 : speed / 17, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
     } else {
@@ -4956,10 +7406,13 @@ class CinematicRunnerRenderer {
     this.landingRing.material.opacity = this.landingPulse * 0.72;
     this.updatePowerupVisuals(delta, time, speed, arriving);
 
-    const config = STAGE_CONFIGS[this.stageIndex];
-    this.companion.visible = arriving;
+    const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
+    this.directorState.elapsed += delta;
+    const relationshipVisible = this.updateRelationshipPresence(delta, time, speed, arriving, introActive);
+    this.companion.visible = arriving || relationshipVisible;
     if (arriving) {
-      const meetingX = 0.66;
+      const arrivalInteraction = this.arrivalInteractionState.strength;
+      const meetingX = 0.66 - (this.arrivalInteractionState.completed ? arrivalInteraction * 0.12 : 0);
       const meetingZ = -0.2;
       this.companion.position.x = damp(this.companion.position.x, meetingX, 5.2, delta);
       this.companion.position.z = damp(this.companion.position.z, meetingZ, 5.2, delta);
@@ -4967,13 +7420,17 @@ class CinematicRunnerRenderer {
       this.companion.rotation.y = damp(this.companion.rotation.y, Math.PI * 0.68, 4.6, delta);
       if (this.companion.userData.modelRunner) animateRiggedRunner(this.companion, delta, "idle", 0, 0.1, 0, 0);
       else animateCharacter(this.companion, time, "idle", 0, 0.04, 1.2, 0, 0);
-      this.arrivalSet?.userData.animated?.forEach((light, index) => {
+      const arrivalAnimated = this.arrivalSet?.userData.animated || [];
+      for (let index = 0; index < arrivalAnimated.length; index += 1) {
+        const light = arrivalAnimated[index];
         if (light.material?.emissiveIntensity !== undefined) light.material.emissiveIntensity = 2.2 + Math.sin(time * 2.8 + index) * 0.8;
         if (light.material?.opacity !== undefined) light.material.opacity = 0.68 + Math.sin(time * 2.1 + index) * 0.12;
-      });
-      if (this.arrivalSet?.userData.keyLight) this.arrivalSet.userData.keyLight.intensity = 8 + Math.sin(time * 1.4) * 1.5;
+      }
+      if (this.arrivalSet?.userData.keyLight) this.arrivalSet.userData.keyLight.intensity = 8 + Math.sin(time * 1.4) * 1.5 + arrivalInteraction * 5.5;
       const itemDisplay = this.arrivalSet?.userData.itemDisplay;
-      itemDisplay?.userData.entries?.forEach((entry, index) => {
+      const arrivalEntries = itemDisplay?.userData.entries || [];
+      for (let index = 0; index < arrivalEntries.length; index += 1) {
+        const entry = arrivalEntries[index];
         const reveal = clamp((arrivalProgress - 0.4 - entry.revealOrder * 0.055) / 0.18, 0, 1);
         const bounce = 1 + Math.sin(reveal * Math.PI) * 0.22;
         const baseScale = entry.item.kind === "umbrella" ? 0.78 : entry.item.kind === "flower" ? 0.72 : 0.62;
@@ -4981,24 +7438,26 @@ class CinematicRunnerRenderer {
         entry.prop.rotation.y += delta * (0.18 + index * 0.06);
         entry.halo.scale.setScalar(Math.max(0.001, reveal * (1.2 + index * 0.08)));
         entry.halo.material.opacity = reveal * (0.22 + Math.sin(time * 2.8 + index) * 0.08);
-      });
+      }
       if (itemDisplay?.userData.handoffArc) {
-        itemDisplay.userData.handoffArc.material.opacity = Math.sin(clamp((arrivalProgress - 0.22) / 0.52, 0, 1) * Math.PI) * 0.66;
+        itemDisplay.userData.handoffArc.material.opacity = Math.min(0.9,
+          Math.sin(clamp((arrivalProgress - 0.22) / 0.52, 0, 1) * Math.PI) * 0.66 + arrivalInteraction * 0.28);
       }
       if (itemDisplay?.userData.sparkles) {
         itemDisplay.userData.sparkles.material.opacity = clamp((arrivalProgress - 0.38) * 2.6, 0, 0.72) * (0.78 + Math.sin(time * 2.3) * 0.18);
         itemDisplay.userData.sparkles.rotation.y = time * 0.12;
       }
       if (itemDisplay?.userData.interactionFx) {
-        const fxReveal = clamp((arrivalProgress - 0.42) / 0.2, 0, 1);
+        const fxReveal = Math.max(clamp((arrivalProgress - 0.42) / 0.2, 0, 1), arrivalInteraction * 0.82);
         const cameraPulse = ["camera", "photo"].includes(itemDisplay.userData.featuredKind)
           ? Math.max(0, 1 - Math.abs(fxReveal - 0.45) * 2.2)
           : 0.72 + Math.sin(time * 3.1) * 0.18;
-        itemDisplay.userData.fxMaterials.forEach((entry) => {
-          entry.material.opacity = fxReveal * entry.maxOpacity * cameraPulse;
-        });
+        const fxMaterials = itemDisplay.userData.fxMaterials;
+        for (let index = 0; index < fxMaterials.length; index += 1) {
+          fxMaterials[index].material.opacity = fxReveal * fxMaterials[index].maxOpacity * cameraPulse;
+        }
         itemDisplay.userData.interactionFx.scale.setScalar(0.82 + fxReveal * 0.18);
-        itemDisplay.userData.interactionFx.rotation.z = ["record", "wristband", "key", "lamp"].includes(itemDisplay.userData.featuredKind)
+        itemDisplay.userData.interactionFx.rotation.z = MUSIC_STORY_KINDS.has(itemDisplay.userData.featuredKind) || LIGHT_STORY_KINDS.has(itemDisplay.userData.featuredKind)
           ? time * 0.18
           : Math.sin(time * 0.8) * 0.025;
         if (itemDisplay.userData.fxLight) itemDisplay.userData.fxLight.intensity = fxReveal * (5.5 + Math.sin(time * 3.2) * 1.2);
@@ -5006,6 +7465,7 @@ class CinematicRunnerRenderer {
     } else {
       this.player.rotation.y = damp(this.player.rotation.y, 0, 8, delta);
     }
+    this.updateDirectorVisual(delta, time, this.currentDistance, arriving, relationshipVisible);
 
     if (!arriving && this.storyWorldInfluence > 0.001) {
       const gestureStrength = this.storyWorldInfluence;
@@ -5040,31 +7500,69 @@ class CinematicRunnerRenderer {
       this.carryGroup.visible = false;
     }
 
-    const cameraTargetX = arriving ? (this.stageIndex % 2 ? -1.15 : 1.15) * arrivalEase : this.currentLaneX * 0.42 + (this.stageIndex >= 4 ? 0.08 : 0);
-    const cameraBob = frame.mode === "playing" ? Math.sin(time * (9.2 + speed * 0.12)) * (0.025 + this.flow * 0.018) : Math.sin(time * 0.8) * 0.018;
+    const introWeave = introActive && String(this.stageIntroState.cameraCue).includes("weave")
+      ? Math.sin(this.stageIntroState.beatElapsed * 1.8) * 0.48
+      : 0;
+    const baseCameraTargetX = arriving
+      ? (this.stageIndex % 2 ? -1.15 : 1.15) * arrivalEase
+      : introActive ? introCue.x + introWeave : this.currentLaneX * 0.42 + (this.stageIndex >= 4 ? 0.08 : 0);
+    const directorCamera = this.directorState.camera;
+    const directorCameraBlend = arriving || introActive ? 0 : 0.42 + this.directorState.revealStrength * 0.48;
+    const directedCameraX = clamp(directorCamera.x + this.currentLaneX * 0.18, -directorCamera.maxLaneOffset * LANE_WIDTH, directorCamera.maxLaneOffset * LANE_WIDTH);
+    const cameraTargetX = THREE.MathUtils.lerp(baseCameraTargetX, directedCameraX, directorCameraBlend);
+    const cadenceCamera = Math.sin(this.cadencePhase) * (0.012 + this.directorState.revealStrength * 0.014);
+    const cameraBob = frame.mode === "playing"
+      ? Math.sin(time * (9.2 + speed * 0.12)) * (0.025 + this.flow * 0.018) + cadenceCamera
+      : Math.sin(time * 0.8) * 0.018;
     const shakeX = (Math.sin(time * 83) + Math.sin(time * 41)) * this.shake * 0.07;
     const shakeY = Math.sin(time * 67) * this.shake * 0.055;
+    const statusStrength = this.statusVisualState.strength;
     this.camera.position.x = damp(this.camera.position.x, cameraTargetX, arriving ? 2.8 : 6, delta) + shakeX;
-    this.camera.position.y = damp(this.camera.position.y, arriving ? 3.78 + cameraBob : 5.16 + cameraBob - (motion.action === "slide" ? 0.2 : 0) - this.flow * 0.08, arriving ? 3.2 : 9, delta) + shakeY;
+    this.camera.position.y = damp(
+      this.camera.position.y,
+      arriving
+        ? 3.78 + cameraBob
+        : introActive ? introCue.y + cameraBob : THREE.MathUtils.lerp(
+          5.16 - (motion.action === "slide" ? 0.2 : 0) - this.flow * 0.08 - statusStrength * 0.1,
+          directorCamera.y,
+          directorCameraBlend
+        ) + cameraBob,
+      arriving ? 3.2 : introActive ? 4.8 : 9,
+      delta
+    ) + shakeY;
     this.camera.position.z = damp(
       this.camera.position.z,
-      arriving ? 8.4 : motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28 - this.powerupStrengths.overdrive * 0.42,
-      arriving ? 2.8 : 6.5,
+      arriving ? 8.4 : introActive ? introCue.z : THREE.MathUtils.lerp(
+        motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28 - this.powerupStrengths.overdrive * 0.42,
+        directorCamera.z,
+        directorCameraBlend
+      ),
+      arriving ? 2.8 : introActive ? 4.6 : 6.5,
       delta
     );
     this.camera.fov = damp(
       this.camera.fov,
       arriving
         ? 52
-        : 58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6
-          + this.storyFocus * 1.35 + this.powerupStrengths.overdrive * 1.8 + this.synergyInfluence * 1.2,
+        : introActive ? introCue.fov
+        : Math.max(55, THREE.MathUtils.lerp(
+          58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6
+            + this.storyFocus * 1.35 + this.powerupStrengths.overdrive * 1.8 + this.synergyInfluence * 1.2 + statusStrength * 1.15,
+          directorCamera.fov,
+          directorCameraBlend
+        )),
       arriving ? 3 : 6,
       delta
     );
     this.camera.updateProjectionMatrix();
     if (arriving) this.camera.lookAt(0.02, 1.38, -0.72);
+    else if (introActive) this.camera.lookAt(this.currentLaneX * 0.16, introCue.lookY, introCue.lookZ);
     else {
-      this.camera.lookAt(this.currentLaneX * 0.34, 0.62, -15.8 - this.flow * 3.2 - this.powerupStrengths.overdrive * 1.4);
+      this.camera.lookAt(
+        THREE.MathUtils.lerp(this.currentLaneX * 0.34, this.currentLaneX * 0.12, directorCameraBlend),
+        THREE.MathUtils.lerp(0.62, directorCamera.lookY, directorCameraBlend),
+        THREE.MathUtils.lerp(-15.8 - this.flow * 3.2 - this.powerupStrengths.overdrive * 1.4, directorCamera.lookZ, directorCameraBlend)
+      );
       this.camera.rotation.z += clamp(-this.lateralVelocity * (0.018 + this.flow * 0.012), -0.075, 0.075);
     }
     this.shake = Math.max(0, this.shake - delta * 2.8);
@@ -5072,48 +7570,51 @@ class CinematicRunnerRenderer {
     this.flashMaterial.opacity = this.flash;
     this.speedPulse = Math.max(0, this.speedPulse - delta * 2.4);
 
-    this.scene.background.lerp(this.targetBackground, 1 - Math.exp(-2.2 * delta));
-    this.scene.fog.color.lerp(this.targetFog, 1 - Math.exp(-2.2 * delta));
-    this.scene.fog.density = damp(this.scene.fog.density, this.targetFogDensity, 2.5, delta);
+    const directorAct = this.directorState.act;
+    this.scene.background.lerp(this.directorState.backgroundTarget, 1 - Math.exp(-2.2 * delta));
+    this.scene.fog.color.lerp(this.directorState.fogTarget, 1 - Math.exp(-2.2 * delta));
+    this.scene.fog.density = damp(this.scene.fog.density, this.targetFogDensity * directorAct.fog, 2.5, delta);
     const itemPulseStrength = this.itemPulse ? clamp(this.itemPulse.life / this.itemPulse.duration, 0, 1) : 0;
     this.renderer.toneMappingExposure = damp(
       this.renderer.toneMappingExposure,
-      this.targetExposure + this.flow * 0.08 + itemPulseStrength * 0.045 + this.synergyInfluence * 0.12,
+      this.targetExposure + (directorAct.edge - 1) * 0.08 + this.flow * 0.08 + itemPulseStrength * 0.045 + this.synergyInfluence * 0.12
+        - statusStrength * (this.statusVisualState.mode === "failed" ? 0.24 : 0.08),
       2.8,
       delta
     );
-    this.keyLight.intensity = (arriving ? 2.35 : config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : 3.15) + this.synergyInfluence * 4.5;
+    this.keyLight.intensity = (arriving ? 2.35 : config.weather === "storm" && time % 8.8 < 0.1 ? 8.5 : config.world.lighting.keyIntensity * directorAct.edge)
+      + this.synergyInfluence * 4.5 - statusStrength * 0.65;
     this.warmLight.intensity = arriving
       ? 7.5
-      : (this.stageIndex >= 3 ? 21 : 14) + this.flow * 8 + itemPulseStrength * 12 + this.storyFocus * 6
-        + this.storyWorldInfluence * 6 + this.synergyInfluence * 8;
-    if (this.itemPulse) this.warmLight.color.lerp(new THREE.Color(this.itemPulse.color), 1 - Math.exp(-8 * delta));
-    else this.warmLight.color.lerp(new THREE.Color(config.accent), 1 - Math.exp(-4 * delta));
+      : config.world.lighting.warmIntensity * (0.84 + directorAct.edge * 0.16) + this.flow * 8 + itemPulseStrength * 12 + this.storyFocus * 6
+        + this.storyWorldInfluence * 6 + this.synergyInfluence * 8 + this.directorState.recoverStrength * 5;
+    if (this.itemPulse) this.warmLight.color.lerp(this.directorScratchColor.setHex(this.itemPulse.color), 1 - Math.exp(-8 * delta));
+    else this.warmLight.color.lerp(this.directorState.accentTarget, 1 - Math.exp(-4 * delta));
     this.runnerFillLight.intensity = arriving ? 4.8 : 8.5 + this.flow * 4.5;
-    this.warmLight.position.x = Math.sin(time * 0.18) * 2;
+    this.warmLight.position.x = this.warmLightBasePosition.x + Math.sin(time * 0.18) * (config.weather === "neon" ? 2.6 : 1.2);
 
     this.updateDistrictWorld(delta, time, this.currentDistance, speed);
     this.updateWeather(delta, time, speed, Number(runState.combo) || 0);
+    this.rain.material.opacity *= directorAct.rain;
+    this.ambientParticles.material.opacity *= this.qualityProfile.particleScale;
     if (this.itemPulse) {
       const pulse = clamp(this.itemPulse.life / this.itemPulse.duration, 0, 1);
       if (this.itemPulse.kind === "umbrella") this.rain.material.opacity *= 1 - pulse * 0.68;
-      if (["record", "wristband"].includes(this.itemPulse.kind)) {
+      if (MUSIC_STORY_KINDS.has(this.itemPulse.kind)) {
         this.ambientParticles.scale.setScalar(1 + Math.sin(time * 8) * pulse * 0.18);
         this.speedStreaks.material.opacity = Math.min(0.82, this.speedStreaks.material.opacity + pulse * 0.15);
       } else this.ambientParticles.scale.setScalar(1);
-      if (["key", "lamp"].includes(this.itemPulse.kind)) {
+      if (LIGHT_STORY_KINDS.has(this.itemPulse.kind)) {
         this.powerRailMaterial.emissiveIntensity = 0.16 + pulse * 2.4;
         this.laneGuideMaterial.emissiveIntensity = 0.28 + pulse * 1.8;
       }
-      if (["flower", "plant"].includes(this.itemPulse.kind)) this.ambientParticles.material.size = Math.max(this.ambientParticles.material.size, 0.16 + pulse * 0.1);
+      if (PLANT_STORY_KINDS.has(this.itemPulse.kind)) this.ambientParticles.material.size = Math.max(this.ambientParticles.material.size, 0.16 + pulse * 0.1);
     } else {
       this.ambientParticles.scale.setScalar(1);
       this.powerRailMaterial.emissiveIntensity = damp(this.powerRailMaterial.emissiveIntensity, 0.16, 4, delta);
       this.laneGuideMaterial.emissiveIntensity = damp(this.laneGuideMaterial.emissiveIntensity, 0.28, 4, delta);
     }
     if (arriving) {
-      this.metroDistricts.forEach((district) => { district.visible = false; });
-      this.premiumDistricts?.forEach((district) => { district.visible = false; });
       this.ambientTrains.forEach((train) => { train.visible = false; });
       this.speedStreaks.material.opacity = 0;
     }
@@ -5128,6 +7629,18 @@ class CinematicRunnerRenderer {
     if (this.qualityElapsed >= 2.5) {
       const currentRatio = this.renderer.getPixelRatio();
       const estimatedFps = 1 / Math.max(this.frameAverage, 1 / 120);
+      const drawCalls = this.renderer.info.render.calls;
+      const profile = this.qualityProfile;
+      const overloaded = estimatedFps < 48 || drawCalls > profile.targetDrawCalls + 12;
+      const comfortablyUnderBudget = estimatedFps > 57 && drawCalls < profile.targetDrawCalls - 14;
+      this.qualityGoodWindows = comfortablyUnderBudget ? this.qualityGoodWindows + 1 : 0;
+      if (overloaded && this.qualityProfileIndex < QUALITY_PROFILES.length - 1) {
+        this.applyQualityProfile(QUALITY_PROFILES[this.qualityProfileIndex + 1].key);
+        this.qualityGoodWindows = 0;
+      } else if (!this.mobilePerformance && this.qualityGoodWindows >= 4 && this.qualityProfileIndex > 0) {
+        this.applyQualityProfile(QUALITY_PROFILES[this.qualityProfileIndex - 1].key);
+        this.qualityGoodWindows = 0;
+      }
       const nextRatio = clamp(
         currentRatio + (estimatedFps < 48 ? -0.12 : estimatedFps > 57 ? 0.08 : 0),
         1,
@@ -5144,65 +7657,113 @@ class CinematicRunnerRenderer {
     this.canvas.setAttribute("data-render-calls", String(this.renderer.info.render.calls));
     this.canvas.setAttribute("data-render-triangles", String(this.renderer.info.render.triangles));
     this.canvas.setAttribute("data-render-stage", String(this.stageIndex + 1));
-    return this.snapshot();
+    return this.updateFrameSnapshot(this.frameSnapshot);
+  }
+
+  updateFrameSnapshot(target) {
+    let pooledPowerupEffects = 0;
+    for (let index = 0; index < this.powerupEffectPool.length; index += 1) {
+      if (this.powerupEffectPool[index].life > 0) pooledPowerupEffects += 1;
+    }
+    target.ready = true;
+    target.stageIndex = this.stageIndex;
+    target.webgl = true;
+    target.pixelRatio = this.pixelRatio || 1;
+    target.width = this.canvas.width;
+    target.height = this.canvas.height;
+    target.entities = this.entityObjects.size;
+    target.bursts = this.bursts.length;
+    target.rings = this.rings.length;
+    target.pickupSequences = this.pickupSequences.length;
+    target.flow = this.flow;
+    target.storyFocus = this.storyFocus;
+    target.powerups.magnet = this.powerupStrengths.magnet;
+    target.powerups.shield = this.powerupStrengths.shield;
+    target.powerups.multiplier = this.powerupStrengths.multiplier;
+    target.powerups.overdrive = this.powerupStrengths.overdrive;
+    target.storyWorld = this.storyWorldInfluence;
+    target.synergy = this.synergyInfluence;
+    target.pooledPowerupEffects = pooledPowerupEffects;
+    target.drawCalls = this.renderer.info.render.calls;
+    target.triangles = this.renderer.info.render.triangles;
+    target.rainOpacity = this.rain.material.opacity;
+    target.carriedItems.length = this.carriedItems.length;
+    for (let index = 0; index < this.carriedItems.length; index += 1) target.carriedItems[index] = this.carriedItems[index].item.id;
+    target.rendezvousVisible = this.companion.visible;
+    target.arrivalProgress = this.arrivalProgress;
+    target.routePhase = this.routePhase;
+    target.worldScene = this.stageConfig?.world.scene;
+    target.roadGeometry = this.stageConfig?.world.road.geometry;
+    target.particleStyle = this.stageConfig?.world.particles.kind;
+    target.directorAct = this.directorState.act.id;
+    target.routeTopology = this.directorState.act.topology;
+    target.visibleGoal = this.directorState.act.goal;
+    target.cameraRig = this.directorState.act.cameraRig;
+    target.relationshipPresence = this.directorState.relationship.key;
+    target.qualityProfile = this.qualityProfile.key;
+    target.targetDrawCalls = this.qualityProfile.targetDrawCalls;
+    target.poolGeneration = this.poolGeneration;
+    target.stageIntro = this.stageIntroState.active;
+    target.visualStatus = this.statusVisualState.mode;
+    target.statusStrength = this.statusVisualState.strength;
+    return target;
   }
 
   snapshot() {
-    return {
-      ready: true,
-      stageIndex: this.stageIndex,
-      webgl: true,
-      pixelRatio: this.pixelRatio || 1,
-      width: this.canvas.width,
-      height: this.canvas.height,
-      entities: this.entityObjects.size,
-      bursts: this.bursts.length,
-      rings: this.rings.length,
-      pickupSequences: this.pickupSequences.length,
-      flow: this.flow,
-      storyFocus: this.storyFocus,
-      powerups: { ...this.powerupStrengths },
-      storyWorld: this.storyWorldInfluence,
-      synergy: this.synergyInfluence,
-      pooledPowerupEffects: this.powerupEffectPool.filter((slot) => slot.life > 0).length,
-      drawCalls: this.renderer.info.render.calls,
-      triangles: this.renderer.info.render.triangles,
-      rainOpacity: this.rain.material.opacity,
-      carriedItems: this.carriedItems.map((entry) => entry.item.id),
-      rendezvousVisible: this.companion.visible,
-      arrivalProgress: this.arrivalProgress,
-      routePhase: this.routePhase
-    };
+    const current = this.updateFrameSnapshot(this.frameSnapshot);
+    return { ...current, powerups: { ...current.powerups }, carriedItems: current.carriedItems.slice() };
   }
 
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
+    this.runnerLoadToken += 1;
+    this.cityLoadToken += 1;
     this.endArrival();
     this.clearCarry();
-    this.pickupSequences.forEach((sequence) => {
-      this.scene.remove(sequence.prop, sequence.aura, sequence.bridge);
-      disposeObject(sequence.prop);
-      disposeObject(sequence.aura);
-      disposeObject(sequence.bridge);
-    });
     this.pickupSequences.length = 0;
-    this.entityObjects.forEach((object) => disposeObject(object));
-    this.entityPool.forEach((bucket) => bucket.forEach((object) => disposeObject(object)));
-    this.scene.remove(this.powerupVisuals.root);
-    disposeObject(this.powerupVisuals.root);
+    this.bursts.length = 0;
+    this.rings.length = 0;
+    this.entityObjects.clear();
+    for (const bucket of this.entityPool.values()) {
+      for (let index = 0; index < bucket.length; index += 1) disposeObject(bucket[index]);
+    }
+    this.entityPool.clear();
+    disposeObject(this.scene);
+    for (let index = 0; index < this.loadedCitySources.length; index += 1) disposeObject(this.loadedCitySources[index]);
+    this.loadedCitySources.length = 0;
+    const detachedTextures = [
+      this.roadTexture,
+      this.platformTexture,
+      this.particleTexture,
+      this.environmentTexture,
+      ...this.worldParticleTextures,
+      ...this.stageTextures,
+      ...this.arrivalStageTextures
+    ];
+    const disposedTextures = new Set();
+    for (let index = 0; index < detachedTextures.length; index += 1) {
+      const texture = detachedTextures[index];
+      if (!texture?.isTexture || disposedTextures.has(texture) || SHARED_TEXTURES.has(texture)) continue;
+      disposedTextures.add(texture);
+      texture.dispose();
+    }
+    this.renderer.renderLists?.dispose();
     this.renderer.dispose();
-    this.roadTexture.dispose();
-    this.platformTexture.dispose();
-    this.particleTexture.dispose();
-    this.environmentTexture.dispose();
-    this.stageTextures.forEach((texture) => texture?.dispose());
-    this.arrivalStageTextures.forEach((texture) => texture?.dispose());
+    this.scene.clear();
   }
 }
 
 const api = Object.freeze({
-  version: "three-0.185.1-rendezvous-runner-v2",
-  stageAssets: Object.freeze(STAGE_CONFIGS.map((stage) => stage.asset)),
+  version: "three-0.185.1-rendezvous-runner-v3",
+  stageAssets: Object.freeze(STAGE_CONFIGS.map((_, index) => resolveStageVisualConfig(index).asset)),
+  worldProfiles: Object.freeze(STAGE_CONFIGS.map((stage) => Object.freeze({
+    scene: stage.world.scene,
+    roadGeometry: stage.world.road.geometry,
+    obstacleStyle: stage.world.obstacles.style,
+    particleStyle: stage.world.particles.kind,
+    horizonStyle: stage.world.horizon.kind
+  }))),
   create(canvas) {
     return new CinematicRunnerRenderer(canvas);
   }

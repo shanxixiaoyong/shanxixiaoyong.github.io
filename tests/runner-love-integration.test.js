@@ -11,15 +11,17 @@ const rules = fs.readFileSync(path.join(root, "assets/runner-love-rules.js"), "u
 const visuals = fs.readFileSync(path.join(root, "assets/runner-love-visuals.js"), "utf8");
 
 test("integrates rules, fixed-step motion, authored content, and the independent renderer", () => {
-  for (const token of ["window.RunnerLoveRules", "window.RunnerLoveEngine", "window.RunnerLoveContent", "engineApi.createEngine", "rules.recordMoment", "rules.advanceTime", "content.selectArrival", "content.getEnding", "window.RunnerLoveVisuals.create(canvas)"]) assert.ok(source.includes(token), token);
+  for (const token of ["window.RunnerLoveRules", "window.RunnerLoveEngine", "window.RunnerLoveContent", "window.RunnerLoveDirector", "engineApi.createEngine", "director.ingest", "rules.commitStoryState", "rules.recordMoment", "rules.advanceTime", "content.selectArrival", "content.getEnding", "window.RunnerLoveVisuals.create(canvas)"]) assert.ok(source.includes(token), token);
 });
 
-test("keeps the runner alone on the route and introduces the other character only at destinations", () => {
-  assert.doesNotMatch(source, /companion-sync|companion-missed|response-missed|paired-response/);
-  assert.doesNotMatch(source, /type:\s*"companion-cue"/);
-  assert.match(visuals, /this\.companion\.visible = arriving/);
-  assert.match(visuals, /this\.companion\.visible = false/);
-  assert.match(source, /mode = "arrival"/);
+test("routes physical actions through one causal director instead of explaining relationships with pickups", () => {
+  assert.match(source, /function recordDirectorFact/);
+  assert.match(source, /type: "obstacle-dodged"/);
+  assert.match(source, /type: "obstacle-hit"/);
+  assert.match(source, /inputSeq:/);
+  assert.match(source, /nodeId:/);
+  assert.match(source, /visualRuntime\?\.applyDirectorCommand/);
+  assert.match(source, /audio\.applyDirectorCommand/);
 });
 
 test("connects swipe and keyboard controls to the classic three-lane action set", () => {
@@ -36,17 +38,21 @@ test("connects swipe and keyboard controls to the classic three-lane action set"
 test("paces each route around three minutes without a hard timer gate", () => {
   assert.equal((rules.match(/expectedSeconds:\s*180/g) || []).length, 7);
   assert.doesNotMatch(rules, /progress >= definition\.target && next\.stage\.elapsed/);
-  assert.match(source, /spawnClock = spawned \? 3\.8 \+ \(patternCursor % 3\) \* 0\.24 : 0\.24/);
-  assert.match(source, /Math\.max\(progressRatio, timeRatio\)/);
+  assert.match(source, /spawnClock = spawned \? 5\.45 \+ \(patternCursor % 3\) \* 0\.22 : 0\.24/);
+  assert.doesNotMatch(source, /Math\.max\(progressRatio, timeRatio\)/);
+  assert.match(source, /director\.planPattern/);
 });
 
-test("rotates solvable obstacle patterns and offers one physical item on every lane", () => {
+test("rotates solvable obstacle patterns and offers sparse intentional two-lane story choices", () => {
   const patternIds = [...source.matchAll(/Object\.freeze\(\{ id: "([^"]+)", choiceZ:/g)].map((match) => match[1]);
   assert.ok(patternIds.length >= 10, patternIds.join(", "));
   assert.equal(new Set(patternIds).size, patternIds.length);
   for (const subtype of ["barrier", "signal-gate", "service-cart", "train"]) assert.ok(source.includes(`form: "${subtype}"`) || source.includes(`subtype: "${subtype}"`), subtype);
   for (const movement of ["jump", "slide", "switch"]) assert.ok(source.includes(`avoid: "${movement}"`), movement);
-  assert.match(source, /\[-1, 0, 1\]\.forEach\(\(lane, laneOffset\)/);
+  assert.match(source, /directorPlan\.choiceLanes\.forEach\(\(lane, laneOffset\)/);
+  assert.match(source, /inputSeqAtSpawn/);
+  assert.match(source, /inputSeqAtWindow/);
+  assert.match(source, /rewardNearMiss: requiredAction === "switch"/);
   assert.match(source, /type: "route-choice"/);
   assert.match(source, /choiceGroup/);
 });
@@ -57,6 +63,29 @@ test("lets story rules own stage changes throughout the full long-form run", () 
   assert.match(source, /motion\.seekStage/);
   assert.match(source, /motion\.syncStage/);
   assert.match(source, /if \(arrivalElapsed >= arrivalDuration\) finishArrival\(\)/);
+  assert.match(source, /beginStageIntro\("next"\)/);
+  assert.match(source, /mode = "stage-intro"/);
+  assert.match(source, /clearStageWorld\(\)/);
+  assert.match(source, /motion\.clearEntities\?\.\(\{ modules: true \}\)/);
+});
+
+test("authors each chapter as three themed world phases instead of recoloring one route", () => {
+  for (const token of ["雨后校园", "晨雾书店", "霓虹站前", "夜市河岸", "清晨生活", "暴雨高架", "黎明归途"]) assert.ok(source.includes(token), token);
+  assert.match(source, /collectibleKinds/);
+  assert.match(source, /obstacleForms/);
+  assert.match(source, /worldCue/);
+  assert.match(source, /phaseItemIds/);
+  assert.match(source, /stageId: content\.STAGES\[stageIndex\]\.id/);
+  assert.match(source, /director: segment\.director/);
+});
+
+test("surfaces danger, a dedicated failure state, and checkpoint recovery", () => {
+  assert.match(source, /function updateConditionFeedback/);
+  assert.match(source, /mode = "failure"/);
+  assert.match(source, /runState\.failure/);
+  assert.match(source, /data-condition-band/);
+  assert.match(source, /rules\.retryFromCheckpoint/);
+  assert.match(source, /beginStageIntro\("retry"\)/);
 });
 
 test("routes gameplay events into carried props, audiovisual feedback, and arrival scenes", () => {

@@ -42,6 +42,18 @@ test("changes only among three lanes and runs jump and slide timers", () => {
   advance(run, 0.7); assert.equal(run.state.action, "run");
 });
 
+test("numbers accepted inputs and buffers one jump or slide near the current action end", () => {
+  const run = game({ jumpDuration: 0.3, inputBufferDuration: 0.2 });
+  run.step(0.1, "jump");
+  assert.equal(run.state.inputSeq, 1);
+  run.step(0.1, "slide");
+  assert.equal(run.state.bufferedAction, "slide");
+  run.step(0.1);
+  assert.equal(run.state.action, "slide");
+  assert.equal(run.state.inputSeq, 2);
+  assert.deepEqual(run.state.lastInput.action, "slide");
+});
+
 test("eases lane position and requires a jump for elevated collectible arcs", () => {
   const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0, laneChangeDuration: 0.3 });
   run.step(0.1, "left");
@@ -93,6 +105,17 @@ test("applies a bounded temporary rush boost and eases back to cruise speed", ()
   assert.equal(run.state.boostTime, 0);
   assert.equal(run.state.boostSpeed, 0);
   assert.ok(run.state.speed <= 12);
+});
+
+test("applies a temporary semantic pace without changing the deterministic route clock", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
+  run.pace(0.7, 0.4);
+  run.step(0.1);
+  assert.ok(run.state.speed < 10);
+  assert.ok(run.drainEvents().some((event) => event.type === "pace" && event.scale === 0.7));
+  advance(run, 2);
+  assert.ok(Math.abs(run.state.paceScale - 1) < 0.01);
+  assert.ok(run.state.speed > 9.5);
 });
 
 test("accelerates smoothly from time and distance while exposing progress and speed tiers", () => {
@@ -197,6 +220,16 @@ test("powerup state is JSON serializable and deterministic across fixed updates"
   assert.throws(() => engine.activatePowerup(original, "unknown"), RangeError);
 });
 
+test("preserves events emitted between frames until the consumer drains them", () => {
+  const run = engine.createEngine({ duration: 10, fixedStep: 0.05, startSpeed: 0, maxSpeed: 0 });
+  run.activatePowerup("shield", { duration: 2 });
+  run.step(0.05);
+  const events = run.drainEvents();
+  assert.ok(events.some((event) => event.type === "powerup-start"));
+  assert.deepEqual(events.map((event) => event.seq), [...events.map((event) => event.seq)].sort((a, b) => a - b));
+  assert.deepEqual(run.drainEvents(), []);
+});
+
 test("advances perspective z and resolves obstacles and collectibles", () => {
   const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
   const obstacle = run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "slide" });
@@ -213,6 +246,22 @@ test("recycles inactive entities immediately", () => {
   run.step(0.1);
   assert.equal(missed.active, false); assert.equal(collected.collected, true);
   assert.deepEqual(run.state.entities, []);
+});
+
+test("atomically clears route entities, queued input, and stale modules between authored stages", () => {
+  const run = engine.createEngine({ seed: "chapter-reset", manualStages: true });
+  run.spawn({ type: "obstacle", lane: 0, z: 20 });
+  run.input("left");
+  run.state.events.push({ type: "stale" });
+  assert.ok(run.state.entities.length > 0);
+  assert.ok(run.state.modules.length > 0);
+  run.seekStage(1);
+  run.clearEntities({ modules: true });
+  assert.equal(run.state.entities.length, 0);
+  assert.equal(run.state.events.length, 0);
+  assert.equal(run.state.inputQueue.length, 0);
+  assert.equal(run.state.stageIndex, 1);
+  assert.ok(run.state.modules.every((module) => module.stage === run.state.stage));
 });
 
 test("syncs stages with events and seeks stages silently without changing randomness", () => {
@@ -250,6 +299,21 @@ test("selects one physical route item and deactivates its sibling choices", () =
   const events = run.drainEvents();
   assert.ok(events.some((event) => event.type === "route-choice" && event.itemId === "coffee"));
   assert.equal(run.state.entities.some((entity) => entity.choiceGroup === "route-1"), false);
+});
+
+test("opens a fresh readable choice window so earlier avoidance input cannot commit the route", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0, choiceReadDistance: 14 });
+  run.input("left");
+  const choice = run.spawn({ type: "route-choice", lane: 1, z: 15.5, itemId: "coffee", choiceGroup: "window", choiceId: "window-coffee", data: {} });
+  run.step(0.2);
+  const opened = run.drainEvents().find((event) => event.type === "choice-window");
+  assert.ok(opened);
+  assert.equal(choice.data.inputSeqAtWindow, 1);
+  assert.equal(choice.data.choiceWindowOpenedAt, opened.time);
+  run.input("right");
+  run.input("right");
+  advance(run, 1.35);
+  assert.equal(run.state.routeChoices.window, "window-coffee");
 });
 
 test("reports a missed story item after it passes the player", () => {

@@ -7,6 +7,9 @@
   --mint: #86d3c2;
   --line: rgba(255, 255, 255, 0.22);
   --stage-accent: #efc875;
+  --runner-width: 720px;
+  --runner-height: 1280px;
+  --stage-intro-duration: 3600ms;
   font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -37,6 +40,7 @@ a {
 .runner-shell {
   display: grid;
   min-height: 100dvh;
+  overflow: hidden;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   place-items: center;
   background: #070a0b;
@@ -52,7 +56,10 @@ a {
 .runner-phone {
   position: relative;
   width: 100%;
+  max-width: var(--runner-width);
   height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  max-height: var(--runner-height);
+  aspect-ratio: 9 / 16;
   overflow: hidden;
   isolation: isolate;
   background: #17201e url("runner-scenes/01-encounter.jpg") center / cover no-repeat;
@@ -607,12 +614,286 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.runner-danger {
+  --danger-color: #ffb36f;
+  position: absolute;
+  z-index: 7;
+  top: max(176px, calc(env(safe-area-inset-top) + 164px));
+  left: 28px;
+  display: grid;
+  width: min(390px, calc(100% - 56px));
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px 16px 13px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 18px;
+  align-items: center;
+  overflow: hidden;
+  border-left: 3px solid var(--danger-color);
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(90deg, rgba(18, 12, 11, 0.88), rgba(18, 12, 11, 0.6) 76%, rgba(18, 12, 11, 0.12));
+  color: #fff9ef;
+  box-shadow: 0 13px 34px rgba(0, 0, 0, 0.28);
+  text-shadow: 0 2px 9px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px) saturate(1.08);
+  pointer-events: none;
+  animation: danger-in 260ms ease-out both;
+}
+
+.runner-danger[hidden] {
+  display: none;
+}
+
+.runner-danger[data-level="critical"] {
+  --danger-color: #ff776d;
+}
+
+.danger-status {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  align-items: center;
+  color: var(--danger-color);
+  font-size: 13px;
+}
+
+.danger-status i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger-color) 18%, transparent), 0 0 13px currentColor;
+  animation: danger-signal 900ms ease-in-out 3;
+}
+
+.danger-status b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runner-danger > strong {
+  min-width: 2ch;
+  color: var(--danger-color);
+  font-family: Georgia, serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.runner-danger p {
+  min-width: 0;
+  margin: 0;
+  grid-column: 1 / -1;
+  color: rgba(255, 247, 235, 0.76);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.stage-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  max-width: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(3, 7, 9, 0.08) 0%, transparent 38%, rgba(3, 7, 9, 0.16) 58%, rgba(3, 7, 9, 0.86) 100%);
+  color: #fffaf2;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.92);
+  pointer-events: none;
+}
+
+.stage-intro[hidden] {
+  display: none;
+}
+
+.stage-intro:not([hidden]) {
+  animation: stage-intro-life var(--stage-intro-duration) ease both;
+}
+
+.stage-intro-meta {
+  position: absolute;
+  top: max(182px, calc(env(safe-area-inset-top) + 166px));
+  right: 48px;
+  left: 48px;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 20px;
+  color: rgba(255, 250, 242, 0.74);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stage-intro:not([hidden]) .stage-intro-meta {
+  animation: stage-intro-meta-in 520ms 80ms ease-out both;
+}
+
+.stage-intro-meta > span:first-child {
+  flex: 0 0 auto;
+  color: var(--stage-accent);
+  font-size: 13px;
+}
+
+.stage-intro-meta > span:last-child {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.stage-intro-meta time {
+  flex: 0 0 auto;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-intro-meta i {
+  width: 3px;
+  height: 3px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--stage-accent);
+  box-shadow: 0 0 8px var(--stage-accent);
+}
+
+.stage-intro-meta b {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-intro-skip {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0 0 2px 2px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(5, 10, 12, 0.4);
+  color: #fffdf7;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.2);
+  font-size: 25px;
+  line-height: 1;
+  text-shadow: 0 2px 8px #000;
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stage-intro-story {
+  position: absolute;
+  right: 56px;
+  bottom: max(104px, calc(env(safe-area-inset-bottom) + 90px));
+  left: 56px;
+  width: min(568px, calc(100% - 112px));
+  min-width: 0;
+}
+
+.stage-intro:not([hidden]) .stage-intro-story {
+  animation: stage-intro-story-in 660ms 150ms cubic-bezier(0.18, 0.82, 0.28, 1) both;
+}
+
+.stage-intro-story > p:first-child {
+  margin: 0 0 8px;
+  color: var(--stage-accent);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.stage-intro-story h2 {
+  margin: 0;
+  color: #fffdf7;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 58px;
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.stage-intro-motive {
+  display: grid;
+  min-width: 0;
+  margin: 21px 0 0;
+  padding: 12px 0;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  align-items: baseline;
+  border-block: 1px solid rgba(255, 255, 255, 0.17);
+}
+
+.stage-intro-motive span {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.stage-intro-motive strong {
+  min-width: 0;
+  color: #fffaf1;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.stage-intro-shot {
+  max-width: 34em;
+  margin: 14px 0 0;
+  color: rgba(255, 248, 236, 0.76);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.stage-intro-progress {
+  position: absolute;
+  right: 56px;
+  bottom: max(52px, calc(env(safe-area-inset-bottom) + 38px));
+  left: 56px;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.stage-intro-progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--stage-accent), rgba(255, 255, 255, 0.86));
+  box-shadow: 0 0 10px var(--stage-accent);
+}
+
+.stage-intro:not([hidden]) .stage-intro-progress i {
+  animation: stage-intro-progress var(--stage-intro-duration) linear both;
+}
+
 .runner-shell[data-state="arrival"] .runner-hud,
 .runner-shell[data-state="arrival"] .runner-topbar,
 .runner-shell[data-state="arrival"] .gesture-cue,
 .runner-shell[data-state="arrival"] .route-message,
 .runner-shell[data-state="result"] .runner-hud,
-.runner-shell[data-state="result"] .gesture-cue {
+.runner-shell[data-state="result"] .gesture-cue,
+.runner-shell[data-state="stage-intro"] .runner-hud,
+.runner-shell[data-state="stage-intro"] .runner-topbar,
+.runner-shell[data-state="stage-intro"] .gesture-cue,
+.runner-shell[data-state="stage-intro"] .route-message,
+.runner-shell[data-state="failure"] .runner-hud,
+.runner-shell[data-state="failure"] .runner-topbar,
+.runner-shell[data-state="failure"] .gesture-cue,
+.runner-shell[data-state="failure"] .route-message {
   opacity: 0;
   transition: opacity 360ms ease;
 }
@@ -659,6 +940,27 @@ a {
   color: rgba(255, 250, 240, 0.82);
   font-size: 12px;
   line-height: 1.65;
+}
+
+.arrival-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 11px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--stage-accent) 54%, transparent);
+  border-radius: 999px;
+  background: rgba(5, 9, 11, 0.54);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--stage-accent) 24%, transparent);
+  animation: arrival-action-pulse 1.15s ease-in-out infinite alternate;
+}
+
+.arrival-action[hidden] {
+  display: none;
 }
 
 .arrival-caption i {
@@ -833,6 +1135,130 @@ a {
     url("love-scenes/starlight-vow.webp") center / cover no-repeat;
 }
 
+.runner-failure {
+  z-index: 11;
+  padding:
+    max(430px, 34%)
+    max(56px, env(safe-area-inset-right))
+    max(56px, calc(env(safe-area-inset-bottom) + 42px))
+    max(56px, env(safe-area-inset-left));
+  align-items: center;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, rgba(5, 8, 9, 0.04) 0%, rgba(5, 8, 9, 0.12) 38%, rgba(5, 8, 9, 0.76) 62%, rgba(5, 8, 9, 0.97) 100%);
+}
+
+.runner-failure > * {
+  width: 100%;
+  max-width: 608px;
+}
+
+.runner-failure .eyebrow {
+  margin-bottom: 10px;
+  color: #ffaf73;
+  font-size: 11px;
+}
+
+.runner-failure h2 {
+  font-size: 44px;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.runner-failure p.failure-copy {
+  max-width: 608px;
+  margin: 14px 0 24px;
+  color: rgba(255, 249, 239, 0.8);
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.failure-checkpoint {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 22px;
+  padding: 16px 0 15px;
+  border-block: 1px solid rgba(255, 255, 255, 0.19);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--stage-accent) 10%, rgba(5, 9, 11, 0.56)), transparent 88%);
+}
+
+.failure-checkpoint[hidden] {
+  display: none;
+}
+
+.failure-checkpoint-heading {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.failure-checkpoint-heading strong {
+  flex: 0 0 auto;
+  color: var(--stage-accent);
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.failure-checkpoint h3 {
+  margin: 7px 0 11px;
+  color: #fffdf7;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 23px;
+  font-weight: 500;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.failure-checkpoint-track {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.failure-checkpoint-track i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0.5);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--stage-accent), #fff2d0);
+  box-shadow: 0 0 9px var(--stage-accent);
+  transition: transform 260ms ease;
+}
+
+.runner-failure .failure-checkpoint p {
+  margin: 9px 0 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.failure-actions {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr);
+  gap: 12px;
+}
+
+.failure-actions .primary-button,
+.failure-actions .quiet-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
+  margin: 0;
+  padding: 0 18px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
 .grade {
   color: var(--gold);
   font-family: Georgia, serif;
@@ -882,6 +1308,37 @@ a {
   clip: rect(0, 0, 0, 0);
 }
 
+@keyframes stage-intro-life {
+  0% { visibility: visible; opacity: 0; }
+  9%, 78% { visibility: visible; opacity: 1; }
+  100% { visibility: hidden; opacity: 0; }
+}
+
+@keyframes stage-intro-meta-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stage-intro-story-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stage-intro-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes danger-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes danger-signal {
+  0%, 100% { opacity: 0.65; transform: scale(0.86); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
 @keyframes arrival-caption-in {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -890,6 +1347,11 @@ a {
 @keyframes arrival-progress {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+
+@keyframes arrival-action-pulse {
+  from { transform: translateY(1px); opacity: 0.72; }
+  to { transform: translateY(-1px); opacity: 1; }
 }
 
 @keyframes route-message-in {
@@ -939,5 +1401,22 @@ a {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .stage-intro:not([hidden]),
+  .stage-intro:not([hidden]) .stage-intro-meta,
+  .stage-intro:not([hidden]) .stage-intro-story,
+  .stage-intro:not([hidden]) .stage-intro-progress i,
+  .danger-status i {
+    animation: none !important;
+  }
+
+  .stage-intro:not([hidden]) {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .stage-intro:not([hidden]) .stage-intro-progress i {
+    transform: scaleX(1);
   }
 }

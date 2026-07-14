@@ -94,7 +94,14 @@ function bootRuntime(options = {}) {
   const document = {
     hidden: false,
     querySelector,
-    createElement: (tag) => new FakeNode(tag),
+    createElement: (tag) => {
+      const node = new FakeNode(tag);
+      if (String(tag).toLowerCase() === "canvas") {
+        const offscreenContext = createDrawingContext(options.offscreenDrawCalls);
+        node.getContext = () => offscreenContext;
+      }
+      return node;
+    },
     createDocumentFragment: () => new FakeNode("fragment"),
     addEventListener() {}
   };
@@ -112,21 +119,39 @@ function bootRuntime(options = {}) {
     addEventListener() {}
   };
   if (options.BilliardsBallRenderer) window.BilliardsBallRenderer = options.BilliardsBallRenderer;
+  let animationFrameCallback = null;
+  let animationFrameId = 0;
   const sandbox = {
     window,
     document,
     localStorage,
     console,
     performance,
-    requestAnimationFrame: () => 1,
-    cancelAnimationFrame() {},
+    requestAnimationFrame(callback) {
+      animationFrameCallback = callback;
+      animationFrameId += 1;
+      return animationFrameId;
+    },
+    cancelAnimationFrame() {
+      animationFrameCallback = null;
+    },
     setTimeout: () => 1,
     clearTimeout() {}
   };
   vm.runInNewContext(source, sandbox, { filename: "billiards-love-game.js" });
-  return options.withInputHarness
-    ? { debug: window.__heartbeatBilliardsDebug, canvas }
-    : window.__heartbeatBilliardsDebug;
+  const debug = window.__heartbeatBilliardsDebug;
+  if (!options.withInputHarness && !options.withFrameHarness) return debug;
+  return {
+    debug,
+    canvas,
+    runAnimationFrame(timestamp) {
+      const callback = animationFrameCallback;
+      assert.equal(typeof callback, "function", "an animation frame must be scheduled");
+      animationFrameCallback = null;
+      callback(timestamp);
+      return debug.snapshot();
+    }
+  };
 }
 
 function pocketApproach(pocket, inwardDistance = 14, speed = 8) {
@@ -776,6 +801,50 @@ test("animates a cue scratch before removing and respotting the white ball", () 
   assert.ok(snapshot.cue.y > snapshot.world.height / 2);
 });
 
+test("reuses static, date-map, cushion-light, and composed table frames by revision", () => {
+  const debug = bootRuntime();
+  const first = debug.renderFrame(1000).performance;
+  assert.equal(first.tableCacheRebuilds, 1);
+  assert.equal(first.dateMapRebuilds, 1);
+  assert.equal(first.cushionLightRebuilds, 1);
+  assert.equal(first.baseCompositeRebuilds, 1);
+
+  const second = debug.renderFrame(1008).performance;
+  assert.equal(second.tableCacheRebuilds, first.tableCacheRebuilds);
+  assert.equal(second.dateMapRebuilds, first.dateMapRebuilds);
+  assert.equal(second.cushionLightRebuilds, first.cushionLightRebuilds);
+  assert.equal(second.baseCompositeRebuilds, first.baseCompositeRebuilds);
+  assert.ok(second.tableCacheReuses > first.tableCacheReuses);
+  assert.ok(second.dateMapReuses > first.dateMapReuses);
+  assert.ok(second.cushionLightReuses > first.cushionLightReuses);
+  assert.ok(second.baseCompositeReuses > first.baseCompositeReuses);
+  assert.deepEqual({ ...second.revisions }, { ...first.revisions });
+});
+
+test("keeps 120Hz fixed physics moving while skipping duplicate high-refresh canvas frames", () => {
+  const { debug, runAnimationFrame } = bootRuntime({ withFrameHarness: true });
+  const canvasStep = 1000 / 60;
+  const firstTimestamp = (Math.floor((performance.now() + 100) / canvasStep) + 1) * canvasStep + 1;
+  runAnimationFrame(firstTimestamp);
+  const before = debug.snapshot().performance;
+  const after = runAnimationFrame(firstTimestamp + 10).performance;
+
+  assert.equal(after.canvasRefreshHz, 60);
+  assert.equal(after.animationFrames, before.animationFrames + 1);
+  assert.ok(after.physicsSteps > before.physicsSteps, "the fixed-step simulation must continue inside a skipped canvas tick");
+  assert.equal(after.canvasFrames, before.canvasFrames);
+  assert.equal(after.canvasFrameSkips, before.canvasFrameSkips + 1);
+  assert.equal(debug.snapshot().physics.fixedHz, 120);
+});
+
+test("reports idle water-step skips after the residual field becomes invisible", () => {
+  const debug = bootRuntime();
+  const before = debug.snapshot().performance;
+  const after = debug.step(700).performance;
+  assert.equal(after.waterSimulationSteps, before.waterSimulationSteps, "the non-renderable test field must never be sampled");
+  assert.ok(after.waterSimulationIdleSkips > before.waterSimulationIdleSkips);
+});
+
 test("uses the optional ball renderer for resize, sync, and render while skipping 2D balls", () => {
   const calls = [];
   const drawCalls = [];
@@ -799,11 +868,17 @@ test("uses the optional ball renderer for resize, sync, and render while skippin
     { width: 720, height: 1440, radius: 14.85 }
   );
 
-  debug.renderFrame(1234);
+  const firstFrame = debug.renderFrame(1234);
   assert.equal(calls.filter((call) => call.method === "sync").length, 1);
   assert.equal(calls.filter((call) => call.method === "render").length, 1);
   assert.equal(calls.find((call) => call.method === "sync").balls.length, 16);
   assert.equal(drawCalls.some((call) => call.method === "fillText"), false, "2D ball labels should be skipped");
+
+  const reusedFrame = debug.renderFrame(1240);
+  assert.equal(calls.filter((call) => call.method === "sync").length, 1, "unchanged balls must not be synced twice");
+  assert.equal(calls.filter((call) => call.method === "render").length, 1, "unchanged balls must retain their WebGL frame");
+  assert.equal(reusedFrame.performance.ballRendererSyncSkips, firstFrame.performance.ballRendererSyncSkips + 1);
+  assert.equal(reusedFrame.performance.revisions.balls, reusedFrame.performance.revisions.ballsSynced);
 });
 
 test("falls back to 2D balls in the same frame when the optional renderer fails", () => {
