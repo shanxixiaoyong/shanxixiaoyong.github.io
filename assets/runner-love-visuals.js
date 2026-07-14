@@ -1,5 +1,6 @@
 import * as THREE from "./vendor/three-0.185.1.module.min.js";
 import { GLTFLoader } from "./vendor/three-addons/GLTFLoader.js";
+import { mergeGeometries } from "./vendor/three-addons/BufferGeometryUtils.js";
 
 const STAGE_CONFIGS = Object.freeze([
   {
@@ -231,17 +232,17 @@ const COLLISION_Z = 0.85;
 const FOG_SCALE = 0.52;
 const MAX_RENDER_PIXELS = 1_850_000;
 const CITY_BUILDING_COUNT = 54;
-const BACKDROP_OPACITY = 0.13;
+const BACKDROP_OPACITY = 0.34;
 const STAGE_COLLECTIBLE_COLORS = Object.freeze([0xffc34d, 0x68ead3, 0x67e8ff, 0xff6688, 0xffb74f, 0xff6a70, 0xffd85a]);
 const STAGE_TOKEN_COLORS = Object.freeze([0xff5f72, 0xf4fff9, 0xffe1a0, 0xfff4e6, 0xfff0a6, 0xffedf0, 0xffffff]);
 const STAGE_TRACKSIDE_PROPS = Object.freeze([
-  Object.freeze(["tree", "lamp", "bench", "signal"]),
-  Object.freeze(["shelter", "railing", "lamp", "bench"]),
+  Object.freeze(["campus", "tree", "lamp", "shelter"]),
+  Object.freeze(["bookstore", "railing", "bench", "shelter"]),
   Object.freeze(["neon-sign", "signal", "lamp", "railing"]),
   Object.freeze(["shelter", "lamp", "neon-sign", "bench"]),
-  Object.freeze(["tree", "bench", "lamp", "railing"]),
-  Object.freeze(["warning", "signal", "railing", "lamp"]),
-  Object.freeze(["lamp", "tree", "railing", "shelter"])
+  Object.freeze(["home", "market", "tree", "bench"]),
+  Object.freeze(["maintenance", "warning", "signal", "railing"]),
+  Object.freeze(["lamp", "shelter", "railing", "home"])
 ]);
 const DISTRICT_LABELS = Object.freeze({
   "campus-line": "CAMPUS LINE",
@@ -335,7 +336,7 @@ const INTRO_CAMERA_CUES = Object.freeze({
 const QUALITY_PROFILES = Object.freeze([
   Object.freeze({ key: "cinematic", targetDrawCalls: 106, decorStride: 1, worldLayers: 3, premiumCity: true, shadows: true, particleScale: 1, entityRange: 58, entityMeshBudget: 12, roadDetail: 2 }),
   Object.freeze({ key: "balanced", targetDrawCalls: 90, decorStride: 2, worldLayers: 2, premiumCity: true, shadows: true, particleScale: 0.82, entityRange: 42, entityMeshBudget: 7, roadDetail: 1 }),
-  Object.freeze({ key: "performance", targetDrawCalls: 76, decorStride: 0, worldLayers: 1, premiumCity: false, shadows: false, particleScale: 0.56, entityRange: 28, entityMeshBudget: 4, roadDetail: 0 })
+  Object.freeze({ key: "performance", targetDrawCalls: 92, decorStride: 3, worldLayers: 2, premiumCity: true, shadows: false, particleScale: 0.56, entityRange: 32, entityMeshBudget: 7, roadDetail: 1 })
 ]);
 
 // Each act owns a spatial grammar. The collision lanes stay dependable while the
@@ -803,6 +804,7 @@ function canvasTexture(width, height, painter) {
 let toonGradientTexture = null;
 const roundedGeometryCache = new Map();
 let heartGeometry = null;
+let foliageClusterGeometry = null;
 const stageTokenGeometryCache = new Map();
 const phaseTokenGeometryCache = new Map();
 const collectibleVisualStyleCache = new Map();
@@ -875,6 +877,29 @@ function createRoadPatchGeometry() {
   geometry.rotateX(-Math.PI / 2);
   SHARED_GEOMETRIES.add(geometry);
   return geometry;
+}
+
+function createFoliageClusterGeometry() {
+  if (foliageClusterGeometry) return foliageClusterGeometry;
+  const lobes = [
+    [-0.2, 0.02, 0.02, 0.74],
+    [0.22, 0.05, -0.05, 0.68],
+    [0, 0.25, 0.02, 0.82],
+    [0.02, -0.08, 0.16, 0.62]
+  ].map(([x, y, z, scale]) => {
+    const lobe = new THREE.IcosahedronGeometry(0.47, 1);
+    lobe.applyMatrix4(new THREE.Matrix4().compose(
+      new THREE.Vector3(x, y, z),
+      new THREE.Quaternion(),
+      new THREE.Vector3(scale, scale * 0.92, scale)
+    ));
+    return lobe;
+  });
+  foliageClusterGeometry = mergeGeometries(lobes, false);
+  lobes.forEach((lobe) => lobe.dispose());
+  foliageClusterGeometry.computeVertexNormals();
+  SHARED_GEOMETRIES.add(foliageClusterGeometry);
+  return foliageClusterGeometry;
 }
 
 function createHeartGeometry() {
@@ -1717,8 +1742,11 @@ function createPremiumDistrict(config, stageIndex, cityAssets) {
     if (!source) return;
     const count = layout.counts[sourceSlot];
     const sourceMaterial = source.material.clone();
-    if (sourceIndex === 8) sourceMaterial.color.setHex(0xffffff);
-    else sourceMaterial.color.lerp(tint, 0.18);
+    if (sourceIndex === 8) sourceMaterial.color.setHex(0x42664f);
+    else sourceMaterial.color
+      .setHex(config.theme.shadow)
+      .lerp(new THREE.Color(config.theme.landmark), 0.48)
+      .lerp(tint, 0.08);
     sourceMaterial.envMapIntensity = 0.58;
     sourceMaterial.emissive = new THREE.Color(config.accent).multiplyScalar(stageIndex === 2 || stageIndex === 5 ? 0.11 : 0.035);
     sourceMaterial.emissiveIntensity = stageIndex === 2 ? 0.62 : stageIndex === 5 ? 0.32 : 0.18;
@@ -1755,10 +1783,10 @@ function createPremiumDistrict(config, stageIndex, cityAssets) {
       instances.setMatrixAt(index, transform);
       clearancePlacements.push({ side, x: position.x, z: position.z, halfWidth, halfDepth });
       const instanceTint = isTree
-        ? new THREE.Color(0x74af62).lerp(new THREE.Color(config.accent), 0.08 + (index % 3) * 0.025)
-        : new THREE.Color(0xffffff)
-          .lerp(tint, 0.16)
-          .lerp(new THREE.Color(index % 3 === 0 ? 0xffffff : 0xc2cad0), index % 3 === 0 ? 0.06 : 0.04);
+        ? new THREE.Color(0x315e4c).lerp(new THREE.Color(config.accent), 0.06 + (index % 3) * 0.018)
+        : new THREE.Color(config.theme.shadow)
+          .lerp(new THREE.Color(config.theme.landmark), 0.38 + (index % 3) * 0.055)
+          .lerp(tint, 0.08);
       instances.setColorAt(index, instanceTint);
       if (!isTree && !isTank) {
         const windowRows = Math.max(2, Math.floor(desiredHeight / 2.2));
@@ -1872,32 +1900,124 @@ function updateRunnerFootTrail(points, player, time, speed, delta) {
   points.material.opacity = damp(points.material.opacity, clamp((speed - 9) / 18, 0.22, 0.62), 5, delta);
 }
 
-function makeRoadTexture() {
+function makeRoadTexture(stageIndex = 0) {
+  const palettes = [
+    ["#304343", "#536965", "#9bb9ae"],
+    ["#5c655f", "#7b857c", "#c2cab8"],
+    ["#151b32", "#293557", "#58dce5"],
+    ["#3f3342", "#665060", "#d98867"],
+    ["#46544b", "#667263", "#b7a77e"],
+    ["#273442", "#425366", "#8bb8c5"],
+    ["#3d4961", "#68738a", "#d9b478"]
+  ];
+  const [base, mid, highlight] = palettes[stageIndex] || palettes[0];
   const texture = canvasTexture(512, 512, (context, width, height) => {
-    context.fillStyle = "#343a3a";
+    const ground = context.createLinearGradient(0, 0, width, 0);
+    ground.addColorStop(0, base);
+    ground.addColorStop(0.5, mid);
+    ground.addColorStop(1, base);
+    context.fillStyle = ground;
     context.fillRect(0, 0, width, height);
-    let seed = 971;
-    for (let index = 0; index < 7200; index += 1) {
+    let seed = 971 + stageIndex * 547;
+    for (let index = 0; index < 5600; index += 1) {
       seed = (seed * 48271) % 2147483647;
       const x = seed % width;
       seed = (seed * 48271) % 2147483647;
       const y = seed % height;
-      const shade = 44 + (seed % 58);
-      const warm = seed % 7 === 0 ? 10 : 0;
-      context.fillStyle = `rgba(${shade + warm},${shade + 4},${shade + 2},${0.22 + (seed % 31) / 100})`;
-      const stone = 1 + (seed % 4);
-      context.fillRect(x, y, stone, Math.max(1, stone - 1));
+      const light = 118 + seed % 90;
+      context.fillStyle = `rgba(${light},${light + 4},${light + 2},${0.035 + seed % 17 / 400})`;
+      context.fillRect(x, y, 1 + seed % 3, 1 + seed % 2);
     }
-    const sheen = context.createLinearGradient(0, 0, width, 0);
-    sheen.addColorStop(0, "rgba(255,255,255,.02)");
-    sheen.addColorStop(0.5, "rgba(198,226,221,.09)");
-    sheen.addColorStop(1, "rgba(0,0,0,.08)");
-    context.fillStyle = sheen;
+    if (stageIndex === 0) {
+      for (let row = 0; row < 12; row += 1) {
+        const tileHeight = 44;
+        const offset = row % 2 ? 30 : 0;
+        for (let x = -offset; x < width; x += 60) {
+          context.strokeStyle = "rgba(205,225,214,.13)";
+          context.lineWidth = 2;
+          context.strokeRect(x + 2, row * tileHeight + 2, 56, tileHeight - 4);
+        }
+      }
+      const wet = context.createLinearGradient(170, 0, 350, 0);
+      wet.addColorStop(0, "rgba(255,255,255,0)");
+      wet.addColorStop(0.5, "rgba(193,231,224,.18)");
+      wet.addColorStop(1, "rgba(255,255,255,0)");
+      context.fillStyle = wet;
+      context.fillRect(0, 0, width, height);
+    } else if (stageIndex === 1) {
+      for (let y = 0; y < height; y += 28) {
+        context.fillStyle = y % 56 ? "rgba(255,255,255,.08)" : "rgba(22,31,29,.18)";
+        context.fillRect(0, y, width, 2);
+        for (let x = (y / 28 % 2) * 76; x < width; x += 152) {
+          context.fillStyle = "rgba(24,34,31,.14)";
+          context.fillRect(x, y, 2, 28);
+        }
+      }
+    } else if (stageIndex === 2) {
+      context.shadowBlur = 14;
+      [112, 256, 400].forEach((x, index) => {
+        context.strokeStyle = index === 1 ? "rgba(255,102,209,.52)" : "rgba(72,231,247,.48)";
+        context.shadowColor = context.strokeStyle;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x + (index - 1) * 18, height);
+        context.stroke();
+      });
+      context.shadowBlur = 0;
+      for (let y = 0; y < height; y += 64) {
+        context.fillStyle = "rgba(94,208,232,.14)";
+        context.fillRect(0, y, width, 2);
+      }
+    } else if (stageIndex === 3) {
+      for (let row = 0; row < 11; row += 1) {
+        for (let column = -1; column < 8; column += 1) {
+          const x = column * 72 + (row % 2) * 36;
+          const y = row * 50;
+          context.strokeStyle = "rgba(246,196,152,.14)";
+          context.lineWidth = 2;
+          context.beginPath();
+          context.ellipse(x, y, 38, 25, 0, 0, Math.PI * 2);
+          context.stroke();
+        }
+      }
+    } else if (stageIndex === 4) {
+      for (let index = 0; index < 18; index += 1) {
+        const x = (index * 97) % width;
+        const y = (index * 157) % height;
+        context.fillStyle = index % 2 ? "rgba(218,194,146,.1)" : "rgba(26,42,34,.16)";
+        context.beginPath();
+        context.roundRect(x - 44, y - 18, 88 + index % 3 * 16, 36 + index % 4 * 8, 12);
+        context.fill();
+      }
+    } else if (stageIndex === 5) {
+      for (let y = 0; y < height; y += 58) {
+        context.strokeStyle = "rgba(172,203,214,.22)";
+        context.lineWidth = 3;
+        context.strokeRect(4, y + 3, width - 8, 52);
+        for (let x = 22; x < width; x += 52) {
+          context.fillStyle = "rgba(210,228,232,.34)";
+          context.beginPath();
+          context.arc(x, y + 12, 2.2, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+    } else {
+      for (let y = 0; y < height; y += 74) {
+        context.fillStyle = "rgba(226,232,239,.13)";
+        context.fillRect(0, y, width, 3);
+      }
+      [86, 426].forEach((x) => {
+        context.fillStyle = "rgba(239,190,94,.42)";
+        context.fillRect(x, 0, 7, height);
+      });
+    }
+    const centerSheen = context.createLinearGradient(0, 0, width, 0);
+    centerSheen.addColorStop(0, "rgba(0,0,0,.16)");
+    centerSheen.addColorStop(0.5, `${highlight}24`);
+    centerSheen.addColorStop(1, "rgba(0,0,0,.16)");
+    context.fillStyle = centerSheen;
     context.fillRect(0, 0, width, height);
-    for (let y = 0; y < height; y += 64) {
-      context.fillStyle = "rgba(7,10,11,.13)";
-      context.fillRect(0, y, width, 2);
-    }
   });
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -2448,6 +2568,42 @@ function createCafe(accent) {
   return group;
 }
 
+function createBookstoreFront(accent) {
+  const group = createBuilding(accent, 1, true);
+  group.scale.set(0.76, 0.76, 0.76);
+  const timber = material(0x543b2f, { roughness: 0.82, metalness: 0.02 });
+  const window = mesh(roundedPanelGeometry(2.72, 1.72, 0.08, 0.08), material(0x294e56, {
+    emissive: accent,
+    emissiveIntensity: 0.18,
+    roughness: 0.12,
+    metalness: 0.2
+  }), true);
+  window.position.set(0, 1.54, 1.63);
+  const shelves = createInstancedObstacleParts(new THREE.BoxGeometry(2.28, 0.07, 0.12), timber, [
+    { y: 1.06, z: 1.71 }, { y: 1.52, z: 1.71 }, { y: 1.98, z: 1.71 }
+  ]);
+  const spines = createInstancedObstacleParts(
+    roundedPanelGeometry(0.12, 0.32, 0.07, 0.018),
+    material(0xd6b77f, { roughness: 0.86 }),
+    Array.from({ length: 12 }, (_, index) => ({
+      x: -1.02 + index % 6 * 0.41,
+      y: index < 6 ? 1.28 : 1.74,
+      z: 1.78,
+      sy: 0.78 + index % 3 * 0.11,
+      rz: (index % 3 - 1) * 0.04
+    }))
+  );
+  const awning = mesh(roundedPanelGeometry(3.18, 0.18, 0.94, 0.07), material(0x745b43, { roughness: 0.72 }), true);
+  awning.position.set(0, 2.62, 1.92);
+  awning.rotation.x = -0.14;
+  const signTexture = makeSignTexture("BOOKS", accent);
+  const sign = mesh(new THREE.PlaneGeometry(1.84, 0.54), new THREE.MeshBasicMaterial({ map: signTexture, transparent: true }));
+  sign.position.set(0, 3.25, 1.61);
+  sign.userData.disposeMaterial = true;
+  group.add(window, shelves, spines, awning, sign);
+  return group;
+}
+
 function createShelter(accent) {
   const group = new THREE.Group();
   const frame = material(0x3c474d, { roughness: 0.36, metalness: 0.62 });
@@ -2740,6 +2896,8 @@ function createProp(type, accent, seed) {
   if (type === "building") return createBuilding(accent, seed);
   if (type === "home") return createBuilding(accent, seed, true);
   if (type === "cafe") return createCafe(accent);
+  if (type === "bookstore") return createBookstoreFront(accent);
+  if (type === "cinema") return createCinemaFront(accent);
   if (type === "shelter") return createShelter(accent);
   if (type === "campus") return createCampus(accent);
   if (type === "market") return createMarket(accent);
@@ -3831,11 +3989,12 @@ function createTrain(accent, variant = 0) {
   return group;
 }
 
-function createJumpBarrier(accent) {
+function createJumpBarrier(accent, stageIndex = 0) {
   const group = new THREE.Group();
-  const steel = material(0x3b4245, { roughness: 0.4, metalness: 0.58 });
+  const palette = STAGE_OBSTACLE_PALETTES[stageIndex] || STAGE_OBSTACLE_PALETTES[0];
+  const steel = material(palette.metal, { roughness: 0.4, metalness: 0.58 });
   const stripeTexture = makeWarningStripeTexture(accent);
-  const board = mesh(new THREE.BoxGeometry(2.05, 0.72, 0.2), material(0x31383d, { roughness: 0.5, metalness: 0.36 }), true);
+  const board = mesh(roundedPanelGeometry(2.05, 0.72, 0.2, 0.1), texturedObstacleMaterial(stageIndex, palette.primary, { roughness: 0.52, metalness: stageIndex === 2 || stageIndex === 5 ? 0.42 : 0.16 }), true);
   board.position.y = 0.72;
   const face = mesh(new THREE.PlaneGeometry(1.8, 0.5), new THREE.MeshBasicMaterial({ map: stripeTexture }));
   face.position.set(0, 0.72, 0.105);
@@ -3856,9 +4015,10 @@ function createJumpBarrier(accent) {
   return group;
 }
 
-function createSignalGate(accent) {
+function createSignalGate(accent, stageIndex = 0) {
   const group = new THREE.Group();
-  const steel = material(0x2d363c, { roughness: 0.36, metalness: 0.72 });
+  const palette = STAGE_OBSTACLE_PALETTES[stageIndex] || STAGE_OBSTACLE_PALETTES[0];
+  const steel = material(palette.metal, { roughness: 0.36, metalness: 0.72 });
   [-1.02, 1.02].forEach((x) => {
     const post = mesh(new THREE.BoxGeometry(0.12, 2.45, 0.16), steel, true);
     post.position.set(x, 1.22, 0);
@@ -3867,7 +4027,7 @@ function createSignalGate(accent) {
     group.add(post, foot);
   });
   const warningTexture = makeWarningStripeTexture(accent);
-  const beam = mesh(new THREE.BoxGeometry(2.22, 0.58, 0.22), material(0x252d33, { roughness: 0.44, metalness: 0.52 }), true);
+  const beam = mesh(roundedPanelGeometry(2.22, 0.58, 0.22, 0.1), texturedObstacleMaterial(stageIndex, palette.primary, { roughness: 0.44, metalness: 0.46 }), true);
   beam.position.y = 1.92;
   const face = mesh(new THREE.PlaneGeometry(1.92, 0.42), new THREE.MeshBasicMaterial({ map: warningTexture }));
   face.position.set(0, 1.92, 0.116);
@@ -3886,36 +4046,305 @@ function createSignalGate(accent) {
   return group;
 }
 
-function createServiceCart(accent) {
-  const group = new THREE.Group();
-  const stripeTexture = makeWarningStripeTexture(accent);
-  const body = mesh(roundedPanelGeometry(1.75, 1.18, 2.2, 0.16), material(0xe0b842, { roughness: 0.46, metalness: 0.18 }), true);
-  body.position.y = 0.82;
-  const cabin = mesh(roundedPanelGeometry(1.58, 0.85, 1.05, 0.12), material(0x54636b, { roughness: 0.28, metalness: 0.35 }), true);
-  cabin.position.set(0, 1.56, 0.34);
-  const glass = mesh(new THREE.PlaneGeometry(1.2, 0.52), material(0x7bbac8, { emissive: accent, emissiveIntensity: 0.32, roughness: 0.1 }));
-  glass.position.set(0, 1.6, 0.88);
-  const bumper = mesh(new THREE.PlaneGeometry(1.42, 0.3), new THREE.MeshBasicMaterial({ map: stripeTexture }));
-  bumper.position.set(0, 0.64, 1.115);
-  const warningBeacons = [];
-  [-0.52, 0.52].forEach((x) => {
-    const beacon = mesh(new THREE.SphereGeometry(0.105, 12, 8), material(accent, { emissive: accent, emissiveIntensity: 5, roughness: 0.16 }));
-    beacon.position.set(x, 2.05, 0.34);
+const STAGE_OBSTACLE_PALETTES = Object.freeze([
+  Object.freeze({ primary: 0x426b70, secondary: 0xd5c7a8, metal: 0x233238, soft: 0xa9d4d3 }),
+  Object.freeze({ primary: 0x805741, secondary: 0xe0c897, metal: 0x24363a, soft: 0x9dc7bc }),
+  Object.freeze({ primary: 0x292448, secondary: 0xb96ad3, metal: 0x171828, soft: 0x67dff2 }),
+  Object.freeze({ primary: 0xa35139, secondary: 0xf0c36f, metal: 0x433128, soft: 0xe58d62 }),
+  Object.freeze({ primary: 0x6c8157, secondary: 0xd3b07b, metal: 0x38443b, soft: 0xb8c69d }),
+  Object.freeze({ primary: 0x44586d, secondary: 0xc8d3d8, metal: 0x202b35, soft: 0x7cc9db }),
+  Object.freeze({ primary: 0x64728e, secondary: 0xc79e78, metal: 0x303748, soft: 0x9ecbe0 })
+]);
+const obstacleSurfaceTextureCache = new Map();
+let obstacleContactShadowTexture = null;
+
+function stageObstacleSurfaceTexture(stageIndex) {
+  if (obstacleSurfaceTextureCache.has(stageIndex)) return obstacleSurfaceTextureCache.get(stageIndex);
+  const texture = canvasTexture(192, 192, (context, width, height) => {
+    const bases = ["#688388", "#7d5a44", "#25284d", "#9b543d", "#71815e", "#4b6073", "#6c7894"];
+    context.fillStyle = bases[stageIndex] || bases[0];
+    context.fillRect(0, 0, width, height);
+    let seed = 1931 + stageIndex * 277;
+    for (let index = 0; index < 900; index += 1) {
+      seed = seed * 48271 % 2147483647;
+      const x = seed % width;
+      seed = seed * 48271 % 2147483647;
+      const y = seed % height;
+      const alpha = 0.025 + seed % 18 / 260;
+      context.fillStyle = seed % 3 ? `rgba(255,255,255,${alpha})` : `rgba(7,12,15,${alpha})`;
+      context.fillRect(x, y, 1 + seed % 5, 1);
+    }
+    if (stageIndex === 0) {
+      for (let y = 16; y < height; y += 38) {
+        context.strokeStyle = "rgba(210,240,235,.18)";
+        context.beginPath();
+        context.arc(24 + y % 29, y, 11, 0.1, Math.PI * 1.65);
+        context.stroke();
+      }
+    } else if (stageIndex === 1 || stageIndex === 3 || stageIndex === 4) {
+      for (let y = 0; y < height; y += 24) {
+        context.strokeStyle = stageIndex === 3 ? "rgba(255,204,129,.12)" : "rgba(49,26,17,.18)";
+        context.beginPath();
+        context.moveTo(0, y + Math.sin(y) * 2);
+        context.bezierCurveTo(48, y - 4, 132, y + 5, width, y - 1);
+        context.stroke();
+      }
+    } else if (stageIndex === 2) {
+      context.strokeStyle = "rgba(89,232,246,.44)";
+      context.lineWidth = 2;
+      for (let y = 18; y < height; y += 42) {
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(52, y);
+        context.lineTo(67, y + 14);
+        context.lineTo(width, y + 14);
+        context.stroke();
+      }
+    } else if (stageIndex === 5) {
+      for (let y = 12; y < height; y += 34) {
+        context.fillStyle = "rgba(220,235,240,.16)";
+        context.fillRect(0, y, width, 2);
+        for (let x = 14; x < width; x += 32) {
+          context.beginPath();
+          context.arc(x, y - 5, 2, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+    } else {
+      for (let x = 0; x < width; x += 18) {
+        context.fillStyle = x % 36 ? "rgba(255,255,255,.07)" : "rgba(12,20,34,.09)";
+        context.fillRect(x, 0, 2, height);
+      }
+    }
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1.4, 1.4);
+  SHARED_TEXTURES.add(texture);
+  obstacleSurfaceTextureCache.set(stageIndex, texture);
+  return texture;
+}
+
+function texturedObstacleMaterial(stageIndex, color, options = {}) {
+  const obstacleMaterial = material(color, options);
+  obstacleMaterial.map = stageObstacleSurfaceTexture(stageIndex);
+  obstacleMaterial.envMapIntensity = stageIndex === 2 || stageIndex === 5 ? 0.96 : 0.58;
+  return obstacleMaterial;
+}
+
+function paletteObstacleMaterial(palette, color, options = {}) {
+  return texturedObstacleMaterial(Math.max(0, STAGE_OBSTACLE_PALETTES.indexOf(palette)), color, options);
+}
+
+function obstacleShadowTexture() {
+  if (obstacleContactShadowTexture) return obstacleContactShadowTexture;
+  obstacleContactShadowTexture = canvasTexture(128, 128, (context, width, height) => {
+    const shadow = context.createRadialGradient(width / 2, height / 2, 4, width / 2, height / 2, width / 2);
+    shadow.addColorStop(0, "rgba(0,0,0,.68)");
+    shadow.addColorStop(0.52, "rgba(0,0,0,.32)");
+    shadow.addColorStop(1, "rgba(0,0,0,0)");
+    context.fillStyle = shadow;
+    context.fillRect(0, 0, width, height);
+  });
+  SHARED_TEXTURES.add(obstacleContactShadowTexture);
+  return obstacleContactShadowTexture;
+}
+
+function addObstacleContactShadow(group) {
+  const shadow = new THREE.InstancedMesh(new THREE.PlaneGeometry(2.35, 1.65), new THREE.MeshBasicMaterial({
+    map: obstacleShadowTexture(),
+    transparent: true,
+    opacity: 0.72,
+    depthWrite: false,
+    toneMapped: false
+  }), 1);
+  const transform = new THREE.Matrix4().compose(
+    new THREE.Vector3(0, 0.018, 0),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)),
+    new THREE.Vector3(1, 1, 1)
+  );
+  shadow.setMatrixAt(0, transform);
+  shadow.instanceMatrix.needsUpdate = true;
+  shadow.renderOrder = 1;
+  shadow.userData.sharedTexture = obstacleContactShadowTexture;
+  group.add(shadow);
+  return group;
+}
+
+function createInstancedObstacleParts(geometry, partMaterial, transforms) {
+  const parts = new THREE.InstancedMesh(geometry, partMaterial, transforms.length);
+  const transform = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  transforms.forEach((entry, index) => {
+    quaternion.setFromEuler(new THREE.Euler(entry.rx || 0, entry.ry || 0, entry.rz || 0));
+    scale.set(entry.sx || 1, entry.sy || 1, entry.sz || 1);
+    transform.compose(new THREE.Vector3(entry.x || 0, entry.y || 0, entry.z || 0), quaternion, scale);
+    parts.setMatrixAt(index, transform);
+  });
+  parts.instanceMatrix.needsUpdate = true;
+  parts.castShadow = true;
+  parts.receiveShadow = true;
+  return parts;
+}
+
+function finishStageServiceObstacle(group, accent, warningBeacons = []) {
+  group.userData.kind = "service-cart";
+  group.userData.warningBeacons = warningBeacons;
+  const glowMaterial = material(accent, { emissive: accent, emissiveIntensity: 4.8, roughness: 0.16, metalness: 0.12 });
+  [-0.62, 0.62].forEach((x) => {
+    const beacon = mesh(new THREE.SphereGeometry(0.085, 12, 8), glowMaterial);
+    beacon.position.set(x, 2.18, 0.16);
     warningBeacons.push(beacon);
     group.add(beacon);
   });
-  group.add(body, cabin, glass, bumper);
-  [-0.66, 0.66].forEach((x) => {
-    [-0.65, 0.65].forEach((z) => {
-      const wheel = mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 14), material(0x202326, { roughness: 0.78 }), true);
-      wheel.rotation.z = Math.PI / 2;
-      wheel.position.set(x, 0.32, z);
-      group.add(wheel);
-    });
-  });
-  group.userData.kind = "service-cart";
-  group.userData.warningBeacons = warningBeacons;
   return group;
+}
+
+function createCampusCycleObstacle(accent, palette) {
+  const group = new THREE.Group();
+  const metal = material(palette.metal, { roughness: 0.38, metalness: 0.7 });
+  const frame = paletteObstacleMaterial(palette, palette.primary, { roughness: 0.42, metalness: 0.46 });
+  const rubber = material(0x171b1d, { roughness: 0.84, metalness: 0.02 });
+  const wheels = createInstancedObstacleParts(new THREE.TorusGeometry(0.48, 0.075, 9, 26), rubber, [
+    { x: -0.62, y: 0.56 }, { x: 0.62, y: 0.56 }
+  ]);
+  const lower = beamBetween2D(-0.54, 0.62, 0.1, 1.34, 0.085, frame);
+  const upper = beamBetween2D(0.1, 1.34, 0.57, 0.64, 0.085, frame);
+  const brace = beamBetween2D(-0.54, 0.62, 0.57, 0.64, 0.075, frame);
+  const handle = beamBetween2D(0.1, 1.34, 0.48, 1.72, 0.07, metal);
+  const basket = mesh(roundedPanelGeometry(0.7, 0.48, 0.38, 0.09), material(palette.secondary, { roughness: 0.86, metalness: 0.02 }), true);
+  basket.position.set(0.62, 1.55, 0.02);
+  group.add(wheels, lower, upper, brace, handle, basket);
+  return finishStageServiceObstacle(group, accent);
+}
+
+function createBookTrolleyObstacle(accent, palette) {
+  const group = new THREE.Group();
+  const frame = material(palette.metal, { roughness: 0.4, metalness: 0.66 });
+  const wood = paletteObstacleMaterial(palette, palette.primary, { roughness: 0.78, metalness: 0.04 });
+  const shelf = createInstancedObstacleParts(roundedPanelGeometry(1.72, 0.14, 0.72, 0.05), wood, [
+    { y: 0.48 }, { y: 1.06 }, { y: 1.64 }
+  ]);
+  const rails = createInstancedObstacleParts(new THREE.BoxGeometry(0.08, 1.72, 0.08), frame, [
+    { x: -0.76, y: 1.08, z: -0.28 }, { x: 0.76, y: 1.08, z: -0.28 },
+    { x: -0.76, y: 1.08, z: 0.28 }, { x: 0.76, y: 1.08, z: 0.28 }
+  ]);
+  const bookMaterial = material(palette.secondary, { roughness: 0.82, metalness: 0.01 });
+  const books = createInstancedObstacleParts(roundedPanelGeometry(0.18, 0.48, 0.5, 0.025), bookMaterial, Array.from({ length: 9 }, (_, index) => ({
+    x: -0.61 + index % 5 * 0.3,
+    y: index < 5 ? 0.77 : 1.35,
+    z: 0.02,
+    rz: (index % 3 - 1) * 0.06,
+    sy: 0.82 + index % 3 * 0.09
+  })));
+  const wheels = createInstancedObstacleParts(new THREE.CylinderGeometry(0.15, 0.15, 0.12, 14), material(0x202326, { roughness: 0.78 }), [
+    { x: -0.66, y: 0.2, z: -0.28, rz: Math.PI / 2 }, { x: 0.66, y: 0.2, z: -0.28, rz: Math.PI / 2 },
+    { x: -0.66, y: 0.2, z: 0.28, rz: Math.PI / 2 }, { x: 0.66, y: 0.2, z: 0.28, rz: Math.PI / 2 }
+  ]);
+  group.add(shelf, rails, books, wheels);
+  return finishStageServiceObstacle(group, accent);
+}
+
+function createCinemaProjectorObstacle(accent, palette) {
+  const group = new THREE.Group();
+  const shell = paletteObstacleMaterial(palette, palette.primary, { roughness: 0.28, metalness: 0.58, emissive: accent, emissiveIntensity: 0.08 });
+  const body = mesh(roundedPanelGeometry(1.58, 1.3, 1.02, 0.18), shell, true);
+  body.position.y = 0.9;
+  const reelMaterial = material(palette.secondary, { roughness: 0.3, metalness: 0.72 });
+  const reels = createInstancedObstacleParts(new THREE.TorusGeometry(0.3, 0.055, 8, 24), reelMaterial, [
+    { x: -0.34, y: 1.78, z: 0.52 }, { x: 0.34, y: 1.78, z: 0.52, sx: 0.82, sy: 0.82 }
+  ]);
+  const lens = mesh(new THREE.CylinderGeometry(0.2, 0.27, 0.42, 18), material(palette.soft, { emissive: accent, emissiveIntensity: 2.8, roughness: 0.12, metalness: 0.34 }), true);
+  lens.rotation.x = Math.PI / 2;
+  lens.position.set(0, 1.12, 0.68);
+  const stand = mesh(roundedPanelGeometry(1.78, 0.14, 1.18, 0.05), material(palette.metal, { roughness: 0.36, metalness: 0.72 }), true);
+  stand.position.y = 0.2;
+  group.add(body, reels, lens, stand);
+  return finishStageServiceObstacle(group, accent);
+}
+
+function createMarketStallObstacle(accent, palette) {
+  const group = new THREE.Group();
+  const lacquer = paletteObstacleMaterial(palette, palette.primary, { roughness: 0.58, metalness: 0.06 });
+  const dark = material(palette.metal, { roughness: 0.5, metalness: 0.4 });
+  const base = mesh(roundedPanelGeometry(1.78, 1.02, 1.2, 0.14), lacquer, true);
+  base.position.y = 0.64;
+  const counter = mesh(roundedPanelGeometry(2.02, 0.18, 1.42, 0.06), material(palette.secondary, { roughness: 0.82 }), true);
+  counter.position.y = 1.22;
+  const canopy = mesh(new THREE.ConeGeometry(1.34, 0.64, 4), material(palette.soft, { roughness: 0.72 }), true);
+  canopy.rotation.y = Math.PI / 4;
+  canopy.position.y = 2.42;
+  const posts = createInstancedObstacleParts(new THREE.BoxGeometry(0.075, 1.3, 0.075), dark, [
+    { x: -0.82, y: 1.78, z: -0.42 }, { x: 0.82, y: 1.78, z: -0.42 },
+    { x: -0.82, y: 1.78, z: 0.42 }, { x: 0.82, y: 1.78, z: 0.42 }
+  ]);
+  const baskets = createInstancedObstacleParts(new THREE.CylinderGeometry(0.23, 0.19, 0.28, 10), material(0xc98a4e, { roughness: 0.92 }), [
+    { x: -0.52, y: 1.48, z: 0.12 }, { y: 1.48, z: 0.12 }, { x: 0.52, y: 1.48, z: 0.12 }
+  ]);
+  group.add(base, counter, canopy, posts, baskets);
+  return finishStageServiceObstacle(group, accent);
+}
+
+function createCargoBikeObstacle(accent, palette) {
+  const group = createCampusCycleObstacle(accent, palette);
+  const crate = mesh(roundedPanelGeometry(0.92, 0.72, 0.82, 0.08), paletteObstacleMaterial(palette, palette.secondary, { roughness: 0.9, metalness: 0.01 }), true);
+  crate.position.set(-0.58, 1.28, 0.02);
+  const canvas = mesh(roundedPanelGeometry(0.8, 0.12, 0.7, 0.04), material(0xe9dfc8, { roughness: 0.96 }), true);
+  canvas.position.set(-0.58, 1.68, 0.02);
+  group.add(crate, canvas);
+  return group;
+}
+
+function createStormRigObstacle(accent, palette) {
+  const group = new THREE.Group();
+  const steel = material(palette.metal, { roughness: 0.32, metalness: 0.76 });
+  const frame = createInstancedObstacleParts(new THREE.BoxGeometry(0.1, 1.86, 0.1), steel, [
+    { x: -0.78, y: 1.05, z: -0.44 }, { x: 0.78, y: 1.05, z: -0.44 },
+    { x: -0.78, y: 1.05, z: 0.44 }, { x: 0.78, y: 1.05, z: 0.44 }
+  ]);
+  const deck = mesh(roundedPanelGeometry(1.82, 0.18, 1.18, 0.05), paletteObstacleMaterial(palette, palette.primary, { roughness: 0.38, metalness: 0.62 }), true);
+  deck.position.y = 0.32;
+  const tank = mesh(new THREE.CylinderGeometry(0.52, 0.52, 1.24, 18), material(palette.secondary, { roughness: 0.3, metalness: 0.58 }), true);
+  tank.rotation.z = Math.PI / 2;
+  tank.position.y = 1.12;
+  const hose = mesh(new THREE.TorusGeometry(0.46, 0.055, 8, 28, Math.PI * 1.7), material(palette.soft, { roughness: 0.5, metalness: 0.2 }), true);
+  hose.position.set(0, 1.35, 0.56);
+  group.add(frame, deck, tank, hose);
+  return finishStageServiceObstacle(group, accent);
+}
+
+function createLuggageTrolleyObstacle(accent, palette) {
+  const group = new THREE.Group();
+  const frame = material(palette.metal, { roughness: 0.34, metalness: 0.76 });
+  const platform = mesh(roundedPanelGeometry(1.72, 0.14, 1.05, 0.05), frame, true);
+  platform.position.y = 0.28;
+  const handle = createInstancedObstacleParts(new THREE.BoxGeometry(0.08, 1.84, 0.08), frame, [
+    { x: -0.72, y: 1.2, z: -0.42 }, { x: 0.72, y: 1.2, z: -0.42 }
+  ]);
+  const luggageMaterial = paletteObstacleMaterial(palette, palette.primary, { roughness: 0.58, metalness: 0.12 });
+  const luggage = createInstancedObstacleParts(roundedPanelGeometry(0.62, 0.76, 0.42, 0.1), luggageMaterial, [
+    { x: -0.42, y: 0.74, z: 0.05 }, { x: 0.34, y: 0.82, z: 0.02, sy: 1.18 }, { x: -0.1, y: 1.47, z: -0.02, sx: 0.82, sy: 0.76 }
+  ]);
+  const wheels = createInstancedObstacleParts(new THREE.CylinderGeometry(0.14, 0.14, 0.1, 14), material(0x1d2024, { roughness: 0.82 }), [
+    { x: -0.62, y: 0.14, z: -0.34, rz: Math.PI / 2 }, { x: 0.62, y: 0.14, z: -0.34, rz: Math.PI / 2 },
+    { x: -0.62, y: 0.14, z: 0.34, rz: Math.PI / 2 }, { x: 0.62, y: 0.14, z: 0.34, rz: Math.PI / 2 }
+  ]);
+  group.add(platform, handle, luggage, wheels);
+  return finishStageServiceObstacle(group, accent);
+}
+
+function createServiceCart(accent, stageIndex = 0) {
+  const palette = STAGE_OBSTACLE_PALETTES[stageIndex] || STAGE_OBSTACLE_PALETTES[0];
+  return [
+    createCampusCycleObstacle,
+    createBookTrolleyObstacle,
+    createCinemaProjectorObstacle,
+    createMarketStallObstacle,
+    createCargoBikeObstacle,
+    createStormRigObstacle,
+    createLuggageTrolleyObstacle
+  ][stageIndex](accent, palette);
 }
 
 function decorateObstacleForStage(group, stageIndex, subtype, avoid, accent) {
@@ -4028,11 +4457,12 @@ function createObstacle(stageIndex, avoid, accent, subtype = null, variant = 0) 
   const visualSubtype = resolveObstacleBaseSubtype(subtype, avoid);
   let obstacle;
   if (visualSubtype === "train") obstacle = createTrain(accent, variant);
-  else if (visualSubtype === "service-cart") obstacle = createServiceCart(accent);
-  else if (visualSubtype === "signal-gate") obstacle = createSignalGate(accent);
-  else if (visualSubtype === "barrier") obstacle = createJumpBarrier(accent);
-  else obstacle = createServiceCart(accent);
+  else if (visualSubtype === "service-cart") obstacle = createServiceCart(accent, stageIndex);
+  else if (visualSubtype === "signal-gate") obstacle = createSignalGate(accent, stageIndex);
+  else if (visualSubtype === "barrier") obstacle = createJumpBarrier(accent, stageIndex);
+  else obstacle = createServiceCart(accent, stageIndex);
   obstacle = decorateObstacleForStage(obstacle, stageIndex, visualSubtype, avoid, accent);
+  obstacle = addObstacleContactShadow(obstacle);
   obstacle.userData.obstacleSemantic = semanticSubtype || visualSubtype;
   obstacle.userData.obstacleVisualSubtype = visualSubtype;
   return obstacle;
@@ -4790,7 +5220,8 @@ class CinematicRunnerRenderer {
     this.scene.add(this.skyDome, ...this.metroDistricts, ...this.ambientTrains);
 
     this.textureLoader = new THREE.TextureLoader();
-    this.roadTexture = makeRoadTexture();
+    this.roadTextures = STAGE_CONFIGS.map((_, stageIndex) => makeRoadTexture(stageIndex));
+    this.roadTexture = this.roadTextures[0];
     this.platformTexture = makePlatformTexture();
     this.particleTexture = makeParticleTexture();
     this.stageTextures = Array(STAGE_CONFIGS.length).fill(null);
@@ -4843,7 +5274,7 @@ class CinematicRunnerRenderer {
     this.groundMaterial = material(STAGE_CONFIGS[0].ground, { roughness: 1 });
     this.roadMaterial = new THREE.MeshPhysicalMaterial({
       map: this.roadTexture,
-      color: new THREE.Color(STAGE_CONFIGS[0].road).lerp(new THREE.Color(0xffffff), 0.16),
+      color: new THREE.Color(STAGE_CONFIGS[0].road).lerp(new THREE.Color(0xffffff), 0.08),
       roughness: 0.66,
       metalness: 0.04,
       clearcoat: 0.28,
@@ -5215,7 +5646,7 @@ class CinematicRunnerRenderer {
       edgePosts: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.055, 0.075, 0.72, 8), this.streetFurnitureMaterial, SEGMENT_COUNT * 8),
       edgePostLights: new THREE.InstancedMesh(new THREE.SphereGeometry(0.095, 8, 6), this.streetGlowMaterial, SEGMENT_COUNT * 8),
       planterBases: new THREE.InstancedMesh(new THREE.BoxGeometry(0.72, 0.5, 0.92), this.streetPlanterMaterial, SEGMENT_COUNT * 4),
-      planterLeaves: new THREE.InstancedMesh(new THREE.SphereGeometry(0.47, 9, 7), this.streetFoliageMaterial, SEGMENT_COUNT * 4)
+      planterLeaves: new THREE.InstancedMesh(createFoliageClusterGeometry(), this.streetFoliageMaterial, SEGMENT_COUNT * 4)
     };
     Object.values(this.roadBatches).forEach((batch) => {
       batch.instanceMatrix.setUsage(THREE.StaticDrawUsage);
@@ -5312,9 +5743,14 @@ class CinematicRunnerRenderer {
         }
         for (let row = 0; row < 2; row += 1) {
           const planterZ = z - 5.15 + row * 9.7 + sideIndex * 1.1;
-          transform.makeTranslation(side * 5.18, 0.54, planterZ);
+          const planterVisible = (segmentIndex + row * 2 + sideIndex) % 3 !== 1;
+          if (planterVisible) transform.makeTranslation(side * (5.14 + row * 0.12), 0.54, planterZ);
+          else transform.makeScale(0, 0, 0);
           this.roadBatches.planterBases.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
-          transform.makeTranslation(side * 5.18, 1.15, planterZ);
+          if (planterVisible) {
+            transform.makeScale(0.84 + (segmentIndex + row) % 3 * 0.08, 0.92 + sideIndex * 0.07, 0.84 + row * 0.08);
+            transform.setPosition(side * (5.14 + row * 0.12), 1.15, planterZ);
+          } else transform.makeScale(0, 0, 0);
           this.roadBatches.planterLeaves.setMatrixAt(segmentIndex * 4 + sideIndex * 2 + row, transform);
         }
       });
@@ -6058,7 +6494,10 @@ class CinematicRunnerRenderer {
     this.warmLight.position.copy(this.warmLightBasePosition);
     const wetStage = ["after-rain", "rain", "storm"].includes(config.weather);
     const surfaceSettings = ROAD_SURFACE_SETTINGS[config.world.road.material] || ROAD_SURFACE_SETTINGS[wetStage ? "wet-asphalt" : "dry-asphalt"];
-    this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.16));
+    this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.08));
+    this.roadTexture = this.roadTextures[this.stageIndex];
+    this.roadMaterial.map = this.roadTexture;
+    this.roadMaterial.needsUpdate = true;
     this.roadMaterial.roughness = clamp(Number(config.world.road.roughness) || surfaceSettings.roughness, 0.08, 1);
     this.roadMaterial.metalness = clamp(Number(config.world.road.metalness) || surfaceSettings.metalness, 0, 0.9);
     this.roadMaterial.clearcoat = clamp(Number(config.world.road.clearcoat) || surfaceSettings.clearcoat, 0, 1);
@@ -6363,9 +6802,11 @@ class CinematicRunnerRenderer {
 
   syncQualityVisibility(arriving = false) {
     const profile = this.qualityProfile || QUALITY_PROFILES[1];
-    const usePremium = Boolean(profile.premiumCity && this.premiumDistricts?.length);
+    const premiumStageAllowed = !this.mobilePerformance && this.stageIndex !== 0 && this.stageIndex !== 4;
+    const usePremium = Boolean(profile.premiumCity && premiumStageAllowed && this.premiumDistricts?.length);
+    const suppressFallback = this.mobilePerformance || profile.premiumCity;
     for (let index = 0; index < this.metroDistricts.length; index += 1) {
-      this.metroDistricts[index].visible = !arriving && !usePremium && index === this.stageIndex;
+      this.metroDistricts[index].visible = !arriving && !usePremium && !suppressFallback && index === this.stageIndex;
     }
     if (this.premiumDistricts) {
       for (let index = 0; index < this.premiumDistricts.length; index += 1) {
@@ -6374,11 +6815,12 @@ class CinematicRunnerRenderer {
     }
     const districtSet = usePremium ? this.premiumDistricts : this.metroDistricts;
     this.metroSkyline = districtSet?.[this.stageIndex] || this.metroDistricts[this.stageIndex];
-    const layers = this.activeStageWorld?.userData.layers || [];
-    for (let index = 0; index < layers.length; index += 1) {
-      layers[index].group.visible = !arriving && index >= layers.length - profile.worldLayers;
-    }
     const railRoute = this.stageConfig?.routeStyle === "metro" || this.stageConfig?.routeStyle === "terminal";
+    const layers = this.activeStageWorld?.userData.layers || [];
+    const visibleWorldLayers = railRoute && profile.key === "performance" ? 1 : profile.worldLayers;
+    for (let index = 0; index < layers.length; index += 1) {
+      layers[index].group.visible = !arriving && index >= layers.length - visibleWorldLayers;
+    }
     if (this.roadBatches) {
       const detail = profile.roadDetail;
       this.roadBatches.ballast.visible = !arriving;
@@ -6393,12 +6835,12 @@ class CinematicRunnerRenderer {
       this.roadBatches.drains.visible = !arriving && !railRoute && detail > 1;
       this.roadBatches.roadPatches.visible = !arriving && !railRoute && detail > 0;
       this.roadBatches.manholes.visible = !arriving && !railRoute && detail > 1;
-      this.roadBatches.edgePosts.visible = !arriving && detail > 1;
-      this.roadBatches.edgePostLights.visible = !arriving && detail > 1;
-      this.roadBatches.planterBases.visible = !arriving && detail > 1;
-      this.roadBatches.planterLeaves.visible = !arriving && detail > 1;
+      this.roadBatches.edgePosts.visible = !arriving && detail > 0;
+      this.roadBatches.edgePostLights.visible = !arriving && detail > 0;
+      this.roadBatches.planterBases.visible = !arriving && detail > 0;
+      this.roadBatches.planterLeaves.visible = !arriving && detail > 0;
     }
-    this.canvas.setAttribute("data-secondary-world-layers", String(profile.worldLayers));
+    this.canvas.setAttribute("data-secondary-world-layers", String(visibleWorldLayers));
     this.canvas.setAttribute("data-mobile-shadows", String(Boolean(profile.shadows)));
   }
 
@@ -6552,6 +6994,10 @@ class CinematicRunnerRenderer {
   syncRoad(distance) {
     const offset = (distance * WORLD_Z_SCALE) % SEGMENT_LENGTH;
     const decorStride = this.qualityProfile?.decorStride ?? 2;
+    const railRoute = this.stageConfig?.routeStyle === "metro" || this.stageConfig?.routeStyle === "terminal";
+    const effectiveDecorStride = railRoute && this.qualityProfile?.key === "performance"
+      ? Math.max(7, decorStride)
+      : decorStride;
     const cadence = this.directorState?.act?.cadence || 4;
     const cadenceStride = Math.max(1, Math.round(cadence / 2.2));
     this.roadBaseGroup.position.z = offset;
@@ -6561,8 +7007,8 @@ class CinematicRunnerRenderer {
       if (z > 14) z -= SEGMENT_COUNT * SEGMENT_LENGTH;
       segment.position.z = z;
       const decor = segment.userData.decor;
-      decor.visible = decorStride > 0
-        && index % Math.max(decorStride, cadenceStride) === 0
+      decor.visible = effectiveDecorStride > 0
+        && index % Math.max(effectiveDecorStride, cadenceStride) === 0
         && decorBoundsVisible(z, decor.userData.minZ, decor.userData.maxZ);
     }
     this.roadTexture.offset.y = -(distance * 0.011) % 1;
@@ -6904,7 +7350,7 @@ class CinematicRunnerRenderer {
       train.position.y = 0.04 + Math.sin(this.cadencePhase + index * Math.PI) * 0.012;
       if (train.position.z > 15) train.position.z = -92 - index * 24;
       train.rotation.y = direction > 0 ? 0 : Math.PI;
-      train.visible = (config.routeStyle === "metro" || config.routeStyle === "terminal")
+      train.visible = !this.mobilePerformance && (config.routeStyle === "metro" || config.routeStyle === "terminal")
         && (this.qualityProfileIndex < 2 || index === 0);
     }
     const nightFactor = DARK_WEATHER_KINDS.has(config.weather) ? 1 : 0.72;
@@ -7733,7 +8179,7 @@ class CinematicRunnerRenderer {
     for (let index = 0; index < this.loadedCitySources.length; index += 1) disposeObject(this.loadedCitySources[index]);
     this.loadedCitySources.length = 0;
     const detachedTextures = [
-      this.roadTexture,
+      ...this.roadTextures,
       this.platformTexture,
       this.particleTexture,
       this.environmentTexture,

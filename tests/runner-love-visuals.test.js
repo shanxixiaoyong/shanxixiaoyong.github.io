@@ -53,6 +53,14 @@ test("gives every chapter a distinct world, road, obstacle, particle, and depth 
     "createRainCampusWorld", "createRiverBookstoreWorld", "createNeonCinemaWorld", "createNightMarketWorld",
     "createNeighborhoodWorld", "createStormBridgeWorld", "createDawnStationWorld", "createStageRoadProfile", "decorateObstacleForStage"
   ]) assert.match(source, new RegExp(`function ${builder}\\(`));
+  for (const obstacleBuilder of [
+    "createCampusCycleObstacle", "createBookTrolleyObstacle", "createCinemaProjectorObstacle", "createMarketStallObstacle",
+    "createCargoBikeObstacle", "createStormRigObstacle", "createLuggageTrolleyObstacle"
+  ]) assert.match(source, new RegExp(`function ${obstacleBuilder}\\(`));
+  assert.match(source, /const STAGE_OBSTACLE_PALETTES = Object\.freeze\(\[/);
+  assert.match(source, /function stageObstacleSurfaceTexture\(/);
+  assert.match(source, /function addObstacleContactShadow\(/);
+  assert.match(source, /this\.roadTextures = STAGE_CONFIGS\.map\(\(_, stageIndex\) => makeRoadTexture\(stageIndex\)\)/);
   assert.equal(content.STAGE_BLUEPRINTS.length, 7);
   content.STAGE_BLUEPRINTS.forEach((stage) => {
     assert.ok(stage.world.sceneMood && stage.world.timeWeather && stage.world.colorPalette, stage.id);
@@ -223,8 +231,8 @@ test("uses adaptive quality telemetry and reuses entity meshes for a sustained m
   assert.match(source, /estimatedFps > 57/);
   assert.match(source, /key: "balanced", targetDrawCalls: 90/);
   assert.match(source, /drawCalls > profile\.targetDrawCalls \+ 12/);
-  assert.match(source, /decorStride > 0/);
-  assert.match(source, /index % Math\.max\(decorStride, cadenceStride\) === 0/);
+  assert.match(source, /effectiveDecorStride > 0/);
+  assert.match(source, /index % Math\.max\(effectiveDecorStride, cadenceStride\) === 0/);
   assert.match(source, /this\.activeEntityIds/);
   assert.match(source, /const ENTITY_POOL_LIMIT = 5/);
   assert.match(source, /bucket\.length < ENTITY_POOL_LIMIT/);
@@ -232,11 +240,16 @@ test("uses adaptive quality telemetry and reuses entity meshes for a sustained m
 });
 
 test("enforces the 720x1280 mobile draw-call budget with real scene suppression", () => {
-  assert.match(source, /key: "performance", targetDrawCalls: 76, decorStride: 0, worldLayers: 1, premiumCity: false, shadows: false/);
+  assert.match(source, /key: "performance", targetDrawCalls: 92, decorStride: 3, worldLayers: 2, premiumCity: true, shadows: false/);
   assert.match(source, /this\.mobilePerformance = cssWidth <= 800 && cssHeight >= 1000 && cssHeight > cssWidth/);
   assert.match(source, /this\.applyQualityProfile\("performance"\)/);
-  assert.match(source, /this\.roadBatches\.edgePosts\.visible = !arriving && detail > 1/);
+  assert.match(source, /const premiumStageAllowed = !this\.mobilePerformance/);
+  assert.match(source, /const suppressFallback = this\.mobilePerformance \|\| profile\.premiumCity/);
+  assert.match(source, /this\.roadBatches\.edgePosts\.visible = !arriving && detail > 0/);
   assert.match(source, /this\.roadBatches\.laneGuides\.visible = !arriving && !railRoute/);
+  assert.match(source, /const effectiveDecorStride = railRoute && this\.qualityProfile\?\.key === "performance"/);
+  assert.match(source, /const visibleWorldLayers = railRoute && profile\.key === "performance" \? 1 : profile\.worldLayers/);
+  assert.match(source, /train\.visible = !this\.mobilePerformance/);
   assert.match(source, /object\.position\.z >= -this\.qualityProfile\.entityRange/);
   assert.match(source, /applyEntityQuality\(object, this\.qualityProfile\.entityMeshBudget\)/);
   assert.match(source, /applyCharacterRenderQuality\(this\.player, profile\.key === "performance", profile\.shadows\)/);
