@@ -27,10 +27,14 @@ test("routes physical actions through one causal director instead of explaining 
 test("connects swipe and keyboard controls to the classic three-lane action set", () => {
   for (const action of ["left", "right", "jump", "slide"]) assert.ok(source.includes(`"${action}"`), action);
   assert.match(source, /pointerdown/);
+  assert.match(source, /pointermove/);
   assert.match(source, /pointerup/);
   assert.match(source, /pointercancel/);
+  assert.match(source, /lostpointercapture/);
   assert.match(source, /gestureThreshold/);
   assert.match(source, /event\.pointerId !== pointerStart\.id/);
+  assert.match(source, /pointerStart\.handled = true;\s*input\(/);
+  assert.match(source, /\{ passive: false \}/);
   assert.match(source, /ArrowLeft/);
   assert.match(source, /ArrowUp/);
 });

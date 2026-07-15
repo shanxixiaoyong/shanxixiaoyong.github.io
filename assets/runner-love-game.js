@@ -777,7 +777,6 @@
 
   function finishStageIntro() {
     if (mode !== "stage-intro") return false;
-    const resumedRuntime = preserveRuntimeThroughIntro;
     show(ui.stageIntro, false);
     visualRuntime?.endStageIntro?.();
     stageIntroElapsed = 0;
@@ -791,7 +790,10 @@
       beatClock = 0;
     }
     preserveRuntimeThroughIntro = false;
-    runPrimed = resumedRuntime ? runPrimed : false;
+    // The run begins as soon as the opening performance clears. Requiring a
+    // first gesture to prime the clock made the scene look frozen and caused
+    // early swipes to be consumed without visible feedback on touch screens.
+    runPrimed = true;
     mode = "playing";
     updateHud();
     showRouteMessage(currentStage(), 1800);
@@ -1778,21 +1780,45 @@
 
   canvas.addEventListener("pointerdown", (event) => {
     if (pointerStart !== null) return;
-    pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    event.preventDefault();
+    pointerStart = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      handled: false
+    };
     if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
     audio.start();
-  });
+  }, { passive: false });
+
+  canvas.addEventListener("pointermove", (event) => {
+    if (!pointerStart || pointerStart.handled || event.pointerId !== pointerStart.id) return;
+    event.preventDefault();
+    pointerStart.lastX = event.clientX;
+    pointerStart.lastY = event.clientY;
+    const dx = event.clientX - pointerStart.x;
+    const dy = event.clientY - pointerStart.y;
+    if (Math.hypot(dx, dy) < gestureThreshold()) return;
+    pointerStart.handled = true;
+    input(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "jump" : "slide"));
+  }, { passive: false });
 
   canvas.addEventListener("pointerup", (event) => {
     if (!pointerStart || event.pointerId !== pointerStart.id) return;
+    event.preventDefault();
     const dx = event.clientX - pointerStart.x;
     const dy = event.clientY - pointerStart.y;
     const distance = Math.hypot(dx, dy);
-    const action = distance < gestureThreshold() ? "jump" : Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "jump" : "slide");
-    input(action);
+    if (!pointerStart.handled) {
+      const action = distance < gestureThreshold() ? "jump" : Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "jump" : "slide");
+      input(action);
+    }
     pointerStart = null;
-  });
+  }, { passive: false });
   canvas.addEventListener("pointercancel", (event) => { if (pointerStart?.id === event.pointerId) pointerStart = null; });
+  canvas.addEventListener("lostpointercapture", (event) => { if (pointerStart?.id === event.pointerId) pointerStart = null; });
 
   const bind = (selector, event, handler) => {
     const node = $(selector);

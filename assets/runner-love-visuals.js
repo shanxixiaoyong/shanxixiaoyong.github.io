@@ -381,9 +381,9 @@ const ACT_VISUAL_DIRECTIONS = Object.freeze([
 
 const THEMED_ROUTE_MODULES = Object.freeze([
   Object.freeze([
-    Object.freeze({ id: "camphor-arcade", surface: "rain-darkened-campus-stone", motif: "stone", shoulder: "arcade", rail: false, width: 0.96, curve: 0.16, walk: 0.86 }),
-    Object.freeze({ id: "sunshower-garden", surface: "root-broken-garden-path", motif: "leaf", shoulder: "garden", rail: false, width: 1.04, curve: 0.34, walk: 0.92 }),
-    Object.freeze({ id: "library-crossing", surface: "library-crosswalk-plaza", motif: "crossing", shoulder: "campus", rail: false, width: 1.12, curve: 0.08, walk: 1.08 })
+    Object.freeze({ id: "camphor-arcade", surface: "rain-darkened-campus-stone", motif: "stone", shoulder: "arcade", rail: false, width: 0.9, curve: 0.16, walk: 1.08 }),
+    Object.freeze({ id: "sunshower-garden", surface: "root-broken-garden-path", motif: "leaf", shoulder: "garden", rail: false, width: 0.92, curve: 0.34, walk: 1.12 }),
+    Object.freeze({ id: "library-crossing", surface: "library-crosswalk-plaza", motif: "crossing", shoulder: "campus", rail: false, width: 0.94, curve: 0.08, walk: 1.16 })
   ]),
   Object.freeze([
     Object.freeze({ id: "mist-levee-boardwalk", surface: "river-timber-boardwalk", motif: "boardwalk", shoulder: "river", rail: false, width: 0.92, curve: 0.42, walk: 0.76 }),
@@ -2877,84 +2877,95 @@ function makeFacadeTexture(accent, seed) {
 }
 
 function makeCampusFacadeTexture(seed = 0) {
-  const texture = canvasTexture(512, 512, (context, width, height) => {
-    const wall = context.createLinearGradient(0, 0, width, height);
-    wall.addColorStop(0, "#f2f5f1");
-    wall.addColorStop(0.52, "#dce7e5");
-    wall.addColorStop(1, "#b9caca");
-    context.fillStyle = wall;
+  const texture = canvasTexture(768, 768, (context, width, height) => {
+    const skyReflection = context.createLinearGradient(0, 0, width, height);
+    skyReflection.addColorStop(0, "#eefaff");
+    skyReflection.addColorStop(0.22, "#bce8f7");
+    skyReflection.addColorStop(0.58, "#6eafc8");
+    skyReflection.addColorStop(1, "#345f75");
+    context.fillStyle = skyReflection;
     context.fillRect(0, 0, width, height);
 
-    const columns = 6;
-    const rows = 8;
-    const gap = 8;
-    const cellWidth = (width - 42 - gap * (columns - 1)) / columns;
-    const cellHeight = (height - 50 - gap * (rows - 1)) / rows;
+    const columns = 7;
+    const rows = 9;
+    const frame = 10;
+    const margin = 18;
+    const cellWidth = (width - margin * 2 - frame * (columns - 1)) / columns;
+    const cellHeight = (height - margin * 2 - frame * (rows - 1)) / rows;
     for (let row = 0; row < rows; row += 1) {
       for (let column = 0; column < columns; column += 1) {
-        const x = 21 + column * (cellWidth + gap);
-        const y = 24 + row * (cellHeight + gap);
-        const glass = context.createLinearGradient(x, y, x + cellWidth, y + cellHeight);
-        glass.addColorStop(0, row % 3 === 0 ? "#dff5fb" : "#b9e0ec");
-        glass.addColorStop(0.48, "#83b9cb");
-        glass.addColorStop(1, "#527f92");
-        context.fillStyle = glass;
+        const x = margin + column * (cellWidth + frame);
+        const y = margin + row * (cellHeight + frame);
+        const interior = context.createLinearGradient(x, y, x, y + cellHeight);
+        interior.addColorStop(0, row % 2 ? "rgba(207,239,248,.88)" : "rgba(226,248,253,.92)");
+        interior.addColorStop(0.3, "rgba(116,176,198,.9)");
+        interior.addColorStop(1, "rgba(42,82,102,.96)");
+        context.fillStyle = interior;
         context.fillRect(x, y, cellWidth, cellHeight);
-        context.fillStyle = "rgba(255,255,255,.42)";
-        context.fillRect(x + 3, y + 3, Math.max(2, cellWidth * 0.08), cellHeight - 6);
-        if ((row * 5 + column * 3 + seed) % 7 === 0) {
-          context.fillStyle = "rgba(255,232,168,.3)";
-          context.fillRect(x + 4, y + cellHeight * 0.62, cellWidth - 8, cellHeight * 0.25);
+        context.fillStyle = "rgba(255,255,255,.44)";
+        context.fillRect(x + 3, y + 3, Math.max(3, cellWidth * 0.075), cellHeight - 6);
+        context.fillStyle = "rgba(17,50,66,.2)";
+        context.fillRect(x, y + cellHeight * 0.72, cellWidth, cellHeight * 0.28);
+        if ((row * 11 + column * 5 + seed) % 9 === 0) {
+          context.fillStyle = "rgba(255,232,170,.32)";
+          context.fillRect(x + 6, y + cellHeight * 0.56, cellWidth - 12, cellHeight * 0.22);
         }
       }
     }
-    const sunWash = context.createLinearGradient(0, 0, width, height * 0.72);
-    sunWash.addColorStop(0, "rgba(255,255,255,.48)");
-    sunWash.addColorStop(0.42, "rgba(255,255,255,.05)");
-    sunWash.addColorStop(1, "rgba(68,123,143,.12)");
+    context.strokeStyle = "rgba(236,248,248,.58)";
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(width * 0.05, height * 0.34);
+    context.bezierCurveTo(width * 0.32, height * 0.12, width * 0.55, height * 0.42, width * 0.94, height * 0.11);
+    context.stroke();
+    const sunWash = context.createRadialGradient(width * 0.16, height * 0.08, 0, width * 0.16, height * 0.08, width * 0.72);
+    sunWash.addColorStop(0, "rgba(255,255,238,.62)");
+    sunWash.addColorStop(0.42, "rgba(255,255,255,.12)");
+    sunWash.addColorStop(1, "rgba(46,101,126,0)");
     context.fillStyle = sunWash;
     context.fillRect(0, 0, width, height);
   });
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
   return texture;
 }
 
 function makeCampusLeafTexture() {
   if (campusLeafTexture) return campusLeafTexture;
-  campusLeafTexture = canvasTexture(512, 384, (context, width, height) => {
+  campusLeafTexture = canvasTexture(768, 576, (context, width, height) => {
     context.clearRect(0, 0, width, height);
     context.lineCap = "round";
-    context.strokeStyle = "rgba(59,85,49,.52)";
-    context.lineWidth = 6;
-    [[256,330,130,180], [256,330,230,128], [256,330,354,172], [256,330,410,236], [256,330,92,250]].forEach(([x1,y1,x2,y2]) => {
+    context.strokeStyle = "rgba(45,67,38,.72)";
+    context.lineWidth = 7;
+    [[384,540,164,248], [384,540,316,174], [384,540,474,194], [384,540,650,292], [384,540,98,366], [384,540,548,370]].forEach(([x1,y1,x2,y2]) => {
       context.beginPath();
       context.moveTo(x1,y1);
-      context.quadraticCurveTo((x1+x2)/2, (y1+y2)/2+18, x2,y2);
+      context.quadraticCurveTo((x1+x2)/2, (y1+y2)/2+28, x2,y2);
       context.stroke();
     });
     let seed = 173;
-    for (let index = 0; index < 236; index += 1) {
+    for (let index = 0; index < 620; index += 1) {
       seed = seed * 16807 % 2147483647;
       const angle = seed % 628 / 100;
       seed = seed * 16807 % 2147483647;
-      const radial = 52 + seed % 185;
-      const x = width / 2 + Math.cos(angle) * radial * (0.86 + index % 5 * 0.035);
-      const y = height * 0.54 + Math.sin(angle) * radial * 0.62 - (seed % 42);
-      const leafWidth = 7 + seed % 10;
-      const leafHeight = 13 + seed % 16;
-      const palette = ["#27633d", "#367b47", "#4c9552", "#69a957", "#91c365", "#bfda79"];
-      context.fillStyle = palette[(index + Math.floor(x / 70)) % palette.length];
+      const radial = 72 + seed % 285;
+      const x = width / 2 + Math.cos(angle) * radial * (0.9 + index % 7 * 0.018);
+      const y = height * 0.56 + Math.sin(angle) * radial * 0.58 - (seed % 76);
+      const leafWidth = 5 + seed % 9;
+      const leafHeight = 12 + seed % 17;
+      const palette = ["#174b31", "#24653a", "#337b43", "#4b9550", "#68ac58", "#8fc45f", "#bedb76"];
+      context.fillStyle = palette[(index + Math.floor(x / 86) + Math.floor(y / 64)) % palette.length];
       context.beginPath();
       context.ellipse(x, y, leafWidth, leafHeight, angle + index % 4 * 0.3, 0, Math.PI * 2);
       context.fill();
-      context.fillStyle = "rgba(244,255,194,.18)";
+      context.fillStyle = "rgba(249,255,194,.22)";
       context.beginPath();
-      context.ellipse(x - leafWidth * 0.2, y - leafHeight * 0.22, leafWidth * 0.34, leafHeight * 0.42, angle, 0, Math.PI * 2);
+      context.ellipse(x - leafWidth * 0.22, y - leafHeight * 0.24, leafWidth * 0.28, leafHeight * 0.38, angle, 0, Math.PI * 2);
       context.fill();
     }
-    const glow = context.createRadialGradient(176, 98, 0, 176, 98, 210);
-    glow.addColorStop(0, "rgba(236,255,175,.2)");
+    const glow = context.createRadialGradient(236, 124, 0, 236, 124, 330);
+    glow.addColorStop(0, "rgba(244,255,174,.25)");
     glow.addColorStop(1, "rgba(255,255,255,0)");
     context.fillStyle = glow;
     context.fillRect(0, 0, width, height);
@@ -2965,20 +2976,32 @@ function makeCampusLeafTexture() {
 
 function makeCampusCloudTexture() {
   if (campusCloudTexture) return campusCloudTexture;
-  campusCloudTexture = canvasTexture(512, 256, (context, width, height) => {
+  campusCloudTexture = canvasTexture(768, 384, (context, width, height) => {
     context.clearRect(0, 0, width, height);
-    const puffs = [[78,145,74,46], [148,115,98,66], [234,136,118,72], [332,105,104,70], [420,142,82,48]];
+    context.save();
+    context.filter = "blur(3px)";
+    const puffs = [
+      [94,242,102,46], [168,190,126,72], [268,218,152,76], [376,168,142,82],
+      [492,194,154,76], [612,232,112,52], [348,252,246,54], [238,274,188,42]
+    ];
     puffs.forEach(([x, y, rx, ry], index) => {
-      const cloud = context.createRadialGradient(x - rx * 0.2, y - ry * 0.38, 2, x, y, rx);
+      const cloud = context.createRadialGradient(x - rx * 0.18, y - ry * 0.34, 2, x, y, rx);
       cloud.addColorStop(0, "rgba(255,255,255,.98)");
-      cloud.addColorStop(0.54, index % 2 ? "rgba(244,252,255,.88)" : "rgba(255,255,255,.9)");
-      cloud.addColorStop(0.82, "rgba(196,225,239,.46)");
-      cloud.addColorStop(1, "rgba(183,217,234,0)");
+      cloud.addColorStop(0.48, index % 2 ? "rgba(249,253,255,.9)" : "rgba(255,255,255,.93)");
+      cloud.addColorStop(0.78, "rgba(202,229,241,.5)");
+      cloud.addColorStop(1, "rgba(179,216,235,0)");
       context.fillStyle = cloud;
       context.beginPath();
-      context.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      context.ellipse(x, y, rx, ry, -0.04 + index * 0.01, 0, Math.PI * 2);
       context.fill();
     });
+    context.restore();
+    const sunEdge = context.createLinearGradient(0, 80, width, 280);
+    sunEdge.addColorStop(0, "rgba(255,250,220,.34)");
+    sunEdge.addColorStop(0.4, "rgba(255,255,255,.08)");
+    sunEdge.addColorStop(1, "rgba(188,221,238,0)");
+    context.fillStyle = sunEdge;
+    context.fillRect(0, 0, width, height);
   });
   SHARED_TEXTURES.add(campusCloudTexture);
   return campusCloudTexture;
@@ -2991,8 +3014,8 @@ function makeCampusShadowTexture() {
     for (let side = 0; side < 2; side += 1) {
       const direction = side ? -1 : 1;
       const originX = side ? width * 0.95 : width * 0.05;
-      context.strokeStyle = "rgba(22,31,29,.07)";
-      context.lineWidth = 5;
+      context.strokeStyle = "rgba(22,38,34,.13)";
+      context.lineWidth = 6;
       for (let branch = 0; branch < 5; branch += 1) {
         context.beginPath();
         context.moveTo(originX, branch * 116 - 24);
@@ -3008,13 +3031,40 @@ function makeCampusShadowTexture() {
         const x = originX + direction * reach + (seed % 29 - 14);
         const leafWidth = 7 + seed % 18;
         const leafHeight = 3 + seed % 9;
-        context.fillStyle = `rgba(20,30,28,${0.045 + seed % 8 / 100})`;
+        context.fillStyle = `rgba(20,34,30,${0.15 + seed % 11 / 100})`;
         context.beginPath();
         context.ellipse(x, y, leafWidth, leafHeight, direction * -0.46 + index % 5 * 0.12, 0, Math.PI * 2);
         context.fill();
       }
     }
   });
+}
+
+function makeCampusAuthoredShadowTexture(canopyImage) {
+  const texture = canvasTexture(1024, 1024, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    context.filter = "brightness(0) blur(3px)";
+    context.globalAlpha = 0.3;
+    const paintCanopy = (x, y, drawWidth, drawHeight, rotation, flip = 1) => {
+      context.save();
+      context.translate(x, y);
+      context.rotate(rotation);
+      context.scale(flip, 1);
+      context.drawImage(canopyImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      context.restore();
+    };
+    paintCanopy(-32, 150, 700, 610, 0.28);
+    paintCanopy(width + 28, 438, 760, 650, -0.31, -1);
+    paintCanopy(-72, 790, 690, 590, 0.2);
+    paintCanopy(width + 82, 1000, 720, 620, -0.24, -1);
+    context.filter = "none";
+    context.globalAlpha = 1;
+  });
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 1.45);
+  texture.anisotropy = 4;
+  return texture;
 }
 
 function createCampusRoadShadowLayer() {
@@ -3025,7 +3075,7 @@ function createCampusRoadShadowLayer() {
   const shadow = mesh(new THREE.PlaneGeometry(8.35, 180), new THREE.MeshBasicMaterial({
     map: shadowTexture,
     transparent: true,
-    opacity: 0.34,
+    opacity: 0.68,
     depthWrite: false,
     toneMapped: false
   }));
@@ -4195,6 +4245,81 @@ function makeCampusLawnTexture() {
   return texture;
 }
 
+function makeCampusConcreteTexture(seed = 0) {
+  const texture = canvasTexture(512, 512, (context, width, height) => {
+    const wash = context.createLinearGradient(0, 0, width, height);
+    wash.addColorStop(0, seed % 2 ? "#f4f5ef" : "#edf2ef");
+    wash.addColorStop(0.48, seed % 2 ? "#dde2dd" : "#d9e2df");
+    wash.addColorStop(1, seed % 2 ? "#c4cdc9" : "#c8d3d0");
+    context.fillStyle = wash;
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = "rgba(78,96,96,.16)";
+    context.lineWidth = 2;
+    for (let x = 0; x <= width; x += 128) {
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, height);
+      context.stroke();
+    }
+    for (let y = 0; y <= height; y += 128) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(width, y);
+      context.stroke();
+    }
+    let random = 373 + seed * 991;
+    for (let index = 0; index < 1600; index += 1) {
+      random = random * 16807 % 2147483647;
+      const x = random % width;
+      random = random * 16807 % 2147483647;
+      const y = random % height;
+      const alpha = 0.012 + random % 11 / 600;
+      context.fillStyle = `rgba(${random % 2 ? 48 : 255},${random % 2 ? 66 : 255},${random % 2 ? 64 : 255},${alpha})`;
+      context.fillRect(x, y, 1 + random % 2, 1 + random % 2);
+    }
+    const bounce = context.createLinearGradient(0, 0, width, 0);
+    bounce.addColorStop(0, "rgba(255,255,245,.26)");
+    bounce.addColorStop(0.36, "rgba(255,255,255,.04)");
+    bounce.addColorStop(1, "rgba(63,86,86,.14)");
+    context.fillStyle = bounce;
+    context.fillRect(0, 0, width, height);
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1.4, 1.4);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+function makeCampusBarkTexture(seed = 0) {
+  const texture = canvasTexture(256, 512, (context, width, height) => {
+    const bark = context.createLinearGradient(0, 0, width, 0);
+    bark.addColorStop(0, "#4a382c");
+    bark.addColorStop(0.28, seed % 2 ? "#765842" : "#6b503b");
+    bark.addColorStop(0.62, "#87664a");
+    bark.addColorStop(1, "#3d3028");
+    context.fillStyle = bark;
+    context.fillRect(0, 0, width, height);
+    let random = 713 + seed * 419;
+    for (let index = 0; index < 190; index += 1) {
+      random = random * 16807 % 2147483647;
+      const x = random % width;
+      const y = random * 31 % height;
+      context.strokeStyle = index % 3 ? "rgba(34,24,20,.28)" : "rgba(220,185,134,.16)";
+      context.lineWidth = 1 + random % 3;
+      context.beginPath();
+      context.moveTo(x, y);
+      context.bezierCurveTo(x - 8, y + 24, x + 7, y + 48, x - 2, y + 88 + random % 42);
+      context.stroke();
+    }
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 3.2);
+  texture.anisotropy = 4;
+  return texture;
+}
+
 function createCampusSurfaceRibbon() {
   const group = new THREE.Group();
   const pavingTexture = makeCampusPavingTexture();
@@ -4235,6 +4360,18 @@ function createCampusSurfaceRibbon() {
 
 function createCampusCloudField() {
   const group = new THREE.Group();
+  const skyArtMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false
+  });
+  const skyArt = mesh(new THREE.PlaneGeometry(196, 110), skyArtMaterial);
+  skyArt.position.set(0, 27, -94);
+  skyArt.renderOrder = -8;
+  group.add(skyArt);
   const sunTexture = canvasTexture(256, 256, (context, width, height) => {
     const glow = context.createRadialGradient(width / 2, height / 2, 2, width / 2, height / 2, width / 2);
     glow.addColorStop(0, "rgba(255,255,238,1)");
@@ -4280,6 +4417,8 @@ function createCampusCloudField() {
     cloud.userData.phase = index * 1.37;
     group.add(cloud);
   });
+  group.userData.skyArt = skyArt;
+  group.userData.proceduralSky = group.children.filter((child) => child !== skyArt);
   group.userData.animate = (time) => {
     group.children.forEach((cloud) => {
       if (Number.isFinite(cloud.userData.baseX)) {
@@ -4292,46 +4431,59 @@ function createCampusCloudField() {
 
 function createCampusTreeAvenue(side, seed = 0) {
   const group = new THREE.Group();
-  const count = 28;
-  const trunkMaterial = material(seed % 2 ? 0x65513d : 0x5c4938, { roughness: 0.98 });
-  const branchMaterial = material(0x69523d, { roughness: 0.98 });
+  const count = 25;
+  const barkTexture = makeCampusBarkTexture(seed);
+  const trunkMaterial = new THREE.MeshStandardMaterial({ map: barkTexture, color: 0xf0ddc7, roughness: 0.98, metalness: 0 });
+  const branchMaterial = new THREE.MeshStandardMaterial({ map: barkTexture, color: 0xd8c2aa, roughness: 1, metalness: 0 });
   const trunkTransforms = [];
   const branchTransforms = [];
   const leafCards = [];
   const blossomTransforms = [];
   for (let index = 0; index < count; index += 1) {
-    const z = 98 - index * 7.1;
-    const x = side * (7.35 + (index % 3) * 0.22);
-    const height = 4.15 + (index * 17 + seed * 5) % 10 / 10;
-    trunkTransforms.push({ x, y: height * 0.46, z, sy: height / 3.6, sx: 0.9 + index % 2 * 0.08, sz: 0.9 });
-    branchTransforms.push({ x: x - side * 0.46, y: height * 0.83, z, rz: side * 0.62, sy: 1.22 });
-    branchTransforms.push({ x: x + side * 0.4, y: height * 0.9, z: z - 0.15, rz: side * -0.58, sy: 1.08 });
-    leafCards.push({ x: x - side * 1.48, y: height + 1.34, z: z + 0.44, sx: 5.15, sy: 3.72, ry: side * 0.2 });
-    leafCards.push({ x: x - side * 0.86, y: height + 1.02, z: z - 0.2, sx: 4.6, sy: 3.35, ry: side * -0.34 });
-    leafCards.push({ x: x - side * 1.18, y: height + 1.14, z: z - 0.62, sx: 4.2, sy: 3.2, ry: side * 0.62 });
-    if ((index + seed) % 5 === 1) {
-      for (let blossom = 0; blossom < 8; blossom += 1) {
+    const z = 108 - index * 8.45;
+    const x = side * (7.62 + ((index * 7 + seed) % 5 - 2) * 0.12);
+    const height = 4.55 + (index * 17 + seed * 5) % 14 / 10;
+    trunkTransforms.push({ x, y: height * 0.47, z, sy: height / 3.6, sx: 0.96 + index % 3 * 0.045, sz: 0.94 });
+    branchTransforms.push({ x: x - side * 0.5, y: height * 0.84, z, rz: side * 0.66, sy: 1.3 });
+    branchTransforms.push({ x: x + side * 0.38, y: height * 0.9, z: z - 0.22, rz: side * -0.58, sy: 1.12 });
+    branchTransforms.push({ x: x - side * 0.1, y: height * 0.96, z: z + 0.1, rz: side * 0.22, rx: 0.38, sy: 0.98 });
+    const gatewaySightline = index >= 11 && index <= 14;
+    if (!gatewaySightline) {
+      leafCards.push({ x: x - side * 1.7, y: height + 1.46, z: z + 0.5, sx: 5.65, sy: 4.18, ry: side * 0.18 });
+      leafCards.push({ x: x - side * 0.96, y: height + 1.16, z: z - 0.32, sx: 5.15, sy: 3.82, ry: side * -0.34 });
+      leafCards.push({ x: x - side * 1.22, y: height + 1.22, z: z - 1.08, sx: 4.75, sy: 3.55, ry: side * 0.58 });
+      leafCards.push({ x: x + side * 0.42, y: height + 1.22, z: z + 0.12, sx: 4.4, sy: 3.45, ry: side * 1.12 });
+    } else {
+      leafCards.push({ x: x + side * 0.55, y: height + 1.15, z, sx: 3.4, sy: 2.65, ry: side * 0.72 });
+    }
+    if (index % 3 === 0 && !gatewaySightline) {
+      leafCards.push({ x: side * 4.25, y: height + 2.48, z: z - 0.3, sx: 6.9, sy: 3.9, ry: side * -0.08, rz: side * 0.08 });
+    }
+    if ((index + seed) % 4 === 1) {
+      for (let blossom = 0; blossom < 12; blossom += 1) {
         blossomTransforms.push({
-          x: x - side * (0.65 + blossom % 3 * 0.34),
-          y: height + 1.2 + blossom % 4 * 0.18,
-          z: z - 0.62 + blossom * 0.18,
-          sx: 0.9 + blossom % 2 * 0.22,
-          sy: 0.72,
-          sz: 0.82
+          x: x - side * (0.72 + blossom % 4 * 0.32),
+          y: height + 1.18 + blossom % 5 * 0.17,
+          z: z - 0.92 + blossom * 0.17,
+          sx: 0.82 + blossom % 2 * 0.18,
+          sy: 0.68,
+          sz: 0.76
         });
       }
     }
   }
-  const trunks = createInstancedObstacleParts(new THREE.CylinderGeometry(0.19, 0.3, 3.6, 10), trunkMaterial, trunkTransforms);
-  const branches = createInstancedObstacleParts(new THREE.CylinderGeometry(0.09, 0.16, 2.25, 8), branchMaterial, branchTransforms);
-  const cardMaterial = new THREE.MeshBasicMaterial({
+  const trunks = createInstancedObstacleParts(new THREE.CylinderGeometry(0.2, 0.33, 3.6, 12), trunkMaterial, trunkTransforms);
+  const branches = createInstancedObstacleParts(new THREE.CylinderGeometry(0.085, 0.17, 2.35, 9), branchMaterial, branchTransforms);
+  const cardMaterial = new THREE.MeshStandardMaterial({
     map: makeCampusLeafTexture(),
-    color: seed % 2 ? 0xb8dc96 : 0xaed18b,
+    color: seed % 2 ? 0xe6f7cf : 0xf0ffdb,
     transparent: true,
-    alphaTest: 0.075,
-    depthWrite: false,
+    alphaTest: 0.12,
+    depthWrite: true,
     side: THREE.DoubleSide,
-    toneMapped: true
+    roughness: 0.92,
+    metalness: 0,
+    envMapIntensity: 0.42
   });
   const cards = createInstancedObstacleParts(new THREE.PlaneGeometry(1, 1), cardMaterial, leafCards);
   cards.castShadow = false;
@@ -4341,10 +4493,67 @@ function createCampusTreeAvenue(side, seed = 0) {
     blossomTransforms
   );
   blossoms.castShadow = false;
-  const shadow = createSoftGroundShadow(6.1, 212, 0.13);
-  shadow.position.set(side * 6.92, 0.012, 2.2);
+  const shadow = createSoftGroundShadow(7.4, 216, 0.18);
+  shadow.position.set(side * 6.58, 0.012, 3.2);
   group.add(shadow, trunks, branches, cards, blossoms);
   group.userData.canopy = cards;
+  group.userData.barkTexture = barkTexture;
+  return group;
+}
+
+function createCampusForegroundCanopy(seed = 0) {
+  const group = new THREE.Group();
+  const canopyMaterial = new THREE.MeshStandardMaterial({
+    map: makeCampusLeafTexture(),
+    color: 0xf7ffe8,
+    transparent: true,
+    alphaTest: 0.1,
+    depthWrite: true,
+    side: THREE.DoubleSide,
+    roughness: 0.94,
+    metalness: 0,
+    envMapIntensity: 0.38
+  });
+  const placements = [
+    { x: -5.95, y: 7.15, z: -1.2, sx: 10.6, sy: 7.5, ry: 0.16, rz: -0.08 },
+    { x: 6.05, y: 7.3, z: -2.2, sx: 10.8, sy: 7.7, ry: -0.18, rz: 0.09 },
+    { x: -5.35, y: 8.8, z: -15.6, sx: 8.8, sy: 5.9, ry: 0.12, rz: 0.04 },
+    { x: 5.5, y: 8.95, z: -17.2, sx: 9, sy: 6.1, ry: -0.13, rz: -0.04 }
+  ];
+  const cards = createInstancedObstacleParts(new THREE.PlaneGeometry(1, 1), canopyMaterial, placements);
+  cards.castShadow = false;
+  cards.receiveShadow = false;
+  cards.renderOrder = 2;
+  group.add(cards);
+  group.userData.canopy = cards;
+  group.userData.canopyPhase = seed * 0.73;
+  return group;
+}
+
+function createCampusAuthoredStreetscape(side) {
+  const group = new THREE.Group();
+  const leftSide = side < 0;
+  const height = leftSide ? 11.8 : 12.1;
+  const aspect = leftSide ? 941 / 1672 : 847 / 1857;
+  const streetscapeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    alphaTest: 0.045,
+    depthTest: false,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+  const card = mesh(new THREE.PlaneGeometry(height * aspect, height), streetscapeMaterial);
+  card.position.set(leftSide ? -5.85 : 5.8, height * 0.5 - 0.08, 0);
+  card.rotation.y = leftSide ? 0.025 : -0.025;
+  card.renderOrder = 3;
+  card.castShadow = false;
+  card.receiveShadow = false;
+  card.frustumCulled = false;
+  group.add(card);
+  group.userData.streetscapeArt = { side, card };
   return group;
 }
 
@@ -4414,18 +4623,31 @@ function createCampusAcademicWing(accent, seed = 0) {
 
 function createCampusBuildingRow(side, accent, seed = 0) {
   const group = new THREE.Group();
-  const count = 13;
-  const concrete = material(seed % 2 ? 0xe9eeea : 0xd9e4e2, { roughness: 0.74, metalness: 0.025 });
-  const podiumMaterial = material(0xb8c5c0, { roughness: 0.84, metalness: 0.02 });
+  const count = 11;
+  const concreteTexture = makeCampusConcreteTexture(seed);
+  const concrete = new THREE.MeshStandardMaterial({
+    map: concreteTexture,
+    color: seed % 2 ? 0xf5f3e9 : 0xf0f6f2,
+    roughness: 0.72,
+    metalness: 0.018,
+    envMapIntensity: 0.62
+  });
+  const podiumMaterial = new THREE.MeshStandardMaterial({
+    map: concreteTexture,
+    color: 0xc9d2cc,
+    roughness: 0.86,
+    metalness: 0.015,
+    envMapIntensity: 0.42
+  });
   const steel = material(0x5d727b, { roughness: 0.26, metalness: 0.74 });
-  const glass = new THREE.MeshPhysicalMaterial({
+  const glass = new THREE.MeshStandardMaterial({
     map: makeCampusFacadeTexture(seed),
-    color: 0xd4f1f4,
-    roughness: 0.13,
-    metalness: 0.13,
-    clearcoat: 0.82,
-    clearcoatRoughness: 0.14,
-    envMapIntensity: 1.12,
+    color: 0xf2fcff,
+    roughness: 0.24,
+    metalness: 0.08,
+    emissive: 0x224b5c,
+    emissiveIntensity: 0.12,
+    envMapIntensity: 1.28,
     side: THREE.DoubleSide
   });
   const bodies = [];
@@ -4436,13 +4658,16 @@ function createCampusBuildingRow(side, accent, seed = 0) {
   const mullions = [];
   const bands = [];
   const canopies = [];
+  const balconySlabs = [];
+  const facadePiers = [];
+  const roofBlocks = [];
   const sunStrips = [];
   for (let index = 0; index < count; index += 1) {
-    const z = 128 - index * 21.4;
-    const frontage = 12.6 + (index * 17 + seed * 3) % 36 / 10;
-    const depth = 5.2 + (index * 11 + seed) % 24 / 10;
-    const height = 7.4 + (index * 23 + seed * 7) % 48 / 10;
-    const innerX = side * (9.15 + index % 3 * 0.38);
+    const z = 112 - index * 23.2;
+    const frontage = 15.2 + (index * 17 + seed * 3) % 46 / 10;
+    const depth = 6.8 + (index * 11 + seed) % 28 / 10;
+    const height = 8.2 + (index * 23 + seed * 7) % 44 / 10;
+    const innerX = side * (9.6 + index % 3 * 0.46);
     const centerX = innerX + side * depth / 2;
     bodies.push({ x: centerX, y: height / 2, z, sx: depth, sy: height, sz: frontage });
     podiums.push({ x: centerX, y: 0.28, z, sx: depth + 0.7, sy: 0.56, sz: frontage + 0.7 });
@@ -4457,27 +4682,31 @@ function createCampusBuildingRow(side, accent, seed = 0) {
     });
     endFacades.push({ x: centerX, y: height * 0.54, z: z - frontage / 2 - 0.018, sx: depth * 0.84, sy: height * 0.78 });
     endFacades.push({ x: centerX, y: height * 0.54, z: z + frontage / 2 + 0.018, sx: depth * 0.84, sy: height * 0.78 });
-    for (let column = 0; column < 9; column += 1) {
+    for (let column = 0; column < 10; column += 1) {
       mullions.push({
         x: innerX - side * 0.08,
         y: height * 0.54,
-        z: z - frontage * 0.4 + column * frontage * 0.1,
+        z: z - frontage * 0.405 + column * frontage * 0.09,
         sx: 0.09,
         sy: height * 0.82,
         sz: 0.09
       });
     }
-    for (let floor = 0; floor < 7; floor += 1) {
+    for (let floor = 0; floor < 6; floor += 1) {
       bands.push({
         x: innerX - side * 0.09,
-        y: 0.95 + floor * (height - 1.55) / 6,
+        y: 1.05 + floor * (height - 1.7) / 5,
         z,
         sx: 0.11,
-        sy: 0.075,
+        sy: 0.09,
         sz: frontage * 0.91
       });
     }
-    canopies.push({ x: innerX - side * 0.82, y: 2.72, z: z + frontage * 0.18, sx: 1.75, sy: 0.18, sz: frontage * 0.32 });
+    facadePiers.push({ x: innerX - side * 0.22, y: height * 0.5, z: z - frontage * 0.47, sx: 0.42, sy: height, sz: 0.66 });
+    facadePiers.push({ x: innerX - side * 0.22, y: height * 0.5, z: z + frontage * 0.47, sx: 0.42, sy: height, sz: 0.66 });
+    balconySlabs.push({ x: innerX - side * 0.48, y: 3.04, z: z + frontage * 0.18, sx: 1.06, sy: 0.16, sz: frontage * 0.28 });
+    canopies.push({ x: innerX - side * 0.92, y: 2.74, z: z + frontage * 0.18, sx: 1.92, sy: 0.16, sz: frontage * 0.3 });
+    roofBlocks.push({ x: centerX, y: height + 0.72, z: z - frontage * 0.18, sx: depth * 0.42, sy: 1.2, sz: frontage * 0.18 });
     sunStrips.push({ x: innerX - side * 0.12, y: height - 0.3, z, sx: 0.08, sy: 0.055, sz: frontage * 0.82 });
   }
   const bodyMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), concrete, bodies);
@@ -4488,10 +4717,17 @@ function createCampusBuildingRow(side, accent, seed = 0) {
   const mullionMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), steel, mullions);
   const bandMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), steel, bands);
   const canopyMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), podiumMaterial, canopies);
+  const balconyMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), concrete, balconySlabs);
+  const pierMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), concrete, facadePiers);
+  const roofBlockMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), concrete, roofBlocks);
   const glowMaterial = material(accent, { emissive: accent, emissiveIntensity: 0.16, roughness: 0.3 });
   const stripMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), glowMaterial, sunStrips);
-  [podiumMesh, roofMesh, facadeMesh, endFacadeMesh, mullionMesh, bandMesh, canopyMesh, stripMesh].forEach((item) => { item.castShadow = false; });
-  group.add(bodyMesh, podiumMesh, roofMesh, facadeMesh, endFacadeMesh, mullionMesh, bandMesh, canopyMesh, stripMesh);
+  [podiumMesh, roofMesh, facadeMesh, endFacadeMesh, mullionMesh, bandMesh, canopyMesh, balconyMesh, pierMesh, roofBlockMesh, stripMesh]
+    .forEach((item) => { item.castShadow = false; });
+  group.add(bodyMesh, podiumMesh, roofMesh, facadeMesh, endFacadeMesh, mullionMesh, bandMesh, canopyMesh, balconyMesh, pierMesh, roofBlockMesh, stripMesh);
+  group.userData.concreteTexture = concreteTexture;
+  group.userData.facadeParts = [facadeMesh, endFacadeMesh];
+  group.userData.proceduralFacadeGrid = [mullionMesh, bandMesh];
   return group;
 }
 
@@ -4559,29 +4795,33 @@ function createCampusGlassElevator(accent) {
 function createCampusCurvedPavilion(accent) {
   const group = new THREE.Group();
   const steel = material(0x4e616a, { roughness: 0.25, metalness: 0.76 });
-  const stone = material(0xc8d0cc, { roughness: 0.82, metalness: 0.02 });
+  const shell = material(0xe9eeea, { roughness: 0.52, metalness: 0.04, envMapIntensity: 0.66 });
+  const stone = material(0xb8c3bf, { roughness: 0.82, metalness: 0.02 });
   const glass = new THREE.MeshPhysicalMaterial({
-    color: 0xb9e5ec,
-    roughness: 0.1,
-    metalness: 0.08,
-    transmission: 0.16,
+    color: 0x78b8cb,
+    roughness: 0.08,
+    metalness: 0.12,
+    transmission: 0.28,
     transparent: true,
-    opacity: 0.72,
+    opacity: 0.58,
     clearcoat: 0.9,
     clearcoatRoughness: 0.1,
     side: THREE.DoubleSide,
-    depthWrite: true
+    depthWrite: false
   });
   const platform = mesh(new THREE.BoxGeometry(5.4, 0.25, 8.2), stone, false, true);
   platform.position.y = 0.12;
-  const canopy = mesh(new THREE.CylinderGeometry(2.55, 2.55, 7.5, 32, 1, true, 0, Math.PI), glass);
+  const canopy = mesh(new THREE.CylinderGeometry(2.62, 2.62, 7.65, 48, 1, true, 0, Math.PI), shell);
   canopy.rotation.x = Math.PI / 2;
-  canopy.position.y = 1.35;
-  const ribs = createInstancedObstacleParts(new THREE.TorusGeometry(2.56, 0.075, 8, 28, Math.PI), steel,
-    Array.from({ length: 7 }, (_, index) => ({ y: 1.35, z: -3.45 + index * 1.15 })));
-  const backGlass = mesh(new THREE.PlaneGeometry(7.25, 2.5), glass);
+  canopy.position.y = 1.48;
+  canopy.scale.y = 0.82;
+  const ribs = createInstancedObstacleParts(new THREE.TorusGeometry(2.64, 0.055, 8, 40, Math.PI), steel,
+    Array.from({ length: 5 }, (_, index) => ({ y: 1.48, z: -3.2 + index * 1.6, sy: 0.82 })));
+  const backGlass = mesh(new THREE.PlaneGeometry(7.4, 2.72), glass);
   backGlass.rotation.y = Math.PI / 2;
-  backGlass.position.set(2.48, 1.42, 0);
+  backGlass.position.set(2.5, 1.5, 0);
+  const frontGlass = backGlass.clone();
+  frontGlass.position.x = -2.5;
   const bench = createBench();
   bench.position.set(0, 0.04, 0.65);
   bench.rotation.y = Math.PI;
@@ -4591,47 +4831,51 @@ function createCampusCurvedPavilion(accent) {
     roughness: 0.2
   }));
   marker.position.set(2.58, 2.28, -2.25);
-  group.add(platform, canopy, ribs, backGlass, bench, marker);
+  group.add(platform, canopy, ribs, backGlass, frontGlass, bench, marker);
   return group;
 }
 
 function createCampusGateway(accent) {
   const group = new THREE.Group();
   const steel = material(0x586c75, { roughness: 0.26, metalness: 0.76 });
-  const concrete = material(0xc7d0cd, { roughness: 0.78, metalness: 0.03 });
+  const bridgeTexture = makeCampusConcreteTexture(9);
+  const concrete = new THREE.MeshStandardMaterial({ map: bridgeTexture, color: 0xe9eeea, roughness: 0.72, metalness: 0.025, envMapIntensity: 0.58 });
   const glass = new THREE.MeshPhysicalMaterial({
-    color: 0xc7ecf0,
-    roughness: 0.1,
-    metalness: 0.08,
-    transmission: 0.12,
+    color: 0xa6dbe8,
+    roughness: 0.06,
+    metalness: 0.1,
+    transmission: 0.32,
     transparent: true,
-    opacity: 0.72,
-    clearcoat: 0.88,
-    clearcoatRoughness: 0.12,
+    opacity: 0.48,
+    clearcoat: 0.94,
+    clearcoatRoughness: 0.08,
     side: THREE.DoubleSide,
-    depthWrite: true
+    depthWrite: false
   });
-  const deck = mesh(new THREE.BoxGeometry(19.8, 0.38, 2.5), concrete, true, true);
-  deck.position.y = 5.22;
-  const underside = mesh(new THREE.BoxGeometry(20.15, 0.13, 2.66), steel, true, true);
+  const deck = mesh(new THREE.BoxGeometry(19.25, 0.26, 2.35), concrete, true, true);
+  deck.position.y = 5.14;
+  const underside = mesh(new THREE.BoxGeometry(19.65, 0.1, 2.52), steel, true, true);
   underside.position.y = 4.96;
   const panes = [
-    mesh(new THREE.PlaneGeometry(19.15, 1.35), glass),
-    mesh(new THREE.PlaneGeometry(19.15, 1.35), glass)
+    mesh(new THREE.PlaneGeometry(18.75, 1.18), glass),
+    mesh(new THREE.PlaneGeometry(18.75, 1.18), glass)
   ];
-  panes[0].position.set(0, 5.95, -1.22);
-  panes[1].position.set(0, 5.95, 1.22);
+  panes[0].position.set(0, 5.83, -1.14);
+  panes[1].position.set(0, 5.83, 1.14);
   const posts = createInstancedObstacleParts(new THREE.BoxGeometry(0.08, 1.55, 0.08), steel,
-    Array.from({ length: 22 }, (_, index) => ({ x: -9.25 + index * 0.88, y: 5.95, z: -1.25 }))
-      .concat(Array.from({ length: 22 }, (_, index) => ({ x: -9.25 + index * 0.88, y: 5.95, z: 1.25 }))));
-  const pillars = createInstancedObstacleParts(new THREE.BoxGeometry(0.52, 5.04, 0.62), concrete, [
-    { x: -7.35, y: 2.5 }, { x: 7.35, y: 2.5 }
+    Array.from({ length: 20 }, (_, index) => ({ x: -9.02 + index * 0.95, y: 5.82, z: -1.17, sy: 0.82 }))
+      .concat(Array.from({ length: 20 }, (_, index) => ({ x: -9.02 + index * 0.95, y: 5.82, z: 1.17, sy: 0.82 }))));
+  const topRails = createInstancedObstacleParts(new THREE.BoxGeometry(18.9, 0.065, 0.07), steel, [
+    { y: 6.43, z: -1.17 }, { y: 6.43, z: 1.17 }
+  ]);
+  const pillars = createInstancedObstacleParts(new THREE.BoxGeometry(0.42, 4.96, 0.52), concrete, [
+    { x: -7.75, y: 2.48 }, { x: 7.75, y: 2.48 }
   ]);
   const lift = createCampusGlassElevator(accent);
-  lift.position.set(-10.25, 0, 0.1);
+  lift.position.set(-8.85, 0, 0.1);
   const stairs = createCampusBridgeStairs(-1, steel, concrete);
   const pavilion = createCampusCurvedPavilion(accent);
-  pavilion.position.set(7.95, 0, -4.6);
+  pavilion.position.set(7.18, 0, -4.3);
   pavilion.rotation.y = -0.08;
   const edgeHighlight = mesh(new THREE.BoxGeometry(19.1, 0.045, 0.07), material(accent, {
     emissive: accent,
@@ -4639,8 +4883,28 @@ function createCampusGateway(accent) {
     roughness: 0.2
   }));
   edgeHighlight.position.set(0, 4.88, 1.34);
-  group.add(deck, underside, ...panes, posts, pillars, lift, stairs, pavilion, edgeHighlight);
+  const landmarkMaterial = () => new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    alphaTest: 0.055,
+    depthWrite: true,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+  const leftLandmark = mesh(new THREE.PlaneGeometry(15.2, 10.13), landmarkMaterial());
+  leftLandmark.position.set(-6.05, 5.07, 1.52);
+  leftLandmark.renderOrder = 4;
+  leftLandmark.frustumCulled = false;
+  const rightLandmark = mesh(new THREE.PlaneGeometry(10.4, 6.93), landmarkMaterial());
+  rightLandmark.position.set(6.95, 3.47, 1.78);
+  rightLandmark.renderOrder = 5;
+  rightLandmark.frustumCulled = false;
+  group.add(deck, underside, ...panes, posts, topRails, pillars, lift, stairs, pavilion, edgeHighlight, leftLandmark, rightLandmark);
   group.userData.overheadClearance = 4.72;
+  group.userData.bridgeTexture = bridgeTexture;
+  group.userData.landmarkArt = { left: leftLandmark, right: rightLandmark };
+  group.userData.proceduralLandmarks = [lift, stairs, pavilion];
   return group;
 }
 
@@ -4655,14 +4919,25 @@ function createCampusStreetFurniture(side, accent, seed = 0) {
   const planterTransforms = [];
   const shrubTransforms = [];
   const blossomTransforms = [];
+  const flowerCardTransforms = [];
   for (let index = 0; index < 26; index += 1) {
     const z = 98 - index * 8.8;
     lampTransforms.push({ x: side * 6.96, y: 2.35, z });
     armTransforms.push({ x: side * 6.55, y: 4.35, z, rz: side * Math.PI / 2, sy: 0.92 });
-    planterTransforms.push({ x: side * 8.55, y: 0.28, z: z - 2.6, sx: 1.2, sz: 2.3 });
+    planterTransforms.push({ x: side * 6.92, y: 0.28, z: z - 2.6, sx: 1.08, sz: 2.3 });
+    if (index % 2 === 0) {
+      flowerCardTransforms.push({
+        x: side * 6.72,
+        y: 1.02,
+        z: z - 2.58,
+        sx: 4.2,
+        sy: 2.18,
+        ry: side * 0.1
+      });
+    }
     for (let plant = 0; plant < 5; plant += 1) {
       shrubTransforms.push({
-        x: side * (8.22 + plant % 2 * 0.42),
+          x: side * (6.62 + plant % 2 * 0.34),
         y: 0.65 + plant % 3 * 0.08,
         z: z - 3.18 + plant * 0.31,
         sx: 0.72,
@@ -4670,7 +4945,7 @@ function createCampusStreetFurniture(side, accent, seed = 0) {
         sz: 0.68
       });
       blossomTransforms.push({
-        x: side * (8.18 + plant % 3 * 0.28),
+          x: side * (6.58 + plant % 3 * 0.24),
         y: 0.92 + plant % 2 * 0.08,
         z: z - 3.05 + plant * 0.27,
         sx: 0.9,
@@ -4687,10 +4962,23 @@ function createCampusStreetFurniture(side, accent, seed = 0) {
   const planters = createInstancedObstacleParts(new THREE.BoxGeometry(1.45, 0.56, 1.4), planter, planterTransforms);
   const shrubs = createInstancedObstacleParts(new THREE.SphereGeometry(0.52, 10, 7), shrub, shrubTransforms);
   const blossoms = createInstancedObstacleParts(new THREE.SphereGeometry(0.085, 8, 6), blossom, blossomTransforms);
+  const flowerCards = createInstancedObstacleParts(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({
+    map: makeCampusLeafTexture(),
+    color: 0xf4ffd9,
+    transparent: true,
+    alphaTest: 0.1,
+    depthWrite: true,
+    side: THREE.DoubleSide,
+    roughness: 0.94,
+    metalness: 0
+  }), flowerCardTransforms);
+  flowerCards.castShadow = false;
   [poles, arms, lamps, planters, shrubs, blossoms].forEach((item) => { item.castShadow = false; });
-  group.add(poles, arms, lamps, planters, shrubs, blossoms);
+  group.add(poles, arms, lamps, planters, shrubs, blossoms, flowerCards);
   group.userData.lamps = lamps;
   group.userData.baseEmissive = 0.88;
+  group.userData.flowerCards = flowerCards;
+  group.userData.proceduralFlowerbed = [shrubs, blossoms];
   return group;
 }
 
@@ -4740,6 +5028,7 @@ function createRainCampusWorld(config) {
   const surface = createCampusSurfaceRibbon();
   root.add(surface);
   const clouds = createCampusCloudField();
+  root.userData.campusCloudField = clouds;
   root.userData.layers[0].group.add(clouds);
 
   const distantCity = createCampusDistantCity(config.accent);
@@ -4788,13 +5077,41 @@ function createRainCampusWorld(config) {
     });
   });
 
+  [
+    { side: -1, z: -18 },
+    { side: 1, z: -40 }
+  ].forEach(({ side, z }) => {
+    const streetscape = createCampusAuthoredStreetscape(side);
+    addWorldScenery(root, 2, streetscape, {
+      side: 0,
+      x: 0,
+      z,
+      span: 118,
+      parallax: 1,
+      nearLimit: 7.5,
+      depthCull: false
+    });
+  });
+
+  const foregroundCanopy = createCampusForegroundCanopy(8);
+  addWorldScenery(root, 2, foregroundCanopy, {
+    side: 0,
+    x: 0,
+    z: -12,
+    span: 90,
+    parallax: 0.1,
+    nearLimit: 12,
+    depthCull: false
+  });
+
   const gateway = createCampusGateway(config.accent);
   addWorldScenery(root, 2, gateway, {
     side: 0,
     x: 0,
-    z: -22,
-    span: 64,
-    parallax: 1,
+    z: -64,
+    span: 220,
+    scale: 0.96,
+    parallax: 0.14,
     nearLimit: 12,
     depthCull: false
   });
@@ -7827,10 +8144,21 @@ class CinematicRunnerRenderer {
     this.runnerLoadToken = 0;
     this.cityLoadToken = 0;
     this.campusMaterialLoadToken = 0;
+    this.campusArtLoadToken = 0;
     this.campusRoadMaps = null;
+    this.campusCanopyTexture = null;
+    this.campusSkyTexture = null;
+    this.campusFacadeTexture = null;
+    this.campusFlowerbedTexture = null;
+    this.campusLeftLandmarkTexture = null;
+    this.campusRightLandmarkTexture = null;
+    this.campusLeftStreetscapeTexture = null;
+    this.campusRightStreetscapeTexture = null;
+    this.campusRoadShadowTexture = null;
     this.loadRiggedCharacters();
     this.loadPremiumCity();
     this.loadCampusSurfaceMaterials();
+    this.loadCampusArtMaterials();
   }
 
   loadRiggedCharacters() {
@@ -7851,19 +8179,19 @@ class CinematicRunnerRenderer {
         let riggedCompanion = null;
         try {
           riggedPlayer = createRiggedRunner(playerGltf, {
-            height: 2.08,
+            height: 2.18,
             accent: 0xff7866,
-            widthScale: 0.84,
-            depthScale: 0.88,
+            widthScale: 0.76,
+            depthScale: 0.82,
             rotationY: 0,
             fashion: false
           }, motionGltf.animations);
           riggedCompanion = createRiggedRunner(companionGltf, {
-            height: 2.02,
+            height: 2.12,
             accent: 0xff668f,
             companion: true,
-            widthScale: 0.87,
-            depthScale: 0.9,
+            widthScale: 0.79,
+            depthScale: 0.84,
             rotationY: 0,
             fashion: false
           }, motionGltf.animations);
@@ -7989,6 +8317,162 @@ class CinematicRunnerRenderer {
         if (this.disposed || loadToken !== this.campusMaterialLoadToken) return;
         this.canvas.setAttribute("data-campus-material", "procedural-fallback");
         this.canvas.setAttribute("data-campus-material-error", error?.message || "unknown");
+      });
+  }
+
+  loadCampusArtMaterials() {
+    const loadToken = ++this.campusArtLoadToken;
+    Promise.all([
+      this.textureLoader.loadAsync("assets/runner-textures/campus/camphor-canopy.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/summer-sky.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/academic-facade.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/flowerbed.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/landmark-left.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/landmark-right.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/streetscape-left.png"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/streetscape-right.png")
+    ])
+      .then(([
+        texture,
+        skyTexture,
+        facadeTexture,
+        flowerbedTexture,
+        leftLandmarkTexture,
+        rightLandmarkTexture,
+        leftStreetscapeTexture,
+        rightStreetscapeTexture
+      ]) => {
+        if (this.disposed || loadToken !== this.campusArtLoadToken) {
+          texture.dispose();
+          skyTexture.dispose();
+          facadeTexture.dispose();
+          flowerbedTexture.dispose();
+          leftLandmarkTexture.dispose();
+          rightLandmarkTexture.dispose();
+          leftStreetscapeTexture.dispose();
+          rightStreetscapeTexture.dispose();
+          return;
+        }
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = this.mobilePerformance ? 4 : 8;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        this.campusCanopyTexture?.dispose();
+        this.campusCanopyTexture = texture;
+        const authoredRoadShadow = makeCampusAuthoredShadowTexture(texture.image);
+        this.campusRoadShadowTexture?.dispose();
+        const previousRoadShadow = this.campusRoadShadow?.material?.map;
+        this.campusRoadShadowTexture = authoredRoadShadow;
+        if (this.campusRoadShadow?.material) {
+          this.campusRoadShadow.material.map = authoredRoadShadow;
+          this.campusRoadShadow.material.opacity = 0.56;
+          this.campusRoadShadow.material.needsUpdate = true;
+        }
+        if (previousRoadShadow && previousRoadShadow !== authoredRoadShadow && !SHARED_TEXTURES.has(previousRoadShadow)) previousRoadShadow.dispose();
+        let canopyCount = 0;
+        let facadeCount = 0;
+        let flowerbedCount = 0;
+        let landmarkCount = 0;
+        let streetscapeCount = 0;
+        const campusWorld = this.stageWorlds[0];
+        campusWorld?.userData?.scenery?.forEach((entry) => {
+          const canopy = entry.object?.userData?.canopy;
+          if (canopy?.material) {
+            canopy.material.map = texture;
+            canopy.material.color.setHex(0xffffff);
+            canopy.material.alphaTest = 0.08;
+            canopy.material.needsUpdate = true;
+            canopyCount += 1;
+          }
+          const facadeParts = entry.object?.userData?.facadeParts || [];
+          facadeParts.forEach((part) => {
+            part.material.map = facadeTexture;
+            part.material.color.setHex(0xffffff);
+            part.material.roughness = 0.16;
+            part.material.needsUpdate = true;
+            facadeCount += 1;
+          });
+          entry.object?.userData?.proceduralFacadeGrid?.forEach((part) => { part.visible = false; });
+          const flowerCards = entry.object?.userData?.flowerCards;
+          if (flowerCards?.material) {
+            flowerCards.material.map = flowerbedTexture;
+            flowerCards.material.color.setHex(0xffffff);
+            flowerCards.material.alphaTest = 0.08;
+            flowerCards.material.needsUpdate = true;
+            entry.object?.userData?.proceduralFlowerbed?.forEach((part) => { part.visible = false; });
+            flowerbedCount += 1;
+          }
+          const landmarkArt = entry.object?.userData?.landmarkArt;
+          if (landmarkArt?.left?.material && landmarkArt?.right?.material) {
+            landmarkArt.left.material.map = leftLandmarkTexture;
+            landmarkArt.left.material.opacity = 1;
+            landmarkArt.left.material.needsUpdate = true;
+            landmarkArt.right.material.map = rightLandmarkTexture;
+            landmarkArt.right.material.opacity = 1;
+            landmarkArt.right.material.needsUpdate = true;
+            entry.object?.userData?.proceduralLandmarks?.forEach((part) => { part.visible = false; });
+            landmarkCount += 2;
+          }
+          const streetscapeArt = entry.object?.userData?.streetscapeArt;
+          if (streetscapeArt?.card?.material) {
+            streetscapeArt.card.material.map = streetscapeArt.side < 0 ? leftStreetscapeTexture : rightStreetscapeTexture;
+            streetscapeArt.card.material.opacity = 1;
+            streetscapeArt.card.material.needsUpdate = true;
+            streetscapeCount += 1;
+          }
+        });
+        skyTexture.colorSpace = THREE.SRGBColorSpace;
+        skyTexture.anisotropy = this.mobilePerformance ? 2 : 4;
+        this.campusSkyTexture?.dispose();
+        this.campusSkyTexture = skyTexture;
+        facadeTexture.colorSpace = THREE.SRGBColorSpace;
+        facadeTexture.anisotropy = this.mobilePerformance ? 4 : 8;
+        this.campusFacadeTexture?.dispose();
+        this.campusFacadeTexture = facadeTexture;
+        flowerbedTexture.colorSpace = THREE.SRGBColorSpace;
+        flowerbedTexture.anisotropy = this.mobilePerformance ? 4 : 8;
+        this.campusFlowerbedTexture?.dispose();
+        this.campusFlowerbedTexture = flowerbedTexture;
+        [leftLandmarkTexture, rightLandmarkTexture].forEach((landmarkTexture) => {
+          landmarkTexture.colorSpace = THREE.SRGBColorSpace;
+          landmarkTexture.anisotropy = this.mobilePerformance ? 4 : 8;
+          landmarkTexture.minFilter = THREE.LinearMipmapLinearFilter;
+          landmarkTexture.magFilter = THREE.LinearFilter;
+        });
+        this.campusLeftLandmarkTexture?.dispose();
+        this.campusRightLandmarkTexture?.dispose();
+        this.campusLeftLandmarkTexture = leftLandmarkTexture;
+        this.campusRightLandmarkTexture = rightLandmarkTexture;
+        [leftStreetscapeTexture, rightStreetscapeTexture].forEach((streetscapeTexture) => {
+          streetscapeTexture.colorSpace = THREE.SRGBColorSpace;
+          streetscapeTexture.anisotropy = this.mobilePerformance ? 4 : 8;
+          streetscapeTexture.minFilter = THREE.LinearMipmapLinearFilter;
+          streetscapeTexture.magFilter = THREE.LinearFilter;
+        });
+        this.campusLeftStreetscapeTexture?.dispose();
+        this.campusRightStreetscapeTexture?.dispose();
+        this.campusLeftStreetscapeTexture = leftStreetscapeTexture;
+        this.campusRightStreetscapeTexture = rightStreetscapeTexture;
+        const cloudField = campusWorld?.userData?.campusCloudField;
+        if (cloudField?.userData?.skyArt?.material) {
+          cloudField.userData.skyArt.material.map = skyTexture;
+          cloudField.userData.skyArt.material.opacity = 1;
+          cloudField.userData.skyArt.material.needsUpdate = true;
+          cloudField.userData.proceduralSky?.forEach((item) => { item.visible = false; });
+        }
+        this.canvas.setAttribute("data-campus-canopy", canopyCount ? "authored-hd" : "unavailable");
+        this.canvas.setAttribute("data-campus-sky", cloudField?.userData?.skyArt ? "authored-hd" : "procedural-fallback");
+        this.canvas.setAttribute("data-campus-facade", facadeCount ? "authored-hd" : "procedural-fallback");
+        this.canvas.setAttribute("data-campus-flowerbed", flowerbedCount ? "authored-hd" : "procedural-fallback");
+        this.canvas.setAttribute("data-campus-landmarks", landmarkCount === 2 ? "authored-hd" : "procedural-fallback");
+        this.canvas.setAttribute("data-campus-streetscape", streetscapeCount === 2 ? "authored-hd" : "procedural-fallback");
+      })
+      .catch((error) => {
+        if (this.disposed || loadToken !== this.campusArtLoadToken) return;
+        this.canvas.setAttribute("data-campus-canopy", "procedural-fallback");
+        this.canvas.setAttribute("data-campus-landmarks", "procedural-fallback");
+        this.canvas.setAttribute("data-campus-streetscape", "procedural-fallback");
+        this.canvas.setAttribute("data-campus-canopy-error", error?.message || "unknown");
       });
   }
 
@@ -9118,11 +9602,11 @@ class CinematicRunnerRenderer {
     this.platformMaterial.map = this.stageIndex === 0 ? null : this.platformTexture;
     this.platformMaterial.needsUpdate = true;
     if (this.stageIndex === 0) {
-      this.roadMaterial.color.setHex(0xa9b2b1);
-      this.roadMaterial.roughness = 0.8;
+      this.roadMaterial.color.setHex(0x929da0);
+      this.roadMaterial.roughness = 0.68;
       this.roadMaterial.metalness = 0.01;
-      this.roadMaterial.clearcoat = 0.08;
-      this.roadMaterial.clearcoatRoughness = 0.72;
+      this.roadMaterial.clearcoat = 0.24;
+      this.roadMaterial.clearcoatRoughness = 0.34;
       this.curbMaterial.color.setHex(0xc7d0cc);
       this.platformMaterial.color.setHex(0xe0e4e1);
       this.safetyLineMaterial.color.setHex(0xeef1ec);
@@ -9258,11 +9742,11 @@ class CinematicRunnerRenderer {
     this.roadMarkMaterial.opacity = 0.46 + nextPhase * 0.08;
     this.routeBandMaterial.opacity = 0.42 + nextPhase * 0.05;
     if (this.stageIndex === 0) {
-      this.roadMaterial.color.setHex(0xa9b2b1);
-      this.roadMaterial.roughness = 0.8;
+      this.roadMaterial.color.setHex(0x929da0);
+      this.roadMaterial.roughness = 0.68;
       this.roadMaterial.metalness = 0.01;
-      this.roadMaterial.clearcoat = 0.08;
-      this.roadMaterial.clearcoatRoughness = 0.72;
+      this.roadMaterial.clearcoat = 0.24;
+      this.roadMaterial.clearcoatRoughness = 0.34;
       this.curbMaterial.color.setHex(0xc7d0cc);
       this.platformMaterial.color.setHex(0xe0e4e1);
       this.laneGuideMaterial.color.setHex(0xf7f8f2);
@@ -10107,6 +10591,12 @@ class CinematicRunnerRenderer {
       while (z > nearLimit) z -= entry.span;
       entry.object.position.z = z;
       entry.object.position.x = entry.baseX + Math.sin(this.cadencePhase * 0.35 + index) * entry.drift;
+      const streetscapeArt = entry.object.userData.streetscapeArt;
+      if (streetscapeArt?.card?.material) {
+        const approach = clamp((z + 28) / 18, 0, 1);
+        const departure = 1 - clamp((z - 2) / 5.5, 0, 1);
+        streetscapeArt.card.material.opacity = streetscapeArt.card.material.map ? approach * departure : 0;
+      }
       entry.sphere.center.copy(entry.centerOffset).add(entry.object.position);
       const stageTwoSightlineClear = this.stageIndex !== 1 || (entry.side !== 0 && Math.abs(entry.baseX) >= 6.2);
       const sideClear = stageTwoSightlineClear && (entry.side === 0 || Math.abs(entry.object.userData.trackClearance?.innerEdge || entry.baseX) >= TRACK_CLEARANCE.halfWidth);
@@ -10539,7 +11029,7 @@ class CinematicRunnerRenderer {
 
     const arriving = frame.mode === "arrival" && Boolean(frame.arrival);
     const introActive = frame.mode === "stage-intro" && this.stageIntroState.active;
-    const campusPov = this.stageIndex === 0 && !arriving;
+    const campusThirdPerson = this.stageIndex === 0 && !arriving;
     const introCue = introCameraCue(this.stageIntroState.cameraCue);
     const arrivalProgress = arriving ? clamp(Number(frame.arrival.progress) || 0, 0, 1) : 0;
     this.arrivalProgress = arrivalProgress;
@@ -10561,10 +11051,10 @@ class CinematicRunnerRenderer {
     this.lateralVelocity = damp(this.lateralVelocity, (this.currentLaneX - this.previousLaneX) / Math.max(delta, 1 / 120) / LANE_WIDTH, 18, delta);
     this.player.position.x = this.currentLaneX;
     this.player.position.z = arriving ? damp(this.player.position.z, -0.12, 2.8, delta) : PLAYER_Z;
-    this.player.visible = !campusPov;
-    this.playerTrail.visible = !campusPov;
-    this.landingRing.visible = !campusPov;
-    this.canvas.setAttribute("data-camera-language", campusPov ? "cinematic-pov" : "character-follow");
+    this.player.visible = true;
+    this.playerTrail.visible = !arriving;
+    this.landingRing.visible = !arriving;
+    this.canvas.setAttribute("data-camera-language", campusThirdPerson ? "campus-character-follow" : "character-follow");
     this.updateStageIntroVisual(delta, time);
     this.updateStatusVisual(delta, time, arriving);
     const stumble = clamp((Number(motion.stumbleTime) || 0) / 0.62, 0, 1);
@@ -10681,7 +11171,7 @@ class CinematicRunnerRenderer {
       this.carryGroup.position.set(carryX, carryY, carryZ);
       this.carryGroup.rotation.set(0, arriving ? Math.PI * transferEase : -0.14, arriving ? 0 : -0.06 + Math.sin(time * 9.4) * 0.018);
       if (this.carryRig?.userData.clasp) this.carryRig.userData.clasp.material.emissiveIntensity = 0.55 + this.flow * 1.2 + Math.sin(time * 4.6) * 0.12;
-      this.carryGroup.visible = (!arriving || arrivalProgress < 0.88) && !campusPov;
+      this.carryGroup.visible = !arriving || arrivalProgress < 0.88;
     } else {
       this.carryGroup.visible = false;
     }
@@ -10695,8 +11185,8 @@ class CinematicRunnerRenderer {
     const directorCamera = this.directorState.camera;
     const directorCameraBlend = arriving || introActive ? 0 : 0.42 + this.directorState.revealStrength * 0.48;
     const directedCameraX = clamp(directorCamera.x + this.currentLaneX * 0.18, -directorCamera.maxLaneOffset * LANE_WIDTH, directorCamera.maxLaneOffset * LANE_WIDTH);
-    const cameraTargetX = campusPov
-      ? this.currentLaneX * 0.18 + directedCameraX * 0.08
+    const cameraTargetX = campusThirdPerson
+      ? this.currentLaneX * 0.58 + directedCameraX * 0.06
       : THREE.MathUtils.lerp(baseCameraTargetX, directedCameraX, directorCameraBlend);
     const cadenceCamera = Math.sin(this.cadencePhase) * (0.012 + this.directorState.revealStrength * 0.014);
     const cameraBob = frame.mode === "playing"
@@ -10710,7 +11200,7 @@ class CinematicRunnerRenderer {
       this.camera.position.y,
       arriving
         ? 3.78 + cameraBob
-        : campusPov ? 2.82 + vertical * 0.88 - (motion.action === "slide" ? 0.48 : 0) + cameraBob * 1.38
+        : campusThirdPerson ? 4.62 + vertical * 0.08 - (motion.action === "slide" ? 0.16 : 0) + cameraBob
         : introActive ? introCue.y + cameraBob : THREE.MathUtils.lerp(
           5.16 - (motion.action === "slide" ? 0.2 : 0) - this.flow * 0.08 - statusStrength * 0.1,
           directorCamera.y,
@@ -10721,7 +11211,7 @@ class CinematicRunnerRenderer {
     ) + shakeY;
     this.camera.position.z = damp(
       this.camera.position.z,
-      arriving ? 8.4 : campusPov ? 7.72 + this.flow * 0.14 - this.powerupStrengths.overdrive * 0.22
+      arriving ? 8.4 : campusThirdPerson ? 9.55 + this.flow * 0.18 - this.powerupStrengths.overdrive * 0.28
         : introActive ? introCue.z : THREE.MathUtils.lerp(
         motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28 - this.powerupStrengths.overdrive * 0.42,
         directorCamera.z,
@@ -10734,7 +11224,7 @@ class CinematicRunnerRenderer {
       this.camera.fov,
       arriving
         ? 52
-        : campusPov ? 61.5 + clamp((speed - 10) * 0.32, 0, 5.2) + this.flow * 2.2
+        : campusThirdPerson ? 56 + clamp((speed - 10) * 0.34, 0, 5.2) + this.flow * 2.6
         : introActive ? introCue.fov
         : Math.max(55, THREE.MathUtils.lerp(
           58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6
@@ -10747,7 +11237,10 @@ class CinematicRunnerRenderer {
     );
     this.camera.updateProjectionMatrix();
     if (arriving) this.camera.lookAt(0.02, 1.38, -0.72);
-    else if (campusPov) this.camera.lookAt(this.currentLaneX * 0.12, 0.72 + vertical * 0.16, -17.4 - this.flow * 1.6);
+    else if (campusThirdPerson) {
+      this.camera.lookAt(this.currentLaneX * 0.42, 0.92 + vertical * 0.12, -18.6 - this.flow * 2);
+      this.camera.rotation.z += clamp(-this.lateralVelocity * (0.016 + this.flow * 0.01), -0.058, 0.058);
+    }
     else if (introActive) this.camera.lookAt(this.currentLaneX * 0.16, introCue.lookY, introCue.lookZ);
     else {
       this.camera.lookAt(
@@ -10911,6 +11404,8 @@ class CinematicRunnerRenderer {
     this.disposed = true;
     this.runnerLoadToken += 1;
     this.cityLoadToken += 1;
+    this.campusMaterialLoadToken += 1;
+    this.campusArtLoadToken += 1;
     this.endArrival();
     this.clearCarry();
     this.pickupSequences.length = 0;
@@ -10929,6 +11424,15 @@ class CinematicRunnerRenderer {
       this.platformTexture,
       this.particleTexture,
       this.environmentTexture,
+      this.campusCanopyTexture,
+      this.campusSkyTexture,
+      this.campusFacadeTexture,
+      this.campusFlowerbedTexture,
+      this.campusLeftLandmarkTexture,
+      this.campusRightLandmarkTexture,
+      this.campusLeftStreetscapeTexture,
+      this.campusRightStreetscapeTexture,
+      this.campusRoadShadowTexture,
       ...this.worldParticleTextures,
       ...this.stageTextures,
       ...this.arrivalStageTextures

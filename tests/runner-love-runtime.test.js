@@ -96,15 +96,15 @@ test("boots the real runtime in intro mode with the long-form seven-stage state"
   assert.deepEqual(Object.keys(debug).sort(), ["beat", "completeStage", "fact", "fail", "finishArrival", "finishStageIntro", "input", "moment", "powerup", "reset", "retry", "save", "snapshot", "spawn", "start", "step"].sort());
 });
 
-test("cannot make relationship progress, choices, or cargo without intentional input", () => {
+test("auto-run advances the road but cannot grant relationship progress without intentional input", () => {
   const { debug } = boot();
   debug.start();
   debug.finishStageIntro();
   const state = debug.step(60000);
   assert.equal(state.runState.stage.progress, 0);
   assert.equal(state.runState.stage.items.length, 0);
-  assert.equal(state.runState.status, "playing");
-  assert.equal(state.motion.distance, 0);
+  assert.equal(state.runState.status, "failed");
+  assert.ok(state.motion.distance > 0);
   assert.equal(Object.values(state.director.decisions).filter((decision) => decision.itemId).length, 0);
   assert.equal(state.director.cargo.length, 0);
 });

@@ -72,7 +72,7 @@ test("authors seven visually distinct districts and a fully modeled opening camp
   for (const campusModel of [
     "createCampusSurfaceRibbon", "createCampusCloudField", "createCampusTreeAvenue", "createCampusBuildingRow",
     "createCampusGlassElevator", "createCampusCurvedPavilion", "createCampusGateway", "createCampusStreetFurniture",
-    "createCampusDistantCity"
+    "createCampusDistantCity", "createCampusAuthoredStreetscape"
   ]) assert.match(source, new RegExp(`function ${campusModel}\\(`));
   const campusWorld = sourceBlock("function createRainCampusWorld(config) {", "\nfunction createRiverBookstoreWorld(config) {");
   assert.match(campusWorld, /world-rain-campus-full-3d/);
@@ -87,7 +87,7 @@ test("authors seven visually distinct districts and a fully modeled opening camp
   assert.match(source, /this\.stageIndex === 0 \? 1\.06/);
 });
 
-test("rebuilds the opening run as a cinematic campus POV with illustrated environmental obstacles", () => {
+test("rebuilds the opening run as a third-person campus with authored environmental art", () => {
   const canopyAsset = path.join(root, "assets/runner-scenes/props/camphor-bough.png");
   assert.equal(fs.existsSync(canopyAsset), true);
   assert.ok(fs.statSync(canopyAsset).size > 400000);
@@ -97,9 +97,17 @@ test("rebuilds the opening run as a cinematic campus POV with illustrated enviro
   ]) assert.match(source, new RegExp(`function ${builder}\\(`));
   for (const contract of [
     "camphor-bough.png", "campus-puddle", "campus-leaf-gust", "low-camphor-canopy",
-    "cinematic-pov", "data-camera-language", "campusWisps"
+    "campus-character-follow", "data-camera-language", "campusWisps",
+    "camphor-canopy.png", "summer-sky.png", "academic-facade.png", "flowerbed.png",
+    "streetscape-left.png", "streetscape-right.png",
+    "data-campus-canopy", "data-campus-sky", "data-campus-facade", "data-campus-flowerbed", "data-campus-streetscape"
   ]) assert.ok(source.includes(contract), contract);
-  assert.match(source, /this\.player\.visible = !campusPov/);
+  for (const asset of ["streetscape-left.png", "streetscape-right.png"]) {
+    const streetscape = path.join(root, "assets/runner-textures/campus", asset);
+    assert.equal(fs.existsSync(streetscape), true, asset);
+    assert.ok(fs.statSync(streetscape).size > 1000000, asset);
+  }
+  assert.match(source, /this\.player\.visible = true/);
   assert.match(source, /visuals\.root\.visible = stageIndex !== 0/);
   assert.match(source, /setCampusDepthFade\(depthMaterial, false\)/);
 });
