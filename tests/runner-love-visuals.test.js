@@ -57,9 +57,12 @@ test("authors seven visually distinct districts with local cinematic backdrops",
     assert.ok(fs.statSync(path.join(root, "assets", "runner-scenes", asset)).size > 250000, asset);
   }
   for (const district of ["campus-line", "glass-station", "neon-river", "date-market", "home-quarter", "storm-bridge", "sunrise-terminal"]) assert.ok(source.includes(`district: "${district}"`), district);
-  assert.match(source, /const BACKDROP_OPACITY = 0\.74/);
+  assert.match(source, /const BACKDROP_OPACITY = 0/);
   assert.match(source, /depthTest: false/);
   assert.match(source, /texture\.repeat\.y \*= 0\.82/);
+  for (const builder of ["createCampusGlassLift", "createCampusFootbridge", "createCampusTransitPavilion", "createCampusAcademicBlock", "createCampusBoulevardPlanting"]) {
+    assert.match(source, new RegExp(`function ${builder}\\(`));
+  }
 });
 
 test("gives every chapter a distinct world, road, obstacle, particle, and depth identity", () => {

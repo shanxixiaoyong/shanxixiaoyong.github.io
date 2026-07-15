@@ -232,7 +232,7 @@ const COLLISION_Z = 0.85;
 const FOG_SCALE = 0.52;
 const MAX_RENDER_PIXELS = 1_850_000;
 const CITY_BUILDING_COUNT = 54;
-const BACKDROP_OPACITY = 0.74;
+const BACKDROP_OPACITY = 0;
 const STAGE_COLLECTIBLE_COLORS = Object.freeze([0xffc34d, 0x68ead3, 0x67e8ff, 0xff6688, 0xffb74f, 0xff6a70, 0xffd85a]);
 const STAGE_TOKEN_COLORS = Object.freeze([0xff5f72, 0xf4fff9, 0xffe1a0, 0xfff4e6, 0xfff0a6, 0xffedf0, 0xffffff]);
 const STAGE_TRACKSIDE_PROPS = Object.freeze([
@@ -418,7 +418,7 @@ const THEMED_ROUTE_MODULES = Object.freeze([
 ]);
 
 const PHASE_TRACKSIDE_PROPS = Object.freeze([
-  Object.freeze([Object.freeze(["campus", "tree", "lamp"]), Object.freeze(["tree", "shelter", "lamp"]), Object.freeze(["campus", "signal", "lamp"])]),
+  Object.freeze([Object.freeze(["tree", "lamp", "tree"]), Object.freeze(["tree", "lamp", "bench"]), Object.freeze(["signal", "tree", "lamp"])]),
   Object.freeze([Object.freeze(["railing", "bench", "tree"]), Object.freeze(["bookstore", "lamp", "bench"]), Object.freeze(["bookstore", "shelter", "railing"])]),
   Object.freeze([Object.freeze(["station", "signal", "neon-sign"]), Object.freeze(["station", "shelter", "neon-sign"]), Object.freeze(["cinema", "neon-sign", "lamp"])]),
   Object.freeze([Object.freeze(["market", "lamp", "shelter"]), Object.freeze(["market", "neon-sign", "lamp"]), Object.freeze(["railing", "bench", "lamp"])]),
@@ -2010,19 +2010,22 @@ function paintRoutePhaseTexture(context, width, height, stageIndex, phaseIndex, 
   const dark = "rgba(9,16,18,.2)";
   const accent = `${highlight}46`;
   if (stageIndex === 0 && phaseIndex === 0) {
-    for (let y = 0; y < height; y += 58) {
-      context.strokeStyle = pale;
-      context.lineWidth = 2;
-      context.strokeRect(y % 116 ? -30 : 0, y, width + 30, 54);
-    }
-    [82, 430].forEach((x) => {
-      const shade = context.createLinearGradient(x - 52, 0, x + 52, 0);
+    [128, 384].forEach((x) => {
+      const shade = context.createLinearGradient(x - 72, 0, x + 72, 0);
       shade.addColorStop(0, "rgba(4,11,12,0)");
-      shade.addColorStop(0.5, "rgba(4,11,12,.2)");
+      shade.addColorStop(0.5, "rgba(4,11,12,.14)");
       shade.addColorStop(1, "rgba(4,11,12,0)");
       context.fillStyle = shade;
-      context.fillRect(x - 52, 0, 104, height);
+      context.fillRect(x - 72, 0, 144, height);
     });
+    context.strokeStyle = "rgba(228,239,235,.11)";
+    context.lineWidth = 3;
+    for (let line = 0; line < 5; line += 1) {
+      context.beginPath();
+      context.moveTo(38 + line * 105, 0);
+      context.bezierCurveTo(30 + line * 106, 164, 52 + line * 102, 348, 42 + line * 105, height);
+      context.stroke();
+    }
   } else if (stageIndex === 0 && phaseIndex === 1) {
     context.strokeStyle = "rgba(217,237,187,.22)";
     context.lineWidth = 8;
@@ -2230,7 +2233,7 @@ function paintRoutePhaseTexture(context, width, height, stageIndex, phaseIndex, 
 
 function makeRoadTexture(stageIndex = 0, phaseIndex = 0) {
   const palettes = [
-    [["#394d49", "#61706a", "#bad0c1"], ["#405644", "#6a7962", "#d1d7a9"], ["#5a5b56", "#7c7c72", "#e0ca91"]],
+    [["#586468", "#768388", "#c8d7d5"], ["#52625c", "#748178", "#d1d7a9"], ["#666864", "#85877f", "#eee7cf"]],
     [["#65523f", "#8a7658", "#d4b979"], ["#3f4945", "#68716a", "#b8d4ca"], ["#6a5944", "#947a58", "#e5c48b"]],
     [["#121a31", "#283755", "#4ce1ef"], ["#202842", "#3e4967", "#f1c857"], ["#30203e", "#593560", "#ff78c8"]],
     [["#4c3438", "#704e4e", "#ed9a64"], ["#27243d", "#4e3e61", "#fb639c"], ["#253748", "#42596b", "#78c7d9"]],
@@ -2257,14 +2260,14 @@ function makeRoadTexture(stageIndex = 0, phaseIndex = 0) {
       context.fillRect(x, y, 1 + seed % 3, 1 + seed % 2);
     }
     if (stageIndex === 0) {
-      for (let row = 0; row < 12; row += 1) {
-        const tileHeight = 44;
-        const offset = row % 2 ? 30 : 0;
-        for (let x = -offset; x < width; x += 60) {
-          context.strokeStyle = "rgba(205,225,214,.13)";
-          context.lineWidth = 2;
-          context.strokeRect(x + 2, row * tileHeight + 2, 56, tileHeight - 4);
-        }
+      context.fillStyle = "rgba(19,31,34,.1)";
+      for (let y = 0; y < height; y += 76) context.fillRect(0, y, width, 1.5);
+      context.fillStyle = "rgba(238,243,235,.12)";
+      for (let index = 0; index < 72; index += 1) {
+        const radius = 0.8 + index % 4 * 0.55;
+        context.beginPath();
+        context.arc((index * 83) % width, (index * 131) % height, radius, 0, Math.PI * 2);
+        context.fill();
       }
       const wet = context.createLinearGradient(170, 0, 350, 0);
       wet.addColorStop(0, "rgba(255,255,255,0)");
@@ -2811,7 +2814,8 @@ function createTree(accent) {
   group.add(trunk);
   const leafMaterial = material(new THREE.Color(accent).lerp(new THREE.Color(0x2d6b50), 0.86), { roughness: 0.92 });
   [[0, 2.75, 0, 0.95], [-0.5, 2.45, 0.05, 0.72], [0.48, 2.5, -0.08, 0.78]].forEach(([x, y, z, scale]) => {
-    const crown = mesh(new THREE.IcosahedronGeometry(scale, 1), leafMaterial);
+    const crown = mesh(new THREE.SphereGeometry(scale, 14, 9), leafMaterial);
+    crown.scale.set(1.08, 0.82, 0.94);
     crown.position.set(x, y, z);
     group.add(crown);
   });
@@ -3299,31 +3303,179 @@ function beamBetween2D(startX, startY, endX, endY, thickness, beamMaterial) {
   return beam;
 }
 
+function createCampusGlassLift(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x596b73, { roughness: 0.28, metalness: 0.72 });
+  const concrete = material(0xc7d1cd, { roughness: 0.78, metalness: 0.04 });
+  const glass = material(0x9ed5e5, {
+    transparent: true,
+    opacity: 0.28,
+    roughness: 0.08,
+    metalness: 0.16,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const glow = material(accent, { emissive: accent, emissiveIntensity: 1.2, roughness: 0.24 });
+  const base = mesh(new THREE.BoxGeometry(3.3, 0.28, 3.2), concrete);
+  base.position.y = 0.14;
+  const glassCore = mesh(new THREE.BoxGeometry(2.9, 6.8, 2.82), glass);
+  glassCore.position.y = 3.68;
+  const frameTransforms = [];
+  [-1.5, 1.5].forEach((x) => [-1.42, 1.42].forEach((z) => frameTransforms.push({ x, y: 3.68, z })));
+  const frames = createInstancedObstacleParts(new THREE.BoxGeometry(0.1, 6.9, 0.1), steel, frameTransforms);
+  const bands = createInstancedObstacleParts(
+    new THREE.BoxGeometry(3.08, 0.075, 0.1),
+    steel,
+    Array.from({ length: 8 }, (_, index) => ({ y: 0.62 + index * 0.86, z: 1.46 }))
+      .concat(Array.from({ length: 8 }, (_, index) => ({ y: 0.62 + index * 0.86, z: -1.46 })))
+  );
+  const cabin = mesh(new THREE.BoxGeometry(1.72, 2.3, 1.72), material(0xd6ecef, {
+    emissive: accent,
+    emissiveIntensity: 0.08,
+    roughness: 0.34,
+    metalness: 0.18
+  }));
+  cabin.position.y = 2.1;
+  const beacon = mesh(new THREE.BoxGeometry(2.25, 0.12, 0.14), glow);
+  beacon.position.set(0, 7.02, 1.5);
+  group.add(base, glassCore, frames, bands, cabin, beacon);
+
+  const stairGroup = new THREE.Group();
+  const stepTransforms = Array.from({ length: 14 }, (_, index) => ({
+    x: 2.1 + index * 0.32,
+    y: 0.18 + index * 0.25,
+    z: 0,
+    sx: 1,
+    sy: 1,
+    sz: 1
+  }));
+  const steps = createInstancedObstacleParts(new THREE.BoxGeometry(0.72, 0.18, 2.5), concrete, stepTransforms);
+  const leftRail = beamBetween2D(1.85, 0.75, 6.42, 4.3, 0.07, steel);
+  leftRail.position.z = -1.32;
+  const rightRail = leftRail.clone();
+  rightRail.position.z = 1.32;
+  stairGroup.add(steps, leftRail, rightRail);
+  group.add(stairGroup);
+  return group;
+}
+
+function createCampusFootbridge(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x697a80, { roughness: 0.3, metalness: 0.68 });
+  const deckMaterial = material(0xb9c3c0, { roughness: 0.72, metalness: 0.08 });
+  const glass = material(0xa8d8e4, { transparent: true, opacity: 0.24, roughness: 0.1, metalness: 0.12, depthWrite: false, side: THREE.DoubleSide });
+  const deck = mesh(new THREE.BoxGeometry(15.2, 0.34, 2.25), deckMaterial);
+  deck.position.y = 5.05;
+  const underside = mesh(new THREE.BoxGeometry(15.6, 0.12, 2.38), steel);
+  underside.position.y = 4.82;
+  const northGlass = mesh(new THREE.PlaneGeometry(14.7, 1.22), glass);
+  northGlass.position.set(0, 5.75, -1.08);
+  const southGlass = northGlass.clone();
+  southGlass.position.z = 1.08;
+  const posts = createInstancedObstacleParts(
+    new THREE.BoxGeometry(0.08, 1.45, 0.08),
+    steel,
+    Array.from({ length: 18 }, (_, index) => ({ x: -7.15 + index * 0.84, y: 5.74, z: -1.1 }))
+      .concat(Array.from({ length: 18 }, (_, index) => ({ x: -7.15 + index * 0.84, y: 5.74, z: 1.1 })))
+  );
+  const pillars = createInstancedObstacleParts(new THREE.BoxGeometry(0.48, 4.95, 0.56), deckMaterial, [
+    { x: -6.6, y: 2.46, z: 0 }, { x: 6.6, y: 2.46, z: 0 }
+  ]);
+  const edgeLight = mesh(new THREE.BoxGeometry(14.6, 0.035, 0.07), material(accent, { emissive: accent, emissiveIntensity: 0.72, roughness: 0.22 }));
+  edgeLight.position.set(0, 4.7, 1.17);
+  group.add(deck, underside, northGlass, southGlass, posts, pillars, edgeLight);
+  group.userData.overheadClearance = TRACK_CLEARANCE.overheadY;
+  return group;
+}
+
+function createCampusTransitPavilion(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x526169, { roughness: 0.3, metalness: 0.7 });
+  const glass = material(0xa9d9e3, { transparent: true, opacity: 0.25, roughness: 0.08, metalness: 0.14, depthWrite: false, side: THREE.DoubleSide });
+  const stone = material(0xadb8b5, { roughness: 0.82 });
+  const platform = mesh(new THREE.BoxGeometry(4.9, 0.24, 7.4), stone);
+  platform.position.y = 0.12;
+  const ribs = createInstancedObstacleParts(
+    new THREE.TorusGeometry(2.22, 0.075, 8, 28, Math.PI),
+    steel,
+    Array.from({ length: 6 }, (_, index) => ({ y: 1.65, z: -3 + index * 1.2 }))
+  );
+  const canopy = mesh(new THREE.BoxGeometry(4.45, 0.08, 6.3), glass);
+  canopy.position.y = 3.7;
+  const sideGlass = mesh(new THREE.PlaneGeometry(6.1, 2.65), glass);
+  sideGlass.rotation.y = Math.PI / 2;
+  sideGlass.position.set(2.12, 1.55, 0);
+  const rearGlass = sideGlass.clone();
+  rearGlass.position.x = -2.12;
+  const bench = createBench();
+  bench.position.set(0, 0.05, 0.8);
+  bench.rotation.y = Math.PI;
+  const sign = mesh(new THREE.BoxGeometry(1.5, 0.5, 0.08), material(accent, { emissive: accent, emissiveIntensity: 1.45, roughness: 0.2 }));
+  sign.position.set(2.18, 2.25, -1.7);
+  group.add(platform, ribs, canopy, sideGlass, rearGlass, bench, sign);
+  return group;
+}
+
+function createCampusAcademicBlock(accent, seed = 0) {
+  const group = new THREE.Group();
+  const width = 5.8 + seed % 2 * 1.3;
+  const height = 6.2 + seed % 3 * 1.1;
+  const depth = 7.2;
+  const concrete = material(seed % 2 ? 0xd2d7d2 : 0xbfc9c8, { roughness: 0.82, metalness: 0.04 });
+  const steel = material(0x5d6f77, { roughness: 0.28, metalness: 0.66 });
+  const glass = material(0x72aebd, { transparent: true, opacity: 0.48, roughness: 0.12, metalness: 0.2, depthWrite: false });
+  const body = mesh(new THREE.BoxGeometry(width, height, depth), concrete);
+  body.position.y = height / 2;
+  const facade = mesh(new THREE.PlaneGeometry(width * 0.84, height * 0.78), glass);
+  facade.position.set(0, height * 0.52, depth / 2 + 0.012);
+  const mullions = createInstancedObstacleParts(new THREE.BoxGeometry(0.07, height * 0.76, 0.08), steel,
+    Array.from({ length: 7 }, (_, index) => ({ x: -width * 0.36 + index * width * 0.12, y: height * 0.52, z: depth / 2 + 0.06 })));
+  const floorBands = createInstancedObstacleParts(new THREE.BoxGeometry(width * 0.82, 0.08, 0.08), steel,
+    Array.from({ length: 6 }, (_, index) => ({ y: 0.85 + index * (height - 1.3) / 5, z: depth / 2 + 0.065 })));
+  const roofLine = mesh(new THREE.BoxGeometry(width + 0.2, 0.18, depth + 0.2), material(accent, { emissive: accent, emissiveIntensity: 0.18, roughness: 0.52 }));
+  roofLine.position.y = height + 0.08;
+  group.add(body, facade, mullions, floorBands, roofLine);
+  return group;
+}
+
+function createCampusBoulevardPlanting(accent, seed = 0) {
+  const group = new THREE.Group();
+  const trunkMaterial = material(0x5e4938, { roughness: 1 });
+  const leafMaterial = material(new THREE.Color(0x3f7c51).lerp(new THREE.Color(accent), 0.08), { roughness: 0.96 });
+  const planterMaterial = material(0x79847f, { roughness: 0.9 });
+  const treeCount = 6;
+  const trunks = createInstancedObstacleParts(new THREE.CylinderGeometry(0.12, 0.18, 2.45, 10), trunkMaterial,
+    Array.from({ length: treeCount }, (_, index) => ({ x: index % 2 * 1.8, y: 1.33, z: -Math.floor(index / 2) * 5.6 })));
+  const crowns = createInstancedObstacleParts(new THREE.SphereGeometry(0.92, 12, 8), leafMaterial,
+    Array.from({ length: treeCount * 3 }, (_, index) => {
+      const tree = Math.floor(index / 3);
+      const lobe = index % 3;
+      return {
+        x: tree % 2 * 1.8 + (lobe - 1) * 0.42,
+        y: 2.85 + (lobe === 1 ? 0.34 : 0),
+        z: -Math.floor(tree / 2) * 5.6 + (lobe % 2 ? 0.18 : -0.14),
+        sx: 1.08,
+        sy: 0.82,
+        sz: 0.96
+      };
+    }));
+  const planters = createInstancedObstacleParts(new THREE.BoxGeometry(2.4, 0.48, 1.24), planterMaterial,
+    Array.from({ length: 3 }, (_, index) => ({ x: 0.9, y: 0.24, z: -index * 5.6 })));
+  const flowers = createInstancedObstacleParts(new THREE.SphereGeometry(0.12, 8, 6), material(seed % 2 ? 0xf0a7b8 : 0xf7cf8e, { roughness: 0.86 }),
+    Array.from({ length: 18 }, (_, index) => ({ x: 0.25 + index % 6 * 0.25, y: 0.58 + index % 2 * 0.06, z: -Math.floor(index / 6) * 5.6 + (index % 3 - 1) * 0.22 })));
+  group.add(trunks, crowns, planters, flowers);
+  return group;
+}
+
 function createRainCampusWorld(config) {
   const root = createWorldRoot(config);
-  const library = createCampus(config.accent);
-  const stone = material(config.theme.landmark, { roughness: 0.9 });
-  [-1.8, -0.6, 0.6, 1.8].forEach((x) => {
-    const column = mesh(new THREE.CylinderGeometry(0.12, 0.15, 3.4, 10), stone);
-    column.position.set(x, 1.72, 1.42);
-    library.add(column);
-  });
-  const pediment = mesh(new THREE.ConeGeometry(2.6, 1.05, 3), stone);
-  pediment.rotation.z = Math.PI / 2;
-  pediment.position.set(0, 4.02, 0.2);
-  library.add(pediment);
-  addWorldScenery(root, 1, library, { side: -1, x: 7.5, z: -22, scale: 1.12, rotationY: Math.PI / 2 });
-
-  const corridor = createShelter(config.accent);
-  corridor.scale.set(1.06, 1.06, 2.8);
-  addWorldScenery(root, 2, corridor, { side: 1, x: 7.2, z: -42, rotationY: -Math.PI / 2 });
-  const grove = new THREE.Group();
-  for (let index = 0; index < 4; index += 1) {
-    const tree = createTree(config.accent);
-    tree.position.set((index % 2) * 2.1, 0, -Math.floor(index / 2) * 2.4);
-    grove.add(tree);
-  }
-  addWorldScenery(root, 0, grove, { side: -1, x: 12.5, z: -72, scale: 1.35 });
+  addWorldScenery(root, 2, createCampusGlassLift(config.accent), { side: -1, x: 7.4, z: -22, scale: 0.92 });
+  addWorldScenery(root, 2, createCampusTransitPavilion(config.accent), { side: 1, x: 7.1, z: -27, scale: 0.94 });
+  addWorldScenery(root, 1, createCampusFootbridge(config.accent), { side: 0, x: 0, z: -48, span: 104 });
+  addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, 1), { side: -1, x: 10.2, z: -62, scale: 1.02, rotationY: Math.PI / 2 });
+  addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, 2), { side: 1, x: 10.4, z: -73, scale: 1.08, rotationY: -Math.PI / 2 });
+  addWorldScenery(root, 2, createCampusBoulevardPlanting(config.accent, 0), { side: -1, x: 6.8, z: -38, scale: 0.92 });
+  addWorldScenery(root, 2, createCampusBoulevardPlanting(config.accent, 1), { side: 1, x: 6.9, z: -52, scale: 0.9, rotationY: Math.PI });
   return root;
 }
 
