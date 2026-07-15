@@ -2715,9 +2715,51 @@ function makeCampusShadowTexture() {
 
 function createCampusSkyLayer() {
   const group = new THREE.Group();
-  const skyMaterial = new THREE.MeshBasicMaterial({
-    map: makeCampusSkyArtTexture(),
-    color: 0xffffff,
+  const travelUniform = { value: 0 };
+  const skyMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uMap: { value: makeCampusSkyArtTexture() },
+      uTravel: travelUniform
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uMap;
+      uniform float uTravel;
+      varying vec2 vUv;
+
+      vec2 campusParallaxUv(float phase) {
+        float zoom = 1.0 + phase * 0.18;
+        vec2 sampleUv = (vUv - 0.5) / zoom + 0.5;
+        float side = sign(vUv.x - 0.5);
+        sampleUv.x -= side * phase * 0.032;
+        sampleUv.y += phase * 0.046;
+        return clamp(sampleUv, vec2(0.002), vec2(0.998));
+      }
+
+      void main() {
+        float phaseA = fract(uTravel);
+        float phaseB = fract(uTravel + 0.5);
+        float weightA = pow(sin(3.14159265 * phaseA), 2.0);
+        float weightB = pow(sin(3.14159265 * phaseB), 2.0);
+        vec4 base = texture2D(uMap, vUv);
+        vec4 moving = (
+          texture2D(uMap, campusParallaxUv(phaseA)) * weightA
+          + texture2D(uMap, campusParallaxUv(phaseB)) * weightB
+        ) / max(0.001, weightA + weightB);
+        float edge = smoothstep(0.12, 0.46, abs(vUv.x - 0.5));
+        float depth = mix(0.32, 1.0, smoothstep(0.02, 0.78, 1.0 - vUv.y));
+        float motion = smoothstep(0.0, 0.08, uTravel);
+        gl_FragColor = mix(base, moving, edge * depth * motion * 0.96);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
     depthWrite: false,
     fog: false,
     toneMapped: false,
@@ -2735,6 +2777,9 @@ function createCampusSkyLayer() {
     sky.scale.set(height * camera.aspect * 0.5, height * 0.5, 1);
   };
   group.add(sky);
+  group.userData.setCampusTravel = (distance) => {
+    travelUniform.value = Math.max(0, Number(distance) || 0) / 120;
+  };
   return group;
 }
 
@@ -3845,7 +3890,9 @@ function createCampusBoulevardPlanting(accent, seed = 0) {
 
 function createRainCampusWorld(config) {
   const root = createWorldRoot(config);
-  root.add(createCampusSkyLayer());
+  const campusSky = createCampusSkyLayer();
+  root.add(campusSky);
+  root.userData.setCampusTravel = campusSky.userData.setCampusTravel;
 
   root.traverse((child) => {
     if (!child.isMesh && !child.isInstancedMesh) return;
@@ -8772,6 +8819,7 @@ class CinematicRunnerRenderer {
 
   updateDistrictWorld(delta, time, distance, speed) {
     const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
+    if (this.stageIndex === 0) this.activeStageWorld?.userData.setCampusTravel?.(distance);
     const cadence = clamp(Number(this.directorState.act.cadence) || 4, 2.2, 7);
     const cadenceMotion = clamp(4.2 / cadence, 0.68, 1.7);
     this.skyDome.userData.uniforms.time.value = time;

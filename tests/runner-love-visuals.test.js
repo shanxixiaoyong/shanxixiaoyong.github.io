@@ -66,6 +66,7 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createCampusSkyLayer", "createSoftGroundShadow"]) {
     assert.match(source, new RegExp(`function ${artLayer}\\(`));
   }
+  for (const parallaxContract of ["campusParallaxUv", "uTravel", "weightA", "weightB", "setCampusTravel"]) assert.ok(source.includes(parallaxContract), parallaxContract);
   for (const modelLayer of ["beamBetween3D", "createCampusCanopyTree", "createCampusSidewalkGarden"]) {
     assert.match(source, new RegExp(`function ${modelLayer}\\(`));
   }
