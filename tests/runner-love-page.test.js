@@ -104,7 +104,7 @@ test("uses local cinematic scene art, local 3D models, and a cache-consistent re
   const versions = [...html.matchAll(/runner-love-[^"?]+\?v=([^"']+)/g)].map((match) => match[1]);
   assert.ok(versions.length >= 5);
   assert.equal(new Set(versions).size, 1);
-  assert.equal(versions[0], "runner-love-modelled-20260715b");
+  assert.equal(versions[0], "runner-love-artstyle-20260715c");
 });
 
 test("result and checkpoint surfaces preserve route stats and immediate replay", () => {

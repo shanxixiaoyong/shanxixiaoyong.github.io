@@ -7,16 +7,16 @@ const STAGE_CONFIGS = Object.freeze([
     id: "first-sight",
     district: "campus-line",
     asset: "assets/runner-scenes/01-encounter.jpg",
-    sky: 0x8bcfe7,
-    skyTop: 0x4aa9dc,
-    skyBottom: 0xffe3ac,
-    fog: 0xb7d9dc,
-    fogDensity: 0.0045,
+    sky: 0x8ed8f2,
+    skyTop: 0x349bd8,
+    skyBottom: 0xe9f6f5,
+    fog: 0xcfe8e8,
+    fogDensity: 0.0032,
     key: 0xffcf8d,
     ambient: 0xbcd7cf,
-    ground: 0x526d68,
-    road: 0x9faeac,
-    curb: 0xd4d1bc,
+    ground: 0x75927f,
+    road: 0x9ca7a8,
+    curb: 0xdce2da,
     accent: 0xffc454,
     weather: "after-rain",
     routeStyle: "promenade",
@@ -27,7 +27,7 @@ const STAGE_CONFIGS = Object.freeze([
       landmarks: ["library-arcade", "glass-corridor", "camphor-grove"],
       road: { geometry: "crowned-campus", material: "wet-asphalt", shoulders: "brick-walk", markings: "campus-crossing" },
       obstacles: { style: "campus-commute", signatures: ["puddle-barricade", "bicycle-rack", "glass-gate"] },
-      lighting: { keyIntensity: 3.55, edgeIntensity: 1.55, warmIntensity: 13, environmentIntensity: 0.72, keyPosition: [-8, 15, 7], edgePosition: [8, 7, -4], warmPosition: [0, 4.4, -4] },
+      lighting: { keyIntensity: 4.35, edgeIntensity: 1.15, warmIntensity: 10, environmentIntensity: 0.88, keyPosition: [-9, 16, 8], edgePosition: [8, 8, -5], warmPosition: [0, 5.2, -5] },
       weather: { kind: "after-rain", rain: 0.045, wind: 0.45 },
       particles: { kind: "leaf-drips", opacity: 0.3, size: 0.12 },
       horizon: { kind: "campus-canopy", layers: ["library-roof", "tree-line", "water-tower"], parallax: [0.05, 0.16, 0.32] }
@@ -904,6 +904,8 @@ function canvasTexture(width, height, painter) {
 }
 
 let toonGradientTexture = null;
+let campusLeafTexture = null;
+let campusCloudTexture = null;
 const roundedGeometryCache = new Map();
 let heartGeometry = null;
 let foliageClusterGeometry = null;
@@ -2275,6 +2277,18 @@ function makeRoadTexture(stageIndex = 0, phaseIndex = 0) {
       wet.addColorStop(1, "rgba(255,255,255,0)");
       context.fillStyle = wet;
       context.fillRect(0, 0, width, height);
+      const shadowTexture = makeCampusShadowTexture();
+      const shadows = shadowTexture.image;
+      context.globalAlpha = 0.82;
+      context.drawImage(shadows, 0, 0, width, height);
+      shadowTexture.dispose();
+      context.globalAlpha = 1;
+      const sunLane = context.createLinearGradient(0, 0, width, height);
+      sunLane.addColorStop(0, "rgba(255,255,255,.14)");
+      sunLane.addColorStop(0.46, "rgba(255,255,255,.035)");
+      sunLane.addColorStop(1, "rgba(255,239,192,.12)");
+      context.fillStyle = sunLane;
+      context.fillRect(0, 0, width, height);
     } else if (stageIndex === 1) {
       for (let y = 0; y < height; y += 28) {
         context.fillStyle = y % 56 ? "rgba(255,255,255,.08)" : "rgba(22,31,29,.18)";
@@ -2542,6 +2556,178 @@ function makeFacadeTexture(accent, seed) {
       }
     }
   });
+}
+
+function makeCampusFacadeTexture(seed = 0) {
+  const texture = canvasTexture(512, 512, (context, width, height) => {
+    const wall = context.createLinearGradient(0, 0, width, height);
+    wall.addColorStop(0, "#f2f5f1");
+    wall.addColorStop(0.52, "#dce7e5");
+    wall.addColorStop(1, "#b9caca");
+    context.fillStyle = wall;
+    context.fillRect(0, 0, width, height);
+
+    const columns = 6;
+    const rows = 8;
+    const gap = 8;
+    const cellWidth = (width - 42 - gap * (columns - 1)) / columns;
+    const cellHeight = (height - 50 - gap * (rows - 1)) / rows;
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const x = 21 + column * (cellWidth + gap);
+        const y = 24 + row * (cellHeight + gap);
+        const glass = context.createLinearGradient(x, y, x + cellWidth, y + cellHeight);
+        glass.addColorStop(0, row % 3 === 0 ? "#dff5fb" : "#b9e0ec");
+        glass.addColorStop(0.48, "#83b9cb");
+        glass.addColorStop(1, "#527f92");
+        context.fillStyle = glass;
+        context.fillRect(x, y, cellWidth, cellHeight);
+        context.fillStyle = "rgba(255,255,255,.42)";
+        context.fillRect(x + 3, y + 3, Math.max(2, cellWidth * 0.08), cellHeight - 6);
+        if ((row * 5 + column * 3 + seed) % 7 === 0) {
+          context.fillStyle = "rgba(255,232,168,.3)";
+          context.fillRect(x + 4, y + cellHeight * 0.62, cellWidth - 8, cellHeight * 0.25);
+        }
+      }
+    }
+    const sunWash = context.createLinearGradient(0, 0, width, height * 0.72);
+    sunWash.addColorStop(0, "rgba(255,255,255,.48)");
+    sunWash.addColorStop(0.42, "rgba(255,255,255,.05)");
+    sunWash.addColorStop(1, "rgba(68,123,143,.12)");
+    context.fillStyle = sunWash;
+    context.fillRect(0, 0, width, height);
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+function makeCampusLeafTexture() {
+  if (campusLeafTexture) return campusLeafTexture;
+  campusLeafTexture = canvasTexture(256, 256, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    let seed = 173;
+    for (let index = 0; index < 78; index += 1) {
+      seed = seed * 16807 % 2147483647;
+      const x = 32 + seed % 192;
+      seed = seed * 16807 % 2147483647;
+      const y = 28 + seed % 194;
+      const radius = 7 + seed % 15;
+      const palette = ["rgba(37,104,56,.86)", "rgba(64,137,70,.9)", "rgba(96,160,78,.86)", "rgba(145,188,96,.78)"];
+      const gradient = context.createRadialGradient(x - radius * 0.28, y - radius * 0.35, 1, x, y, radius);
+      gradient.addColorStop(0, palette[(index + 2) % palette.length]);
+      gradient.addColorStop(0.72, palette[index % palette.length]);
+      gradient.addColorStop(1, "rgba(22,78,42,0)");
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.ellipse(x, y, radius, radius * (0.55 + index % 4 * 0.08), (index % 9) * 0.34, 0, Math.PI * 2);
+      context.fill();
+    }
+    const glow = context.createRadialGradient(88, 62, 0, 88, 62, 112);
+    glow.addColorStop(0, "rgba(224,246,157,.22)");
+    glow.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = glow;
+    context.fillRect(0, 0, width, height);
+  });
+  SHARED_TEXTURES.add(campusLeafTexture);
+  return campusLeafTexture;
+}
+
+function makeCampusCloudTexture() {
+  if (campusCloudTexture) return campusCloudTexture;
+  campusCloudTexture = canvasTexture(512, 256, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    const puffs = [[78,145,74,46], [148,115,98,66], [234,136,118,72], [332,105,104,70], [420,142,82,48]];
+    puffs.forEach(([x, y, rx, ry], index) => {
+      const cloud = context.createRadialGradient(x - rx * 0.2, y - ry * 0.38, 2, x, y, rx);
+      cloud.addColorStop(0, "rgba(255,255,255,.98)");
+      cloud.addColorStop(0.54, index % 2 ? "rgba(244,252,255,.88)" : "rgba(255,255,255,.9)");
+      cloud.addColorStop(0.82, "rgba(196,225,239,.46)");
+      cloud.addColorStop(1, "rgba(183,217,234,0)");
+      context.fillStyle = cloud;
+      context.beginPath();
+      context.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      context.fill();
+    });
+  });
+  SHARED_TEXTURES.add(campusCloudTexture);
+  return campusCloudTexture;
+}
+
+function makeCampusShadowTexture() {
+  return canvasTexture(512, 256, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    for (let side = 0; side < 2; side += 1) {
+      const originX = side ? width * 0.88 : width * 0.12;
+      for (let index = 0; index < 34; index += 1) {
+        const x = originX + (side ? -1 : 1) * ((index * 43) % 116);
+        const y = (index * 67 + side * 31) % height;
+        const radius = 18 + index % 6 * 6;
+        const shade = context.createRadialGradient(x, y, 0, x, y, radius);
+        shade.addColorStop(0, "rgba(24,70,50,.18)");
+        shade.addColorStop(1, "rgba(24,70,50,0)");
+        context.fillStyle = shade;
+        context.beginPath();
+        context.ellipse(x, y, radius * 1.7, radius * 0.54, -0.42, 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+  });
+}
+
+function createCampusSkyLayer() {
+  const group = new THREE.Group();
+  const cloudTexture = makeCampusCloudTexture();
+  [[-11, 17, -104, 22, 9], [10, 22, -126, 28, 11], [-4, 30, -150, 32, 12]].forEach(([x, y, z, sx, sy], index) => {
+    const cloud = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: cloudTexture,
+      color: index === 1 ? 0xf7fcff : 0xffffff,
+      transparent: true,
+      opacity: 0.78 - index * 0.08,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false
+    }));
+    cloud.position.set(x, y, z);
+    cloud.scale.set(sx, sy, 1);
+    group.add(cloud);
+  });
+  const sunTexture = canvasTexture(128, 128, (context, width, height) => {
+    const glow = context.createRadialGradient(width / 2, height / 2, 1, width / 2, height / 2, width / 2);
+    glow.addColorStop(0, "rgba(255,250,213,1)");
+    glow.addColorStop(0.18, "rgba(255,236,161,.9)");
+    glow.addColorStop(1, "rgba(255,224,139,0)");
+    context.fillStyle = glow;
+    context.fillRect(0, 0, width, height);
+  });
+  const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunTexture, transparent: true, opacity: 0.72, depthWrite: false, fog: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  sun.position.set(-13, 20, -112);
+  sun.scale.set(7, 7, 1);
+  group.add(sun);
+  group.userData.sharedTextures = [cloudTexture, sunTexture];
+  return group;
+}
+
+function createSoftGroundShadow(width, depth, opacity = 0.18) {
+  const texture = canvasTexture(256, 128, (context, canvasWidth, canvasHeight) => {
+    const shadow = context.createRadialGradient(canvasWidth / 2, canvasHeight / 2, 4, canvasWidth / 2, canvasHeight / 2, canvasWidth / 2);
+    shadow.addColorStop(0, `rgba(28,63,53,${opacity})`);
+    shadow.addColorStop(0.58, `rgba(28,63,53,${opacity * 0.52})`);
+    shadow.addColorStop(1, "rgba(28,63,53,0)");
+    context.fillStyle = shadow;
+    context.fillRect(0, 0, canvasWidth, canvasHeight);
+  });
+  const shadow = mesh(new THREE.PlaneGeometry(width, depth), new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    color: 0xffffff,
+    toneMapped: false
+  }));
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.012;
+  shadow.renderOrder = -1;
+  return shadow;
 }
 
 function makeSignTexture(label, accent) {
@@ -2812,13 +2998,30 @@ function createTree(accent) {
   const trunk = mesh(new THREE.CylinderGeometry(0.13, 0.2, 2.4, 8), material(0x544137, { roughness: 1 }));
   trunk.position.y = 1.2;
   group.add(trunk);
-  const leafMaterial = material(new THREE.Color(accent).lerp(new THREE.Color(0x2d6b50), 0.86), { roughness: 0.92 });
+  const leafMaterial = material(new THREE.Color(accent).lerp(new THREE.Color(0x347549), 0.9), { roughness: 0.94 });
   [[0, 2.75, 0, 0.95], [-0.5, 2.45, 0.05, 0.72], [0.48, 2.5, -0.08, 0.78]].forEach(([x, y, z, scale]) => {
     const crown = mesh(new THREE.SphereGeometry(scale, 14, 9), leafMaterial);
     crown.scale.set(1.08, 0.82, 0.94);
     crown.position.set(x, y, z);
     group.add(crown);
   });
+  const leafTexture = makeCampusLeafTexture();
+  const leafCardMaterial = new THREE.MeshBasicMaterial({
+    map: leafTexture,
+    transparent: true,
+    alphaTest: 0.08,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    color: 0xe9ffd6,
+    toneMapped: true
+  });
+  [[0, 2.72, 0.34, 2.55, 2.25, 0], [0, 2.72, -0.34, 2.55, 2.25, Math.PI / 2]].forEach(([x, y, z, width, height, rotationY]) => {
+    const card = mesh(new THREE.PlaneGeometry(width, height), leafCardMaterial);
+    card.position.set(x, y, z);
+    card.rotation.y = rotationY;
+    group.add(card);
+  });
+  group.userData.leafTexture = leafTexture;
   return group;
 }
 
@@ -3421,28 +3624,34 @@ function createCampusAcademicBlock(accent, seed = 0) {
   const width = 5.8 + seed % 2 * 1.3;
   const height = 6.2 + seed % 3 * 1.1;
   const depth = 7.2;
-  const concrete = material(seed % 2 ? 0xd2d7d2 : 0xbfc9c8, { roughness: 0.82, metalness: 0.04 });
-  const steel = material(0x5d6f77, { roughness: 0.28, metalness: 0.66 });
-  const glass = material(0x72aebd, { transparent: true, opacity: 0.48, roughness: 0.12, metalness: 0.2, depthWrite: false });
+  const concrete = material(seed % 2 ? 0xe6ece8 : 0xd5e2e1, { roughness: 0.74, metalness: 0.03 });
+  const steel = material(0x71858c, { roughness: 0.24, metalness: 0.62 });
+  const facadeTexture = makeCampusFacadeTexture(seed);
+  const glass = material(0xc7edf4, { roughness: 0.16, metalness: 0.14 });
+  glass.map = facadeTexture;
+  glass.envMapIntensity = 1.05;
   const body = mesh(new THREE.BoxGeometry(width, height, depth), concrete);
   body.position.y = height / 2;
-  const facade = mesh(new THREE.PlaneGeometry(width * 0.84, height * 0.78), glass);
+  const facade = mesh(new THREE.PlaneGeometry(width * 0.88, height * 0.82), glass);
   facade.position.set(0, height * 0.52, depth / 2 + 0.012);
   const mullions = createInstancedObstacleParts(new THREE.BoxGeometry(0.07, height * 0.76, 0.08), steel,
     Array.from({ length: 7 }, (_, index) => ({ x: -width * 0.36 + index * width * 0.12, y: height * 0.52, z: depth / 2 + 0.06 })));
   const floorBands = createInstancedObstacleParts(new THREE.BoxGeometry(width * 0.82, 0.08, 0.08), steel,
     Array.from({ length: 6 }, (_, index) => ({ y: 0.85 + index * (height - 1.3) / 5, z: depth / 2 + 0.065 })));
-  const roofLine = mesh(new THREE.BoxGeometry(width + 0.2, 0.18, depth + 0.2), material(accent, { emissive: accent, emissiveIntensity: 0.18, roughness: 0.52 }));
+  const roofLine = mesh(new THREE.BoxGeometry(width + 0.2, 0.18, depth + 0.2), material(0xf0f3ec, { emissive: accent, emissiveIntensity: 0.035, roughness: 0.52 }));
   roofLine.position.y = height + 0.08;
-  group.add(body, facade, mullions, floorBands, roofLine);
+  const shadow = createSoftGroundShadow(width * 1.35, depth * 1.18, 0.22);
+  shadow.position.z = depth * 0.12;
+  group.add(body, facade, mullions, floorBands, roofLine, shadow);
+  group.userData.facadeTexture = facadeTexture;
   return group;
 }
 
 function createCampusBoulevardPlanting(accent, seed = 0) {
   const group = new THREE.Group();
   const trunkMaterial = material(0x5e4938, { roughness: 1 });
-  const leafMaterial = material(new THREE.Color(0x3f7c51).lerp(new THREE.Color(accent), 0.08), { roughness: 0.96 });
-  const planterMaterial = material(0x79847f, { roughness: 0.9 });
+  const leafMaterial = material(new THREE.Color(0x4d8b55).lerp(new THREE.Color(accent), 0.035), { roughness: 0.96 });
+  const planterMaterial = material(0xa9b6af, { roughness: 0.9 });
   const treeCount = 6;
   const trunks = createInstancedObstacleParts(new THREE.CylinderGeometry(0.12, 0.18, 2.45, 10), trunkMaterial,
     Array.from({ length: treeCount }, (_, index) => ({ x: index % 2 * 1.8, y: 1.33, z: -Math.floor(index / 2) * 5.6 })));
@@ -3463,12 +3672,25 @@ function createCampusBoulevardPlanting(accent, seed = 0) {
     Array.from({ length: 3 }, (_, index) => ({ x: 0.9, y: 0.24, z: -index * 5.6 })));
   const flowers = createInstancedObstacleParts(new THREE.SphereGeometry(0.12, 8, 6), material(seed % 2 ? 0xf0a7b8 : 0xf7cf8e, { roughness: 0.86 }),
     Array.from({ length: 18 }, (_, index) => ({ x: 0.25 + index % 6 * 0.25, y: 0.58 + index % 2 * 0.06, z: -Math.floor(index / 6) * 5.6 + (index % 3 - 1) * 0.22 })));
-  group.add(trunks, crowns, planters, flowers);
+  const leafTexture = makeCampusLeafTexture();
+  const leafCards = new THREE.Group();
+  const leafCardMaterial = new THREE.MeshBasicMaterial({ map: leafTexture, color: 0xf1ffdc, transparent: true, alphaTest: 0.08, depthWrite: false, side: THREE.DoubleSide });
+  for (let tree = 0; tree < treeCount; tree += 1) {
+    const card = mesh(new THREE.PlaneGeometry(2.45, 2.15), leafCardMaterial);
+    card.position.set(tree % 2 * 1.8, 2.82, -Math.floor(tree / 2) * 5.6 + 0.38);
+    card.rotation.y = tree % 2 ? -0.18 : 0.18;
+    leafCards.add(card);
+  }
+  const shadow = createSoftGroundShadow(4.4, 14.6, 0.16);
+  shadow.position.set(0.9, 0.012, -5.6);
+  group.add(trunks, crowns, planters, flowers, leafCards, shadow);
+  group.userData.leafTexture = leafTexture;
   return group;
 }
 
 function createRainCampusWorld(config) {
   const root = createWorldRoot(config);
+  root.add(createCampusSkyLayer());
   addWorldScenery(root, 2, createCampusGlassLift(config.accent), { side: -1, x: 7.4, z: -22, scale: 0.92 });
   addWorldScenery(root, 2, createCampusTransitPavilion(config.accent), { side: 1, x: 7.1, z: -27, scale: 0.94 });
   addWorldScenery(root, 1, createCampusFootbridge(config.accent), { side: 0, x: 0, z: -48, span: 104 });
@@ -7297,9 +7519,10 @@ class CinematicRunnerRenderer {
     this.targetBackground.setHex(config.sky);
     this.targetFog.setHex(config.fog);
     this.targetFogDensity = config.fogDensity * FOG_SCALE;
-    this.targetExposure = config.weather === "storm" ? 0.94 : config.weather === "starlight" ? 1.24 : config.weather === "neon" ? 1.19 : 1.18;
+    this.targetExposure = this.stageIndex === 0 ? 1.27 : config.weather === "storm" ? 0.94 : config.weather === "starlight" ? 1.24 : config.weather === "neon" ? 1.19 : 1.18;
     this.hemisphere.color.setHex(config.ambient);
     this.hemisphere.groundColor.setHex(config.ground);
+    this.hemisphere.intensity = this.stageIndex === 0 ? 2.05 : 1.65;
     this.keyLight.color.setHex(config.key);
     this.keyLight.intensity = config.world.lighting.keyIntensity;
     if (Array.isArray(config.world.lighting.keyPosition)) this.keyLight.position.fromArray(config.world.lighting.keyPosition);

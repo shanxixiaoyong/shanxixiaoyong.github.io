@@ -63,6 +63,10 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const builder of ["createCampusGlassLift", "createCampusFootbridge", "createCampusTransitPavilion", "createCampusAcademicBlock", "createCampusBoulevardPlanting"]) {
     assert.match(source, new RegExp(`function ${builder}\\(`));
   }
+  for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createCampusSkyLayer", "createSoftGroundShadow"]) {
+    assert.match(source, new RegExp(`function ${artLayer}\\(`));
+  }
+  assert.match(source, /this\.stageIndex === 0 \? 1\.27/);
 });
 
 test("gives every chapter a distinct world, road, obstacle, particle, and depth identity", () => {
