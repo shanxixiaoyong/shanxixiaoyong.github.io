@@ -6,17 +6,17 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "first-sight",
     district: "campus-line",
-    asset: "assets/love-scenes/campus-library.webp",
-    sky: 0x70bfd0,
-    skyTop: 0x3a92ae,
-    skyBottom: 0xf6c982,
-    fog: 0x79aeb2,
-    fogDensity: 0.007,
+    asset: "assets/runner-scenes/01-encounter.jpg",
+    sky: 0x8bcfe7,
+    skyTop: 0x4aa9dc,
+    skyBottom: 0xffe3ac,
+    fog: 0xb7d9dc,
+    fogDensity: 0.0045,
     key: 0xffcf8d,
     ambient: 0xbcd7cf,
-    ground: 0x14272a,
-    road: 0x607276,
-    curb: 0xbab49f,
+    ground: 0x526d68,
+    road: 0x9faeac,
+    curb: 0xd4d1bc,
     accent: 0xffc454,
     weather: "after-rain",
     routeStyle: "promenade",
@@ -37,18 +37,18 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "familiar-steps",
     district: "glass-station",
-    asset: "assets/love-scenes/cafe-evening.webp",
-    sky: 0x72c8d2,
-    skyTop: 0x3791a7,
-    skyBottom: 0xc8f2e6,
-    fog: 0x82b8bd,
-    fogDensity: 0.006,
-    key: 0xffe5ad,
-    ambient: 0xd5ece6,
-    ground: 0x183235,
-    road: 0x546d70,
-    curb: 0xa9c8c3,
-    accent: 0x61e0ca,
+    asset: "assets/runner-scenes/02-familiar.jpg",
+    sky: 0x395b7d,
+    skyTop: 0x182d55,
+    skyBottom: 0xd7917c,
+    fog: 0x536779,
+    fogDensity: 0.0065,
+    key: 0xffc07e,
+    ambient: 0xb8d4dc,
+    ground: 0x1d2d34,
+    road: 0x4d5260,
+    curb: 0x9d8776,
+    accent: 0xffa866,
     weather: "breeze",
     routeStyle: "riverside",
     destination: "bridge-bookstore",
@@ -68,7 +68,7 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "closer-signals",
     district: "neon-river",
-    asset: "assets/love-scenes/city-night.webp",
+    asset: "assets/runner-scenes/03-ambiguous.jpg",
     sky: 0x121c3f,
     skyTop: 0x080c26,
     skyBottom: 0x68345e,
@@ -99,7 +99,7 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "spoken-heart",
     district: "date-market",
-    asset: "assets/love-scenes/rain-night.webp",
+    asset: "assets/runner-scenes/04-night-market.jpg",
     sky: 0x24172f,
     skyTop: 0x100d23,
     skyBottom: 0xa24669,
@@ -130,17 +130,17 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "shared-days",
     district: "home-quarter",
-    asset: "assets/love-scenes/warm-home.webp",
-    sky: 0x5e8f93,
-    skyTop: 0x3c6974,
-    skyBottom: 0xf0bd7e,
-    fog: 0x6f9690,
-    fogDensity: 0.006,
+    asset: "assets/runner-scenes/05-neighborhood.jpg",
+    sky: 0x8fc9df,
+    skyTop: 0x5da7d0,
+    skyBottom: 0xffd99f,
+    fog: 0xb8d5cf,
+    fogDensity: 0.0048,
     key: 0xffdf9f,
     ambient: 0xd7dec4,
-    ground: 0x213a31,
-    road: 0x586d65,
-    curb: 0xa8a58c,
+    ground: 0x50635b,
+    road: 0x8e9990,
+    curb: 0xd2c5a9,
     accent: 0xffbf4f,
     weather: "warm",
     routeStyle: "neighborhood",
@@ -161,7 +161,7 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "rough-weather",
     district: "storm-bridge",
-    asset: "assets/love-scenes/rain-night.webp",
+    asset: "assets/runner-scenes/06-storm-bridge.jpg",
     sky: 0x18243a,
     skyTop: 0x080e1f,
     skyBottom: 0x59667a,
@@ -192,7 +192,7 @@ const STAGE_CONFIGS = Object.freeze([
   {
     id: "toward-home",
     district: "sunrise-terminal",
-    asset: "assets/love-scenes/starlight-vow.webp",
+    asset: "assets/runner-scenes/07-dawn-home.jpg",
     sky: 0x343d6d,
     skyTop: 0x171d49,
     skyBottom: 0xf3a47b,
@@ -232,7 +232,7 @@ const COLLISION_Z = 0.85;
 const FOG_SCALE = 0.52;
 const MAX_RENDER_PIXELS = 1_850_000;
 const CITY_BUILDING_COUNT = 54;
-const BACKDROP_OPACITY = 0.34;
+const BACKDROP_OPACITY = 0.74;
 const STAGE_COLLECTIBLE_COLORS = Object.freeze([0xffc34d, 0x68ead3, 0x67e8ff, 0xff6688, 0xffb74f, 0xff6a70, 0xffd85a]);
 const STAGE_TOKEN_COLORS = Object.freeze([0xff5f72, 0xf4fff9, 0xffe1a0, 0xfff4e6, 0xfff0a6, 0xffedf0, 0xffffff]);
 const STAGE_TRACKSIDE_PROPS = Object.freeze([
@@ -5684,7 +5684,15 @@ class CinematicRunnerRenderer {
     this.particleTexture = makeParticleTexture();
     this.stageTextures = Array(STAGE_CONFIGS.length).fill(null);
     this.arrivalStageTextures = Array(STAGE_CONFIGS.length).fill(null);
-    this.backdropMaterials = [0, 1].map(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, fog: false, color: 0xffffff }));
+    this.backdropMaterials = [0, 1].map(() => new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      color: 0xffffff,
+      toneMapped: false
+    }));
     this.backdrops = this.backdropMaterials.map((backdropMaterial, index) => {
       const backdrop = mesh(new THREE.PlaneGeometry(76, 136), backdropMaterial);
       backdrop.position.set(0, 9, -138 - index * 0.2);
@@ -7041,7 +7049,7 @@ class CinematicRunnerRenderer {
           texture.repeat.set(1, imageAspect / planeAspect);
           texture.offset.set(0, 1 - texture.repeat.y);
         }
-        texture.repeat.y *= 0.68;
+        texture.repeat.y *= 0.82;
         texture.offset.y = 1 - texture.repeat.y;
         texture.updateMatrix();
         this.stageTextures[index] = texture;

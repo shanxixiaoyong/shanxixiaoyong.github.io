@@ -10,6 +10,7 @@
   --runner-width: 720px;
   --runner-height: 1280px;
   --stage-intro-duration: 3600ms;
+  --runner-scene: url("runner-scenes/01-encounter.jpg");
   font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -46,12 +47,12 @@ a {
   background: #070a0b;
 }
 
-.runner-shell[data-stage="2"] { --stage-accent: #8fd6ca; }
-.runner-shell[data-stage="3"] { --stage-accent: #72d4df; }
-.runner-shell[data-stage="4"] { --stage-accent: #ef8997; }
-.runner-shell[data-stage="5"] { --stage-accent: #f1bd66; }
-.runner-shell[data-stage="6"] { --stage-accent: #dc6c68; }
-.runner-shell[data-stage="7"] { --stage-accent: #efc875; }
+.runner-shell[data-stage="2"] { --stage-accent: #ffad70; --runner-scene: url("runner-scenes/02-familiar.jpg"); }
+.runner-shell[data-stage="3"] { --stage-accent: #72d4df; --runner-scene: url("runner-scenes/03-ambiguous.jpg"); }
+.runner-shell[data-stage="4"] { --stage-accent: #ef8997; --runner-scene: url("runner-scenes/04-night-market.jpg"); }
+.runner-shell[data-stage="5"] { --stage-accent: #f1bd66; --runner-scene: url("runner-scenes/05-neighborhood.jpg"); }
+.runner-shell[data-stage="6"] { --stage-accent: #dc6c68; --runner-scene: url("runner-scenes/06-storm-bridge.jpg"); }
+.runner-shell[data-stage="7"] { --stage-accent: #efc875; --runner-scene: url("runner-scenes/07-dawn-home.jpg"); }
 
 .runner-phone {
   position: relative;
@@ -62,7 +63,7 @@ a {
   aspect-ratio: 9 / 16;
   overflow: hidden;
   isolation: isolate;
-  background: #17201e url("runner-scenes/01-encounter.jpg") center / cover no-repeat;
+  background: #17201e var(--runner-scene) center / cover no-repeat;
   box-shadow: 0 20px 90px rgba(0, 0, 0, 0.7);
 }
 
@@ -1132,7 +1133,7 @@ a {
 .result {
   background:
     linear-gradient(180deg, rgba(7, 10, 12, 0.22), rgba(7, 10, 12, 0.97)),
-    url("love-scenes/starlight-vow.webp") center / cover no-repeat;
+    url("runner-scenes/07-dawn-home.jpg") center / cover no-repeat;
 }
 
 .runner-failure {

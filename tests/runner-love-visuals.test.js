@@ -52,8 +52,14 @@ test("builds a perspective WebGL scene with physically shaded depth and bounded 
 test("authors seven visually distinct districts with local cinematic backdrops", () => {
   for (const id of ["first-sight", "familiar-steps", "closer-signals", "spoken-heart", "shared-days", "rough-weather", "toward-home"]) assert.ok(source.includes(`id: "${id}"`), id);
   for (const weather of ["after-rain", "breeze", "neon", "rain", "warm", "storm", "starlight"]) assert.ok(source.includes(`weather: "${weather}"`), weather);
-  for (const asset of ["campus-library.webp", "cafe-evening.webp", "city-night.webp", "rain-night.webp", "warm-home.webp", "starlight-vow.webp"]) assert.ok(source.includes(asset), asset);
+  for (const asset of ["01-encounter.jpg", "02-familiar.jpg", "03-ambiguous.jpg", "04-night-market.jpg", "05-neighborhood.jpg", "06-storm-bridge.jpg", "07-dawn-home.jpg"]) {
+    assert.ok(source.includes(asset), asset);
+    assert.ok(fs.statSync(path.join(root, "assets", "runner-scenes", asset)).size > 250000, asset);
+  }
   for (const district of ["campus-line", "glass-station", "neon-river", "date-market", "home-quarter", "storm-bridge", "sunrise-terminal"]) assert.ok(source.includes(`district: "${district}"`), district);
+  assert.match(source, /const BACKDROP_OPACITY = 0\.74/);
+  assert.match(source, /depthTest: false/);
+  assert.match(source, /texture\.repeat\.y \*= 0\.82/);
 });
 
 test("gives every chapter a distinct world, road, obstacle, particle, and depth identity", () => {

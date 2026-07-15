@@ -97,13 +97,14 @@ test("keeps the 3D route primary on a 9:16 mobile stage with safe areas", () => 
 });
 
 test("uses local cinematic scene art, local 3D models, and a cache-consistent release", () => {
-  assert.match(html, /assets\/love-scenes\/campus-library\.webp/);
+  assert.match(html, /assets\/runner-scenes\/01-encounter\.jpg/);
+  for (let stage = 1; stage <= 7; stage += 1) assert.match(css, new RegExp(`runner-scenes\\/0${stage}-`));
   assert.match(html, /assets\/runner-models\/runner-player\.glb/);
   assert.match(html, /assets\/runner-models\/runner-city\.glb/);
   const versions = [...html.matchAll(/runner-love-[^"?]+\?v=([^"']+)/g)].map((match) => match[1]);
   assert.ok(versions.length >= 5);
   assert.equal(new Set(versions).size, 1);
-  assert.equal(versions[0], "runner-love-routes-20260715e");
+  assert.equal(versions[0], "runner-love-illustrated-20260715a");
 });
 
 test("result and checkpoint surfaces preserve route stats and immediate replay", () => {
