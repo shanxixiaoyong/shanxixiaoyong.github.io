@@ -66,6 +66,9 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createCampusSkyLayer", "createSoftGroundShadow"]) {
     assert.match(source, new RegExp(`function ${artLayer}\\(`));
   }
+  assert.match(source, /function campusArtTexture\(/);
+  for (const crop of ["glass-lift", "footbridge-glass", "transit-pavilion", "academic-left", "academic-right"]) assert.ok(source.includes(`"${crop}"`), crop);
+  assert.match(source, /const stageShadows = profile\.shadows \|\| this\.stageIndex === 0/);
   assert.match(source, /this\.stageIndex === 0 \? 1\.27/);
 });
 
@@ -377,7 +380,7 @@ test("enforces the 720x1280 mobile draw-call budget with real scene suppression"
   assert.match(source, /train\.visible = !this\.mobilePerformance/);
   assert.match(source, /object\.position\.z >= -this\.qualityProfile\.entityRange/);
   assert.match(source, /applyEntityQuality\(object, this\.qualityProfile\.entityMeshBudget\)/);
-  assert.match(source, /applyCharacterRenderQuality\(this\.player, profile\.key === "performance", profile\.shadows\)/);
+  assert.match(source, /applyCharacterRenderQuality\(this\.player, profile\.key === "performance", stageShadows\)/);
   assert.match(source, /!this\.mobilePerformance && this\.qualityGoodWindows >= 4/);
 });
 

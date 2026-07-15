@@ -906,6 +906,8 @@ function canvasTexture(width, height, painter) {
 let toonGradientTexture = null;
 let campusLeafTexture = null;
 let campusCloudTexture = null;
+let campusArtSourceTexture = null;
+const campusArtCropCache = new Map();
 const roundedGeometryCache = new Map();
 let heartGeometry = null;
 let foliageClusterGeometry = null;
@@ -925,6 +927,27 @@ function getToonGradientTexture() {
   toonGradientTexture.magFilter = THREE.NearestFilter;
   SHARED_TEXTURES.add(toonGradientTexture);
   return toonGradientTexture;
+}
+
+function campusArtTexture(key, u, v, width, height) {
+  if (campusArtCropCache.has(key)) return campusArtCropCache.get(key);
+  if (!campusArtSourceTexture) {
+    campusArtSourceTexture = new THREE.TextureLoader().load("assets/runner-scenes/01-encounter.jpg");
+    campusArtSourceTexture.colorSpace = THREE.SRGBColorSpace;
+    campusArtSourceTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    campusArtSourceTexture.magFilter = THREE.LinearFilter;
+    campusArtSourceTexture.anisotropy = 8;
+    campusArtSourceTexture.wrapS = THREE.ClampToEdgeWrapping;
+    campusArtSourceTexture.wrapT = THREE.ClampToEdgeWrapping;
+    SHARED_TEXTURES.add(campusArtSourceTexture);
+  }
+  const texture = campusArtSourceTexture.clone();
+  texture.offset.set(u, v);
+  texture.repeat.set(width, height);
+  texture.needsUpdate = true;
+  SHARED_TEXTURES.add(texture);
+  campusArtCropCache.set(key, texture);
+  return texture;
 }
 
 function characterMaterial(color, options = {}) {
@@ -3512,12 +3535,14 @@ function createCampusGlassLift(accent) {
   const concrete = material(0xc7d1cd, { roughness: 0.78, metalness: 0.04 });
   const glass = material(0x9ed5e5, {
     transparent: true,
-    opacity: 0.28,
-    roughness: 0.08,
-    metalness: 0.16,
-    depthWrite: false,
+    opacity: 0.82,
+    roughness: 0.16,
+    metalness: 0.08,
+    depthWrite: true,
     side: THREE.DoubleSide
   });
+  glass.map = campusArtTexture("glass-lift", 0.1, 0.55, 0.34, 0.31);
+  glass.envMapIntensity = 0.86;
   const glow = material(accent, { emissive: accent, emissiveIntensity: 1.2, roughness: 0.24 });
   const base = mesh(new THREE.BoxGeometry(3.3, 0.28, 3.2), concrete);
   base.position.y = 0.14;
@@ -3566,7 +3591,9 @@ function createCampusFootbridge(accent) {
   const group = new THREE.Group();
   const steel = material(0x697a80, { roughness: 0.3, metalness: 0.68 });
   const deckMaterial = material(0xb9c3c0, { roughness: 0.72, metalness: 0.08 });
-  const glass = material(0xa8d8e4, { transparent: true, opacity: 0.24, roughness: 0.1, metalness: 0.12, depthWrite: false, side: THREE.DoubleSide });
+  const glass = material(0xc4e8ee, { transparent: true, opacity: 0.76, roughness: 0.17, metalness: 0.08, depthWrite: true, side: THREE.DoubleSide });
+  glass.map = campusArtTexture("footbridge-glass", 0.2, 0.55, 0.6, 0.2);
+  glass.envMapIntensity = 0.9;
   const deck = mesh(new THREE.BoxGeometry(15.2, 0.34, 2.25), deckMaterial);
   deck.position.y = 5.05;
   const underside = mesh(new THREE.BoxGeometry(15.6, 0.12, 2.38), steel);
@@ -3594,7 +3621,9 @@ function createCampusFootbridge(accent) {
 function createCampusTransitPavilion(accent) {
   const group = new THREE.Group();
   const steel = material(0x526169, { roughness: 0.3, metalness: 0.7 });
-  const glass = material(0xa9d9e3, { transparent: true, opacity: 0.25, roughness: 0.08, metalness: 0.14, depthWrite: false, side: THREE.DoubleSide });
+  const glass = material(0xc4e8ed, { transparent: true, opacity: 0.8, roughness: 0.16, metalness: 0.08, depthWrite: true, side: THREE.DoubleSide });
+  glass.map = campusArtTexture("transit-pavilion", 0.62, 0.52, 0.36, 0.31);
+  glass.envMapIntensity = 0.92;
   const stone = material(0xadb8b5, { roughness: 0.82 });
   const platform = mesh(new THREE.BoxGeometry(4.9, 0.24, 7.4), stone);
   platform.position.y = 0.12;
@@ -3626,7 +3655,9 @@ function createCampusAcademicBlock(accent, seed = 0) {
   const depth = 7.2;
   const concrete = material(seed % 2 ? 0xe6ece8 : 0xd5e2e1, { roughness: 0.74, metalness: 0.03 });
   const steel = material(0x71858c, { roughness: 0.24, metalness: 0.62 });
-  const facadeTexture = makeCampusFacadeTexture(seed);
+  const facadeTexture = seed % 2
+    ? campusArtTexture("academic-left", 0.01, 0.54, 0.48, 0.3)
+    : campusArtTexture("academic-right", 0.51, 0.54, 0.48, 0.3);
   const glass = material(0xc7edf4, { roughness: 0.16, metalness: 0.14 });
   glass.map = facadeTexture;
   glass.envMapIntensity = 1.05;
@@ -3698,6 +3729,13 @@ function createRainCampusWorld(config) {
   addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, 2), { side: 1, x: 10.4, z: -73, scale: 1.08, rotationY: -Math.PI / 2 });
   addWorldScenery(root, 2, createCampusBoulevardPlanting(config.accent, 0), { side: -1, x: 6.8, z: -38, scale: 0.92 });
   addWorldScenery(root, 2, createCampusBoulevardPlanting(config.accent, 1), { side: 1, x: 6.9, z: -52, scale: 0.9, rotationY: Math.PI });
+  root.traverse((child) => {
+    if (!child.isMesh && !child.isInstancedMesh) return;
+    const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    const translucent = childMaterials.some((item) => item?.transparent && item.opacity < 0.95);
+    child.castShadow = !translucent;
+    child.receiveShadow = !translucent;
+  });
   return root;
 }
 
@@ -7519,6 +7557,9 @@ class CinematicRunnerRenderer {
     this.targetBackground.setHex(config.sky);
     this.targetFog.setHex(config.fog);
     this.targetFogDensity = config.fogDensity * FOG_SCALE;
+    const stageShadows = Boolean(this.qualityProfile?.shadows || this.stageIndex === 0);
+    this.renderer.shadowMap.enabled = stageShadows;
+    this.keyLight.castShadow = stageShadows;
     this.targetExposure = this.stageIndex === 0 ? 1.27 : config.weather === "storm" ? 0.94 : config.weather === "starlight" ? 1.24 : config.weather === "neon" ? 1.19 : 1.18;
     this.hemisphere.color.setHex(config.ambient);
     this.hemisphere.groundColor.setHex(config.ground);
@@ -7867,10 +7908,12 @@ class CinematicRunnerRenderer {
     this.qualityProfileIndex = nextIndex;
     this.qualityProfile = QUALITY_PROFILES[nextIndex];
     const profile = this.qualityProfile;
-    this.renderer.shadowMap.enabled = profile.shadows;
-    this.keyLight.castShadow = profile.shadows;
-    applyCharacterRenderQuality(this.player, profile.key === "performance", profile.shadows);
-    applyCharacterRenderQuality(this.companion, profile.key === "performance", profile.shadows);
+    const stageShadows = profile.shadows || this.stageIndex === 0;
+    this.renderer.shadowMap.enabled = stageShadows;
+    this.keyLight.castShadow = stageShadows;
+    this.keyLight.shadow.mapSize.set(this.mobilePerformance ? 512 : 1024, this.mobilePerformance ? 512 : 1024);
+    applyCharacterRenderQuality(this.player, profile.key === "performance", stageShadows);
+    applyCharacterRenderQuality(this.companion, profile.key === "performance", stageShadows);
     this.entityObjects.forEach((object) => applyEntityQuality(object, profile.entityMeshBudget));
     this.rain.geometry.setDrawRange(0, Math.floor(420 * 2 * profile.particleScale));
     this.ambientParticles.geometry.setDrawRange(0, Math.floor(180 * profile.particleScale));
