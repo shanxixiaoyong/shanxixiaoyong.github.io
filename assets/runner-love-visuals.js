@@ -2650,8 +2650,8 @@ function makeCampusSkyArtTexture() {
   if (campusSkyArtTexture) return campusSkyArtTexture;
   campusSkyArtTexture = new THREE.TextureLoader().load("assets/runner-scenes/01-encounter.jpg");
   campusSkyArtTexture.colorSpace = THREE.SRGBColorSpace;
-  campusSkyArtTexture.offset.set(0, 0.39);
-  campusSkyArtTexture.repeat.set(1, 0.61);
+  campusSkyArtTexture.offset.set(0, 0);
+  campusSkyArtTexture.repeat.set(1, 1);
   campusSkyArtTexture.minFilter = THREE.LinearMipmapLinearFilter;
   campusSkyArtTexture.magFilter = THREE.LinearFilter;
   campusSkyArtTexture.anisotropy = 4;
@@ -2723,9 +2723,17 @@ function createCampusSkyLayer() {
     toneMapped: false,
     side: THREE.DoubleSide
   });
-  const sky = mesh(new THREE.PlaneGeometry(250, 272), skyMaterial);
-  sky.position.set(0, 14, -152);
+  const sky = mesh(new THREE.PlaneGeometry(2, 2), skyMaterial);
+  sky.frustumCulled = false;
   sky.renderOrder = -2;
+  sky.userData.cameraDirection = new THREE.Vector3();
+  sky.onBeforeRender = (_renderer, _scene, camera) => {
+    const distance = 180;
+    const height = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * distance;
+    sky.position.copy(camera.position).add(camera.getWorldDirection(sky.userData.cameraDirection).multiplyScalar(distance));
+    sky.quaternion.copy(camera.quaternion);
+    sky.scale.set(height * camera.aspect * 0.5, height * 0.5, 1);
+  };
   group.add(sky);
   return group;
 }
@@ -2738,7 +2746,7 @@ function createCampusRoadShadowLayer() {
   const shadow = mesh(new THREE.PlaneGeometry(8.35, 180), new THREE.MeshBasicMaterial({
     map: shadowTexture,
     transparent: true,
-    opacity: 0.52,
+    opacity: 0.34,
     depthWrite: false,
     toneMapped: false
   }));
@@ -6194,6 +6202,7 @@ function installCampusDepthFade(depthMaterial, start = 58, end = 108) {
   const enabled = { value: 0 };
   depthMaterial.userData.campusDepthFade = {
     enabled,
+    opacity: depthMaterial.opacity,
     transparent: depthMaterial.transparent,
     depthWrite: depthMaterial.depthWrite
   };
@@ -6207,19 +6216,21 @@ function installCampusDepthFade(depthMaterial, start = 58, end = 108) {
     );
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <opaque_fragment>",
-      "if (uCampusFadeEnabled > 0.5) { float campusFade = 1.0 - smoothstep(uCampusFadeStart, uCampusFadeEnd, -vViewPosition.z); float campusDither = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453); if (campusDither > campusFade) discard; }\n#include <opaque_fragment>"
+      "if (uCampusFadeEnabled > 0.5) { diffuseColor.a *= 1.0 - smoothstep(uCampusFadeStart, uCampusFadeEnd, -vViewPosition.z); }\n#include <opaque_fragment>"
     );
   };
-  depthMaterial.customProgramCacheKey = () => "campus-depth-fade-v1";
+  depthMaterial.customProgramCacheKey = () => "campus-depth-fade-v2";
 }
 
 function setCampusDepthFade(depthMaterial, active) {
   const fade = depthMaterial.userData.campusDepthFade;
   if (!fade) return;
   fade.enabled.value = active ? 1 : 0;
-  const nextTransparent = fade.transparent;
+  const nextOpacity = active ? 0.18 : fade.opacity;
+  const nextTransparent = active ? true : fade.transparent;
   const nextDepthWrite = fade.depthWrite;
-  if (depthMaterial.transparent !== nextTransparent || depthMaterial.depthWrite !== nextDepthWrite) {
+  if (depthMaterial.opacity !== nextOpacity || depthMaterial.transparent !== nextTransparent || depthMaterial.depthWrite !== nextDepthWrite) {
+    depthMaterial.opacity = nextOpacity;
     depthMaterial.transparent = nextTransparent;
     depthMaterial.depthWrite = nextDepthWrite;
     depthMaterial.needsUpdate = true;
@@ -6389,10 +6400,10 @@ class CinematicRunnerRenderer {
     });
     this.streetPlanterMaterial = material(0x39484b, { roughness: 0.76, metalness: 0.16 });
     this.streetFoliageMaterial = material(0x5f8e65, { roughness: 0.9 });
-    installCampusDepthFade(this.roadMaterial, 32, 78);
-    installCampusDepthFade(this.platformMaterial, 28, 66);
-    installCampusDepthFade(this.safetyLineMaterial, 30, 68);
-    installCampusDepthFade(this.laneGuideMaterial, 34, 78);
+    installCampusDepthFade(this.roadMaterial, 24, 62);
+    installCampusDepthFade(this.platformMaterial, 20, 54);
+    installCampusDepthFade(this.safetyLineMaterial, 22, 58);
+    installCampusDepthFade(this.laneGuideMaterial, 26, 64);
     this.ground = mesh(new THREE.PlaneGeometry(86, 410), this.groundMaterial, false, true);
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.position.set(0, -0.075, -120);
@@ -6615,7 +6626,7 @@ class CinematicRunnerRenderer {
         let riggedCompanion = null;
         try {
           riggedPlayer = createRiggedRunner(playerGltf, {
-            height: 2.35,
+            height: 2.08,
             accent: 0xff7866,
             widthScale: 0.84,
             depthScale: 0.88,
@@ -6623,7 +6634,7 @@ class CinematicRunnerRenderer {
             fashion: false
           }, motionGltf.animations);
           riggedCompanion = createRiggedRunner(companionGltf, {
-            height: 2.28,
+            height: 2.02,
             accent: 0xff668f,
             companion: true,
             widthScale: 0.87,
@@ -8243,19 +8254,19 @@ class CinematicRunnerRenderer {
       const detail = profile.roadDetail;
       const campusStage = this.stageIndex === 0;
       this.roadBatches.ballast.visible = !arriving;
-      this.roadBatches.walks.visible = !arriving;
+      this.roadBatches.walks.visible = !campusStage && !arriving;
       this.roadBatches.sleepers.visible = !arriving && railRoute && detail > 0;
       this.roadBatches.rails.visible = !arriving && railRoute;
       this.roadBatches.thirdRails.visible = !arriving && railRoute && detail > 0;
-      this.roadBatches.safetyLines.visible = !arriving && !railRoute;
-      this.roadBatches.laneGuides.visible = !arriving && !railRoute && (campusStage || ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif));
+      this.roadBatches.safetyLines.visible = !campusStage && !arriving && !railRoute;
+      this.roadBatches.laneGuides.visible = !campusStage && !arriving && !railRoute && ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif);
       this.roadBatches.laneTicks.visible = !campusStage && !arriving && !railRoute && detail > 0 && ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif);
       this.roadBatches.crosswalks.visible = !arriving && !railRoute && detail > 0 && ["crossing", "threshold"].includes(activeRoute.motif);
       this.roadBatches.drains.visible = !campusStage && !arriving && !railRoute && detail > 1 && ROUTE_DRAIN_MOTIFS.has(activeRoute.motif);
       this.roadBatches.roadPatches.visible = !campusStage && !arriving && !railRoute && detail > 0 && ROUTE_PATCH_MOTIFS.has(activeRoute.motif);
       this.roadBatches.manholes.visible = !campusStage && !arriving && !railRoute && detail > 1 && ROUTE_UTILITY_MOTIFS.has(activeRoute.motif);
-      this.roadBatches.edgePosts.visible = !arriving && detail > 0;
-      this.roadBatches.edgePostLights.visible = !arriving && detail > 0;
+      this.roadBatches.edgePosts.visible = !campusStage && !arriving && detail > 0;
+      this.roadBatches.edgePostLights.visible = !campusStage && !arriving && detail > 0;
       this.roadBatches.planterBases.visible = !campusStage && !arriving && detail > 0 && ROUTE_PLANTED_SHOULDERS.has(activeRoute.shoulder);
       this.roadBatches.planterLeaves.visible = !campusStage && !arriving && detail > 0 && ROUTE_PLANTED_SHOULDERS.has(activeRoute.shoulder);
       this.roadBatches.themeBands.visible = !campusStage && !arriving;

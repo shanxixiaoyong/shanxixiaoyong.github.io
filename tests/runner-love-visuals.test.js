@@ -378,8 +378,8 @@ test("enforces the 720x1280 mobile draw-call budget with real scene suppression"
   assert.match(source, /this\.applyQualityProfile\("performance"\)/);
   assert.match(source, /const premiumStageAllowed = !this\.mobilePerformance/);
   assert.match(source, /const suppressFallback = this\.mobilePerformance \|\| profile\.premiumCity/);
-  assert.match(source, /this\.roadBatches\.edgePosts\.visible = !arriving && detail > 0/);
-  assert.match(source, /this\.roadBatches\.laneGuides\.visible = !arriving && !railRoute/);
+  assert.match(source, /this\.roadBatches\.edgePosts\.visible = !campusStage && !arriving && detail > 0/);
+  assert.match(source, /this\.roadBatches\.laneGuides\.visible = !campusStage && !arriving && !railRoute/);
   assert.match(source, /const effectiveDecorStride = railRoute && this\.qualityProfile\?\.key === "performance"/);
   assert.match(source, /const visibleWorldLayers = this\.stageIndex === 0[\s\S]*?\? 3/);
   assert.match(source, /train\.visible = !this\.mobilePerformance/);
