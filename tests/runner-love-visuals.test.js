@@ -49,7 +49,7 @@ test("builds a perspective WebGL scene with physically shaded depth and bounded 
   assert.match(source, /this\.renderer\.render\(this\.scene, this\.camera\)/);
 });
 
-test("authors seven visually distinct districts with local cinematic backdrops", () => {
+test("authors seven visually distinct districts and a fully modeled opening campus", () => {
   for (const id of ["first-sight", "familiar-steps", "closer-signals", "spoken-heart", "shared-days", "rough-weather", "toward-home"]) assert.ok(source.includes(`id: "${id}"`), id);
   for (const weather of ["after-rain", "breeze", "neon", "rain", "warm", "storm", "starlight"]) assert.ok(source.includes(`weather: "${weather}"`), weather);
   for (const asset of ["01-encounter.jpg", "02-familiar.jpg", "03-ambiguous.jpg", "04-night-market.jpg", "05-neighborhood.jpg", "06-storm-bridge.jpg", "07-dawn-home.jpg"]) {
@@ -63,16 +63,27 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const builder of ["createCampusGlassLift", "createCampusFootbridge", "createCampusTransitPavilion", "createCampusAcademicBlock", "createCampusBoulevardPlanting"]) {
     assert.match(source, new RegExp(`function ${builder}\\(`));
   }
-  for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createCampusSkyLayer", "createSoftGroundShadow"]) {
+  for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createSoftGroundShadow"]) {
     assert.match(source, new RegExp(`function ${artLayer}\\(`));
   }
-  for (const parallaxContract of ["campusParallaxUv", "uTravel", "forward", "setCampusTravel"]) assert.ok(source.includes(parallaxContract), parallaxContract);
   for (const modelLayer of ["beamBetween3D", "createCampusCanopyTree", "createCampusSidewalkGarden"]) {
     assert.match(source, new RegExp(`function ${modelLayer}\\(`));
   }
+  for (const campusModel of [
+    "createCampusSurfaceRibbon", "createCampusCloudField", "createCampusTreeAvenue", "createCampusBuildingRow",
+    "createCampusGlassElevator", "createCampusCurvedPavilion", "createCampusGateway", "createCampusStreetFurniture",
+    "createCampusDistantCity"
+  ]) assert.match(source, new RegExp(`function ${campusModel}\\(`));
+  const campusWorld = sourceBlock("function createRainCampusWorld(config) {", "\nfunction createRiverBookstoreWorld(config) {");
+  assert.match(campusWorld, /world-rain-campus-full-3d/);
+  assert.match(campusWorld, /fullThreeDimensional = true/);
+  assert.match(campusWorld, /parallax: 1/);
+  assert.doesNotMatch(campusWorld, /createCampusSkyLayer|setCampusTravel/);
+  assert.match(source, /data-campus-world", this\.stageIndex === 0 \? "full-3d"/);
+  assert.match(source, /data-campus-backdrop-sampling", this\.stageIndex === 0 \? "off"/);
   for (const map of ["asphalt-diffuse.jpg", "asphalt-normal.jpg", "asphalt-roughness.jpg"]) assert.ok(source.includes(map), map);
   assert.match(source, /data-campus-material", "poly-haven-pbr"/);
-  assert.match(source, /const stageShadows = profile\.shadows \|\| this\.stageIndex === 0/);
+  assert.match(source, /const stageShadows = profile\.shadows && this\.stageIndex !== 0 && !this\.mobilePerformance/);
   assert.match(source, /this\.stageIndex === 0 \? 1\.06/);
 });
 
@@ -90,8 +101,7 @@ test("rebuilds the opening run as a cinematic campus POV with illustrated enviro
   ]) assert.ok(source.includes(contract), contract);
   assert.match(source, /this\.player\.visible = !campusPov/);
   assert.match(source, /visuals\.root\.visible = stageIndex !== 0/);
-  assert.match(source, /float forward = 1\.0 - exp/);
-  assert.doesNotMatch(source, /float weightA =|float weightB =/);
+  assert.match(source, /setCampusDepthFade\(depthMaterial, false\)/);
 });
 
 test("gives every chapter a distinct world, road, obstacle, particle, and depth identity", () => {
@@ -398,7 +408,7 @@ test("enforces the 720x1280 mobile draw-call budget with real scene suppression"
   assert.match(source, /const premiumStageAllowed = !this\.mobilePerformance/);
   assert.match(source, /const suppressFallback = this\.mobilePerformance \|\| profile\.premiumCity/);
   assert.match(source, /this\.roadBatches\.edgePosts\.visible = !campusStage && !arriving && detail > 0/);
-  assert.match(source, /this\.roadBatches\.laneGuides\.visible = !campusStage && !arriving && !railRoute/);
+  assert.match(source, /this\.roadBatches\.laneGuides\.visible = !arriving && !railRoute && \(campusStage \|\|/);
   assert.match(source, /const effectiveDecorStride = railRoute && this\.qualityProfile\?\.key === "performance"/);
   assert.match(source, /const visibleWorldLayers = this\.stageIndex === 0[\s\S]*?\? 3/);
   assert.match(source, /train\.visible = !this\.mobilePerformance/);

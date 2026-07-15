@@ -906,7 +906,6 @@ function canvasTexture(width, height, painter) {
 let toonGradientTexture = null;
 let campusLeafTexture = null;
 let campusCloudTexture = null;
-let campusSkyArtTexture = null;
 let campusLightMoteTexture = null;
 let campusObstacleLeafTexture = null;
 let campusMistTexture = null;
@@ -2964,19 +2963,6 @@ function makeCampusLeafTexture() {
   return campusLeafTexture;
 }
 
-function makeCampusSkyArtTexture() {
-  if (campusSkyArtTexture) return campusSkyArtTexture;
-  campusSkyArtTexture = new THREE.TextureLoader().load("assets/runner-scenes/01-encounter.jpg");
-  campusSkyArtTexture.colorSpace = THREE.SRGBColorSpace;
-  campusSkyArtTexture.offset.set(0, 0);
-  campusSkyArtTexture.repeat.set(1, 1);
-  campusSkyArtTexture.minFilter = THREE.LinearMipmapLinearFilter;
-  campusSkyArtTexture.magFilter = THREE.LinearFilter;
-  campusSkyArtTexture.anisotropy = 4;
-  SHARED_TEXTURES.add(campusSkyArtTexture);
-  return campusSkyArtTexture;
-}
-
 function makeCampusCloudTexture() {
   if (campusCloudTexture) return campusCloudTexture;
   campusCloudTexture = canvasTexture(512, 256, (context, width, height) => {
@@ -3029,66 +3015,6 @@ function makeCampusShadowTexture() {
       }
     }
   });
-}
-
-function createCampusSkyLayer() {
-  const group = new THREE.Group();
-  const travelUniform = { value: 0 };
-  const skyMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      uMap: { value: makeCampusSkyArtTexture() },
-      uTravel: travelUniform
-    },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D uMap;
-      uniform float uTravel;
-      varying vec2 vUv;
-
-      vec2 campusParallaxUv(float phase) {
-        float zoom = 1.0 + phase * 0.105;
-        vec2 sampleUv = (vUv - 0.5) / zoom + 0.5;
-        float side = sign(vUv.x - 0.5);
-        float edge = smoothstep(0.08, 0.5, abs(vUv.x - 0.5));
-        sampleUv.x -= side * phase * 0.018 * edge;
-        sampleUv.y += phase * 0.036;
-        return clamp(sampleUv, vec2(0.002), vec2(0.998));
-      }
-
-      void main() {
-        float forward = 1.0 - exp(-max(0.0, uTravel) * 0.18);
-        gl_FragColor = texture2D(uMap, campusParallaxUv(forward));
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
-      }
-    `,
-    depthWrite: false,
-    fog: false,
-    toneMapped: false,
-    side: THREE.DoubleSide
-  });
-  const sky = mesh(new THREE.PlaneGeometry(2, 2), skyMaterial);
-  sky.frustumCulled = false;
-  sky.renderOrder = -2;
-  sky.userData.cameraDirection = new THREE.Vector3();
-  sky.onBeforeRender = (_renderer, _scene, camera) => {
-    const distance = 180;
-    const height = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * distance;
-    sky.position.copy(camera.position).add(camera.getWorldDirection(sky.userData.cameraDirection).multiplyScalar(distance));
-    sky.quaternion.copy(camera.quaternion);
-    sky.scale.set(height * camera.aspect * 0.5, height * 0.5, 1);
-  };
-  group.add(sky);
-  group.userData.setCampusTravel = (distance) => {
-    travelUniform.value = Math.max(0, Number(distance) || 0) / 120;
-  };
-  return group;
 }
 
 function createCampusRoadShadowLayer() {
@@ -3884,10 +3810,12 @@ function addWorldScenery(root, layerIndex, object, options) {
     object,
     baseX: object.position.x,
     baseZ: object.position.z,
-    parallax: layer.parallax,
+    parallax: Number.isFinite(options.parallax) ? options.parallax : layer.parallax,
     span: options.span || layer.span,
     drift: Number(options.drift) || 0,
     side,
+    nearLimit: Number.isFinite(options.nearLimit) ? options.nearLimit : null,
+    depthCull: options.depthCull !== false,
     centerOffset: sphere.center.clone().sub(object.position),
     sphere,
     nearOffset: bounds.max.z - object.position.z,
@@ -4196,18 +4124,701 @@ function createCampusBoulevardPlanting(accent, seed = 0) {
   return group;
 }
 
+function makeCampusPavingTexture() {
+  const texture = canvasTexture(512, 512, (context, width, height) => {
+    const base = context.createLinearGradient(0, 0, width, height);
+    base.addColorStop(0, "#eef1ed");
+    base.addColorStop(0.55, "#d8dfdc");
+    base.addColorStop(1, "#c6d0cd");
+    context.fillStyle = base;
+    context.fillRect(0, 0, width, height);
+    context.strokeStyle = "rgba(88,105,104,.22)";
+    context.lineWidth = 3;
+    for (let x = 0; x <= width; x += 128) {
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x, height);
+      context.stroke();
+    }
+    for (let y = 0; y <= height; y += 96) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(width, y);
+      context.stroke();
+    }
+    let seed = 1297;
+    for (let index = 0; index < 420; index += 1) {
+      seed = seed * 16807 % 2147483647;
+      const x = seed % width;
+      seed = seed * 16807 % 2147483647;
+      const y = seed % height;
+      context.fillStyle = `rgba(65,83,82,${0.018 + seed % 5 / 250})`;
+      context.fillRect(x, y, 1 + seed % 3, 1 + seed % 2);
+    }
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(3.2, 34);
+  SHARED_TEXTURES.add(texture);
+  return texture;
+}
+
+function makeCampusLawnTexture() {
+  const texture = canvasTexture(384, 384, (context, width, height) => {
+    context.fillStyle = "#557b57";
+    context.fillRect(0, 0, width, height);
+    let seed = 8713;
+    for (let index = 0; index < 2200; index += 1) {
+      seed = seed * 16807 % 2147483647;
+      const x = seed % width;
+      seed = seed * 16807 % 2147483647;
+      const y = seed % height;
+      const green = 78 + seed % 62;
+      context.strokeStyle = `rgba(${40 + seed % 25},${green},${48 + seed % 34},${0.16 + seed % 22 / 100})`;
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(x, y + 3);
+      context.lineTo(x + (seed % 5 - 2), y - 3 - seed % 5);
+      context.stroke();
+    }
+    const light = context.createLinearGradient(0, 0, width, height);
+    light.addColorStop(0, "rgba(226,247,163,.18)");
+    light.addColorStop(0.5, "rgba(255,255,255,0)");
+    light.addColorStop(1, "rgba(26,58,40,.18)");
+    context.fillStyle = light;
+    context.fillRect(0, 0, width, height);
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(5, 42);
+  SHARED_TEXTURES.add(texture);
+  return texture;
+}
+
+function createCampusSurfaceRibbon() {
+  const group = new THREE.Group();
+  const pavingTexture = makeCampusPavingTexture();
+  const lawnTexture = makeCampusLawnTexture();
+  const pavingMaterial = new THREE.MeshStandardMaterial({
+    map: pavingTexture,
+    color: 0xf2f4ef,
+    roughness: 0.86,
+    metalness: 0.015,
+    envMapIntensity: 0.62
+  });
+  const lawnMaterial = new THREE.MeshStandardMaterial({
+    map: lawnTexture,
+    color: 0xcde4b5,
+    roughness: 0.98,
+    metalness: 0,
+    envMapIntensity: 0.28
+  });
+  const curbMaterial = material(0xdce3df, { roughness: 0.82, metalness: 0.02 });
+  [-1, 1].forEach((side) => {
+    const sidewalk = mesh(new THREE.PlaneGeometry(3.15, 230), pavingMaterial, false, true);
+    sidewalk.rotation.x = -Math.PI / 2;
+    sidewalk.position.set(side * 6.12, 0.045, -99);
+    const lawn = mesh(new THREE.PlaneGeometry(12.5, 230), lawnMaterial, false, true);
+    lawn.rotation.x = -Math.PI / 2;
+    lawn.position.set(side * 13.92, -0.012, -99);
+    const curb = mesh(new THREE.BoxGeometry(0.3, 0.28, 230), curbMaterial, false, true);
+    curb.position.set(side * 4.56, 0.13, -99);
+    group.add(sidewalk, lawn, curb);
+  });
+  group.userData.scrollTextures = (distance) => {
+    pavingTexture.offset.y = distance * WORLD_Z_SCALE / 230 * pavingTexture.repeat.y;
+    lawnTexture.offset.y = distance * WORLD_Z_SCALE / 230 * lawnTexture.repeat.y;
+  };
+  group.userData.sharedTextures = [pavingTexture, lawnTexture];
+  return group;
+}
+
+function createCampusCloudField() {
+  const group = new THREE.Group();
+  const sunTexture = canvasTexture(256, 256, (context, width, height) => {
+    const glow = context.createRadialGradient(width / 2, height / 2, 2, width / 2, height / 2, width / 2);
+    glow.addColorStop(0, "rgba(255,255,238,1)");
+    glow.addColorStop(0.12, "rgba(255,246,184,.98)");
+    glow.addColorStop(0.38, "rgba(255,224,127,.42)");
+    glow.addColorStop(1, "rgba(255,218,116,0)");
+    context.fillStyle = glow;
+    context.fillRect(0, 0, width, height);
+  });
+  SHARED_TEXTURES.add(sunTexture);
+  const sun = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: sunTexture,
+    color: 0xfff4bf,
+    transparent: true,
+    opacity: 0.92,
+    depthWrite: false,
+    fog: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  }));
+  sun.position.set(-18, 15.8, -76);
+  sun.scale.set(5.8, 5.8, 1);
+  group.add(sun);
+  const cloudMaterial = new THREE.SpriteMaterial({
+    map: makeCampusCloudTexture(),
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.84,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false
+  });
+  const placements = [
+    [-23, 19, -96, 25, 10], [18, 24, -122, 33, 13], [-7, 17, -155, 28, 11],
+    [31, 15, -182, 38, 15], [-35, 26, -205, 42, 16]
+  ];
+  placements.forEach(([x, y, z, width, height], index) => {
+    const cloud = new THREE.Sprite(cloudMaterial.clone());
+    cloud.position.set(x, y, z);
+    cloud.scale.set(width, height, 1);
+    cloud.material.opacity = 0.62 + index % 3 * 0.08;
+    cloud.userData.baseX = x;
+    cloud.userData.phase = index * 1.37;
+    group.add(cloud);
+  });
+  group.userData.animate = (time) => {
+    group.children.forEach((cloud) => {
+      if (Number.isFinite(cloud.userData.baseX)) {
+        cloud.position.x = cloud.userData.baseX + Math.sin(time * 0.025 + cloud.userData.phase) * 1.8;
+      }
+    });
+  };
+  return group;
+}
+
+function createCampusTreeAvenue(side, seed = 0) {
+  const group = new THREE.Group();
+  const count = 28;
+  const trunkMaterial = material(seed % 2 ? 0x65513d : 0x5c4938, { roughness: 0.98 });
+  const branchMaterial = material(0x69523d, { roughness: 0.98 });
+  const trunkTransforms = [];
+  const branchTransforms = [];
+  const leafCards = [];
+  const blossomTransforms = [];
+  for (let index = 0; index < count; index += 1) {
+    const z = 98 - index * 7.1;
+    const x = side * (7.35 + (index % 3) * 0.22);
+    const height = 4.15 + (index * 17 + seed * 5) % 10 / 10;
+    trunkTransforms.push({ x, y: height * 0.46, z, sy: height / 3.6, sx: 0.9 + index % 2 * 0.08, sz: 0.9 });
+    branchTransforms.push({ x: x - side * 0.46, y: height * 0.83, z, rz: side * 0.62, sy: 1.22 });
+    branchTransforms.push({ x: x + side * 0.4, y: height * 0.9, z: z - 0.15, rz: side * -0.58, sy: 1.08 });
+    leafCards.push({ x: x - side * 1.48, y: height + 1.34, z: z + 0.44, sx: 5.15, sy: 3.72, ry: side * 0.2 });
+    leafCards.push({ x: x - side * 0.86, y: height + 1.02, z: z - 0.2, sx: 4.6, sy: 3.35, ry: side * -0.34 });
+    leafCards.push({ x: x - side * 1.18, y: height + 1.14, z: z - 0.62, sx: 4.2, sy: 3.2, ry: side * 0.62 });
+    if ((index + seed) % 5 === 1) {
+      for (let blossom = 0; blossom < 8; blossom += 1) {
+        blossomTransforms.push({
+          x: x - side * (0.65 + blossom % 3 * 0.34),
+          y: height + 1.2 + blossom % 4 * 0.18,
+          z: z - 0.62 + blossom * 0.18,
+          sx: 0.9 + blossom % 2 * 0.22,
+          sy: 0.72,
+          sz: 0.82
+        });
+      }
+    }
+  }
+  const trunks = createInstancedObstacleParts(new THREE.CylinderGeometry(0.19, 0.3, 3.6, 10), trunkMaterial, trunkTransforms);
+  const branches = createInstancedObstacleParts(new THREE.CylinderGeometry(0.09, 0.16, 2.25, 8), branchMaterial, branchTransforms);
+  const cardMaterial = new THREE.MeshBasicMaterial({
+    map: makeCampusLeafTexture(),
+    color: seed % 2 ? 0xb8dc96 : 0xaed18b,
+    transparent: true,
+    alphaTest: 0.075,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: true
+  });
+  const cards = createInstancedObstacleParts(new THREE.PlaneGeometry(1, 1), cardMaterial, leafCards);
+  cards.castShadow = false;
+  const blossoms = createInstancedObstacleParts(
+    new THREE.SphereGeometry(0.16, 8, 6),
+    material(seed % 2 ? 0xf2a8c5 : 0xf6bfd0, { roughness: 0.88 }),
+    blossomTransforms
+  );
+  blossoms.castShadow = false;
+  const shadow = createSoftGroundShadow(6.1, 212, 0.13);
+  shadow.position.set(side * 6.92, 0.012, 2.2);
+  group.add(shadow, trunks, branches, cards, blossoms);
+  group.userData.canopy = cards;
+  return group;
+}
+
+function createCampusAcademicWing(accent, seed = 0) {
+  const group = new THREE.Group();
+  const width = 7.2 + seed % 3 * 1.25;
+  const height = 7.6 + seed % 4 * 1.05;
+  const depth = 10.4 + seed % 2 * 2.2;
+  const concrete = material(seed % 2 ? 0xe7ece8 : 0xd6e0df, { roughness: 0.74, metalness: 0.025 });
+  const stone = material(0xb7c3bf, { roughness: 0.82, metalness: 0.04 });
+  const steel = material(0x60747c, { roughness: 0.28, metalness: 0.72 });
+  const glass = new THREE.MeshPhysicalMaterial({
+    map: makeCampusFacadeTexture(seed),
+    color: 0xc8edf3,
+    roughness: 0.16,
+    metalness: 0.12,
+    clearcoat: 0.72,
+    clearcoatRoughness: 0.18,
+    envMapIntensity: 1.05
+  });
+  const body = mesh(new THREE.BoxGeometry(width, height, depth), concrete, true, true);
+  body.position.y = height / 2;
+  const recessedGlass = mesh(new THREE.PlaneGeometry(width * 0.82, height * 0.82), glass);
+  recessedGlass.position.set(0, height * 0.53, depth / 2 + 0.016);
+  const podium = mesh(new THREE.BoxGeometry(width + 0.8, 0.54, depth + 0.65), stone, true, true);
+  podium.position.y = 0.27;
+  const roof = mesh(new THREE.BoxGeometry(width + 0.36, 0.22, depth + 0.38), steel, true, true);
+  roof.position.y = height + 0.11;
+  const fins = createInstancedObstacleParts(
+    new THREE.BoxGeometry(0.09, height * 0.86, 0.34),
+    steel,
+    Array.from({ length: 9 }, (_, index) => ({
+      x: -width * 0.39 + index * width * 0.0975,
+      y: height * 0.53,
+      z: depth / 2 + 0.19
+    }))
+  );
+  const floorBands = createInstancedObstacleParts(
+    new THREE.BoxGeometry(width * 0.84, 0.075, 0.26),
+    steel,
+    Array.from({ length: 7 }, (_, index) => ({
+      y: 0.9 + index * (height - 1.45) / 6,
+      z: depth / 2 + 0.18
+    }))
+  );
+  const entrance = mesh(new THREE.BoxGeometry(width * 0.46, 0.22, 2.2), material(0xf0f5f1, { roughness: 0.56, metalness: 0.08 }), true, true);
+  entrance.position.set(0, 2.55, depth / 2 + 1.02);
+  const entranceGlass = mesh(new THREE.PlaneGeometry(width * 0.34, 2.25), new THREE.MeshPhysicalMaterial({
+    color: 0xaed9e5,
+    roughness: 0.1,
+    metalness: 0.22,
+    transparent: true,
+    opacity: 0.78,
+    depthWrite: true,
+    side: THREE.DoubleSide
+  }));
+  entranceGlass.position.set(0, 1.4, depth / 2 + 1.14);
+  const sunStrip = mesh(new THREE.BoxGeometry(width * 0.78, 0.055, 0.12), material(accent, {
+    emissive: accent,
+    emissiveIntensity: 0.22,
+    roughness: 0.34
+  }));
+  sunStrip.position.set(0, height - 0.3, depth / 2 + 0.28);
+  group.add(body, podium, roof, recessedGlass, fins, floorBands, entrance, entranceGlass, sunStrip);
+  return group;
+}
+
+function createCampusBuildingRow(side, accent, seed = 0) {
+  const group = new THREE.Group();
+  const count = 13;
+  const concrete = material(seed % 2 ? 0xe9eeea : 0xd9e4e2, { roughness: 0.74, metalness: 0.025 });
+  const podiumMaterial = material(0xb8c5c0, { roughness: 0.84, metalness: 0.02 });
+  const steel = material(0x5d727b, { roughness: 0.26, metalness: 0.74 });
+  const glass = new THREE.MeshPhysicalMaterial({
+    map: makeCampusFacadeTexture(seed),
+    color: 0xd4f1f4,
+    roughness: 0.13,
+    metalness: 0.13,
+    clearcoat: 0.82,
+    clearcoatRoughness: 0.14,
+    envMapIntensity: 1.12,
+    side: THREE.DoubleSide
+  });
+  const bodies = [];
+  const podiums = [];
+  const roofs = [];
+  const facades = [];
+  const endFacades = [];
+  const mullions = [];
+  const bands = [];
+  const canopies = [];
+  const sunStrips = [];
+  for (let index = 0; index < count; index += 1) {
+    const z = 128 - index * 21.4;
+    const frontage = 12.6 + (index * 17 + seed * 3) % 36 / 10;
+    const depth = 5.2 + (index * 11 + seed) % 24 / 10;
+    const height = 7.4 + (index * 23 + seed * 7) % 48 / 10;
+    const innerX = side * (9.15 + index % 3 * 0.38);
+    const centerX = innerX + side * depth / 2;
+    bodies.push({ x: centerX, y: height / 2, z, sx: depth, sy: height, sz: frontage });
+    podiums.push({ x: centerX, y: 0.28, z, sx: depth + 0.7, sy: 0.56, sz: frontage + 0.7 });
+    roofs.push({ x: centerX, y: height + 0.12, z, sx: depth + 0.32, sy: 0.24, sz: frontage + 0.36 });
+    facades.push({
+      x: innerX - side * 0.018,
+      y: height * 0.54,
+      z,
+      sx: frontage * 0.9,
+      sy: height * 0.82,
+      ry: -side * Math.PI / 2
+    });
+    endFacades.push({ x: centerX, y: height * 0.54, z: z - frontage / 2 - 0.018, sx: depth * 0.84, sy: height * 0.78 });
+    endFacades.push({ x: centerX, y: height * 0.54, z: z + frontage / 2 + 0.018, sx: depth * 0.84, sy: height * 0.78 });
+    for (let column = 0; column < 9; column += 1) {
+      mullions.push({
+        x: innerX - side * 0.08,
+        y: height * 0.54,
+        z: z - frontage * 0.4 + column * frontage * 0.1,
+        sx: 0.09,
+        sy: height * 0.82,
+        sz: 0.09
+      });
+    }
+    for (let floor = 0; floor < 7; floor += 1) {
+      bands.push({
+        x: innerX - side * 0.09,
+        y: 0.95 + floor * (height - 1.55) / 6,
+        z,
+        sx: 0.11,
+        sy: 0.075,
+        sz: frontage * 0.91
+      });
+    }
+    canopies.push({ x: innerX - side * 0.82, y: 2.72, z: z + frontage * 0.18, sx: 1.75, sy: 0.18, sz: frontage * 0.32 });
+    sunStrips.push({ x: innerX - side * 0.12, y: height - 0.3, z, sx: 0.08, sy: 0.055, sz: frontage * 0.82 });
+  }
+  const bodyMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), concrete, bodies);
+  const podiumMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), podiumMaterial, podiums);
+  const roofMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), steel, roofs);
+  const facadeMesh = createInstancedObstacleParts(new THREE.PlaneGeometry(1, 1), glass, facades);
+  const endFacadeMesh = createInstancedObstacleParts(new THREE.PlaneGeometry(1, 1), glass, endFacades);
+  const mullionMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), steel, mullions);
+  const bandMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), steel, bands);
+  const canopyMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), podiumMaterial, canopies);
+  const glowMaterial = material(accent, { emissive: accent, emissiveIntensity: 0.16, roughness: 0.3 });
+  const stripMesh = createInstancedObstacleParts(new THREE.BoxGeometry(1, 1, 1), glowMaterial, sunStrips);
+  [podiumMesh, roofMesh, facadeMesh, endFacadeMesh, mullionMesh, bandMesh, canopyMesh, stripMesh].forEach((item) => { item.castShadow = false; });
+  group.add(bodyMesh, podiumMesh, roofMesh, facadeMesh, endFacadeMesh, mullionMesh, bandMesh, canopyMesh, stripMesh);
+  return group;
+}
+
+function createCampusBridgeStairs(side, steel, concrete) {
+  const group = new THREE.Group();
+  const transforms = [];
+  for (let index = 0; index < 18; index += 1) {
+    transforms.push({
+      x: side * (7.1 + index * 0.31),
+      y: 0.17 + index * 0.27,
+      z: 0,
+      sx: 1,
+      sy: 1,
+      sz: 1
+    });
+  }
+  const steps = createInstancedObstacleParts(new THREE.BoxGeometry(0.68, 0.22, 2.55), concrete, transforms);
+  const bottom = new THREE.Vector3(side * 6.85, 0.72, -1.34);
+  const top = new THREE.Vector3(side * 12.45, 5.45, -1.34);
+  const outsideBottom = bottom.clone();
+  outsideBottom.z = 1.34;
+  const outsideTop = top.clone();
+  outsideTop.z = 1.34;
+  group.add(steps, beamBetween3D(bottom, top, 0.055, steel, 8), beamBetween3D(outsideBottom, outsideTop, 0.055, steel, 8));
+  return group;
+}
+
+function createCampusGlassElevator(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x50656f, { roughness: 0.24, metalness: 0.78 });
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xbce7ee,
+    roughness: 0.08,
+    metalness: 0.12,
+    transmission: 0.2,
+    transparent: true,
+    opacity: 0.7,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.12,
+    side: THREE.DoubleSide,
+    depthWrite: true
+  });
+  const shaft = mesh(new THREE.BoxGeometry(3.1, 7.2, 3.25), glass, false, true);
+  shaft.position.y = 3.62;
+  const posts = createInstancedObstacleParts(new THREE.BoxGeometry(0.11, 7.35, 0.11), steel, [
+    { x: -1.5, y: 3.65, z: -1.56 }, { x: -1.5, y: 3.65, z: 1.56 },
+    { x: 1.5, y: 3.65, z: -1.56 }, { x: 1.5, y: 3.65, z: 1.56 }
+  ]);
+  const bands = createInstancedObstacleParts(new THREE.BoxGeometry(3.02, 0.08, 0.1), steel,
+    Array.from({ length: 9 }, (_, index) => ({ y: 0.48 + index * 0.82, z: 1.62 }))
+      .concat(Array.from({ length: 9 }, (_, index) => ({ y: 0.48 + index * 0.82, z: -1.62 }))));
+  const cabin = mesh(new THREE.BoxGeometry(1.86, 2.4, 1.9), material(0xe4f2f2, {
+    emissive: accent,
+    emissiveIntensity: 0.055,
+    roughness: 0.28,
+    metalness: 0.16
+  }), true, true);
+  cabin.position.y = 2.05;
+  const cap = mesh(new THREE.BoxGeometry(3.48, 0.22, 3.62), steel, true, true);
+  cap.position.y = 7.34;
+  group.add(shaft, posts, bands, cabin, cap);
+  return group;
+}
+
+function createCampusCurvedPavilion(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x4e616a, { roughness: 0.25, metalness: 0.76 });
+  const stone = material(0xc8d0cc, { roughness: 0.82, metalness: 0.02 });
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xb9e5ec,
+    roughness: 0.1,
+    metalness: 0.08,
+    transmission: 0.16,
+    transparent: true,
+    opacity: 0.72,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.1,
+    side: THREE.DoubleSide,
+    depthWrite: true
+  });
+  const platform = mesh(new THREE.BoxGeometry(5.4, 0.25, 8.2), stone, false, true);
+  platform.position.y = 0.12;
+  const canopy = mesh(new THREE.CylinderGeometry(2.55, 2.55, 7.5, 32, 1, true, 0, Math.PI), glass);
+  canopy.rotation.x = Math.PI / 2;
+  canopy.position.y = 1.35;
+  const ribs = createInstancedObstacleParts(new THREE.TorusGeometry(2.56, 0.075, 8, 28, Math.PI), steel,
+    Array.from({ length: 7 }, (_, index) => ({ y: 1.35, z: -3.45 + index * 1.15 })));
+  const backGlass = mesh(new THREE.PlaneGeometry(7.25, 2.5), glass);
+  backGlass.rotation.y = Math.PI / 2;
+  backGlass.position.set(2.48, 1.42, 0);
+  const bench = createBench();
+  bench.position.set(0, 0.04, 0.65);
+  bench.rotation.y = Math.PI;
+  const marker = mesh(new THREE.BoxGeometry(1.7, 0.08, 0.08), material(accent, {
+    emissive: accent,
+    emissiveIntensity: 0.58,
+    roughness: 0.2
+  }));
+  marker.position.set(2.58, 2.28, -2.25);
+  group.add(platform, canopy, ribs, backGlass, bench, marker);
+  return group;
+}
+
+function createCampusGateway(accent) {
+  const group = new THREE.Group();
+  const steel = material(0x586c75, { roughness: 0.26, metalness: 0.76 });
+  const concrete = material(0xc7d0cd, { roughness: 0.78, metalness: 0.03 });
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xc7ecf0,
+    roughness: 0.1,
+    metalness: 0.08,
+    transmission: 0.12,
+    transparent: true,
+    opacity: 0.72,
+    clearcoat: 0.88,
+    clearcoatRoughness: 0.12,
+    side: THREE.DoubleSide,
+    depthWrite: true
+  });
+  const deck = mesh(new THREE.BoxGeometry(19.8, 0.38, 2.5), concrete, true, true);
+  deck.position.y = 5.22;
+  const underside = mesh(new THREE.BoxGeometry(20.15, 0.13, 2.66), steel, true, true);
+  underside.position.y = 4.96;
+  const panes = [
+    mesh(new THREE.PlaneGeometry(19.15, 1.35), glass),
+    mesh(new THREE.PlaneGeometry(19.15, 1.35), glass)
+  ];
+  panes[0].position.set(0, 5.95, -1.22);
+  panes[1].position.set(0, 5.95, 1.22);
+  const posts = createInstancedObstacleParts(new THREE.BoxGeometry(0.08, 1.55, 0.08), steel,
+    Array.from({ length: 22 }, (_, index) => ({ x: -9.25 + index * 0.88, y: 5.95, z: -1.25 }))
+      .concat(Array.from({ length: 22 }, (_, index) => ({ x: -9.25 + index * 0.88, y: 5.95, z: 1.25 }))));
+  const pillars = createInstancedObstacleParts(new THREE.BoxGeometry(0.52, 5.04, 0.62), concrete, [
+    { x: -7.35, y: 2.5 }, { x: 7.35, y: 2.5 }
+  ]);
+  const lift = createCampusGlassElevator(accent);
+  lift.position.set(-10.25, 0, 0.1);
+  const stairs = createCampusBridgeStairs(-1, steel, concrete);
+  const pavilion = createCampusCurvedPavilion(accent);
+  pavilion.position.set(7.95, 0, -4.6);
+  pavilion.rotation.y = -0.08;
+  const edgeHighlight = mesh(new THREE.BoxGeometry(19.1, 0.045, 0.07), material(accent, {
+    emissive: accent,
+    emissiveIntensity: 0.36,
+    roughness: 0.2
+  }));
+  edgeHighlight.position.set(0, 4.88, 1.34);
+  group.add(deck, underside, ...panes, posts, pillars, lift, stairs, pavilion, edgeHighlight);
+  group.userData.overheadClearance = 4.72;
+  return group;
+}
+
+function createCampusStreetFurniture(side, accent, seed = 0) {
+  const group = new THREE.Group();
+  const steel = material(0x4f5f65, { roughness: 0.34, metalness: 0.68 });
+  const planter = material(0xabb7b1, { roughness: 0.9, metalness: 0.015 });
+  const shrub = material(seed % 2 ? 0x4f9156 : 0x5a9d5c, { roughness: 0.96 });
+  const blossom = material(seed % 2 ? 0xf3a8c0 : 0xf4c57b, { roughness: 0.86 });
+  const lampTransforms = [];
+  const armTransforms = [];
+  const planterTransforms = [];
+  const shrubTransforms = [];
+  const blossomTransforms = [];
+  for (let index = 0; index < 26; index += 1) {
+    const z = 98 - index * 8.8;
+    lampTransforms.push({ x: side * 6.96, y: 2.35, z });
+    armTransforms.push({ x: side * 6.55, y: 4.35, z, rz: side * Math.PI / 2, sy: 0.92 });
+    planterTransforms.push({ x: side * 8.55, y: 0.28, z: z - 2.6, sx: 1.2, sz: 2.3 });
+    for (let plant = 0; plant < 5; plant += 1) {
+      shrubTransforms.push({
+        x: side * (8.22 + plant % 2 * 0.42),
+        y: 0.65 + plant % 3 * 0.08,
+        z: z - 3.18 + plant * 0.31,
+        sx: 0.72,
+        sy: 0.56,
+        sz: 0.68
+      });
+      blossomTransforms.push({
+        x: side * (8.18 + plant % 3 * 0.28),
+        y: 0.92 + plant % 2 * 0.08,
+        z: z - 3.05 + plant * 0.27,
+        sx: 0.9,
+        sy: 0.62,
+        sz: 0.9
+      });
+    }
+  }
+  const poles = createInstancedObstacleParts(new THREE.CylinderGeometry(0.055, 0.085, 4.55, 9), steel, lampTransforms);
+  const arms = createInstancedObstacleParts(new THREE.CylinderGeometry(0.04, 0.05, 0.86, 8), steel, armTransforms);
+  const lampMaterial = material(0xfff1c5, { emissive: 0xffd98b, emissiveIntensity: 0.88, roughness: 0.24 });
+  const lamps = createInstancedObstacleParts(new THREE.SphereGeometry(0.12, 10, 7), lampMaterial,
+    lampTransforms.map((entry) => ({ x: entry.x - side * 0.8, y: 4.35, z: entry.z, sx: 1.4, sy: 0.72, sz: 1.1 })));
+  const planters = createInstancedObstacleParts(new THREE.BoxGeometry(1.45, 0.56, 1.4), planter, planterTransforms);
+  const shrubs = createInstancedObstacleParts(new THREE.SphereGeometry(0.52, 10, 7), shrub, shrubTransforms);
+  const blossoms = createInstancedObstacleParts(new THREE.SphereGeometry(0.085, 8, 6), blossom, blossomTransforms);
+  [poles, arms, lamps, planters, shrubs, blossoms].forEach((item) => { item.castShadow = false; });
+  group.add(poles, arms, lamps, planters, shrubs, blossoms);
+  group.userData.lamps = lamps;
+  group.userData.baseEmissive = 0.88;
+  return group;
+}
+
+function createCampusDistantCity(accent) {
+  const group = new THREE.Group();
+  const buildingCount = 30;
+  const concrete = material(0xc6d6d8, { roughness: 0.72, metalness: 0.05 });
+  const glass = material(0x7fb4c8, { roughness: 0.2, metalness: 0.18 });
+  const buildings = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), concrete, buildingCount);
+  const facades = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), glass, buildingCount);
+  const matrix = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  for (let index = 0; index < buildingCount; index += 1) {
+    const side = index % 2 ? 1 : -1;
+    const row = Math.floor(index / 2);
+    const width = 3.8 + (index * 13 % 28) / 10;
+    const height = 8 + (index * 29 % 85) / 10;
+    const depth = 4.5 + (index * 17 % 34) / 10;
+    const x = side * (16 + (index * 7 % 9));
+    const z = 36 - row * 10.5;
+    matrix.compose(new THREE.Vector3(x, height / 2, z), quaternion, new THREE.Vector3(width, height, depth));
+    buildings.setMatrixAt(index, matrix);
+    matrix.compose(new THREE.Vector3(x - side * (width / 2 + 0.08), height * 0.54, z), quaternion,
+      new THREE.Vector3(0.1, height * 0.74, depth * 0.82));
+    facades.setMatrixAt(index, matrix);
+  }
+  buildings.instanceMatrix.needsUpdate = true;
+  facades.instanceMatrix.needsUpdate = true;
+  const horizonGlow = mesh(new THREE.PlaneGeometry(34, 14), new THREE.MeshBasicMaterial({
+    color: new THREE.Color(accent).lerp(new THREE.Color(0xffffff), 0.82),
+    transparent: true,
+    opacity: 0.16,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false
+  }));
+  horizonGlow.position.set(0, 7, -72);
+  group.add(buildings, facades, horizonGlow);
+  return group;
+}
+
 function createRainCampusWorld(config) {
   const root = createWorldRoot(config);
-  const campusSky = createCampusSkyLayer();
-  root.add(campusSky);
-  root.userData.setCampusTravel = campusSky.userData.setCampusTravel;
+  root.name = "world-rain-campus-full-3d";
+  root.userData.fullThreeDimensional = true;
+
+  const surface = createCampusSurfaceRibbon();
+  root.add(surface);
+  const clouds = createCampusCloudField();
+  root.userData.layers[0].group.add(clouds);
+
+  const distantCity = createCampusDistantCity(config.accent);
+  addWorldScenery(root, 0, distantCity, {
+    side: 0,
+    x: 0,
+    z: -116,
+    span: 218,
+    parallax: 1,
+    nearLimit: 10,
+    depthCull: false
+  });
+
+  [-1, 1].forEach((side) => {
+    const buildings = createCampusBuildingRow(side, config.accent, side < 0 ? 1 : 4);
+    addWorldScenery(root, 1, buildings, {
+      side: 0,
+      x: 0,
+      z: -66,
+      span: 150,
+      parallax: 1,
+      nearLimit: 13,
+      depthCull: false
+    });
+
+    const trees = createCampusTreeAvenue(side, side < 0 ? 2 : 5);
+    addWorldScenery(root, 2, trees, {
+      side: 0,
+      x: 0,
+      z: -48,
+      span: 114,
+      parallax: 1,
+      nearLimit: 15,
+      depthCull: false
+    });
+
+    const furniture = createCampusStreetFurniture(side, config.accent, side < 0 ? 3 : 6);
+    addWorldScenery(root, 2, furniture, {
+      side: 0,
+      x: 0,
+      z: -48,
+      span: 116,
+      parallax: 1,
+      nearLimit: 15,
+      depthCull: false
+    });
+  });
+
+  const gateway = createCampusGateway(config.accent);
+  addWorldScenery(root, 2, gateway, {
+    side: 0,
+    x: 0,
+    z: -22,
+    span: 64,
+    parallax: 1,
+    nearLimit: 12,
+    depthCull: false
+  });
+
+  root.userData.updateCampusWorld = (time, distance) => {
+    surface.userData.scrollTextures(distance);
+    clouds.userData.animate(time);
+    const travelPulse = 0.82 + Math.sin(time * 1.1) * 0.1;
+    root.userData.scenery.forEach((entry, index) => {
+      const lamps = entry.object.userData.lamps;
+      if (lamps?.material?.emissiveIntensity !== undefined) {
+        lamps.material.emissiveIntensity = entry.object.userData.baseEmissive * travelPulse;
+      }
+      const canopy = entry.object.userData.canopy;
+      if (canopy) canopy.rotation.z = Math.sin(time * 0.62 + index) * 0.018;
+    });
+  };
 
   root.traverse((child) => {
     if (!child.isMesh && !child.isInstancedMesh) return;
     const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
     const translucent = childMaterials.some((item) => item?.transparent && item.opacity < 0.95);
-    child.castShadow = !translucent;
-    child.receiveShadow = !translucent;
+    if (translucent) child.castShadow = false;
+    else child.receiveShadow = true;
   });
   return root;
 }
@@ -7454,7 +8065,7 @@ class CinematicRunnerRenderer {
       railRoute ||= module.rail;
       segment.userData.routeModule = module;
 
-      transform.makeScale(module.widthScale, 1, 0.992);
+      transform.makeScale(module.widthScale, 1, 1.008);
       transform.setPosition(center, -0.08, z);
       this.roadBatches.ballast.setMatrixAt(segmentIndex, transform);
 
@@ -7493,7 +8104,7 @@ class CinematicRunnerRenderer {
         else if (["truss", "warning"].includes(module.shoulder)) sideWalkScale *= 0.62;
         const sideWalkWidth = 2.45 * sideWalkScale;
         const walkX = center + side * (roadHalfWidth + sideWalkWidth / 2 - 0.1);
-        transform.makeScale(sideWalkScale, module.shoulder === "platform" || module.shoulder === "terminal" ? 1.18 : 0.92, 0.99);
+        transform.makeScale(sideWalkScale, module.shoulder === "platform" || module.shoulder === "terminal" ? 1.18 : 0.92, 1.006);
         transform.setPosition(walkX, module.shoulder === "platform" || module.shoulder === "terminal" ? 0.13 : 0.08, z);
         this.roadBatches.walks.setMatrixAt(segmentIndex * 2 + sideIndex, transform);
         transform.makeScale(1, 1, 0.99);
@@ -8438,7 +9049,7 @@ class CinematicRunnerRenderer {
     this.targetBackground.setHex(config.sky);
     this.targetFog.setHex(config.fog);
     this.targetFogDensity = config.fogDensity * FOG_SCALE;
-    const stageShadows = Boolean(this.qualityProfile?.shadows || this.stageIndex === 0);
+    const stageShadows = Boolean(this.qualityProfile?.shadows && this.stageIndex !== 0 && !this.mobilePerformance);
     this.renderer.shadowMap.enabled = stageShadows;
     this.keyLight.castShadow = stageShadows;
     this.targetExposure = this.stageIndex === 0 ? 1.06 : config.weather === "storm" ? 0.94 : config.weather === "starlight" ? 1.24 : config.weather === "neon" ? 1.19 : 1.18;
@@ -8503,7 +9114,7 @@ class CinematicRunnerRenderer {
     this.groundMaterial.color.setHex(config.ground);
     this.campusRoadShadow.visible = this.stageIndex === 0;
     [this.roadMaterial, this.platformMaterial, this.safetyLineMaterial, this.laneGuideMaterial]
-      .forEach((depthMaterial) => setCampusDepthFade(depthMaterial, this.stageIndex === 0));
+      .forEach((depthMaterial) => setCampusDepthFade(depthMaterial, false));
     this.platformMaterial.map = this.stageIndex === 0 ? null : this.platformTexture;
     this.platformMaterial.needsUpdate = true;
     if (this.stageIndex === 0) {
@@ -8560,7 +9171,9 @@ class CinematicRunnerRenderer {
     this.skyDome.userData.uniforms.topColor.value.setHex(config.skyTop);
     this.skyDome.userData.uniforms.bottomColor.value.setHex(config.skyBottom);
     this.skyDome.userData.uniforms.accentColor.value.setHex(config.accent);
-    this.skyDome.visible = this.stageIndex !== 0;
+    this.skyDome.visible = true;
+    this.canvas.setAttribute("data-campus-world", this.stageIndex === 0 ? "full-3d" : "stage-world");
+    this.canvas.setAttribute("data-campus-backdrop-sampling", this.stageIndex === 0 ? "off" : "not-applicable");
     this.scene.environmentIntensity = clamp(Number(config.world.lighting.environmentIntensity) || (["neon", "rain", "storm", "starlight"].includes(config.weather) ? 0.9 : 0.72), 0.35, 1.3);
     this.runnerFillLight.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xffffff), 0.74));
     this.stageWorlds.forEach((world, worldIndex) => { world.visible = worldIndex === this.stageIndex; });
@@ -8832,7 +9445,7 @@ class CinematicRunnerRenderer {
     this.qualityProfileIndex = nextIndex;
     this.qualityProfile = QUALITY_PROFILES[nextIndex];
     const profile = this.qualityProfile;
-    const stageShadows = profile.shadows || this.stageIndex === 0;
+    const stageShadows = profile.shadows && this.stageIndex !== 0 && !this.mobilePerformance;
     this.renderer.shadowMap.enabled = stageShadows;
     this.keyLight.castShadow = stageShadows;
     this.keyLight.shadow.mapSize.set(this.mobilePerformance ? 512 : 1024, this.mobilePerformance ? 512 : 1024);
@@ -8874,17 +9487,17 @@ class CinematicRunnerRenderer {
       const detail = profile.roadDetail;
       const campusStage = this.stageIndex === 0;
       this.roadBatches.ballast.visible = !arriving;
-      this.roadBatches.walks.visible = !campusStage && !arriving;
+      this.roadBatches.walks.visible = !arriving;
       this.roadBatches.sleepers.visible = !arriving && railRoute && detail > 0;
       this.roadBatches.rails.visible = !arriving && railRoute;
       this.roadBatches.thirdRails.visible = !arriving && railRoute && detail > 0;
       this.roadBatches.safetyLines.visible = !campusStage && !arriving && !railRoute;
-      this.roadBatches.laneGuides.visible = !campusStage && !arriving && !railRoute && ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.laneGuides.visible = !arriving && !railRoute && (campusStage || ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif));
       this.roadBatches.laneTicks.visible = !campusStage && !arriving && !railRoute && detail > 0 && ROUTE_LANE_MARK_MOTIFS.has(activeRoute.motif);
       this.roadBatches.crosswalks.visible = !arriving && !railRoute && detail > 0 && ["crossing", "threshold"].includes(activeRoute.motif);
-      this.roadBatches.drains.visible = !campusStage && !arriving && !railRoute && detail > 1 && ROUTE_DRAIN_MOTIFS.has(activeRoute.motif);
-      this.roadBatches.roadPatches.visible = !campusStage && !arriving && !railRoute && detail > 0 && ROUTE_PATCH_MOTIFS.has(activeRoute.motif);
-      this.roadBatches.manholes.visible = !campusStage && !arriving && !railRoute && detail > 1 && ROUTE_UTILITY_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.drains.visible = !arriving && !railRoute && detail > 1 && (campusStage || ROUTE_DRAIN_MOTIFS.has(activeRoute.motif));
+      this.roadBatches.roadPatches.visible = !arriving && !railRoute && detail > 0 && !campusStage && ROUTE_PATCH_MOTIFS.has(activeRoute.motif);
+      this.roadBatches.manholes.visible = !arriving && !railRoute && detail > 1 && (campusStage || ROUTE_UTILITY_MOTIFS.has(activeRoute.motif));
       this.roadBatches.edgePosts.visible = !campusStage && !arriving && detail > 0;
       this.roadBatches.edgePostLights.visible = !campusStage && !arriving && detail > 0;
       this.roadBatches.planterBases.visible = !campusStage && !arriving && detail > 0 && ROUTE_PLANTED_SHOULDERS.has(activeRoute.shoulder);
@@ -9452,7 +10065,7 @@ class CinematicRunnerRenderer {
 
   updateDistrictWorld(delta, time, distance, speed) {
     const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
-    if (this.stageIndex === 0) this.activeStageWorld?.userData.setCampusTravel?.(distance);
+    if (this.stageIndex === 0) this.activeStageWorld?.userData.updateCampusWorld?.(time, distance);
     const cadence = clamp(Number(this.directorState.act.cadence) || 4, 2.2, 7);
     const cadenceMotion = clamp(4.2 / cadence, 0.68, 1.7);
     this.skyDome.userData.uniforms.time.value = time;
@@ -9490,14 +10103,14 @@ class CinematicRunnerRenderer {
       }
       const travel = (distance * WORLD_Z_SCALE * entry.parallax) % entry.span;
       let z = entry.baseZ + travel;
-      const nearLimit = entry.side === 0 ? TRACK_CLEARANCE.decorNearZ - entry.nearOffset : TRACK_CLEARANCE.cameraZ;
+      const nearLimit = entry.nearLimit ?? (entry.side === 0 ? TRACK_CLEARANCE.decorNearZ - entry.nearOffset : TRACK_CLEARANCE.cameraZ);
       while (z > nearLimit) z -= entry.span;
       entry.object.position.z = z;
       entry.object.position.x = entry.baseX + Math.sin(this.cadencePhase * 0.35 + index) * entry.drift;
       entry.sphere.center.copy(entry.centerOffset).add(entry.object.position);
       const stageTwoSightlineClear = this.stageIndex !== 1 || (entry.side !== 0 && Math.abs(entry.baseX) >= 6.2);
       const sideClear = stageTwoSightlineClear && (entry.side === 0 || Math.abs(entry.object.userData.trackClearance?.innerEdge || entry.baseX) >= TRACK_CLEARANCE.halfWidth);
-      const depthClear = entry.side !== 0 || decorBoundsVisible(z, entry.farOffset, entry.nearOffset);
+      const depthClear = !entry.depthCull || entry.side !== 0 || decorBoundsVisible(z, entry.farOffset, entry.nearOffset);
       entry.object.visible = sideClear && depthClear && this.viewFrustum.intersectsSphere(entry.sphere);
     }
   }
