@@ -108,6 +108,44 @@ a {
   transition: opacity 700ms ease;
 }
 
+.runner-atmosphere::before,
+.runner-atmosphere::after {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  content: "";
+}
+
+.runner-shell[data-stage="1"] .runner-atmosphere {
+  opacity: 0.34;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(221, 247, 239, 0.08), transparent 36%),
+    linear-gradient(0deg, rgba(122, 177, 169, 0.08), transparent 40%);
+}
+
+.runner-shell[data-stage="1"] .runner-atmosphere::before {
+  opacity: 0.36;
+  background:
+    linear-gradient(112deg, transparent 21%, rgba(255, 249, 209, 0.2) 36%, transparent 49%),
+    linear-gradient(102deg, transparent 48%, rgba(224, 249, 231, 0.12) 56%, transparent 66%);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  transform-origin: 50% 0;
+  animation: campus-light-breathe 8s ease-in-out infinite alternate;
+}
+
+.runner-shell[data-stage="1"] .runner-atmosphere::after {
+  top: 46%;
+  opacity: 0.24;
+  background:
+    linear-gradient(166deg, transparent 0 44%, rgba(220, 244, 235, 0.14) 48%, transparent 53%),
+    linear-gradient(14deg, transparent 0 57%, rgba(255, 235, 181, 0.1) 61%, transparent 66%);
+  filter: blur(7px);
+  mix-blend-mode: soft-light;
+  animation: campus-road-glint 5.5s ease-in-out infinite alternate;
+}
+
 .runner-shell[data-stage="4"] .runner-atmosphere,
 .runner-shell[data-stage="6"] .runner-atmosphere {
   opacity: 0.34;
@@ -164,6 +202,19 @@ a {
 
 .runner-shell[data-state="playing"] .runner-speed-aura {
   opacity: var(--speed-aura-opacity, 0.3);
+}
+
+.runner-shell[data-stage="1"] .runner-speed-aura::before,
+.runner-shell[data-stage="1"] .runner-speed-aura::after {
+  top: 32%;
+  bottom: -12%;
+  width: 28%;
+  opacity: 0.24;
+  background:
+    linear-gradient(172deg, transparent 0 24%, rgba(255, 244, 205, 0.22) 42%, transparent 58%),
+    linear-gradient(188deg, transparent 0 46%, rgba(198, 237, 225, 0.18) 57%, transparent 70%);
+  filter: blur(8px);
+  animation: campus-speed-wash 950ms ease-in-out infinite alternate;
 }
 
 .runner-shell[data-flow="rush"] .runner-speed-aura::before,
@@ -1364,6 +1415,21 @@ a {
   0% { opacity: 0; transform: translate3d(-50%, 12px, 0) scale(0.94); filter: blur(4px); }
   55% { opacity: 1; transform: translate3d(-50%, -2px, 0) scale(1.025); filter: blur(0); }
   100% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); filter: blur(0); }
+}
+
+@keyframes campus-light-breathe {
+  from { transform: translate3d(-2%, -1%, 0) rotate(-1.2deg) scale(1.02); }
+  to { transform: translate3d(3%, 1.5%, 0) rotate(1.1deg) scale(1.08); }
+}
+
+@keyframes campus-road-glint {
+  from { transform: translate3d(-3%, 1%, 0) scale(1.03); }
+  to { transform: translate3d(4%, -1%, 0) scale(1.09); }
+}
+
+@keyframes campus-speed-wash {
+  from { transform: translate3d(0, 3%, 0) skewY(-2deg); }
+  to { transform: translate3d(0, -4%, 0) skewY(2deg); }
 }
 
 @keyframes speed-stream {

@@ -66,7 +66,7 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createCampusSkyLayer", "createSoftGroundShadow"]) {
     assert.match(source, new RegExp(`function ${artLayer}\\(`));
   }
-  for (const parallaxContract of ["campusParallaxUv", "uTravel", "weightA", "weightB", "setCampusTravel"]) assert.ok(source.includes(parallaxContract), parallaxContract);
+  for (const parallaxContract of ["campusParallaxUv", "uTravel", "forward", "setCampusTravel"]) assert.ok(source.includes(parallaxContract), parallaxContract);
   for (const modelLayer of ["beamBetween3D", "createCampusCanopyTree", "createCampusSidewalkGarden"]) {
     assert.match(source, new RegExp(`function ${modelLayer}\\(`));
   }
@@ -74,6 +74,24 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   assert.match(source, /data-campus-material", "poly-haven-pbr"/);
   assert.match(source, /const stageShadows = profile\.shadows \|\| this\.stageIndex === 0/);
   assert.match(source, /this\.stageIndex === 0 \? 1\.06/);
+});
+
+test("rebuilds the opening run as a cinematic campus POV with illustrated environmental obstacles", () => {
+  const canopyAsset = path.join(root, "assets/runner-scenes/props/camphor-bough.png");
+  assert.equal(fs.existsSync(canopyAsset), true);
+  assert.ok(fs.statSync(canopyAsset).size > 400000);
+  for (const builder of [
+    "createCampusPuddleObstacle", "createCampusLeafGustObstacle", "createCampusCanopyObstacle",
+    "createCampusEnvironmentObstacle", "createCampusStoryToken"
+  ]) assert.match(source, new RegExp(`function ${builder}\\(`));
+  for (const contract of [
+    "camphor-bough.png", "campus-puddle", "campus-leaf-gust", "low-camphor-canopy",
+    "cinematic-pov", "data-camera-language", "campusWisps"
+  ]) assert.ok(source.includes(contract), contract);
+  assert.match(source, /this\.player\.visible = !campusPov/);
+  assert.match(source, /visuals\.root\.visible = stageIndex !== 0/);
+  assert.match(source, /float forward = 1\.0 - exp/);
+  assert.doesNotMatch(source, /float weightA =|float weightB =/);
 });
 
 test("gives every chapter a distinct world, road, obstacle, particle, and depth identity", () => {

@@ -907,12 +907,17 @@ let toonGradientTexture = null;
 let campusLeafTexture = null;
 let campusCloudTexture = null;
 let campusSkyArtTexture = null;
+let campusLightMoteTexture = null;
+let campusObstacleLeafTexture = null;
+let campusMistTexture = null;
+let campusCanopyArtTexture = null;
 const roundedGeometryCache = new Map();
 let heartGeometry = null;
 let foliageClusterGeometry = null;
 const stageTokenGeometryCache = new Map();
 const phaseTokenGeometryCache = new Map();
 const collectibleVisualStyleCache = new Map();
+const campusStoryTextureCache = new Map();
 
 function getToonGradientTexture() {
   if (toonGradientTexture) return toonGradientTexture;
@@ -1190,6 +1195,201 @@ const STORY_PROP_COLORS = Object.freeze({
 
 function storyPropColor(item, fallback) {
   return STORY_PROP_COLORS[item?.color] || fallback || 0xffd36b;
+}
+
+function campusStoryTokenTexture(item, fallback) {
+  const kind = String(item?.kind || "note");
+  const color = storyPropColor(item, fallback);
+  const cacheKey = `${kind}:${color}`;
+  if (campusStoryTextureCache.has(cacheKey)) return campusStoryTextureCache.get(cacheKey);
+  const accent = `#${new THREE.Color(color).getHexString()}`;
+  const texture = canvasTexture(256, 256, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    context.save();
+    context.translate(width / 2, height / 2);
+    context.shadowColor = "rgba(22,42,40,.34)";
+    context.shadowBlur = 18;
+    context.shadowOffsetY = 8;
+    if (["photo", "note", "ticket", "map"].includes(kind)) {
+      const cardWidth = kind === "ticket" ? 150 : 126;
+      const cardHeight = kind === "ticket" ? 70 : 146;
+      context.rotate(kind === "photo" ? -0.08 : 0.045);
+      context.fillStyle = "rgba(255,252,240,.98)";
+      context.beginPath();
+      context.roundRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 10);
+      context.fill();
+      context.shadowBlur = 0;
+      if (kind === "photo") {
+        const sky = context.createLinearGradient(0, -54, 0, 34);
+        sky.addColorStop(0, "#8cd4ef");
+        sky.addColorStop(0.56, "#d9f0eb");
+        sky.addColorStop(1, "#789979");
+        context.fillStyle = sky;
+        context.fillRect(-49, -55, 98, 88);
+        context.fillStyle = "rgba(64,112,74,.8)";
+        context.beginPath();
+        context.arc(-31, 6, 24, Math.PI, 0);
+        context.arc(28, 10, 26, Math.PI, 0);
+        context.fill();
+        context.fillStyle = accent;
+        context.fillRect(-32, 48, 64, 4);
+      } else if (kind === "ticket") {
+        context.fillStyle = accent;
+        context.globalAlpha = 0.88;
+        context.fillRect(-54, -18, 108, 8);
+        context.globalAlpha = 1;
+        context.strokeStyle = "rgba(54,68,66,.45)";
+        context.lineWidth = 2;
+        context.setLineDash([5, 5]);
+        context.beginPath();
+        context.moveTo(24, -30);
+        context.lineTo(24, 30);
+        context.stroke();
+        context.setLineDash([]);
+        context.fillStyle = "rgba(44,62,60,.72)";
+        context.fillRect(-54, 5, 54, 3);
+      } else {
+        const leaf = context.createLinearGradient(-36, -48, 26, 54);
+        leaf.addColorStop(0, "#d8df78");
+        leaf.addColorStop(1, "#8fa758");
+        context.fillStyle = leaf;
+        context.beginPath();
+        context.moveTo(0, -49);
+        context.bezierCurveTo(39, -24, 33, 24, 0, 53);
+        context.bezierCurveTo(-32, 24, -37, -24, 0, -49);
+        context.fill();
+        context.strokeStyle = "rgba(255,255,224,.72)";
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(0, -40);
+        context.lineTo(0, 45);
+        context.stroke();
+      }
+    } else if (kind === "umbrella") {
+      context.rotate(-0.08);
+      const canopy = context.createLinearGradient(-76, -54, 78, 34);
+      canopy.addColorStop(0, "rgba(223,251,248,.96)");
+      canopy.addColorStop(0.45, `${accent}cc`);
+      canopy.addColorStop(1, "rgba(112,192,202,.78)");
+      context.fillStyle = canopy;
+      context.beginPath();
+      context.arc(0, -9, 78, Math.PI, Math.PI * 2);
+      context.quadraticCurveTo(52, 12, 26, -6);
+      context.quadraticCurveTo(0, 17, -26, -6);
+      context.quadraticCurveTo(-52, 12, -78, -9);
+      context.closePath();
+      context.fill();
+      context.shadowBlur = 0;
+      context.strokeStyle = "rgba(248,255,250,.72)";
+      context.lineWidth = 3;
+      for (const x of [-52, -26, 0, 26, 52]) {
+        context.beginPath();
+        context.moveTo(0, -83);
+        context.quadraticCurveTo(x * 0.54, -32, x, -9);
+        context.stroke();
+      }
+      context.strokeStyle = "#d6bd7b";
+      context.lineWidth = 6;
+      context.beginPath();
+      context.moveTo(0, -80);
+      context.lineTo(0, 72);
+      context.quadraticCurveTo(0, 102, 24, 88);
+      context.stroke();
+    } else if (["drink", "coffee"].includes(kind)) {
+      const can = context.createLinearGradient(-48, 0, 54, 0);
+      can.addColorStop(0, "#d5e8df");
+      can.addColorStop(0.42, accent);
+      can.addColorStop(0.7, "#f7e7bd");
+      can.addColorStop(1, "#708e87");
+      context.fillStyle = can;
+      context.beginPath();
+      context.roundRect(-44, -76, 88, 152, 18);
+      context.fill();
+      context.shadowBlur = 0;
+      context.fillStyle = "rgba(255,255,255,.62)";
+      context.fillRect(-27, -58, 8, 116);
+      context.strokeStyle = "rgba(44,65,61,.48)";
+      context.lineWidth = 3;
+      context.beginPath();
+      context.ellipse(0, -72, 35, 8, 0, 0, Math.PI * 2);
+      context.stroke();
+    } else {
+      const wrapper = context.createLinearGradient(-70, -40, 70, 48);
+      wrapper.addColorStop(0, "#fff2c7");
+      wrapper.addColorStop(0.5, accent);
+      wrapper.addColorStop(1, "#fff7df");
+      context.fillStyle = wrapper;
+      context.beginPath();
+      context.moveTo(-78, 0);
+      context.lineTo(-108, -38);
+      context.lineTo(-92, 38);
+      context.closePath();
+      context.moveTo(78, 0);
+      context.lineTo(108, -38);
+      context.lineTo(92, 38);
+      context.closePath();
+      context.fill();
+      context.beginPath();
+      context.roundRect(-78, -46, 156, 92, 38);
+      context.fill();
+    }
+    context.restore();
+  });
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  SHARED_TEXTURES.add(texture);
+  campusStoryTextureCache.set(cacheKey, texture);
+  return texture;
+}
+
+function createCampusStoryToken(item = {}, accent = 0xffd36b, particleTexture = null) {
+  const group = new THREE.Group();
+  const color = storyPropColor(item, accent);
+  const illustration = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: campusStoryTokenTexture(item, accent),
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.96,
+    depthWrite: false,
+    toneMapped: true
+  }));
+  illustration.scale.set(0.9, 0.9, 1);
+  illustration.position.y = 0.03;
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: getCampusLightMoteTexture(),
+    color,
+    transparent: true,
+    opacity: 0.54,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false
+  }));
+  halo.scale.set(1.34, 1.34, 1);
+  halo.position.z = -0.08;
+  const approachComets = new THREE.Group();
+  if (particleTexture) {
+    for (let index = 0; index < 5; index += 1) {
+      const comet = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: getCampusLightMoteTexture(),
+        color,
+        transparent: true,
+        opacity: 0.34,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false
+      }));
+      comet.scale.set(0.15, 0.15, 1);
+      comet.userData.offset = index / 5;
+      approachComets.add(comet);
+    }
+  }
+  group.add(halo, illustration, approachComets);
+  group.userData.kind = "story-item";
+  group.userData.halo = halo;
+  group.userData.approachComets = approachComets;
+  group.userData.campusStoryItem = true;
+  group.userData.sharedTexture = particleTexture;
+  return group;
 }
 
 function createStoryProp(item = {}, accent = 0xffd36b, particleTexture = null, carried = false) {
@@ -2471,6 +2671,124 @@ function makeParticleTexture() {
   });
 }
 
+function getCampusLightMoteTexture() {
+  if (campusLightMoteTexture) return campusLightMoteTexture;
+  campusLightMoteTexture = canvasTexture(128, 128, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    const cx = width / 2;
+    const cy = height / 2;
+    const halo = context.createRadialGradient(cx, cy, 0, cx, cy, width * 0.48);
+    halo.addColorStop(0, "rgba(255,255,247,1)");
+    halo.addColorStop(0.08, "rgba(255,243,188,.98)");
+    halo.addColorStop(0.25, "rgba(255,210,105,.52)");
+    halo.addColorStop(0.62, "rgba(255,190,72,.13)");
+    halo.addColorStop(1, "rgba(255,190,72,0)");
+    context.fillStyle = halo;
+    context.fillRect(0, 0, width, height);
+    context.save();
+    context.translate(cx, cy);
+    context.globalCompositeOperation = "screen";
+    const ray = context.createLinearGradient(-width * 0.34, 0, width * 0.34, 0);
+    ray.addColorStop(0, "rgba(255,255,255,0)");
+    ray.addColorStop(0.5, "rgba(255,250,220,.72)");
+    ray.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = ray;
+    context.fillRect(-width * 0.34, -1, width * 0.68, 2);
+    context.rotate(Math.PI / 2);
+    context.globalAlpha = 0.52;
+    context.fillRect(-width * 0.24, -1, width * 0.48, 2);
+    context.restore();
+  });
+  campusLightMoteTexture.minFilter = THREE.LinearMipmapLinearFilter;
+  campusLightMoteTexture.magFilter = THREE.LinearFilter;
+  SHARED_TEXTURES.add(campusLightMoteTexture);
+  return campusLightMoteTexture;
+}
+
+function getCampusObstacleLeafTexture() {
+  if (campusObstacleLeafTexture) return campusObstacleLeafTexture;
+  campusObstacleLeafTexture = canvasTexture(96, 128, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    context.save();
+    context.translate(width / 2, height / 2);
+    context.rotate(-0.16);
+    context.shadowColor = "rgba(14,38,22,.42)";
+    context.shadowBlur = 7;
+    const leafGradient = context.createLinearGradient(-24, -46, 28, 48);
+    leafGradient.addColorStop(0, "#d8ed9f");
+    leafGradient.addColorStop(0.34, "#77a95c");
+    leafGradient.addColorStop(0.72, "#3f7650");
+    leafGradient.addColorStop(1, "#244f3f");
+    context.fillStyle = leafGradient;
+    context.beginPath();
+    context.moveTo(0, -52);
+    context.bezierCurveTo(35, -32, 36, 20, 0, 52);
+    context.bezierCurveTo(-36, 20, -35, -32, 0, -52);
+    context.closePath();
+    context.fill();
+    context.shadowBlur = 0;
+    context.strokeStyle = "rgba(232,246,185,.68)";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(0, -43);
+    context.quadraticCurveTo(-2, 4, 0, 53);
+    context.stroke();
+    context.strokeStyle = "rgba(218,239,167,.34)";
+    context.lineWidth = 1;
+    for (let y = -30; y <= 30; y += 15) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(19, y - 12);
+      context.moveTo(0, y + 4);
+      context.lineTo(-19, y - 8);
+      context.stroke();
+    }
+    context.restore();
+  });
+  campusObstacleLeafTexture.minFilter = THREE.LinearMipmapLinearFilter;
+  campusObstacleLeafTexture.magFilter = THREE.LinearFilter;
+  SHARED_TEXTURES.add(campusObstacleLeafTexture);
+  return campusObstacleLeafTexture;
+}
+
+function getCampusMistTexture() {
+  if (campusMistTexture) return campusMistTexture;
+  campusMistTexture = canvasTexture(192, 96, (context, width, height) => {
+    context.clearRect(0, 0, width, height);
+    const haze = context.createRadialGradient(width / 2, height / 2, 2, width / 2, height / 2, width * 0.48);
+    haze.addColorStop(0, "rgba(225,250,244,.72)");
+    haze.addColorStop(0.3, "rgba(189,235,226,.34)");
+    haze.addColorStop(0.74, "rgba(156,216,210,.09)");
+    haze.addColorStop(1, "rgba(150,210,205,0)");
+    context.fillStyle = haze;
+    context.fillRect(0, 0, width, height);
+    context.globalCompositeOperation = "screen";
+    context.strokeStyle = "rgba(255,255,255,.42)";
+    context.lineWidth = 1.5;
+    for (let index = 0; index < 5; index += 1) {
+      context.beginPath();
+      context.moveTo(16, 34 + index * 7);
+      context.bezierCurveTo(54, 18 + index * 5, 124, 67 - index * 4, 178, 29 + index * 8);
+      context.stroke();
+    }
+  });
+  campusMistTexture.minFilter = THREE.LinearMipmapLinearFilter;
+  campusMistTexture.magFilter = THREE.LinearFilter;
+  SHARED_TEXTURES.add(campusMistTexture);
+  return campusMistTexture;
+}
+
+function getCampusCanopyArtTexture() {
+  if (campusCanopyArtTexture) return campusCanopyArtTexture;
+  campusCanopyArtTexture = new THREE.TextureLoader().load("assets/runner-scenes/props/camphor-bough.png");
+  campusCanopyArtTexture.colorSpace = THREE.SRGBColorSpace;
+  campusCanopyArtTexture.minFilter = THREE.LinearMipmapLinearFilter;
+  campusCanopyArtTexture.magFilter = THREE.LinearFilter;
+  campusCanopyArtTexture.anisotropy = 8;
+  SHARED_TEXTURES.add(campusCanopyArtTexture);
+  return campusCanopyArtTexture;
+}
+
 function makeWorldParticleTexture(kind, accent) {
   return canvasTexture(48, 48, (context, width, height) => {
     context.clearRect(0, 0, width, height);
@@ -2734,28 +3052,18 @@ function createCampusSkyLayer() {
       varying vec2 vUv;
 
       vec2 campusParallaxUv(float phase) {
-        float zoom = 1.0 + phase * 0.18;
+        float zoom = 1.0 + phase * 0.105;
         vec2 sampleUv = (vUv - 0.5) / zoom + 0.5;
         float side = sign(vUv.x - 0.5);
-        sampleUv.x -= side * phase * 0.032;
-        sampleUv.y += phase * 0.046;
+        float edge = smoothstep(0.08, 0.5, abs(vUv.x - 0.5));
+        sampleUv.x -= side * phase * 0.018 * edge;
+        sampleUv.y += phase * 0.036;
         return clamp(sampleUv, vec2(0.002), vec2(0.998));
       }
 
       void main() {
-        float phaseA = fract(uTravel);
-        float phaseB = fract(uTravel + 0.5);
-        float weightA = pow(sin(3.14159265 * phaseA), 2.0);
-        float weightB = pow(sin(3.14159265 * phaseB), 2.0);
-        vec4 base = texture2D(uMap, vUv);
-        vec4 moving = (
-          texture2D(uMap, campusParallaxUv(phaseA)) * weightA
-          + texture2D(uMap, campusParallaxUv(phaseB)) * weightB
-        ) / max(0.001, weightA + weightB);
-        float edge = smoothstep(0.12, 0.46, abs(vUv.x - 0.5));
-        float depth = mix(0.32, 1.0, smoothstep(0.02, 0.78, 1.0 - vUv.y));
-        float motion = smoothstep(0.0, 0.08, uTravel);
-        gl_FragColor = mix(base, moving, edge * depth * motion * 0.96);
+        float forward = 1.0 - exp(-max(0.0, uTravel) * 0.18);
+        gl_FragColor = texture2D(uMap, campusParallaxUv(forward));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
@@ -4947,7 +5255,24 @@ function createCollectibleBatches(particleTexture, accent) {
   }));
   pickupTrail.name = "pickupTrailBatch";
   pickupTrail.frustumCulled = false;
-  return { capacity, rims, hearts, glows, pickupTrail };
+
+  const campusWispGeometry = new THREE.BufferGeometry();
+  campusWispGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(capacity * 3 * 3), 3));
+  campusWispGeometry.setDrawRange(0, 0);
+  const campusWisps = new THREE.Points(campusWispGeometry, new THREE.PointsMaterial({
+    map: getCampusLightMoteTexture(),
+    color: 0xffd889,
+    size: 0.28,
+    transparent: true,
+    opacity: 0.88,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+    toneMapped: false
+  }));
+  campusWisps.name = "campusCourageWisps";
+  campusWisps.frustumCulled = false;
+  return { capacity, rims, hearts, glows, pickupTrail, campusWisps };
 }
 
 function createTrain(accent, variant = 0) {
@@ -5021,6 +5346,235 @@ function createTrain(accent, variant = 0) {
   group.userData.kind = "train";
   group.userData.headlights = headlights;
   return group;
+}
+
+function createCampusPuddleMaterial(accent) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uAccent: { value: new THREE.Color(accent).lerp(new THREE.Color(0x8bd9e1), 0.72) }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uAccent;
+      varying vec2 vUv;
+
+      float hash21(vec2 p) {
+        p = fract(p * vec2(123.34, 345.45));
+        p += dot(p, p + 34.345);
+        return fract(p.x * p.y);
+      }
+
+      void main() {
+        vec2 centered = vUv - 0.5;
+        centered.y *= 1.5;
+        float radius = length(centered);
+        float organic = sin(centered.x * 16.0 + sin(centered.y * 12.0) * 1.5) * 0.018;
+        organic += sin(centered.y * 22.0 - centered.x * 7.0) * 0.012;
+        float mask = 1.0 - smoothstep(0.37 + organic, 0.49 + organic, radius);
+        float edge = smoothstep(0.35, 0.46, radius) * mask;
+        float rings = sin(radius * 72.0 - uTime * 4.2 + sin(atan(centered.y, centered.x) * 3.0));
+        rings = pow(max(0.0, rings), 10.0) * smoothstep(0.38, 0.04, radius);
+        float breeze = sin((centered.x * 1.5 + centered.y) * 42.0 - uTime * 2.3) * 0.5 + 0.5;
+        breeze *= smoothstep(0.28, 0.03, abs(centered.y + centered.x * 0.16));
+        float grain = hash21(floor(vUv * vec2(92.0, 64.0)));
+        vec3 deep = mix(vec3(0.10, 0.22, 0.24), uAccent * 0.54, 0.42);
+        vec3 sky = mix(vec3(0.47, 0.77, 0.83), vec3(0.92, 0.98, 0.94), vUv.y * 0.6 + 0.18);
+        vec3 color = mix(deep, sky, 0.34 + breeze * 0.18);
+        color += (rings * 0.62 + edge * 0.28 + grain * 0.025) * vec3(0.82, 1.0, 0.97);
+        float alpha = mask * (0.44 + breeze * 0.11 + rings * 0.36) + edge * 0.18;
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.NormalBlending,
+    toneMapped: false
+  });
+}
+
+function createCampusPuddleObstacle(accent, variant = 0) {
+  const group = new THREE.Group();
+  const puddleMaterial = createCampusPuddleMaterial(accent);
+  const puddle = mesh(new THREE.PlaneGeometry(2.72, 1.72, 1, 1), puddleMaterial);
+  puddle.rotation.x = -Math.PI / 2;
+  puddle.rotation.z = (variant % 3 - 1) * 0.12;
+  puddle.position.y = 0.028;
+  puddle.renderOrder = 3;
+
+  const glint = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: getCampusMistTexture(),
+    color: 0xd8fbf5,
+    transparent: true,
+    opacity: 0.34,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false
+  }));
+  glint.scale.set(2.3, 0.66, 1);
+  glint.position.set(-0.18, 0.13, 0.08);
+  glint.renderOrder = 4;
+
+  const leafMaterial = new THREE.MeshBasicMaterial({
+    map: getCampusObstacleLeafTexture(),
+    color: 0x8caf68,
+    transparent: true,
+    alphaTest: 0.12,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: true
+  });
+  const leaves = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.2, 0.3), leafMaterial, 6);
+  const transform = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  for (let index = 0; index < 6; index += 1) {
+    quaternion.setFromEuler(new THREE.Euler(-Math.PI / 2, 0, -0.78 + index * 0.61));
+    scale.setScalar(0.76 + index % 3 * 0.13);
+    transform.compose(
+      new THREE.Vector3(-0.92 + index * 0.37, 0.052, (index % 2 ? 0.34 : -0.28) + Math.sin(index * 2.3) * 0.11),
+      quaternion,
+      scale
+    );
+    leaves.setMatrixAt(index, transform);
+  }
+  leaves.instanceMatrix.needsUpdate = true;
+  leaves.renderOrder = 5;
+  group.add(puddle, glint, leaves);
+  group.userData.kind = "campus-puddle";
+  group.userData.obstacleSignature = "rain-puddle";
+  group.userData.campusEffect = { kind: "puddle", puddleMaterial, glint };
+  return group;
+}
+
+function createCampusLeafGustObstacle(accent, variant = 0) {
+  const group = new THREE.Group();
+  const leafCount = 26;
+  const leafBases = [];
+  const leafMaterial = new THREE.MeshStandardMaterial({
+    map: getCampusObstacleLeafTexture(),
+    color: new THREE.Color(accent).lerp(new THREE.Color(0x729b60), 0.78),
+    roughness: 0.82,
+    metalness: 0,
+    transparent: true,
+    opacity: 0.96,
+    alphaTest: 0.12,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: true
+  });
+  const leaves = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.3, 0.46), leafMaterial, leafCount);
+  leaves.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const leafDummy = new THREE.Object3D();
+  const leafColor = new THREE.Color();
+  for (let index = 0; index < leafCount; index += 1) {
+    const ratio = index / Math.max(1, leafCount - 1);
+    const phase = index * 2.399 + variant * 0.81;
+    const base = {
+      x: -1.18 + ratio * 2.36 + Math.sin(phase) * 0.21,
+      y: 0.18 + Math.sin(ratio * Math.PI) * 1.44 + Math.cos(phase * 0.78) * 0.22,
+      z: Math.cos(phase) * 0.42 + (ratio - 0.5) * 0.24,
+      phase,
+      scale: 0.7 + index % 5 * 0.095
+    };
+    leafBases.push(base);
+    leafDummy.position.set(base.x, base.y, base.z);
+    leafDummy.rotation.set(phase * 0.37, phase * 0.61, -0.72 + phase * 0.23);
+    leafDummy.scale.setScalar(base.scale);
+    leafDummy.updateMatrix();
+    leaves.setMatrixAt(index, leafDummy.matrix);
+    leafColor.setHex(index % 5 === 0 ? 0xc7d984 : index % 3 === 0 ? 0x527d4d : 0x86ad63);
+    leaves.setColorAt(index, leafColor);
+  }
+  leaves.instanceMatrix.needsUpdate = true;
+  if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true;
+  leaves.frustumCulled = false;
+
+  const wakeMaterial = new THREE.SpriteMaterial({
+    map: getCampusMistTexture(),
+    color: 0xc9ebe1,
+    transparent: true,
+    opacity: 0.18,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false
+  });
+  const wakes = [];
+  for (let index = 0; index < 3; index += 1) {
+    const wake = new THREE.Sprite(wakeMaterial.clone());
+    wake.scale.set(2.1 - index * 0.25, 0.62 + index * 0.12, 1);
+    wake.position.set((index - 1) * 0.42, 0.56 + index * 0.38, -0.12 + index * 0.09);
+    wake.material.opacity = 0.12 + index * 0.035;
+    wakes.push(wake);
+    group.add(wake);
+  }
+  group.add(leaves);
+  group.userData.kind = "campus-leaf-gust";
+  group.userData.obstacleSignature = "camphor-leaf-gust";
+  group.userData.campusEffect = {
+    kind: "leaf-gust",
+    leaves,
+    wakes,
+    leafBases,
+    leafDummy
+  };
+  return group;
+}
+
+function createCampusCanopyObstacle(accent, variant = 0) {
+  const group = new THREE.Group();
+  const branchSide = variant % 2 ? -1 : 1;
+  const canopyMaterial = new THREE.MeshBasicMaterial({
+    map: getCampusCanopyArtTexture(),
+    color: 0xffffff,
+    transparent: true,
+    alphaTest: 0.08,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+  const canopy = mesh(new THREE.PlaneGeometry(5.55, 4.84), canopyMaterial);
+  canopy.position.set(branchSide * 1.12, 2.65, 0);
+  canopy.scale.x = branchSide;
+  canopy.renderOrder = 7;
+
+  const dropletGeometry = new THREE.BufferGeometry();
+  const dropletPositions = new Float32Array(14 * 3);
+  for (let index = 0; index < 14; index += 1) {
+    dropletPositions[index * 3] = -1.58 + index / 13 * 3.16 + Math.sin(index * 2.4) * 0.1;
+    dropletPositions[index * 3 + 1] = 1.08 + index % 4 * 0.2;
+    dropletPositions[index * 3 + 2] = Math.cos(index * 1.8) * 0.26;
+  }
+  dropletGeometry.setAttribute("position", new THREE.BufferAttribute(dropletPositions, 3));
+  const droplets = new THREE.Points(dropletGeometry, new THREE.PointsMaterial({
+    map: getCampusLightMoteTexture(),
+    color: 0xc7f2ed,
+    size: 0.1,
+    transparent: true,
+    opacity: 0.62,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false
+  }));
+  group.add(canopy, droplets);
+  group.userData.kind = "campus-canopy";
+  group.userData.obstacleSignature = "low-camphor-canopy";
+  group.userData.campusEffect = { kind: "canopy", canopy, droplets, baseY: canopy.position.y };
+  return group;
+}
+
+function createCampusEnvironmentObstacle(avoid, accent, variant = 0) {
+  if (avoid === "slide") return createCampusCanopyObstacle(accent, variant);
+  if (avoid === "switch") return createCampusLeafGustObstacle(accent, variant);
+  return createCampusPuddleObstacle(accent, variant);
 }
 
 function createJumpBarrier(accent, stageIndex = 0) {
@@ -5522,6 +6076,13 @@ function resolveObstacleBaseSubtype(subtype, avoid) {
 }
 
 function createObstacle(stageIndex, avoid, accent, subtype = null, variant = 0) {
+  if (stageIndex === 0) {
+    const campusObstacle = createCampusEnvironmentObstacle(avoid, accent, variant);
+    campusObstacle.userData.obstacleSemantic = subtype || avoid || "campus-route";
+    campusObstacle.userData.obstacleVisualSubtype = campusObstacle.userData.kind;
+    campusObstacle.userData.obstacleStyle = STAGE_CONFIGS[0].world.obstacles.style;
+    return campusObstacle;
+  }
   const semanticSubtype = subtype;
   const visualSubtype = resolveObstacleBaseSubtype(subtype, avoid);
   let obstacle;
@@ -6501,7 +7062,13 @@ class CinematicRunnerRenderer {
     this.collectibleScale = new THREE.Vector3(0.54, 0.54, 0.54);
     this.collectiblePosition = new THREE.Vector3();
     this.collectibleColor = new THREE.Color();
-    this.scene.add(this.collectibleBatches.glows, this.collectibleBatches.pickupTrail, this.collectibleBatches.rims, this.collectibleBatches.hearts);
+    this.scene.add(
+      this.collectibleBatches.glows,
+      this.collectibleBatches.pickupTrail,
+      this.collectibleBatches.campusWisps,
+      this.collectibleBatches.rims,
+      this.collectibleBatches.hearts
+    );
     this.transientEffects = createTransientEffectPool(this.particleTexture);
     this.scene.add(this.transientEffects.root);
     this.bursts = [];
@@ -7408,6 +7975,7 @@ class CinematicRunnerRenderer {
   updatePowerupVisuals(delta, time, speed, arriving) {
     const visuals = this.powerupVisuals;
     const scratch = visuals.scratch;
+    const cinematicPov = this.stageIndex === 0 && !arriving;
     const enabled = arriving ? 0 : 1;
     const magnetStrength = this.powerupStrengths.magnet * enabled;
     const shieldStrength = this.powerupStrengths.shield * enabled;
@@ -7415,7 +7983,7 @@ class CinematicRunnerRenderer {
     const overdriveStrength = this.powerupStrengths.overdrive * enabled;
 
     const magnetActive = magnetStrength > 0.01;
-    visuals.magnet.group.visible = magnetActive;
+    visuals.magnet.group.visible = magnetActive && !cinematicPov;
     if (magnetActive) {
       visuals.magnet.group.position.set(this.currentLaneX, 1.05, PLAYER_Z - 0.16);
       visuals.magnet.material.opacity = magnetStrength * (0.18 + Math.sin(time * 8) * 0.035);
@@ -7426,7 +7994,7 @@ class CinematicRunnerRenderer {
     }
 
     const shieldActive = shieldStrength > 0.01;
-    visuals.shield.group.visible = shieldActive;
+    visuals.shield.group.visible = shieldActive && !cinematicPov;
     if (shieldActive) {
       visuals.shield.group.position.set(this.currentLaneX, 0, PLAYER_Z - 0.02);
       const shieldPulse = 1 + Math.sin(time * 5.4) * 0.018 * shieldStrength;
@@ -7440,7 +8008,7 @@ class CinematicRunnerRenderer {
 
     this.scorePulse = Math.max(0, this.scorePulse - delta * 2.5);
     const multiplierActive = multiplierStrength > 0.01;
-    visuals.multiplier.group.visible = multiplierActive;
+    visuals.multiplier.group.visible = multiplierActive && !cinematicPov;
     if (multiplierActive) {
       visuals.multiplier.afterimages.forEach((afterimage, index) => {
         afterimage.position.set(
@@ -7462,11 +8030,11 @@ class CinematicRunnerRenderer {
     }
 
     const overdriveActive = overdriveStrength > 0.01;
-    visuals.overdrive.group.visible = overdriveActive;
+    visuals.overdrive.group.visible = overdriveActive && !cinematicPov;
     visuals.overdrive.speedWaveMaterial.opacity = overdriveStrength * 0.24;
     visuals.overdrive.edgeFlowMaterial.opacity = overdriveStrength * 0.62;
-    visuals.overdrive.speedWaves.count = overdriveActive ? 6 : 0;
-    visuals.overdrive.edgeFlow.count = overdriveActive ? 20 : 0;
+    visuals.overdrive.speedWaves.count = overdriveActive && !cinematicPov ? 6 : 0;
+    visuals.overdrive.edgeFlow.count = overdriveActive && !cinematicPov ? 20 : 0;
     if (overdriveActive) {
       scratch.euler.set(-Math.PI / 2, 0, 0);
       scratch.quaternion.setFromEuler(scratch.euler);
@@ -7498,8 +8066,8 @@ class CinematicRunnerRenderer {
       : 0;
     this.storyWorldInfluence = storyEnvelope;
     const storyActive = storyEnvelope > 0.001 && !arriving;
-    visuals.storyWorld.group.visible = storyActive;
-    visuals.storyWorld.roadPatches.count = storyActive ? 5 : 0;
+    visuals.storyWorld.group.visible = storyActive && !cinematicPov;
+    visuals.storyWorld.roadPatches.count = storyActive && !cinematicPov ? 5 : 0;
     visuals.storyWorld.roadMaterial.opacity = storyEnvelope * 0.32;
     if (storyActive) {
       scratch.euler.set(-Math.PI / 2, 0, 0);
@@ -7526,7 +8094,7 @@ class CinematicRunnerRenderer {
       : 0;
     this.synergyInfluence = synergyEnvelope;
     const synergyActive = synergyEnvelope > 0.001 && !arriving;
-    visuals.synergy.group.visible = synergyActive;
+    visuals.synergy.group.visible = synergyActive && !cinematicPov;
     if (synergyActive) {
       visuals.synergy.waves.forEach((wave, index) => {
         const progress = clamp(synergyState.elapsed / synergyState.duration, 0, 1);
@@ -7539,6 +8107,7 @@ class CinematicRunnerRenderer {
 
     this.powerupEffectPool.forEach((slot, slotIndex) => {
       if (slot.life <= 0) return;
+      if (cinematicPov) slot.group.visible = false;
       slot.life = Math.max(0, slot.life - delta);
       const progress = 1 - slot.life / slot.duration;
       slot.ripple.scale.setScalar(0.72 + progress * 3.2);
@@ -7589,7 +8158,7 @@ class CinematicRunnerRenderer {
     this.stageIntroState.cameraCue = config.visual?.introCueSequence?.[0] || "street-wide";
     this.stageIntroState.actionCue = introCameraCue(this.stageIntroState.cameraCue).action;
     const visuals = this.stageIntroVisual;
-    visuals.root.visible = true;
+    visuals.root.visible = stageIndex !== 0;
     visuals.root.scale.setScalar(0.01);
     visuals.token.geometry = createStageTokenGeometry(stageIndex);
     visuals.tokenMaterial.color.setHex(STAGE_TOKEN_COLORS[stageIndex] || 0xffffff);
@@ -7724,7 +8293,9 @@ class CinematicRunnerRenderer {
     const urgency = 1 - state.condition / 100;
     state.pulse = Math.max(0, Math.sin(time * (state.mode === "failed" ? 4.2 : 2.6))) * state.strength;
     const visible = state.strength > 0.002;
-    this.statusVisuals.root.visible = visible;
+    const worldVisible = visible && this.stageIndex !== 0;
+    this.statusVisuals.root.visible = worldVisible;
+    this.statusVisuals.vignette.visible = worldVisible;
     this.statusVisuals.root.position.set(this.currentLaneX, 0.035, PLAYER_Z + 0.04);
     this.statusVisuals.vignetteMaterial.opacity = state.strength * (state.mode === "failed" ? 0.56 : 0.28) * (0.72 + state.pulse * 0.28);
     this.statusVisuals.rings.forEach((ring, index) => {
@@ -7733,7 +8304,7 @@ class CinematicRunnerRenderer {
       ring.rotation.z = time * (index % 2 ? -0.46 : 0.38) + index;
       ring.material.opacity = state.strength * (1 - phase) * (0.48 - index * 0.07);
     });
-    this.statusVisuals.guideLight.intensity = state.strength * (2.2 + state.pulse * 4.5);
+    this.statusVisuals.guideLight.intensity = worldVisible ? state.strength * (2.2 + state.pulse * 4.5) : 0;
   }
 
   preloadBackdrops() {
@@ -7984,6 +8555,7 @@ class CinematicRunnerRenderer {
     this.collectibleBatches.hearts.material.emissive.setHex(tokenColor);
     this.collectibleBatches.glows.material.color.setHex(collectibleColor);
     this.collectibleBatches.pickupTrail.material.color.setHex(collectibleColor);
+    this.collectibleBatches.campusWisps.material.color.setHex(this.stageIndex === 0 ? 0xffd889 : collectibleColor);
     this.setPowerupAccent(config);
     this.skyDome.userData.uniforms.topColor.value.setHex(config.skyTop);
     this.skyDome.userData.uniforms.bottomColor.value.setHex(config.skyBottom);
@@ -8091,6 +8663,7 @@ class CinematicRunnerRenderer {
     const phaseStyle = collectibleVisualStyle(collectibleKey, this.stageIndex, nextPhase);
     this.collectibleBatches.glows.material.color.setHex(phaseStyle.color);
     this.collectibleBatches.pickupTrail.material.color.setHex(phaseStyle.color);
+    this.collectibleBatches.campusWisps.material.color.setHex(this.stageIndex === 0 ? 0xffd889 : phaseStyle.color);
     this.canvas.setAttribute("data-route-phase", String(nextPhase + 1));
     this.canvas.setAttribute("data-phase-world", visual.worldKey || this.phaseContentRef?.id || `phase-${nextPhase + 1}`);
     this.canvas.setAttribute("data-collectible-style", collectibleKey);
@@ -8403,7 +8976,7 @@ class CinematicRunnerRenderer {
     state.semanticStrength = damp(state.semanticStrength, state.semanticLife > 0 ? 1 : 0, state.semanticLife > 0 ? 9 : 3.2, delta);
     state.gatePendingStrength = damp(state.gatePendingStrength, state.gatePendingLife > 0 ? 1 : 0, state.gatePendingLife > 0 ? 8 : 2.8, delta);
     state.branch.strength = damp(state.branch.strength, state.branch.target, 1.8, delta);
-    rig.root.visible = !arriving;
+    rig.root.visible = !arriving && this.stageIndex !== 0;
     rig.routeRoot.position.z = (distance * WORLD_Z_SCALE * (0.6 + 0.56 / cadence)) % 4.45;
     rig.goalAnchor.position.y = 1.55 + cadencePulse * 0.13;
     rig.goalCore.scale.setScalar(0.84 + cadencePulse * 0.22 + state.revealStrength * 0.42 + state.semanticStrength * 0.16);
@@ -8531,17 +9104,28 @@ class CinematicRunnerRenderer {
     }
     if (!object) {
       if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
-      else if (entity.type === "story-item" || entity.type === "route-choice") object = createStoryProp({
-        id: entity.itemId || entity.data?.itemId,
-        kind: entity.data?.kind,
-        color: entity.data?.color
-      }, config.accent, this.particleTexture, false);
+      else if (entity.type === "story-item" || entity.type === "route-choice") {
+        const storyItem = {
+          id: entity.itemId || entity.data?.itemId,
+          kind: entity.data?.kind,
+          color: entity.data?.color
+        };
+        object = this.stageIndex === 0
+          ? createCampusStoryToken(storyItem, config.accent, this.particleTexture)
+          : createStoryProp(storyItem, config.accent, this.particleTexture, false);
+      }
       else if (entity.type === "obstacle") object = createObstacle(this.stageIndex, entity.avoid, config.accent, entity.subtype, entity.variant);
       else object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
       object.userData.poolKey = signature;
       object.userData.sharedTexture = entity.type === "obstacle" ? null : this.particleTexture;
       object.userData.poolStage = this.stageIndex;
       object.userData.poolGeneration = this.poolGeneration;
+      if (this.stageIndex === 0 && (entity.type === "story-item" || entity.type === "route-choice")) {
+        if (object.userData.markerRing) object.userData.markerRing.visible = false;
+        if (object.userData.markerOrbit) object.userData.markerOrbit.visible = false;
+        if (object.userData.approachRibbon) object.userData.approachRibbon.visible = false;
+        object.userData.campusStoryItem = true;
+      }
       capturePoolBaseline(object);
       if (entity.type === "obstacle") prepareEntityQuality(object);
     } else {
@@ -8578,6 +9162,7 @@ class CinematicRunnerRenderer {
     const batches = this.collectibleBatches;
     const glowPositions = batches.glows.geometry.attributes.position.array;
     const trailPositions = batches.pickupTrail.geometry.attributes.position.array;
+    const campusWispPositions = batches.campusWisps.geometry.attributes.position.array;
     let collectibleCount = 0;
     let storyFocusTarget = 0;
     let companionHazard = 0;
@@ -8620,6 +9205,14 @@ class CinematicRunnerRenderer {
         glowPositions[collectibleCount * 3] = x;
         glowPositions[collectibleCount * 3 + 1] = y;
         glowPositions[collectibleCount * 3 + 2] = z - 0.05;
+        for (let wispIndex = 0; wispIndex < 3; wispIndex += 1) {
+          const wispOffset = (collectibleCount * 3 + wispIndex) * 3;
+          const wispPhase = time * (1.15 + wispIndex * 0.17) + entity.id * 0.73 + wispIndex * Math.PI * 0.66;
+          const wispRadius = 0.1 + wispIndex * 0.055;
+          campusWispPositions[wispOffset] = x + Math.cos(wispPhase) * wispRadius;
+          campusWispPositions[wispOffset + 1] = y + (wispIndex - 1) * 0.15 + Math.sin(wispPhase * 1.3) * 0.075;
+          campusWispPositions[wispOffset + 2] = z + Math.sin(wispPhase) * 0.08 - wispIndex * 0.025;
+        }
         for (let trailIndex = 0; trailIndex < 2; trailIndex += 1) {
           const offset = (collectibleCount * 2 + trailIndex) * 3;
           trailPositions[offset] = x + (trailIndex ? 0.08 : -0.08);
@@ -8702,6 +9295,41 @@ class CinematicRunnerRenderer {
       }
       if (object.userData.kind === "train") object.rotation.z = Math.sin(time * 7 + entity.id) * 0.0025;
       if (object.userData.kind === "service-cart") object.rotation.y = Math.sin(time * 5.4 + entity.id) * 0.012;
+      const campusEffect = object.userData.campusEffect;
+      if (campusEffect?.kind === "puddle") {
+        campusEffect.puddleMaterial.uniforms.uTime.value = time + entity.id * 0.17;
+        campusEffect.glint.material.opacity = 0.25 + Math.sin(time * 2.1 + entity.id) * 0.07;
+        campusEffect.glint.position.x = Math.sin(time * 0.48 + entity.id) * 0.22;
+      } else if (campusEffect?.kind === "leaf-gust") {
+        const leafDummy = campusEffect.leafDummy;
+        for (let index = 0; index < campusEffect.leafBases.length; index += 1) {
+          const base = campusEffect.leafBases[index];
+          const phase = time * (1.9 + index % 4 * 0.08) + index * 0.63 + entity.id * 0.11;
+          leafDummy.position.set(
+            base.x + Math.sin(phase) * 0.13,
+            base.y + Math.cos(phase * 1.27) * 0.1,
+            base.z + Math.sin(phase * 0.74) * 0.09
+          );
+          leafDummy.rotation.set(phase * 0.28, base.phase * 0.61 + phase * 0.22, -0.72 + base.phase * 0.23 + Math.sin(phase) * 0.34);
+          leafDummy.scale.setScalar(base.scale * (0.94 + Math.sin(phase * 0.82) * 0.06));
+          leafDummy.updateMatrix();
+          campusEffect.leaves.setMatrixAt(index, leafDummy.matrix);
+        }
+        campusEffect.leaves.instanceMatrix.needsUpdate = true;
+        for (let index = 0; index < campusEffect.wakes.length; index += 1) {
+          const wake = campusEffect.wakes[index];
+          wake.position.x = (index - 1) * 0.42 + Math.sin(time * 0.82 + index) * 0.16;
+          wake.material.opacity = 0.1 + index * 0.028 + Math.sin(time * 1.2 + index) * 0.025;
+        }
+      } else if (campusEffect?.kind === "canopy") {
+        const canopySide = Number(entity.lane) === 0 ? (entity.id % 2 ? -1 : 1) : Math.sign(Number(entity.lane));
+        campusEffect.canopy.scale.x = canopySide;
+        campusEffect.canopy.position.x = canopySide * 1.12;
+        campusEffect.canopy.rotation.z = Math.sin(time * 0.86 + entity.id) * 0.012;
+        campusEffect.canopy.rotation.y = Math.sin(time * 0.62 + entity.id * 0.4) * 0.018;
+        campusEffect.canopy.position.y = campusEffect.baseY + Math.sin(time * 0.72 + entity.id) * 0.018;
+        campusEffect.droplets.material.opacity = 0.42 + Math.sin(time * 2.4 + entity.id) * 0.16;
+      }
       const warningBeacons = object.userData.warningBeacons;
       for (let beaconIndex = 0; beaconIndex < (warningBeacons?.length || 0); beaconIndex += 1) {
         const beacon = warningBeacons[beaconIndex];
@@ -8715,19 +9343,24 @@ class CinematicRunnerRenderer {
       }
     }
     this.companionHazardProximity = damp(this.companionHazardProximity, companionHazard, companionHazard > this.companionHazardProximity ? 12 : 4.5, delta);
-    batches.rims.count = collectibleCount;
+    const campusCollectibles = this.stageIndex === 0;
+    batches.rims.count = campusCollectibles ? 0 : collectibleCount;
     batches.rims.instanceMatrix.needsUpdate = true;
     if (batches.rims.instanceColor) batches.rims.instanceColor.needsUpdate = true;
-    batches.hearts.count = collectibleCount;
+    batches.hearts.count = campusCollectibles ? 0 : collectibleCount;
     batches.hearts.instanceMatrix.needsUpdate = true;
     if (batches.hearts.instanceColor) batches.hearts.instanceColor.needsUpdate = true;
     batches.glows.geometry.setDrawRange(0, collectibleCount);
     batches.glows.geometry.attributes.position.needsUpdate = true;
-    batches.glows.material.opacity = 0.32 + Math.sin(time * 4.8) * 0.07;
-    batches.glows.material.size = 0.36 + (this.powerupStrengths?.magnet || 0) * 0.08;
+    batches.glows.material.opacity = campusCollectibles ? 0.64 + Math.sin(time * 3.2) * 0.08 : 0.32 + Math.sin(time * 4.8) * 0.07;
+    batches.glows.material.size = (campusCollectibles ? 0.24 : 0.36) + (this.powerupStrengths?.magnet || 0) * 0.08;
     batches.pickupTrail.geometry.setDrawRange(0, collectibleCount * 2);
     batches.pickupTrail.geometry.attributes.position.needsUpdate = true;
-    batches.pickupTrail.material.size = 0.14 + (this.powerupStrengths?.magnet || 0) * 0.07;
+    batches.pickupTrail.material.size = (campusCollectibles ? 0.09 : 0.14) + (this.powerupStrengths?.magnet || 0) * 0.07;
+    batches.campusWisps.geometry.setDrawRange(0, campusCollectibles ? collectibleCount * 3 : 0);
+    batches.campusWisps.geometry.attributes.position.needsUpdate = true;
+    batches.campusWisps.material.opacity = 0.72 + Math.sin(time * 2.8) * 0.12;
+    batches.campusWisps.material.size = 0.24 + this.flow * 0.035;
     this.storyFocusTarget = Math.max(storyFocusTarget, this.choiceWindowState.strength * 0.86);
     for (const [id, object] of this.entityObjects) {
       if (activeIds.has(id)) continue;
@@ -9210,7 +9843,7 @@ class CinematicRunnerRenderer {
     burst.points.geometry.attributes.position.needsUpdate = true;
     burst.points.visible = true;
     this.bursts.push(burst);
-    if (["dodge", "near-miss", "perfect", "story-pickup", "energy"].includes(type)) {
+    if (this.stageIndex !== 0 && ["dodge", "near-miss", "perfect", "story-pickup", "energy"].includes(type)) {
       const ringSlot = this.transientEffects.rings[this.ringPoolCursor % this.transientEffects.rings.length];
       this.ringPoolCursor += 1;
       const activeRingIndex = this.rings.indexOf(ringSlot);
@@ -9293,6 +9926,7 @@ class CinematicRunnerRenderer {
 
     const arriving = frame.mode === "arrival" && Boolean(frame.arrival);
     const introActive = frame.mode === "stage-intro" && this.stageIntroState.active;
+    const campusPov = this.stageIndex === 0 && !arriving;
     const introCue = introCameraCue(this.stageIntroState.cameraCue);
     const arrivalProgress = arriving ? clamp(Number(frame.arrival.progress) || 0, 0, 1) : 0;
     this.arrivalProgress = arrivalProgress;
@@ -9314,6 +9948,10 @@ class CinematicRunnerRenderer {
     this.lateralVelocity = damp(this.lateralVelocity, (this.currentLaneX - this.previousLaneX) / Math.max(delta, 1 / 120) / LANE_WIDTH, 18, delta);
     this.player.position.x = this.currentLaneX;
     this.player.position.z = arriving ? damp(this.player.position.z, -0.12, 2.8, delta) : PLAYER_Z;
+    this.player.visible = !campusPov;
+    this.playerTrail.visible = !campusPov;
+    this.landingRing.visible = !campusPov;
+    this.canvas.setAttribute("data-camera-language", campusPov ? "cinematic-pov" : "character-follow");
     this.updateStageIntroVisual(delta, time);
     this.updateStatusVisual(delta, time, arriving);
     const stumble = clamp((Number(motion.stumbleTime) || 0) / 0.62, 0, 1);
@@ -9430,7 +10068,7 @@ class CinematicRunnerRenderer {
       this.carryGroup.position.set(carryX, carryY, carryZ);
       this.carryGroup.rotation.set(0, arriving ? Math.PI * transferEase : -0.14, arriving ? 0 : -0.06 + Math.sin(time * 9.4) * 0.018);
       if (this.carryRig?.userData.clasp) this.carryRig.userData.clasp.material.emissiveIntensity = 0.55 + this.flow * 1.2 + Math.sin(time * 4.6) * 0.12;
-      this.carryGroup.visible = !arriving || arrivalProgress < 0.88;
+      this.carryGroup.visible = (!arriving || arrivalProgress < 0.88) && !campusPov;
     } else {
       this.carryGroup.visible = false;
     }
@@ -9444,7 +10082,9 @@ class CinematicRunnerRenderer {
     const directorCamera = this.directorState.camera;
     const directorCameraBlend = arriving || introActive ? 0 : 0.42 + this.directorState.revealStrength * 0.48;
     const directedCameraX = clamp(directorCamera.x + this.currentLaneX * 0.18, -directorCamera.maxLaneOffset * LANE_WIDTH, directorCamera.maxLaneOffset * LANE_WIDTH);
-    const cameraTargetX = THREE.MathUtils.lerp(baseCameraTargetX, directedCameraX, directorCameraBlend);
+    const cameraTargetX = campusPov
+      ? this.currentLaneX * 0.18 + directedCameraX * 0.08
+      : THREE.MathUtils.lerp(baseCameraTargetX, directedCameraX, directorCameraBlend);
     const cadenceCamera = Math.sin(this.cadencePhase) * (0.012 + this.directorState.revealStrength * 0.014);
     const cameraBob = frame.mode === "playing"
       ? Math.sin(time * (9.2 + speed * 0.12)) * (0.025 + this.flow * 0.018) + cadenceCamera
@@ -9457,6 +10097,7 @@ class CinematicRunnerRenderer {
       this.camera.position.y,
       arriving
         ? 3.78 + cameraBob
+        : campusPov ? 2.82 + vertical * 0.88 - (motion.action === "slide" ? 0.48 : 0) + cameraBob * 1.38
         : introActive ? introCue.y + cameraBob : THREE.MathUtils.lerp(
           5.16 - (motion.action === "slide" ? 0.2 : 0) - this.flow * 0.08 - statusStrength * 0.1,
           directorCamera.y,
@@ -9467,7 +10108,8 @@ class CinematicRunnerRenderer {
     ) + shakeY;
     this.camera.position.z = damp(
       this.camera.position.z,
-      arriving ? 8.4 : introActive ? introCue.z : THREE.MathUtils.lerp(
+      arriving ? 8.4 : campusPov ? 7.72 + this.flow * 0.14 - this.powerupStrengths.overdrive * 0.22
+        : introActive ? introCue.z : THREE.MathUtils.lerp(
         motion.action === "slide" ? 10.86 : 10.42 + this.flow * 0.28 - this.powerupStrengths.overdrive * 0.42,
         directorCamera.z,
         directorCameraBlend
@@ -9479,6 +10121,7 @@ class CinematicRunnerRenderer {
       this.camera.fov,
       arriving
         ? 52
+        : campusPov ? 61.5 + clamp((speed - 10) * 0.32, 0, 5.2) + this.flow * 2.2
         : introActive ? introCue.fov
         : Math.max(55, THREE.MathUtils.lerp(
           58.5 + clamp((speed - 10) * 0.48, 0, 7.4) + this.speedPulse * 1.8 + this.flow * 4.6
@@ -9491,6 +10134,7 @@ class CinematicRunnerRenderer {
     );
     this.camera.updateProjectionMatrix();
     if (arriving) this.camera.lookAt(0.02, 1.38, -0.72);
+    else if (campusPov) this.camera.lookAt(this.currentLaneX * 0.12, 0.72 + vertical * 0.16, -17.4 - this.flow * 1.6);
     else if (introActive) this.camera.lookAt(this.currentLaneX * 0.16, introCue.lookY, introCue.lookZ);
     else {
       this.camera.lookAt(
