@@ -343,9 +343,9 @@ const QUALITY_PROFILES = Object.freeze([
 // road silhouette, destination landmark, camera and relationship blocking change.
 const ACT_VISUAL_DIRECTIONS = Object.freeze([
   Object.freeze([
-    Object.freeze({ id: "campus-release", topology: "arcade-squeeze", goal: "bell-rope", cameraRig: "follow-column", camera: [0, 5.55, 10.65, 0.7, -18.5, 59], tint: 0xb7d8d0, tintMix: 0.08, fog: 0.94, rain: 1, edge: 0.88, width: 0.96, curve: 0.08, split: 0, cadence: 4.5, goalX: -4.55, relation: "absent" }),
-    Object.freeze({ id: "sun-shower-lane", topology: "root-undulation", goal: "vending-slot", cameraRig: "shoulder-beacon", camera: [0.22, 5.08, 10.15, 0.66, -16.8, 58], tint: 0xffd69b, tintMix: 0.13, fog: 0.86, rain: 0.62, edge: 1.08, width: 1.04, curve: 0.34, split: 0.08, cadence: 3.7, goalX: 4.48, relation: "absent" }),
-    Object.freeze({ id: "library-crossing", topology: "crossing-converge", goal: "crossing-clock", cameraRig: "tele-crossing", camera: [-0.18, 5.78, 11.35, 0.78, -22, 61], tint: 0xffc776, tintMix: 0.11, fog: 0.9, rain: 0.36, edge: 1.16, width: 1.12, curve: 0.06, split: -0.22, cadence: 5.2, goalX: 4.4, relation: "absent" })
+    Object.freeze({ id: "campus-release", topology: "arcade-squeeze", goal: "bell-rope", cameraRig: "follow-column", camera: [0, 5.18, 10.34, 0.72, -20.5, 54], tint: 0xb7d8d0, tintMix: 0.06, fog: 0.86, rain: 0.66, edge: 0.94, width: 0.98, curve: 0.06, split: 0, cadence: 4.5, goalX: -4.55, relation: "absent" }),
+    Object.freeze({ id: "sun-shower-lane", topology: "root-undulation", goal: "vending-slot", cameraRig: "shoulder-beacon", camera: [0.16, 4.94, 10.02, 0.68, -18.8, 53], tint: 0xffd69b, tintMix: 0.1, fog: 0.78, rain: 0.42, edge: 1.06, width: 1.04, curve: 0.28, split: 0.08, cadence: 3.7, goalX: 4.48, relation: "absent" }),
+    Object.freeze({ id: "library-crossing", topology: "crossing-converge", goal: "crossing-clock", cameraRig: "tele-crossing", camera: [-0.12, 5.34, 10.72, 0.82, -24, 55], tint: 0xffc776, tintMix: 0.08, fog: 0.82, rain: 0.24, edge: 1.12, width: 1.1, curve: 0.04, split: -0.18, cadence: 5.2, goalX: 4.4, relation: "absent" })
   ]),
   Object.freeze([
     Object.freeze({ id: "misty-levee", topology: "levee-outer-curve", goal: "route-board", cameraRig: "river-offset", camera: [-0.28, 5.48, 10.82, 0.7, -19.5, 59], tint: 0x8ed5cf, tintMix: 0.1, fog: 1.12, rain: 0, edge: 0.82, width: 0.92, curve: 0.45, split: 0.08, cadence: 5.8, goalX: 4.72, relation: "parallel-left" }),
@@ -906,8 +906,6 @@ function canvasTexture(width, height, painter) {
 let toonGradientTexture = null;
 let campusLeafTexture = null;
 let campusCloudTexture = null;
-let campusArtSourceTexture = null;
-const campusArtCropCache = new Map();
 const roundedGeometryCache = new Map();
 let heartGeometry = null;
 let foliageClusterGeometry = null;
@@ -927,27 +925,6 @@ function getToonGradientTexture() {
   toonGradientTexture.magFilter = THREE.NearestFilter;
   SHARED_TEXTURES.add(toonGradientTexture);
   return toonGradientTexture;
-}
-
-function campusArtTexture(key, u, v, width, height) {
-  if (campusArtCropCache.has(key)) return campusArtCropCache.get(key);
-  if (!campusArtSourceTexture) {
-    campusArtSourceTexture = new THREE.TextureLoader().load("assets/runner-scenes/01-encounter.jpg");
-    campusArtSourceTexture.colorSpace = THREE.SRGBColorSpace;
-    campusArtSourceTexture.minFilter = THREE.LinearMipmapLinearFilter;
-    campusArtSourceTexture.magFilter = THREE.LinearFilter;
-    campusArtSourceTexture.anisotropy = 8;
-    campusArtSourceTexture.wrapS = THREE.ClampToEdgeWrapping;
-    campusArtSourceTexture.wrapT = THREE.ClampToEdgeWrapping;
-    SHARED_TEXTURES.add(campusArtSourceTexture);
-  }
-  const texture = campusArtSourceTexture.clone();
-  texture.offset.set(u, v);
-  texture.repeat.set(width, height);
-  texture.needsUpdate = true;
-  SHARED_TEXTURES.add(texture);
-  campusArtCropCache.set(key, texture);
-  return texture;
 }
 
 function characterMaterial(color, options = {}) {
@@ -3529,6 +3506,109 @@ function beamBetween2D(startX, startY, endX, endY, thickness, beamMaterial) {
   return beam;
 }
 
+function beamBetween3D(start, end, radius, beamMaterial, radialSegments = 10) {
+  const direction = end.clone().sub(start);
+  const length = direction.length();
+  const beam = mesh(new THREE.CylinderGeometry(radius * 0.78, radius, length, radialSegments), beamMaterial);
+  beam.position.copy(start).add(end).multiplyScalar(0.5);
+  beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+  return beam;
+}
+
+function createCampusCanopyTree(accent, seed = 0) {
+  const group = new THREE.Group();
+  const trunkMaterial = material(seed % 2 ? 0x65503d : 0x594638, { roughness: 0.96 });
+  const trunk = mesh(new THREE.CylinderGeometry(0.24, 0.38, 4.8, 12), trunkMaterial, true, true);
+  trunk.position.y = 2.4;
+  group.add(trunk);
+
+  const branchTips = [
+    [-1.48, 4.95, -0.22], [-0.82, 5.65, 0.34], [0.86, 5.58, -0.38],
+    [1.54, 4.86, 0.28], [-1.18, 4.42, 0.74], [1.08, 4.48, -0.82]
+  ];
+  branchTips.forEach(([x, y, z], index) => {
+    const start = new THREE.Vector3(0, 3.25 + index % 3 * 0.28, 0);
+    const end = new THREE.Vector3(x, y, z);
+    group.add(beamBetween3D(start, end, 0.13 - index % 2 * 0.018, trunkMaterial, 9));
+  });
+
+  const leafColors = [0x2f7546, 0x4e9557, 0x83b85f];
+  const leafMaterials = leafColors.map((color, index) => material(
+    new THREE.Color(color).lerp(new THREE.Color(accent), index === 2 ? 0.045 : 0.015),
+    { roughness: 0.94 }
+  ));
+  const crowns = [
+    [-1.52, 5.25, -0.15, 1.34, 0], [-0.62, 5.85, 0.22, 1.46, 2], [0.72, 5.82, -0.28, 1.5, 2],
+    [1.58, 5.18, 0.2, 1.32, 1], [-1.02, 4.76, 0.74, 1.18, 1], [0.92, 4.72, -0.78, 1.2, 0],
+    [0, 6.35, 0.08, 1.22, 2], [-2.02, 5.66, 0.16, 1.05, 1], [2.02, 5.58, -0.1, 1.02, 2]
+  ];
+  crowns.forEach(([x, y, z, scale, materialIndex], index) => {
+    const crown = mesh(new THREE.SphereGeometry(scale, 16, 11), leafMaterials[materialIndex], true, true);
+    crown.scale.set(1.16 + index % 2 * 0.08, 0.68 + index % 3 * 0.05, 0.92);
+    crown.position.set(x, y, z);
+    group.add(crown);
+  });
+
+  const leafCardMaterial = new THREE.MeshBasicMaterial({
+    map: makeCampusLeafTexture(),
+    color: 0xf1ffdc,
+    transparent: true,
+    alphaTest: 0.1,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  [[0, 5.48, 0.92, 5.4, 3.2, 0], [0, 5.52, -0.92, 5.4, 3.2, Math.PI / 2]].forEach(([x, y, z, width, height, rotationY]) => {
+    const card = mesh(new THREE.PlaneGeometry(width, height), leafCardMaterial);
+    card.position.set(x, y, z);
+    card.rotation.y = rotationY;
+    group.add(card);
+  });
+  const shadow = createSoftGroundShadow(5.8, 4.2, 0.24);
+  group.add(shadow);
+  group.rotation.y = seed * 0.71;
+  group.userData.kind = "campus-canopy-tree";
+  return group;
+}
+
+function createCampusSidewalkGarden(seed = 0) {
+  const group = new THREE.Group();
+  const pavement = material(seed % 2 ? 0xd9dfdb : 0xe4e6df, { roughness: 0.9, metalness: 0.01 });
+  const curbMaterial = material(0xb8c2bd, { roughness: 0.86 });
+  const soilMaterial = material(0x4a4637, { roughness: 1 });
+  const sidewalk = mesh(new THREE.BoxGeometry(3.35, 0.16, 20), pavement, false, true);
+  sidewalk.position.y = 0.08;
+  const curb = mesh(new THREE.BoxGeometry(0.24, 0.32, 20), curbMaterial, false, true);
+  curb.position.set(-1.56, 0.16, 0);
+  const seams = createInstancedObstacleParts(
+    new THREE.BoxGeometry(3.1, 0.012, 0.035),
+    material(0x9da9a4, { roughness: 0.96 }),
+    Array.from({ length: 11 }, (_, index) => ({ y: 0.168, z: -9.5 + index * 1.9 }))
+  );
+  const planterShell = material(0x95a29b, { roughness: 0.9 });
+  const planters = createInstancedObstacleParts(
+    new THREE.BoxGeometry(1.32, 0.54, 2.55),
+    planterShell,
+    [-6.1, 0, 6.1].map((z) => ({ x: 0.58, y: 0.27, z }))
+  );
+  const soil = createInstancedObstacleParts(
+    new THREE.BoxGeometry(1.08, 0.06, 2.28),
+    soilMaterial,
+    [-6.1, 0, 6.1].map((z) => ({ x: 0.58, y: 0.57, z }))
+  );
+  const flowerMaterial = material(seed % 2 ? 0xf2a7bd : 0xf4c1d0, { roughness: 0.82 });
+  const flowers = createInstancedObstacleParts(
+    new THREE.SphereGeometry(0.13, 9, 6),
+    flowerMaterial,
+    Array.from({ length: 36 }, (_, index) => ({
+      x: 0.15 + index % 4 * 0.26,
+      y: 0.68 + index % 3 * 0.05,
+      z: [-6.1, 0, 6.1][Math.floor(index / 12)] + (Math.floor(index / 4) % 3 - 1) * 0.48
+    }))
+  );
+  group.add(sidewalk, curb, seams, planters, soil, flowers);
+  return group;
+}
+
 function createCampusGlassLift(accent) {
   const group = new THREE.Group();
   const steel = material(0x596b73, { roughness: 0.28, metalness: 0.72 });
@@ -3541,7 +3621,6 @@ function createCampusGlassLift(accent) {
     depthWrite: true,
     side: THREE.DoubleSide
   });
-  glass.map = campusArtTexture("glass-lift", 0.1, 0.55, 0.34, 0.31);
   glass.envMapIntensity = 0.86;
   const glow = material(accent, { emissive: accent, emissiveIntensity: 1.2, roughness: 0.24 });
   const base = mesh(new THREE.BoxGeometry(3.3, 0.28, 3.2), concrete);
@@ -3592,7 +3671,6 @@ function createCampusFootbridge(accent) {
   const steel = material(0x697a80, { roughness: 0.3, metalness: 0.68 });
   const deckMaterial = material(0xb9c3c0, { roughness: 0.72, metalness: 0.08 });
   const glass = material(0xc4e8ee, { transparent: true, opacity: 0.76, roughness: 0.17, metalness: 0.08, depthWrite: true, side: THREE.DoubleSide });
-  glass.map = campusArtTexture("footbridge-glass", 0.2, 0.55, 0.6, 0.2);
   glass.envMapIntensity = 0.9;
   const deck = mesh(new THREE.BoxGeometry(15.2, 0.34, 2.25), deckMaterial);
   deck.position.y = 5.05;
@@ -3622,7 +3700,6 @@ function createCampusTransitPavilion(accent) {
   const group = new THREE.Group();
   const steel = material(0x526169, { roughness: 0.3, metalness: 0.7 });
   const glass = material(0xc4e8ed, { transparent: true, opacity: 0.8, roughness: 0.16, metalness: 0.08, depthWrite: true, side: THREE.DoubleSide });
-  glass.map = campusArtTexture("transit-pavilion", 0.62, 0.52, 0.36, 0.31);
   glass.envMapIntensity = 0.92;
   const stone = material(0xadb8b5, { roughness: 0.82 });
   const platform = mesh(new THREE.BoxGeometry(4.9, 0.24, 7.4), stone);
@@ -3655,9 +3732,7 @@ function createCampusAcademicBlock(accent, seed = 0) {
   const depth = 7.2;
   const concrete = material(seed % 2 ? 0xe6ece8 : 0xd5e2e1, { roughness: 0.74, metalness: 0.03 });
   const steel = material(0x71858c, { roughness: 0.24, metalness: 0.62 });
-  const facadeTexture = seed % 2
-    ? campusArtTexture("academic-left", 0.01, 0.54, 0.48, 0.3)
-    : campusArtTexture("academic-right", 0.51, 0.54, 0.48, 0.3);
+  const facadeTexture = makeCampusFacadeTexture(seed);
   const glass = material(0xc7edf4, { roughness: 0.16, metalness: 0.14 });
   glass.map = facadeTexture;
   glass.envMapIntensity = 1.05;
@@ -3722,13 +3797,40 @@ function createCampusBoulevardPlanting(accent, seed = 0) {
 function createRainCampusWorld(config) {
   const root = createWorldRoot(config);
   root.add(createCampusSkyLayer());
-  addWorldScenery(root, 2, createCampusGlassLift(config.accent), { side: -1, x: 7.4, z: -22, scale: 0.92 });
-  addWorldScenery(root, 2, createCampusTransitPavilion(config.accent), { side: 1, x: 7.1, z: -27, scale: 0.94 });
-  addWorldScenery(root, 1, createCampusFootbridge(config.accent), { side: 0, x: 0, z: -48, span: 104 });
-  addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, 1), { side: -1, x: 10.2, z: -62, scale: 1.02, rotationY: Math.PI / 2 });
-  addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, 2), { side: 1, x: 10.4, z: -73, scale: 1.08, rotationY: -Math.PI / 2 });
-  addWorldScenery(root, 2, createCampusBoulevardPlanting(config.accent, 0), { side: -1, x: 6.8, z: -38, scale: 0.92 });
-  addWorldScenery(root, 2, createCampusBoulevardPlanting(config.accent, 1), { side: 1, x: 6.9, z: -52, scale: 0.9, rotationY: Math.PI });
+  addWorldScenery(root, 2, createCampusGlassLift(config.accent), { side: -1, x: 8.2, z: -37, scale: 0.96 });
+  addWorldScenery(root, 2, createCampusTransitPavilion(config.accent), { side: 1, x: 7.8, z: -40, scale: 1.02 });
+  addWorldScenery(root, 1, createCampusFootbridge(config.accent), { side: 0, x: 0, z: -58, span: 118 });
+
+  [-19, -52, -86].forEach((z, index) => {
+    addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, index + 1), {
+      side: -1,
+      x: 10.2 + index * 0.55,
+      z,
+      scale: 1.02 + index * 0.035,
+      rotationY: Math.PI / 2
+    });
+    addWorldScenery(root, 1, createCampusAcademicBlock(config.accent, index + 4), {
+      side: 1,
+      x: 10.35 + index * 0.48,
+      z: z - 8,
+      scale: 1.05 + index * 0.03,
+      rotationY: -Math.PI / 2
+    });
+  });
+
+  [-17, -66].forEach((z, index) => {
+    addWorldScenery(root, 2, createCampusSidewalkGarden(index), { side: -1, x: 6.6, z, scale: 1 });
+    addWorldScenery(root, 2, createCampusSidewalkGarden(index + 2), { side: 1, x: 6.6, z: z - 11, scale: 1, rotationY: Math.PI });
+  });
+
+  [[-1, -12, 0], [1, -20, 1], [-1, -72, 2], [1, -82, 3]].forEach(([side, z, seed]) => {
+    addWorldScenery(root, 2, createCampusCanopyTree(config.accent, seed), {
+      side,
+      x: 7.1,
+      z,
+      scale: 0.9 + seed % 2 * 0.06
+    });
+  });
   root.traverse((child) => {
     if (!child.isMesh && !child.isInstancedMesh) return;
     const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
@@ -6403,8 +6505,11 @@ class CinematicRunnerRenderer {
     this.modelLoader = new GLTFLoader();
     this.runnerLoadToken = 0;
     this.cityLoadToken = 0;
+    this.campusMaterialLoadToken = 0;
+    this.campusRoadMaps = null;
     this.loadRiggedCharacters();
     this.loadPremiumCity();
+    this.loadCampusSurfaceMaterials();
   }
 
   loadRiggedCharacters() {
@@ -6470,8 +6575,9 @@ class CinematicRunnerRenderer {
         this.player = riggedPlayer;
         this.companion = riggedCompanion;
         this.scene.add(this.player, this.companion);
-        applyCharacterRenderQuality(this.player, this.qualityProfile.key === "performance", this.qualityProfile.shadows);
-        applyCharacterRenderQuality(this.companion, this.qualityProfile.key === "performance", this.qualityProfile.shadows);
+        const characterShadows = this.qualityProfile.shadows || this.stageIndex === 0;
+        applyCharacterRenderQuality(this.player, this.qualityProfile.key === "performance", characterShadows);
+        applyCharacterRenderQuality(this.companion, this.qualityProfile.key === "performance", characterShadows);
         this.canvas.setAttribute("data-runner-model", "rg-poly-rigged");
       })
       .catch((error) => {
@@ -6523,6 +6629,47 @@ class CinematicRunnerRenderer {
         if (this.disposed || loadToken !== this.cityLoadToken) return;
         this.canvas.setAttribute("data-city-model", "procedural-fallback");
       });
+  }
+
+  loadCampusSurfaceMaterials() {
+    const loadToken = ++this.campusMaterialLoadToken;
+    Promise.all([
+      this.textureLoader.loadAsync("assets/runner-textures/campus/asphalt-diffuse.jpg"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/asphalt-normal.jpg"),
+      this.textureLoader.loadAsync("assets/runner-textures/campus/asphalt-roughness.jpg")
+    ])
+      .then(([diffuse, normal, roughness]) => {
+        if (this.disposed || loadToken !== this.campusMaterialLoadToken) {
+          diffuse.dispose();
+          normal.dispose();
+          roughness.dispose();
+          return;
+        }
+        diffuse.colorSpace = THREE.SRGBColorSpace;
+        [diffuse, normal, roughness].forEach((texture) => {
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          texture.repeat.set(2.25, 5.5);
+          texture.anisotropy = this.mobilePerformance ? 4 : 8;
+        });
+        this.campusRoadMaps = { diffuse, normal, roughness };
+        this.applyStageRoadSurfaceMaps();
+        this.canvas.setAttribute("data-campus-material", "poly-haven-pbr");
+      })
+      .catch((error) => {
+        if (this.disposed || loadToken !== this.campusMaterialLoadToken) return;
+        this.canvas.setAttribute("data-campus-material", "procedural-fallback");
+        this.canvas.setAttribute("data-campus-material-error", error?.message || "unknown");
+      });
+  }
+
+  applyStageRoadSurfaceMaps() {
+    const useCampusPbr = this.stageIndex === 0 && this.campusRoadMaps;
+    this.roadMaterial.map = useCampusPbr ? this.campusRoadMaps.diffuse : this.roadTexture;
+    this.roadMaterial.normalMap = useCampusPbr ? this.campusRoadMaps.normal : null;
+    this.roadMaterial.roughnessMap = useCampusPbr ? this.campusRoadMaps.roughness : null;
+    this.roadMaterial.normalScale.set(useCampusPbr ? 0.34 : 1, useCampusPbr ? 0.34 : 1);
+    this.roadMaterial.needsUpdate = true;
   }
 
   buildRoad() {
@@ -7582,8 +7729,7 @@ class CinematicRunnerRenderer {
     this.roadMaterial.color.copy(new THREE.Color(config.road).lerp(new THREE.Color(0xffffff), 0.78));
     this.prepareRoadTextures(this.stageIndex);
     this.roadTexture = this.ensureRoadTexture(this.stageIndex, this.routePhase);
-    this.roadMaterial.map = this.roadTexture;
-    this.roadMaterial.needsUpdate = true;
+    this.applyStageRoadSurfaceMaps();
     this.roadMaterial.roughness = clamp(Number(config.world.road.roughness) || surfaceSettings.roughness, 0.08, 1);
     this.roadMaterial.metalness = clamp(Number(config.world.road.metalness) || surfaceSettings.metalness, 0, 0.9);
     this.roadMaterial.clearcoat = clamp(Number(config.world.road.clearcoat) || surfaceSettings.clearcoat, 0, 1);
@@ -7707,8 +7853,7 @@ class CinematicRunnerRenderer {
     this.phaseContentRef = phaseContent || this.phaseContentRef;
     const config = this.stageConfig || STAGE_CONFIGS[this.stageIndex];
     this.roadTexture = this.ensureRoadTexture(this.stageIndex, nextPhase);
-    this.roadMaterial.map = this.roadTexture;
-    this.roadMaterial.needsUpdate = true;
+    this.applyStageRoadSurfaceMaps();
     const activeRoute = routeModuleAt(this.stageIndex, nextPhase, 0);
     const routeAccent = routeAccentTone(activeRoute, config.accent);
     const shoulderTone = routeShoulderTone(activeRoute, config.curb);
@@ -7940,7 +8085,9 @@ class CinematicRunnerRenderer {
     const activeRoute = routeModuleAt(this.stageIndex, this.routePhase, 0);
     const railRoute = activeRoute.rail;
     const layers = this.activeStageWorld?.userData.layers || [];
-    const visibleWorldLayers = railRoute && profile.key === "performance" ? 1 : profile.worldLayers;
+    const visibleWorldLayers = this.stageIndex === 0
+      ? 3
+      : railRoute && profile.key === "performance" ? 1 : profile.worldLayers;
     for (let index = 0; index < layers.length; index += 1) {
       layers[index].group.visible = !arriving && index >= layers.length - visibleWorldLayers;
     }

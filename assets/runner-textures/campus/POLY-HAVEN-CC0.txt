@@ -1,0 +1,7 @@
+Asset: Asphalt Pit Lane
+Source: https://polyhaven.com/a/asphalt_pit_lane
+Author: Dimitrios Savva
+License: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+Included maps are the 1K JPG diffuse, OpenGL normal, and roughness maps.

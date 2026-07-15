@@ -66,8 +66,11 @@ test("authors seven visually distinct districts with local cinematic backdrops",
   for (const artLayer of ["makeCampusFacadeTexture", "makeCampusLeafTexture", "makeCampusCloudTexture", "makeCampusShadowTexture", "createCampusSkyLayer", "createSoftGroundShadow"]) {
     assert.match(source, new RegExp(`function ${artLayer}\\(`));
   }
-  assert.match(source, /function campusArtTexture\(/);
-  for (const crop of ["glass-lift", "footbridge-glass", "transit-pavilion", "academic-left", "academic-right"]) assert.ok(source.includes(`"${crop}"`), crop);
+  for (const modelLayer of ["beamBetween3D", "createCampusCanopyTree", "createCampusSidewalkGarden"]) {
+    assert.match(source, new RegExp(`function ${modelLayer}\\(`));
+  }
+  for (const map of ["asphalt-diffuse.jpg", "asphalt-normal.jpg", "asphalt-roughness.jpg"]) assert.ok(source.includes(map), map);
+  assert.match(source, /data-campus-material", "poly-haven-pbr"/);
   assert.match(source, /const stageShadows = profile\.shadows \|\| this\.stageIndex === 0/);
   assert.match(source, /this\.stageIndex === 0 \? 1\.27/);
 });
@@ -213,8 +216,10 @@ test("lazily builds and selects all twenty-one phase road textures within a boun
   assert.match(setStage, /this\.prepareRoadTextures\(this\.stageIndex\)/);
   assert.match(setStage, /this\.roadTexture = this\.ensureRoadTexture\(this\.stageIndex, this\.routePhase\)/);
   assert.match(setRoutePhase, /this\.roadTexture = this\.ensureRoadTexture\(this\.stageIndex, nextPhase\)/);
-  assert.match(setRoutePhase, /this\.roadMaterial\.map = this\.roadTexture/);
-  assert.match(setRoutePhase, /this\.roadMaterial\.needsUpdate = true/);
+  assert.match(setRoutePhase, /this\.applyStageRoadSurfaceMaps\(\)/);
+  const surfaceMaps = sourceBlock("  applyStageRoadSurfaceMaps() {", "\n  buildRoad()");
+  assert.match(surfaceMaps, /this\.roadMaterial\.map = useCampusPbr \? this\.campusRoadMaps\.diffuse : this\.roadTexture/);
+  assert.match(surfaceMaps, /this\.roadMaterial\.needsUpdate = true/);
 });
 
 test("compiles themed road batches on act changes without cycle-boundary uploads", () => {
@@ -376,7 +381,7 @@ test("enforces the 720x1280 mobile draw-call budget with real scene suppression"
   assert.match(source, /this\.roadBatches\.edgePosts\.visible = !arriving && detail > 0/);
   assert.match(source, /this\.roadBatches\.laneGuides\.visible = !arriving && !railRoute/);
   assert.match(source, /const effectiveDecorStride = railRoute && this\.qualityProfile\?\.key === "performance"/);
-  assert.match(source, /const visibleWorldLayers = railRoute && profile\.key === "performance" \? 1 : profile\.worldLayers/);
+  assert.match(source, /const visibleWorldLayers = this\.stageIndex === 0[\s\S]*?\? 3/);
   assert.match(source, /train\.visible = !this\.mobilePerformance/);
   assert.match(source, /object\.position\.z >= -this\.qualityProfile\.entityRange/);
   assert.match(source, /applyEntityQuality\(object, this\.qualityProfile\.entityMeshBudget\)/);
