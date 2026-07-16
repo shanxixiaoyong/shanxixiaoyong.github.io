@@ -1520,6 +1520,7 @@
     cue(name, kind) {
       if (!this.context) return;
       const at = this.context.currentTime;
+      const semantic = String(kind || "").toLowerCase();
       if (name === "miss") {
         this.duckMusic(0.18, 0.44);
         this.noiseHit(at, 0.32, 170, 0.18, "bandpass", this.sfx);
@@ -1532,13 +1533,43 @@
         return;
       }
       if (name === "energy") {
-        this.tone(720 + this.flow * 260, 0.11, 0.035, 0, "sine", 0, 980 + this.flow * 320);
+        const frequency = KIND_NOTES[semantic] || 720 + this.flow * 260;
+        this.tone(frequency, 0.13, 0.036, 0, "sine", -0.1, frequency * 1.34);
+        if (/photo|camera/.test(semantic)) {
+          this.noiseHit(at, 0.055, 5600, 0.075, "highpass", this.sfx, 0.24);
+          this.noiseHit(at + 0.045, 0.12, 1120, 0.035, "bandpass", this.sfx, -0.18);
+        } else if (/note|leaf|book/.test(semantic)) {
+          this.bell(frequency * 1.5, at + 0.035, 0.42, 0.026, this.sfx);
+        } else if (/umbrella|rain/.test(semantic)) {
+          [0, 0.045, 0.09].forEach((delay, index) => this.noiseHit(at + delay, 0.16, 2100 + index * 680, 0.022, "highpass", this.sfx, index - 1));
+        } else if (/drink|warm|coffee/.test(semantic)) {
+          this.tone(1380, 0.07, 0.028, 0.025, "sine", 0.18, 1040);
+        } else if (/packet|candy|snack/.test(semantic)) {
+          this.bell(frequency * 1.25, at + 0.04, 0.36, 0.024, this.sfx);
+        }
         return;
       }
       if (name === "arrival") {
         const root = CHORDS[this.stageNumber - 1][this.bar % 4];
         [0, 1, 2].forEach((index) => this.bell(midi(root[index] + 12), at + index * 0.1, 1.2, 0.055, this.sfx));
         this.noiseHit(at, 0.9, 3200, 0.06, "highpass", this.sfx);
+        return;
+      }
+      if (/student-stream|crowd/.test(semantic)) {
+        this.noiseHit(at, 0.22, 1350, 0.042, "bandpass", this.sfx, -0.72);
+        this.noiseHit(at + 0.045, 0.22, 1680, 0.042, "bandpass", this.sfx, 0.72);
+        this.tone(392, 0.18, 0.026, 0.03, "triangle", 0, 587.33);
+        return;
+      }
+      if (/root-puddle|puddle/.test(semantic)) {
+        [0, 0.055, 0.11].forEach((delay, index) => this.noiseHit(at + delay, 0.2, 1750 + index * 940, 0.034, "highpass", this.sfx, (index - 1) * 0.44));
+        this.tone(493.88, 0.22, 0.026, 0.02, "sine", 0, 740);
+        return;
+      }
+      if (/delivery-rail|rail|barrier/.test(semantic)) {
+        this.tone(1180, 0.1, 0.034, 0, "triangle", -0.3, 880);
+        this.tone(1760, 0.13, 0.026, 0.055, "sine", 0.35, 1320);
+        this.noiseHit(at, 0.12, 3400, 0.026, "bandpass", this.sfx);
         return;
       }
       const frequency = KIND_NOTES[kind] || (name === "perfect" ? 880 : 659.25);

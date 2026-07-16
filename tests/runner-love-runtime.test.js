@@ -127,15 +127,20 @@ test("teaches the three gestures through play and reaches the first arcade picku
   const { debug } = boot();
   debug.powerup("overdrive", { duration: 14, speedBoost: 6 });
   let state = debug.step(50);
-  const requiredAction = (pattern) => state.motion.entities
-    .find((entity) => entity.type === "obstacle" && entity.patternId?.endsWith(`-${pattern}`))?.data?.requiredAction;
+  const obstacleFor = (pattern) => state.motion.entities
+    .find((entity) => entity.type === "obstacle" && entity.patternId?.endsWith(`-${pattern}`));
+  const requiredAction = (pattern) => obstacleFor(pattern)?.data?.requiredAction;
   assert.equal(requiredAction(0), "jump");
-  assert.ok(state.motion.entities.some((entity) => entity.type === "collectible" && entity.height > 0.8));
+  assert.equal(obstacleFor(0)?.subtype, "camphor-root-puddle");
+  assert.equal(obstacleFor(0)?.data?.obstacleName, "树根积水带");
+  assert.ok(state.motion.entities.some((entity) => entity.type === "collectible" && entity.height > 0.8 && entity.data?.clueFamily));
 
   state = debug.step(3100);
   assert.equal(requiredAction(1), "switch");
+  assert.equal(obstacleFor(1)?.subtype, "departing-student-stream");
   state = debug.step(3100);
   assert.equal(requiredAction(2), "slide");
+  assert.equal(obstacleFor(2)?.subtype, "library-delivery-rail");
   state = debug.step(3100);
   assert.ok(state.scheduler.patternCursor >= 4);
   assert.ok(state.motion.entities.some((entity) => entity.type === "powerup" && entity.data?.powerupPickup === "magnet"));

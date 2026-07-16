@@ -929,6 +929,7 @@ let foliageClusterGeometry = null;
 const stageTokenGeometryCache = new Map();
 const phaseTokenGeometryCache = new Map();
 const collectibleVisualStyleCache = new Map();
+const campusClueGeometryCache = new Map();
 const campusStoryTextureCache = new Map();
 
 function getToonGradientTexture() {
@@ -6851,7 +6852,7 @@ function animateRiggedRunner(character, delta, action, vertical, intensity, late
   }
 }
 
-function createPowerupPickup(type = "magnet", particleTexture = null) {
+function createPowerupPickup(type = "magnet", particleTexture = null, stageIndex = 0) {
   const group = new THREE.Group();
   const color = POWERUP_COLORS[type] || POWERUP_COLORS.magnet;
   const coreMaterial = material(color, {
@@ -6886,9 +6887,43 @@ function createPowerupPickup(type = "magnet", particleTexture = null) {
     coreMaterial
   );
   core.scale.set(1.08, 1.08, 0.72);
+  core.visible = stageIndex !== 0;
   group.add(core);
 
-  if (type === "magnet") {
+  if (stageIndex === 0) {
+    if (type === "magnet") {
+      const message = mesh(createCampusClueGeometry("message"), coreMaterial);
+      message.scale.setScalar(1.15);
+      group.add(message);
+      [0, 1, 2].forEach((index) => {
+        const signal = mesh(powerupGeometry(`campus-message-signal-${index}`, () => new THREE.TorusGeometry(0.3 + index * 0.15, 0.026, 6, 28, Math.PI * 0.72)), index === 1 ? paleMaterial : coreMaterial);
+        signal.position.set(0.42, 0.28, 0.02);
+        signal.rotation.z = -0.42;
+        group.add(signal);
+      });
+    } else if (type === "shield") {
+      const umbrella = mesh(createCampusClueGeometry("umbrella"), coreMaterial);
+      umbrella.scale.setScalar(1.24);
+      group.add(umbrella);
+    } else if (type === "multiplier") {
+      [-0.22, 0.22].forEach((x, index) => {
+        const can = mesh(createCampusClueGeometry("drink"), index ? paleMaterial : coreMaterial);
+        can.position.x = x;
+        can.rotation.z = index ? 0.12 : -0.12;
+        can.scale.setScalar(0.9);
+        group.add(can);
+      });
+    } else {
+      const signalBody = mesh(roundedPanelGeometry(0.52, 0.92, 0.14, 0.12), paleMaterial);
+      [0.29, 0, -0.29].forEach((y, index) => {
+        const lampColor = [0xff6b62, 0xffce64, 0x62f09a][index];
+        const lamp = mesh(new THREE.SphereGeometry(0.12, 14, 10), material(lampColor, { emissive: lampColor, emissiveIntensity: index === 2 ? 1.4 : 0.2, roughness: 0.2 }));
+        lamp.position.set(0, y, 0.11);
+        group.add(lamp);
+      });
+      group.add(signalBody);
+    }
+  } else if (type === "magnet") {
     const arc = mesh(
       powerupGeometry("pickup-magnet", () => new THREE.TorusGeometry(0.34, 0.11, 10, 30, Math.PI * 1.52)),
       coreMaterial
@@ -7023,6 +7058,79 @@ function createCollectible(stageIndex, accent, particleTexture) {
   return group;
 }
 
+function campusClueFamily(kind) {
+  const normalized = String(kind || "message").toLowerCase();
+  if (/photo|camera|film/.test(normalized)) return "photo";
+  if (/note|leaf|book|bookmark|page/.test(normalized)) return "leaf";
+  if (/umbrella|rain|water/.test(normalized)) return "umbrella";
+  if (/drink|warm|coffee|can/.test(normalized)) return "drink";
+  if (/packet|candy|snack|citrus/.test(normalized)) return "candy";
+  return "message";
+}
+
+function createCampusClueGeometry(family) {
+  if (campusClueGeometryCache.has(family)) return campusClueGeometryCache.get(family);
+  let geometry;
+  if (family === "photo") {
+    geometry = roundedPanelGeometry(0.92, 0.7, 0.1, 0.08).clone();
+    geometry.rotateZ(-0.08);
+  } else if (family === "drink") {
+    geometry = new THREE.CylinderGeometry(0.29, 0.27, 0.78, 16, 1, false);
+    geometry.rotateZ(-0.05);
+  } else {
+    const shape = new THREE.Shape();
+    if (family === "leaf") {
+      shape.moveTo(0, 0.52);
+      shape.bezierCurveTo(0.48, 0.36, 0.52, -0.2, 0, -0.53);
+      shape.bezierCurveTo(-0.52, -0.2, -0.48, 0.36, 0, 0.52);
+    } else if (family === "umbrella") {
+      shape.moveTo(-0.55, 0.05);
+      shape.bezierCurveTo(-0.38, 0.5, 0.38, 0.5, 0.55, 0.05);
+      shape.bezierCurveTo(0.36, -0.04, 0.2, 0.04, 0.03, -0.04);
+      shape.lineTo(0.03, -0.43);
+      shape.bezierCurveTo(0.03, -0.58, 0.23, -0.58, 0.23, -0.42);
+      shape.lineTo(0.13, -0.42);
+      shape.bezierCurveTo(0.13, -0.5, 0.11, -0.5, 0.1, -0.43);
+      shape.lineTo(0.1, -0.04);
+      shape.bezierCurveTo(-0.08, 0.04, -0.28, -0.04, -0.55, 0.05);
+    } else if (family === "candy") {
+      shape.moveTo(-0.57, 0.2);
+      shape.lineTo(-0.34, 0.1);
+      shape.lineTo(-0.27, 0.34);
+      shape.lineTo(0.27, 0.34);
+      shape.lineTo(0.34, 0.1);
+      shape.lineTo(0.57, 0.2);
+      shape.lineTo(0.47, -0.2);
+      shape.lineTo(0.29, -0.1);
+      shape.lineTo(0.23, -0.36);
+      shape.lineTo(-0.23, -0.36);
+      shape.lineTo(-0.29, -0.1);
+      shape.lineTo(-0.47, -0.2);
+    } else {
+      shape.moveTo(-0.48, 0.34);
+      shape.lineTo(0.48, 0.34);
+      shape.lineTo(0.48, -0.24);
+      shape.lineTo(0.09, -0.24);
+      shape.lineTo(-0.13, -0.46);
+      shape.lineTo(-0.13, -0.24);
+      shape.lineTo(-0.48, -0.24);
+    }
+    shape.closePath();
+    geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.11,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      bevelSize: 0.035,
+      bevelThickness: 0.035,
+      curveSegments: 10
+    });
+    geometry.center();
+  }
+  SHARED_GEOMETRIES.add(geometry);
+  campusClueGeometryCache.set(family, geometry);
+  return geometry;
+}
+
 function createCollectibleBatches(particleTexture, accent) {
   const capacity = 72;
   const rimMaterial = material(new THREE.Color(accent).lerp(new THREE.Color(0xffffff), 0.26), {
@@ -7056,6 +7164,25 @@ function createCollectibleBatches(particleTexture, accent) {
   }
   rims.instanceColor.setUsage(THREE.DynamicDrawUsage);
   hearts.instanceColor.setUsage(THREE.DynamicDrawUsage);
+
+  const campusIcons = {};
+  ["photo", "leaf", "umbrella", "drink", "candy", "message"].forEach((family) => {
+    const iconMaterial = campusToonMaterial(0xffd889, {
+      emissive: 0xffb85e,
+      emissiveIntensity: 0.52,
+      roughness: 0.3,
+      name: `campus-clue-${family}`
+    });
+    const icon = new THREE.InstancedMesh(createCampusClueGeometry(family), iconMaterial, capacity);
+    icon.name = `campusClue-${family}`;
+    icon.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    icon.count = 0;
+    icon.castShadow = true;
+    icon.frustumCulled = false;
+    for (let index = 0; index < capacity; index += 1) icon.setColorAt(index, initialColor);
+    icon.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    campusIcons[family] = icon;
+  });
 
   const glowGeometry = new THREE.BufferGeometry();
   glowGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(capacity * 3), 3));
@@ -7104,7 +7231,7 @@ function createCollectibleBatches(particleTexture, accent) {
   }));
   campusWisps.name = "campusCourageWisps";
   campusWisps.frustumCulled = false;
-  return { capacity, rims, hearts, glows, pickupTrail, campusWisps };
+  return { capacity, rims, hearts, campusIcons, glows, pickupTrail, campusWisps };
 }
 
 function createTrain(accent, variant = 0) {
@@ -7480,13 +7607,29 @@ function createCampusStudentStreamObstacle(accent, variant = 0) {
   const umbrellaStem = mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.08, 6), ink);
   umbrellaStem.position.set(-0.76, 1.08, 0.08);
   umbrellaStem.rotation.z = -0.22;
+  const flowCues = [-1, 1].map((side) => {
+    const cue = mesh(new THREE.RingGeometry(0.2, 0.27, 18, 1, Math.PI * 0.18, Math.PI * 0.64), new THREE.MeshBasicMaterial({
+      color: side < 0 ? 0xffd98c : 0x9de6dc,
+      transparent: true,
+      opacity: 0.5,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    }));
+    cue.rotation.set(-Math.PI / 2, 0, side < 0 ? Math.PI * 0.86 : -Math.PI * 0.14);
+    cue.position.set(side * 0.72, 0.055, 0.42);
+    cue.scale.set(1.7, 0.78, 1);
+    group.add(cue);
+    return cue;
+  });
   group.add(
     torsos, shirtPanels, heads, hairCaps, legs, shoes, arms, backpacks,
     skirt, trousers, ponytail, umbrella, umbrellaStem
   );
   group.userData.kind = "campus-student-stream";
   group.userData.obstacleSignature = "departing-student-stream";
-  group.userData.campusEffect = { kind: "student-stream", students: group.children };
+  group.userData.campusEffect = { kind: "student-stream", flowCues };
   return group;
 }
 
@@ -7503,10 +7646,26 @@ function createCampusRootPuddleObstacle(accent, variant = 0) {
   rootShadow.scale.copy(root.scale).multiplyScalar(1.035);
   rootShadow.position.copy(root.position);
   rootShadow.position.y = 0.105;
+  const ripples = [0, 1].map((index) => {
+    const ripple = mesh(new THREE.RingGeometry(0.28, 0.325, 28), new THREE.MeshBasicMaterial({
+      color: index ? 0xbcefff : 0x7ed4e6,
+      transparent: true,
+      opacity: 0.4,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    }));
+    ripple.rotation.x = -Math.PI / 2;
+    ripple.position.set(index ? 0.35 : -0.28, 0.052, index ? -0.18 : 0.18);
+    group.add(ripple);
+    return ripple;
+  });
   group.add(rootShadow, root);
   group.userData.kind = "campus-root-puddle";
   group.userData.obstacleSignature = "camphor-root-puddle";
   group.userData.campusEffect.kind = "root-puddle";
+  group.userData.campusEffect.ripples = ripples;
   return group;
 }
 
@@ -7538,10 +7697,25 @@ function createCampusDeliveryRailObstacle(accent, variant = 0) {
     { x: 0.8, y: 0.76, z: -0.2, ry: -0.12 },
     { x: 0.68, y: 0.84, z: -0.18, ry: 0.04 }
   ], [0xd18a67, 0xe1c381, 0x6d9a91]);
+  const reflectedGuides = [-0.72, 0, 0.72].map((x, index) => {
+    const guide = mesh(new THREE.PlaneGeometry(0.12, 1.15), new THREE.MeshBasicMaterial({
+      color: index === 1 ? 0xffe5a3 : 0xf4b45f,
+      transparent: true,
+      opacity: 0.34,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    }));
+    guide.rotation.x = -Math.PI / 2;
+    guide.position.set(x, 0.045, 0.72);
+    group.add(guide);
+    return guide;
+  });
   group.add(beam, inkBeam, bookCart, books);
   group.userData.kind = "campus-delivery-rail";
   group.userData.obstacleSignature = "library-delivery-rail";
-  group.userData.campusEffect = { kind: "delivery-rail", warning };
+  group.userData.campusEffect = { kind: "delivery-rail", warning, reflectedGuides };
   return group;
 }
 
@@ -9058,7 +9232,8 @@ class CinematicRunnerRenderer {
       this.collectibleBatches.pickupTrail,
       this.collectibleBatches.campusWisps,
       this.collectibleBatches.rims,
-      this.collectibleBatches.hearts
+      this.collectibleBatches.hearts,
+      ...Object.values(this.collectibleBatches.campusIcons)
     );
     this.transientEffects = createTransientEffectPool(this.particleTexture);
     this.scene.add(this.transientEffects.root);
@@ -11232,6 +11407,7 @@ class CinematicRunnerRenderer {
     this.entityPool.clear();
     this.collectibleBatches.rims.count = 0;
     this.collectibleBatches.hearts.count = 0;
+    Object.values(this.collectibleBatches.campusIcons).forEach((icon) => { icon.count = 0; });
     this.collectibleBatches.glows.geometry.setDrawRange(0, 0);
     this.collectibleBatches.pickupTrail.geometry.setDrawRange(0, 0);
     this.storyFocus = 0;
@@ -11250,7 +11426,7 @@ class CinematicRunnerRenderer {
     }
     if (!object) {
       if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
-      else if (entity.type === "powerup") object = createPowerupPickup(entity.data?.powerupPickup, this.particleTexture);
+      else if (entity.type === "powerup") object = createPowerupPickup(entity.data?.powerupPickup, this.particleTexture, this.stageIndex);
       else if (entity.type === "story-item" || entity.type === "route-choice") {
         const storyItem = {
           id: entity.itemId || entity.data?.itemId,
@@ -11311,6 +11487,7 @@ class CinematicRunnerRenderer {
     const trailPositions = batches.pickupTrail.geometry.attributes.position.array;
     const campusWispPositions = batches.campusWisps.geometry.attributes.position.array;
     let collectibleCount = 0;
+    const campusIconCounts = { photo: 0, leaf: 0, umbrella: 0, drink: 0, candy: 0, message: 0 };
     let storyFocusTarget = 0;
     let companionHazard = 0;
     const relationLane = Number(this.directorState.relationship?.lane) || 0;
@@ -11349,6 +11526,21 @@ class CinematicRunnerRenderer {
         this.collectibleColor.setHex(style.color);
         batches.rims.setColorAt(collectibleCount, this.collectibleColor);
         batches.hearts.setColorAt(collectibleCount, this.collectibleColor);
+        if (this.stageIndex === 0) {
+          const family = entity.data?.clueFamily || campusClueFamily(collectibleKind);
+          const icon = batches.campusIcons[family] || batches.campusIcons.message;
+          const iconIndex = campusIconCounts[family] ?? campusIconCounts.message;
+          const familyScale = family === "photo" ? 0.76 : family === "umbrella" ? 0.8 : family === "leaf" ? 0.72 : family === "drink" ? 0.7 : 0.74;
+          this.collectibleScale.set(
+            familyScale * style.scaleX,
+            familyScale * style.scaleY,
+            familyScale
+          );
+          this.collectibleMatrix.compose(this.collectiblePosition, this.collectibleQuaternion, this.collectibleScale);
+          icon.setMatrixAt(iconIndex, this.collectibleMatrix);
+          icon.setColorAt(iconIndex, this.collectibleColor);
+          campusIconCounts[family] = iconIndex + 1;
+        }
         glowPositions[collectibleCount * 3] = x;
         glowPositions[collectibleCount * 3 + 1] = y;
         glowPositions[collectibleCount * 3 + 2] = z - 0.05;
@@ -11459,14 +11651,31 @@ class CinematicRunnerRenderer {
       if (object.userData.kind === "train") object.rotation.z = Math.sin(time * 7 + entity.id) * 0.0025;
       if (object.userData.kind === "service-cart") object.rotation.y = Math.sin(time * 5.4 + entity.id) * 0.012;
       const campusEffect = object.userData.campusEffect;
+      const campusCueStrength = clamp((object.position.z + 16) / 18, 0, 1);
       if (campusEffect?.kind === "puddle" || campusEffect?.kind === "root-puddle") {
         campusEffect.puddleMaterial.uniforms.uTime.value = time + entity.id * 0.17;
         campusEffect.glint.material.opacity = 0.25 + Math.sin(time * 2.1 + entity.id) * 0.07;
         campusEffect.glint.position.x = Math.sin(time * 0.48 + entity.id) * 0.22;
+        campusEffect.ripples?.forEach((ripple, index) => {
+          const cycle = (time * 0.9 + index * 0.48 + entity.id * 0.07) % 1;
+          ripple.scale.setScalar(0.72 + cycle * (1.45 + campusCueStrength * 0.42));
+          ripple.material.opacity = (1 - cycle) * (0.22 + campusCueStrength * 0.5);
+        });
       } else if (campusEffect?.kind === "student-stream") {
-        object.rotation.z = Math.sin(time * 4.2 + entity.id) * 0.012;
+        campusEffect.flowCues?.forEach((cue, index) => {
+          const side = index ? 1 : -1;
+          cue.position.x = side * (0.68 + campusCueStrength * 0.22 + Math.sin(time * 2.4 + index) * 0.035);
+          cue.material.opacity = 0.26 + campusCueStrength * 0.56 + Math.sin(time * 5 + index) * 0.08;
+          cue.scale.set(1.45 + campusCueStrength * 0.75, 0.68 + campusCueStrength * 0.2, 1);
+        });
       } else if (campusEffect?.kind === "delivery-rail") {
         campusEffect.warning.emissiveIntensity = 0.35 + Math.max(0, Math.sin(time * 5.2 + entity.id)) * 0.42;
+        campusEffect.reflectedGuides?.forEach((guide, index) => {
+          const sweep = (time * 1.8 + index * 0.23 + entity.id * 0.09) % 1;
+          guide.position.z = 0.32 + sweep * 1.35;
+          guide.scale.y = 0.52 + campusCueStrength * 0.85;
+          guide.material.opacity = Math.sin(sweep * Math.PI) * (0.22 + campusCueStrength * 0.6);
+        });
       } else if (campusEffect?.kind === "leaf-gust") {
         const leafDummy = campusEffect.leafDummy;
         for (let index = 0; index < campusEffect.leafBases.length; index += 1) {
@@ -11517,6 +11726,11 @@ class CinematicRunnerRenderer {
     batches.hearts.count = campusCollectibles ? 0 : collectibleCount;
     batches.hearts.instanceMatrix.needsUpdate = true;
     if (batches.hearts.instanceColor) batches.hearts.instanceColor.needsUpdate = true;
+    Object.entries(batches.campusIcons).forEach(([family, icon]) => {
+      icon.count = campusCollectibles ? campusIconCounts[family] : 0;
+      icon.instanceMatrix.needsUpdate = true;
+      if (icon.instanceColor) icon.instanceColor.needsUpdate = true;
+    });
     batches.glows.geometry.setDrawRange(0, collectibleCount);
     batches.glows.geometry.attributes.position.needsUpdate = true;
     batches.glows.material.opacity = campusCollectibles ? 0.64 + Math.sin(time * 3.2) * 0.08 : 0.32 + Math.sin(time * 4.8) * 0.07;
@@ -11716,7 +11930,12 @@ class CinematicRunnerRenderer {
       const ring = this.rings[ringIndex];
       ring.life -= delta;
       const progress = 1 - clamp(ring.life / ring.duration, 0, 1);
-      ring.mesh.scale.setScalar(ring.baseScale * (0.65 + progress * 2.15));
+      const ringScale = ring.baseScale * (0.65 + progress * 2.15);
+      ring.mesh.scale.set(
+        ringScale * (ring.scaleX || 1),
+        ringScale * (ring.scaleY || 1),
+        ringScale * (ring.scaleZ || 1)
+      );
       ring.mesh.material.opacity = (1 - progress) * 0.82;
       ring.mesh.rotation.z += delta * ring.spin;
       if (ring.life > 0) {
@@ -11895,6 +12114,152 @@ class CinematicRunnerRenderer {
     this.companion.rotation.set(0, 0, 0);
   }
 
+  activateTransientRing({ x, y, z, color, duration = 0.62, baseScale = 1, spin = 0, rotation = null, scaleX = 1, scaleY = 1, scaleZ = 1 }) {
+    const slot = this.transientEffects.rings[this.ringPoolCursor % this.transientEffects.rings.length];
+    this.ringPoolCursor += 1;
+    const activeIndex = this.rings.indexOf(slot);
+    if (activeIndex >= 0) this.rings.splice(activeIndex, 1);
+    slot.life = duration;
+    slot.duration = duration;
+    slot.spin = spin;
+    slot.baseScale = baseScale;
+    slot.scaleX = scaleX;
+    slot.scaleY = scaleY;
+    slot.scaleZ = scaleZ;
+    slot.mesh.position.set(x, y, z);
+    slot.mesh.rotation.set(...(rotation || [Math.PI / 2, 0, 0]));
+    slot.mesh.scale.set(baseScale * scaleX, baseScale * scaleY, baseScale * scaleZ);
+    slot.mesh.material.color.setHex(color);
+    slot.mesh.material.opacity = 0.88;
+    slot.mesh.visible = true;
+    this.rings.push(slot);
+  }
+
+  triggerCampusSemanticEffect(type, detail = {}) {
+    const semantic = String(detail.subtype || detail.data?.themeForm || "").toLowerCase();
+    const family = detail.data?.clueFamily || campusClueFamily(detail.data?.collectibleKind);
+    const clueColors = {
+      photo: 0xffe2ac,
+      leaf: 0xffcf68,
+      umbrella: 0x75dcf3,
+      drink: 0xffa950,
+      candy: 0xff8178,
+      message: 0xff8b78
+    };
+    const isPuddle = /root-puddle|puddle/.test(semantic);
+    const isCrowd = /student-stream|crowd/.test(semantic);
+    const isRail = /delivery-rail|rail|barrier/.test(semantic);
+    const color = type === "campus-clue"
+      ? clueColors[family] || clueColors.message
+      : isPuddle ? 0x83e8ff : isRail ? 0xffca70 : 0xffe1a0;
+    const effectX = (Number(detail.lane) || 0) * LANE_WIDTH;
+    const sourceZ = Number(detail.z);
+    const effectZ = Number.isFinite(sourceZ)
+      ? PLAYER_Z + (COLLISION_Z - sourceZ) * WORLD_Z_SCALE
+      : PLAYER_Z - 0.15;
+    const effectY = type === "campus-clue" ? 1.15 : isRail ? 0.78 : 0.12;
+    const burst = this.transientEffects.bursts[this.burstPoolCursor % this.transientEffects.bursts.length];
+    this.burstPoolCursor += 1;
+    const activeBurstIndex = this.bursts.indexOf(burst);
+    if (activeBurstIndex >= 0) this.bursts.splice(activeBurstIndex, 1);
+    const count = type === "campus-clue" ? 42 : 38;
+    for (let index = 0; index < count; index += 1) {
+      const ratio = index / Math.max(1, count - 1);
+      const angle = ratio * Math.PI * 4.6 + (index % 3) * 0.22;
+      const offset = index * 3;
+      burst.positions[offset] = 0;
+      burst.positions[offset + 1] = 0;
+      burst.positions[offset + 2] = 0;
+      if (isCrowd) {
+        const side = index % 2 ? 1 : -1;
+        burst.velocities[offset] = side * (0.72 + (index % 7) * 0.14);
+        burst.velocities[offset + 1] = 0.22 + (index % 5) * 0.08;
+        burst.velocities[offset + 2] = -0.18 + ratio * 0.72;
+      } else if (isPuddle) {
+        burst.velocities[offset] = Math.cos(angle) * (0.45 + ratio * 1.15);
+        burst.velocities[offset + 1] = 0.22 + Math.abs(Math.sin(angle)) * 0.48;
+        burst.velocities[offset + 2] = Math.sin(angle) * (0.45 + ratio * 1.15);
+      } else if (isRail) {
+        burst.velocities[offset] = Math.sin(angle) * (0.28 + ratio * 0.4);
+        burst.velocities[offset + 1] = 0.18 + (index % 6) * 0.07;
+        burst.velocities[offset + 2] = 0.8 + ratio * 1.4;
+      } else {
+        const radius = 0.45 + ratio * 0.75;
+        burst.velocities[offset] = Math.cos(angle) * radius;
+        burst.velocities[offset + 1] = 0.4 + Math.sin(ratio * Math.PI) * 0.78;
+        burst.velocities[offset + 2] = Math.sin(angle) * radius + 0.18;
+      }
+    }
+    burst.count = count;
+    burst.life = type === "campus-clue" ? 1.05 : 0.82;
+    burst.duration = burst.life;
+    burst.points.position.set(effectX, effectY, effectZ);
+    burst.points.material.color.setHex(color);
+    burst.points.material.opacity = 1;
+    burst.points.material.size = type === "campus-clue" ? 0.18 : 0.15;
+    burst.points.geometry.setDrawRange(0, count);
+    burst.points.geometry.attributes.position.needsUpdate = true;
+    burst.points.visible = true;
+    this.bursts.push(burst);
+
+    if (isPuddle) {
+      [0, 1, 2].forEach((index) => this.activateTransientRing({
+        x: effectX + (index - 1) * 0.22,
+        y: 0.055,
+        z: effectZ + index * 0.16,
+        color: index === 1 ? 0xd7f8ff : color,
+        duration: 0.68 + index * 0.1,
+        baseScale: 0.62 + index * 0.18,
+        spin: index % 2 ? 0.8 : -0.55,
+        rotation: [-Math.PI / 2, 0, 0],
+        scaleX: 1.42,
+        scaleY: 0.72
+      }));
+    } else if (isCrowd) {
+      [-1, 1].forEach((side) => this.activateTransientRing({
+        x: effectX + side * 0.7,
+        y: 0.82,
+        z: effectZ,
+        color: side < 0 ? 0xffd28a : 0xa7eee3,
+        duration: 0.7,
+        baseScale: 0.7,
+        spin: side * 2.2,
+        rotation: [0, 0, side * 0.28],
+        scaleX: 1.65,
+        scaleY: 0.72
+      }));
+    } else if (isRail) {
+      [0, 1, 2].forEach((index) => this.activateTransientRing({
+        x: effectX + (index - 1) * 0.34,
+        y: 0.58 + index * 0.12,
+        z: effectZ + index * 0.34,
+        color: index === 1 ? 0xffefb2 : color,
+        duration: 0.5 + index * 0.1,
+        baseScale: 0.48 + index * 0.1,
+        spin: index % 2 ? -2.6 : 2.1,
+        rotation: [0, 0, 0],
+        scaleX: 1.48,
+        scaleY: 0.54
+      }));
+    } else {
+      [0, 1].forEach((index) => this.activateTransientRing({
+        x: effectX,
+        y: effectY,
+        z: effectZ,
+        color: index ? 0xfff4d2 : color,
+        duration: 0.72 + index * 0.16,
+        baseScale: 0.72 + index * 0.28,
+        spin: index ? -1.8 : 2.4,
+        rotation: [Math.PI / 2 + index * 0.22, index * 0.28, 0],
+        scaleX: 1.35,
+        scaleY: 0.78
+      }));
+    }
+    this.speedPulse = Math.max(this.speedPulse, type === "campus-clue" ? 0.82 : 0.68);
+    this.flash = Math.max(this.flash, type === "campus-clue" ? 0.16 : 0.09);
+    this.flashMaterial.color.setHex(color);
+  }
+
   effect(type, detail = {}) {
     if (!detail || typeof detail !== "object") detail = {};
     if (type === "stage-intro") {
@@ -11986,6 +12351,14 @@ class CinematicRunnerRenderer {
     } else if (type === "dodge") {
       this.speedPulse = Math.max(this.speedPulse, 0.62);
     }
+    if (this.stageIndex === 0 && type === "campus-clue") {
+      this.triggerCampusSemanticEffect(type, detail);
+      return;
+    }
+    if (this.stageIndex === 0 && ["dodge", "near-miss"].includes(type)) {
+      this.triggerCampusSemanticEffect(type, detail);
+      return;
+    }
     const activeAccent = (this.stageConfig || STAGE_CONFIGS[this.stageIndex]).accent;
     const storyColor = detail.item ? storyPropColor(detail.item, activeAccent) : activeAccent;
     const count = type === "story-pickup" ? 54 : type === "perfect" ? 38 : type === "near-miss" ? 32 : type === "miss" ? 34 : type === "energy" ? 16 : 20;
@@ -12027,6 +12400,9 @@ class CinematicRunnerRenderer {
       ringSlot.duration = 0.48;
       ringSlot.spin = type === "near-miss" ? 4 : 1.6;
       ringSlot.baseScale = 1;
+      ringSlot.scaleX = 1;
+      ringSlot.scaleY = 1;
+      ringSlot.scaleZ = 1;
       ringSlot.mesh.position.set(effectX, type === "dodge" ? 0.72 : 1.2, effectZ);
       ringSlot.mesh.rotation.set(Math.PI / 2, 0, 0);
       ringSlot.mesh.scale.setScalar(1);
@@ -12043,6 +12419,9 @@ class CinematicRunnerRenderer {
         orbitSlot.duration = 0.66;
         orbitSlot.spin = -2.4;
         orbitSlot.baseScale = 1.55;
+        orbitSlot.scaleX = 1;
+        orbitSlot.scaleY = 1;
+        orbitSlot.scaleZ = 1;
         orbitSlot.mesh.position.copy(ringSlot.mesh.position);
         orbitSlot.mesh.rotation.set(Math.PI / 2 + 0.4, 0.55, 0.2);
         orbitSlot.mesh.scale.setScalar(orbitSlot.baseScale);

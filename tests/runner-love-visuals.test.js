@@ -94,11 +94,12 @@ test("authors seven visually distinct districts and a fully modeled opening camp
 test("rebuilds the opening run as a third-person campus with authored environmental art", () => {
   for (const builder of [
     "createCampusStudentStreamObstacle", "createCampusRootPuddleObstacle", "createCampusDeliveryRailObstacle",
-    "createCampusEnvironmentObstacle", "createCampusStoryToken"
+    "createCampusEnvironmentObstacle", "createCampusStoryToken", "createCampusClueGeometry"
   ]) assert.match(source, new RegExp(`function ${builder}\\(`));
   for (const contract of [
     "departing-student-stream", "camphor-root-puddle", "library-delivery-rail",
-    "campus-character-follow", "data-camera-language", "campusWisps",
+    "campus-character-follow", "data-camera-language", "campusWisps", "campusIcons",
+    "triggerCampusSemanticEffect", "activateTransientRing",
     "camphor-canopy.png", "summer-sky.png", "academic-facade.png", "flowerbed.png",
     "data-campus-canopy", "data-campus-sky", "data-campus-facade", "data-campus-flowerbed"
   ]) assert.ok(source.includes(contract), contract);

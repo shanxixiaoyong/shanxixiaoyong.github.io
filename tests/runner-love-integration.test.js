@@ -51,7 +51,9 @@ test("paces each route around three minutes without a hard timer gate", () => {
 
 test("builds a readable arcade loop with onboarding trails, pickups, streak rewards, and rising pressure", () => {
   assert.match(source, /ONBOARDING_ACTIONS = Object\.freeze\(\["jump", "switch", "slide"\]\)/);
-  assert.match(source, /const tokenCount = 12/);
+  assert.match(source, /const tokenCount = stageIndex === 0 \? 9 : 12/);
+  assert.match(source, /resolveObstacleSemantic/);
+  assert.match(source, /clueFamily: stageIndex === 0/);
   assert.match(source, /height: jumpArc/);
   assert.match(source, /type: "powerup"/);
   assert.match(source, /powerupPickup: powerupType/);

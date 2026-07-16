@@ -95,6 +95,56 @@
   });
   const ARCADE_POWERUP_ORDER = Object.freeze(["magnet", "shield", "multiplier", "overdrive"]);
   const ONBOARDING_ACTIONS = Object.freeze(["jump", "switch", "slide"]);
+  const CAMPUS_OBSTACLE_BY_ACTION = Object.freeze({
+    switch: Object.freeze({
+      id: "departing-student-stream",
+      name: "散开的放学人潮",
+      meaning: "熟悉面孔不断打断寻找",
+      cue: "伞尖与书包先向两侧分流",
+      response: "switch",
+      successCopy: "从人潮开口穿过，她留下的方向重新出现"
+    }),
+    jump: Object.freeze({
+      id: "camphor-root-puddle",
+      name: "树根积水带",
+      meaning: "想快一点，也要护住一路带去的东西",
+      cue: "雨滴先把水中倒影打碎",
+      response: "jump",
+      successCopy: "水花落在身后，照片和书签都没有被打湿"
+    }),
+    slide: Object.freeze({
+      id: "library-delivery-rail",
+      name: "图书馆送书矮栏",
+      meaning: "终点已经看见，最后一段仍需沉住气",
+      cue: "栏杆反射出钟楼的暖光",
+      response: "slide",
+      successCopy: "从送书栏下掠过，图书馆钟楼已经在前方"
+    })
+  });
+  const CAMPUS_CLUE_META = Object.freeze({
+    photo: Object.freeze({ family: "photo", label: "被风吹起的照片", collectCopy: "接住照片，她刚写下的日期还留在背面" }),
+    note: Object.freeze({ family: "leaf", label: "银杏叶书签", collectCopy: "拾起银杏叶书签，她刚从这里经过" }),
+    umbrella: Object.freeze({ family: "umbrella", label: "透明雨伞", collectCopy: "护住透明雨伞，雨势也变得清晰可辨" }),
+    drink: Object.freeze({ family: "drink", label: "第二罐热饮", collectCopy: "带上第二罐热饮，见面不再只是匆忙赶路" }),
+    packet: Object.freeze({ family: "candy", label: "柑橘糖", collectCopy: "收好一颗柑橘糖，路口的等待有了轻松的开场" }),
+    message: Object.freeze({ family: "message", label: "消息光点", collectCopy: "消息亮起，她留下了更明确的方向" })
+  });
+  const CAMPUS_TRAIL_PURPOSES = Object.freeze([
+    "沿雨廊接住她刚留下的线索",
+    "穿过太阳雨，护住见面时想递出的东西",
+    "跟随路口灯光，在红灯前赶到图书馆"
+  ]);
+  const CAMPUS_PHASE_GOALS = Object.freeze([
+    "接住照片与书签",
+    "护住雨伞和热饮",
+    "跟随红灯赶到图书馆"
+  ]);
+  const CAMPUS_POWERUP_LABELS = Object.freeze({
+    magnet: "消息牵引",
+    shield: "雨伞守护",
+    multiplier: "双份温度",
+    overdrive: "绿灯冲刺"
+  });
   const SPEED_LABELS = Object.freeze(["起跑", "加速", "疾行", "冲刺", "极速"]);
   const STAGE_RUNTIME_FALLBACKS = Object.freeze([
     Object.freeze({ chapter: "第一章 · 雨后再遇", introTitle: "香樟路尽头，她也停下了脚步", tone: "雨后校园", phases: Object.freeze([
@@ -583,7 +633,10 @@
   }
 
   function activateArcadePowerup(type, earned = false) {
-    const meta = POWERUP_META[type];
+    const baseMeta = POWERUP_META[type];
+    const meta = baseMeta && currentStageIndex() === 0
+      ? { ...baseMeta, label: CAMPUS_POWERUP_LABELS[type] || baseMeta.label }
+      : baseMeta;
     if (!meta) return;
     motion.activatePowerup?.(type, powerupOptions(type));
     addFlow(type === "overdrive" ? 24 : 16);
@@ -939,7 +992,9 @@
     routePhase = nextPhase;
     const route = content.getRoute(currentStageIndex() + 1);
     const venue = route.venues[nextPhase] || currentStage().destination;
-    if (ui.destination) ui.destination.textContent = nextPhase === 2 ? `接近 ${currentStage().destination}` : `途经 ${venue}`;
+    if (ui.destination) ui.destination.textContent = currentStageIndex() === 0
+      ? `目标 · ${CAMPUS_PHASE_GOALS[nextPhase]}`
+      : nextPhase === 2 ? `接近 ${currentStage().destination}` : `途经 ${venue}`;
     root?.setAttribute("data-route-phase", String(nextPhase + 1));
     const phase = getPhaseExperience(currentStageIndex(), nextPhase);
     visualRuntime?.setRoutePhase?.(nextPhase, phase);
@@ -1116,6 +1171,38 @@
     return mapping.barrier;
   }
 
+  function normalizeObstacleAction(value) {
+    return value === "slide" ? "slide" : value === "jump" ? "jump" : "switch";
+  }
+
+  function resolveObstacleSemantic(stageIndex, experience, phase, action, spec = {}) {
+    const requiredAction = normalizeObstacleAction(action);
+    if (stageIndex !== 0) {
+      return {
+        ...(phase.obstacleSemantics?.find((entry) => entry.id === spec.themeForm) || {}),
+        id: spec.themeForm,
+        response: requiredAction
+      };
+    }
+    const authored = [
+      ...(phase.obstacleSemantics || []),
+      ...(experience.blueprint?.obstacleDesign?.obstacles || [])
+    ].find((entry) => normalizeObstacleAction(entry.response) === requiredAction);
+    return { ...CAMPUS_OBSTACLE_BY_ACTION[requiredAction], ...(authored || {}) };
+  }
+
+  function campusClueMeta(kind) {
+    const normalized = String(kind || "message").toLowerCase();
+    const exact = CAMPUS_CLUE_META[normalized];
+    if (exact) return exact;
+    if (/photo|camera|film/.test(normalized)) return CAMPUS_CLUE_META.photo;
+    if (/note|leaf|book|bookmark|page/.test(normalized)) return CAMPUS_CLUE_META.note;
+    if (/umbrella|rain|water/.test(normalized)) return CAMPUS_CLUE_META.umbrella;
+    if (/drink|warm|coffee|can/.test(normalized)) return CAMPUS_CLUE_META.drink;
+    if (/packet|candy|snack|citrus/.test(normalized)) return CAMPUS_CLUE_META.packet;
+    return CAMPUS_CLUE_META.message;
+  }
+
   function spawnPattern() {
     if (mode !== "playing") return false;
     const activeAhead = motion.state.entities.filter((entity) => entity.active && entity.z > 8);
@@ -1162,7 +1249,7 @@
     const patternId = `${content.STAGES[stageIndex].id}-${blueprint.id}-${patternCursor}`;
     blueprint.obstacles.forEach((spec, row) => {
       const rowOrdinal = Math.max(0, zRows.indexOf(Number(spec.z) || 0));
-      const requiredAction = rowOrdinal === 0 ? firstAction : spec.avoid;
+      const requiredAction = normalizeObstacleAction(rowOrdinal === 0 ? firstAction : spec.avoid);
       const matchingRow = blueprint.obstacles.filter((entry) => entry.z === spec.z);
       if (rowOrdinal === 0 && matchingRow[0] !== spec) return;
       const occupiedLanes = new Set(matchingRow.map((entry) => entry.lane));
@@ -1173,7 +1260,8 @@
         : null;
       [primaryLane, pairedLane].filter((lane) => lane !== null).forEach((lane, laneIndex) => {
         const themedForms = phase.obstacleForms || phase.obstacles || [];
-        const themedForm = spec.themeForm || themedForms[(patternCursor + row + laneIndex) % Math.max(1, themedForms.length)];
+        const semantic = resolveObstacleSemantic(stageIndex, experience, phase, requiredAction, spec);
+        const themedForm = semantic.id || spec.themeForm || themedForms[(patternCursor + row + laneIndex) % Math.max(1, themedForms.length)];
         const form = requiredAction === "slide" ? "signal-gate" : requiredAction === "jump" ? "barrier" : "service-cart";
         const subtype = obstacleSubtype(stageIndex, form, themedForm);
         motion.spawn({
@@ -1201,6 +1289,10 @@
             relationshipMode: directorPlan.relationshipMode,
             worldCue: phase.worldCue,
             themeForm: themedForm || subtype,
+            obstacleName: semantic.name || themedForm || subtype,
+            obstacleMeaning: semantic.meaning || phase.storyBeat || phase.worldCue,
+            obstacleCue: semantic.cue || phase.worldCue,
+            successCopy: semantic.successCopy || null,
             material: phase.material || experience.material || experience.tone
           }
         });
@@ -1210,7 +1302,7 @@
     const collectibleKinds = phase.collectibleKinds || phase.collectibles || ["stage-token"];
     const switchLane = directorPlan.collectibleLanes.find((lane) => lane !== motion.state.lane)
       ?? (motion.state.lane === 0 ? (patternCursor % 2 ? -1 : 1) : 0);
-    const tokenCount = 12;
+    const tokenCount = stageIndex === 0 ? 9 : 12;
     for (let tokenIndex = 0; tokenIndex < tokenCount; tokenIndex += 1) {
       const guideProgress = tokenIndex / (tokenCount - 1);
       const lane = firstAction === "switch" && tokenIndex >= 4 ? switchLane : motion.state.lane;
@@ -1218,6 +1310,7 @@
         ? Math.max(0, Math.sin(Math.PI * Math.max(0, Math.min(1, (guideProgress - 0.16) / 0.72)))) * 1.12
         : 0;
       const collectibleKind = collectibleKinds[(patternCursor + tokenIndex) % collectibleKinds.length];
+      const clue = campusClueMeta(collectibleKind);
       motion.spawn({
         type: "collectible",
         lane,
@@ -1229,6 +1322,11 @@
         arc: jumpArc,
         data: {
           collectibleKind,
+          clueFamily: stageIndex === 0 ? clue.family : null,
+          collectibleLabel: stageIndex === 0 ? clue.label : null,
+          collectCopy: stageIndex === 0 ? clue.collectCopy : null,
+          trailPurpose: stageIndex === 0 ? CAMPUS_TRAIL_PURPOSES[phaseIndex] : null,
+          trailBeat: stageIndex === 0 && tokenIndex % 3 === 2,
           stageId: content.STAGES[stageIndex].id,
           stageIndex,
           phase: phaseIndex,
@@ -1255,9 +1353,10 @@
         z: obstacleExitZ + 6,
         points: 20,
         patternId,
-        label: POWERUP_META[powerupType].label,
+        label: stageIndex === 0 ? CAMPUS_POWERUP_LABELS[powerupType] : POWERUP_META[powerupType].label,
         data: {
           powerupPickup: powerupType,
+          scenePowerup: stageIndex === 0 ? CAMPUS_POWERUP_LABELS[powerupType] : null,
           stageIndex,
           phase: phaseIndex,
           venue: phase.venue
@@ -1483,7 +1582,11 @@
           addFlow((magnetPickup ? 10 : 7) + Math.min(5, runState.combo));
           motion.boost?.(0.7, 0.72);
           visualRuntime?.effect("energy", { ...event.entity, source: event.source, multiplier: event.multiplier });
-          audio.cue("energy");
+          audio.cue("energy", event.entity.data?.collectibleKind);
+          if (event.entity.data?.trailBeat && !magnetPickup) {
+            visualRuntime?.effect("campus-clue", event.entity);
+            toast(event.entity.data.collectCopy || event.entity.data.trailPurpose, 1450);
+          }
           if (magnetPickup) audio.powerup?.("magnet", "sustain");
           if (event.multiplier > 1) audio.powerup?.("multiplier", "sustain");
           haptic(5);
@@ -1510,7 +1613,9 @@
         audio.cue("miss");
         addFlow(-42);
         haptic([42, 24, 34]);
-        toast("脚步乱了一下", 900);
+        toast(event.entity.data?.stageIndex === 0 && event.entity.data?.obstacleName
+          ? `${event.entity.data.obstacleName}打断了方向，先稳住脚步`
+          : "脚步乱了一下", 1100);
         recordDirectorFact({
           id: `collision:${event.seq}`,
           type: "obstacle-hit",
@@ -1526,9 +1631,12 @@
       } else if (event.type === "dodge") {
         addArcadeCombo(1);
         visualRuntime?.effect("dodge", event.entity);
-        audio.cue("good");
+        audio.cue("good", event.entity.subtype);
         addFlow(9);
         haptic(8);
+        if (event.entity.data?.stageIndex === 0 && event.entity.data?.successCopy) {
+          toast(event.entity.data.successCopy, 1250);
+        }
         recordDirectorFact({
           id: `dodge:${event.seq}`,
           type: "obstacle-dodged",
