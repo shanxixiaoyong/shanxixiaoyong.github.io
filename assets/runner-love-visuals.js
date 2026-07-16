@@ -434,6 +434,16 @@ function routeModuleAt(stageIndex, phaseIndex, serial = 0) {
   const safePhase = clamp(Math.trunc(Number(phaseIndex) || 0), 0, 2);
   const base = THEMED_ROUTE_MODULES[safeStage][safePhase];
   const safeSerial = Math.max(0, Math.trunc(Number(serial) || 0));
+  if (safeStage === 0) {
+    return {
+      ...base,
+      serial: safeSerial,
+      variant: 0,
+      center: 0,
+      widthScale: 0.94,
+      walkScale: 1.12
+    };
+  }
   const variant = ROUTE_VARIATION_ORDER[(safeSerial + safeStage * 5 + safePhase * 3) % ROUTE_VARIATION_ORDER.length];
   const widthOffset = ((variant % 5) - 2) * 0.014;
   const center = Math.sin((safeSerial + 1) * 0.72 + safeStage * 0.61 + safePhase) * base.curve;
@@ -2495,85 +2505,143 @@ function paintRoutePhaseTexture(context, width, height, stageIndex, phaseIndex, 
 
 function makeCampusToonRoadTexture(phaseIndex = 0) {
   const phases = [
-    { base: "#5e6969", mid: "#79817d", light: "#c9d2c8", accent: "#ef9a70" },
-    { base: "#52645d", mid: "#738078", light: "#d6d6aa", accent: "#f0c96d" },
-    { base: "#626762", mid: "#85847a", light: "#eee2c6", accent: "#ef7868" }
+    { edge: "#344c5b", base: "#526d79", mid: "#78939c", sky: "#c6e7ed", warm: "#f1c47b", shadow: "#233c45" },
+    { edge: "#3e5660", base: "#637a80", mid: "#8ba09d", sky: "#d4e9df", warm: "#f5d482", shadow: "#29453f" },
+    { edge: "#4e5c63", base: "#727f82", mid: "#9aa4a1", sky: "#e3ece4", warm: "#efb47d", shadow: "#36484c" }
   ];
   const palette = phases[phaseIndex] || phases[0];
   const texture = canvasTexture(512, 512, (context, width, height) => {
-    const base = context.createLinearGradient(0, 0, width, 0);
-    base.addColorStop(0, palette.base);
-    base.addColorStop(0.2, palette.mid);
-    base.addColorStop(0.5, palette.base);
-    base.addColorStop(0.78, palette.mid);
-    base.addColorStop(1, palette.base);
-    context.fillStyle = base;
+    const asphalt = context.createLinearGradient(0, 0, width, 0);
+    asphalt.addColorStop(0, palette.edge);
+    asphalt.addColorStop(0.12, palette.base);
+    asphalt.addColorStop(0.34, palette.mid);
+    asphalt.addColorStop(0.5, palette.base);
+    asphalt.addColorStop(0.72, palette.mid);
+    asphalt.addColorStop(0.9, palette.base);
+    asphalt.addColorStop(1, palette.edge);
+    context.fillStyle = asphalt;
     context.fillRect(0, 0, width, height);
 
-    context.fillStyle = "rgba(21,39,39,.13)";
-    for (let band = 0; band < 6; band += 1) {
+    const reflectedSky = context.createLinearGradient(width * 0.08, 0, width * 0.92, 0);
+    reflectedSky.addColorStop(0, "rgba(217,239,241,0)");
+    reflectedSky.addColorStop(0.23, "rgba(217,239,241,.08)");
+    reflectedSky.addColorStop(0.48, "rgba(237,250,247,.2)");
+    reflectedSky.addColorStop(0.7, "rgba(196,226,232,.08)");
+    reflectedSky.addColorStop(1, "rgba(196,226,232,0)");
+    context.fillStyle = reflectedSky;
+    context.fillRect(0, 0, width, height);
+
+    // Long painterly edge washes preserve depth without exposing the repeating road tile.
+    context.fillStyle = "rgba(25,52,57,.15)";
+    context.beginPath();
+    context.moveTo(-24, -12);
+    context.bezierCurveTo(88, 78, 38, 186, 104, 278);
+    context.bezierCurveTo(146, 352, 72, 430, 126, 530);
+    context.lineTo(-24, 530);
+    context.closePath();
+    context.fill();
+    context.beginPath();
+    context.moveTo(width + 24, -12);
+    context.bezierCurveTo(420, 96, 474, 210, 402, 302);
+    context.bezierCurveTo(360, 372, 446, 442, 386, 530);
+    context.lineTo(width + 24, 530);
+    context.closePath();
+    context.fill();
+
+    const washes = phaseIndex === 0
+      ? [[128, 72, 98, 34], [344, 204, 122, 42], [218, 394, 142, 47]]
+      : phaseIndex === 1
+        ? [[116, 118, 114, 38], [370, 282, 126, 45], [232, 448, 150, 42]]
+        : [[118, 82, 118, 38], [382, 224, 132, 44], [252, 410, 148, 48]];
+    washes.forEach(([x, y, radiusX, radiusY], index) => {
+      const water = context.createRadialGradient(x, y, 2, x, y, radiusX);
+      water.addColorStop(0, index === 1 ? "rgba(248,222,166,.2)" : "rgba(222,244,247,.25)");
+      water.addColorStop(0.48, index === 1 ? "rgba(241,196,123,.08)" : "rgba(190,226,233,.1)");
+      water.addColorStop(1, "rgba(205,235,239,0)");
+      context.save();
+      context.translate(x, y);
+      context.scale(1, radiusY / radiusX);
+      context.fillStyle = water;
       context.beginPath();
-      context.moveTo(-30, band * 96 + 18);
-      context.bezierCurveTo(112, band * 96 - 24, 332, band * 96 + 74, 550, band * 96 + 6);
-      context.lineTo(550, band * 96 + 30);
-      context.bezierCurveTo(326, band * 96 + 92, 104, band * 96 - 2, -30, band * 96 + 42);
-      context.closePath();
+      context.arc(0, 0, radiusX, 0, Math.PI * 2);
       context.fill();
-    }
+      context.restore();
+    });
 
-    const wet = context.createLinearGradient(width * 0.18, 0, width * 0.82, 0);
-    wet.addColorStop(0, "rgba(226,248,239,0)");
-    wet.addColorStop(0.36, "rgba(226,248,239,.13)");
-    wet.addColorStop(0.52, "rgba(255,238,193,.18)");
-    wet.addColorStop(0.7, "rgba(226,248,239,.06)");
-    wet.addColorStop(1, "rgba(226,248,239,0)");
-    context.fillStyle = wet;
-    context.fillRect(0, 0, width, height);
-
-    context.strokeStyle = "rgba(38,54,52,.24)";
-    context.lineWidth = 3;
-    for (let crack = 0; crack < 7; crack += 1) {
-      const x = 42 + crack * 73;
+    context.strokeStyle = "rgba(232,248,248,.08)";
+    context.lineCap = "round";
+    [82, 205, 326, 442].forEach((x, index) => {
+      context.lineWidth = index % 2 ? 2.2 : 1.4;
       context.beginPath();
-      context.moveTo(x, -10);
-      context.bezierCurveTo(x - 18, 120, x + 24, 256, x - 12, 522);
+      context.moveTo(x, -18);
+      context.bezierCurveTo(x + 22, 112, x - 25, 300, x + 12, 530);
       context.stroke();
+    });
+
+    let seed = 2309 + phaseIndex * 977;
+    for (let index = 0; index < 170; index += 1) {
+      seed = seed * 1664525 + 1013904223 | 0;
+      const x = Math.abs(seed) % width;
+      seed = seed * 1664525 + 1013904223 | 0;
+      const y = Math.abs(seed) % height;
+      const alpha = 0.025 + (index % 5) * 0.009;
+      context.fillStyle = index % 4 === 0 ? `rgba(229,244,243,${alpha})` : `rgba(22,45,51,${alpha})`;
+      context.fillRect(x, y, 1 + index % 3, 1 + (index + 1) % 2);
     }
 
     if (phaseIndex === 0) {
-      context.fillStyle = "rgba(28,43,44,.2)";
-      for (let column = 0; column < 4; column += 1) context.fillRect(column * 152 - 12, 0, 28, height);
-      context.strokeStyle = "rgba(231,239,225,.16)";
-      context.lineWidth = 4;
-      for (let seam = 0; seam < 9; seam += 1) {
-        context.beginPath();
-        context.moveTo(0, seam * 64);
-        context.lineTo(width, seam * 64 + 20);
-        context.stroke();
-      }
+      context.fillStyle = "rgba(20,49,48,.15)";
+      [[-20, 44], [426, 76]].forEach(([x, size]) => {
+        for (let leaf = 0; leaf < 15; leaf += 1) {
+          context.beginPath();
+          context.ellipse(x + leaf * 9, 44 + leaf % 5 * 78, size * 0.48, size * 0.19, -0.42 + leaf * 0.08, 0, Math.PI * 2);
+          context.fill();
+        }
+      });
+      const amberReflection = context.createLinearGradient(54, 0, 174, 0);
+      amberReflection.addColorStop(0, "rgba(255,213,145,0)");
+      amberReflection.addColorStop(0.5, "rgba(255,213,145,.09)");
+      amberReflection.addColorStop(1, "rgba(255,213,145,0)");
+      context.fillStyle = amberReflection;
+      context.fillRect(54, 0, 120, height);
     } else if (phaseIndex === 1) {
-      const shadowTexture = makeCampusShadowTexture();
-      context.globalAlpha = 0.74;
-      context.drawImage(shadowTexture.image, 0, 0, width, height);
-      shadowTexture.dispose();
-      context.globalAlpha = 1;
-      context.strokeStyle = "rgba(255,231,143,.2)";
-      context.lineWidth = 8;
+      context.fillStyle = "rgba(26,62,51,.17)";
+      for (let leaf = 0; leaf < 34; leaf += 1) {
+        const x = leaf % 2 ? 35 + leaf * 7 : width - 42 - leaf * 6;
+        const y = leaf * 37 % height;
+        context.beginPath();
+        context.ellipse(x, y, 30 + leaf % 4 * 5, 11 + leaf % 3 * 3, leaf % 2 ? 0.45 : -0.48, 0, Math.PI * 2);
+        context.fill();
+      }
+      context.strokeStyle = "rgba(255,226,147,.27)";
+      context.lineWidth = 11;
       context.beginPath();
-      context.moveTo(-20, 420);
-      context.bezierCurveTo(130, 330, 345, 184, 535, 86);
+      context.moveTo(-28, 456);
+      context.bezierCurveTo(138, 366, 336, 174, 550, 66);
       context.stroke();
     } else {
-      context.fillStyle = "rgba(244,237,208,.34)";
-      for (let row = 0; row < 8; row += 1) context.fillRect(36, 22 + row * 64, width - 72, 25);
-      context.fillStyle = "rgba(238,112,94,.24)";
-      context.fillRect(18, 0, 9, height);
+      context.fillStyle = "rgba(250,248,225,.4)";
+      for (let row = 0; row < 5; row += 1) {
+        const y = 32 + row * 104;
+        const stripe = context.createLinearGradient(34, y, width - 34, y);
+        stripe.addColorStop(0, "rgba(250,248,225,0)");
+        stripe.addColorStop(0.15, "rgba(250,248,225,.44)");
+        stripe.addColorStop(0.85, "rgba(250,248,225,.44)");
+        stripe.addColorStop(1, "rgba(250,248,225,0)");
+        context.fillStyle = stripe;
+        context.fillRect(34, y, width - 68, 21);
+      }
+      context.strokeStyle = "rgba(239,113,91,.32)";
+      context.lineWidth = 9;
+      context.beginPath();
+      context.moveTo(25, -10);
+      context.bezierCurveTo(18, 150, 40, 352, 27, 522);
+      context.stroke();
     }
-    paintRoutePhaseTexture(context, width, height, 0, phaseIndex, palette.accent);
   });
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1, 3.25);
+  texture.repeat.set(1, 1.08);
   texture.anisotropy = 4;
   return texture;
 }
@@ -5180,15 +5248,15 @@ function makeCampusToonBrickTexture() {
   if (campusToonBrickTexture) return campusToonBrickTexture;
   campusToonBrickTexture = canvasTexture(256, 512, (context, width, height) => {
     const wash = context.createLinearGradient(0, 0, width, height);
-    wash.addColorStop(0, "#8b6f67");
-    wash.addColorStop(0.5, "#735f5b");
-    wash.addColorStop(1, "#566463");
+    wash.addColorStop(0, "#b8c2bc");
+    wash.addColorStop(0.5, "#9eaaa7");
+    wash.addColorStop(1, "#829596");
     context.fillStyle = wash;
     context.fillRect(0, 0, width, height);
     for (let row = 0; row < 16; row += 1) {
       const y = row * 32;
       const offset = row % 2 ? 32 : 0;
-      context.strokeStyle = "rgba(42,58,56,.32)";
+      context.strokeStyle = "rgba(52,72,75,.25)";
       context.lineWidth = 2;
       context.beginPath();
       context.moveTo(0, y);
@@ -8722,10 +8790,10 @@ class CinematicRunnerRenderer {
       clearcoatRoughness: 0.42,
       envMapIntensity: 0.72
     });
-    this.campusRoadMaterial = campusToonMaterial(0x87928e, {
+    this.campusRoadMaterial = campusToonMaterial(0xffffff, {
       map: this.roadTexture,
-      emissive: 0x162b2a,
-      emissiveIntensity: 0.12,
+      emissive: 0x142b3a,
+      emissiveIntensity: 0.07,
       name: "campus-baked-wet-road"
     });
     this.roadMaterial = this.campusRoadMaterial;
@@ -10412,14 +10480,14 @@ class CinematicRunnerRenderer {
     this.platformMaterial.map = this.stageIndex === 0 ? null : this.platformTexture;
     this.platformMaterial.needsUpdate = true;
     if (this.stageIndex === 0) {
-      this.roadMaterial.color.setHex(0x929da0);
+      this.roadMaterial.color.setHex(0xffffff);
       this.curbMaterial.color.setHex(0xc7d0cc);
       this.platformMaterial.color.setHex(0xe0e4e1);
       this.safetyLineMaterial.color.setHex(0xeef1ec);
       this.safetyLineMaterial.emissive.setHex(0x000000);
       this.laneGuideMaterial.color.setHex(0xf7f8f2);
       this.laneGuideMaterial.emissive.setHex(0x000000);
-      this.laneGuideMaterial.opacity = 0.84;
+      this.laneGuideMaterial.opacity = 0.72;
       this.roadMarkMaterial.color.setHex(0xf4f5ef);
       this.roadMarkMaterial.emissive.setHex(0x000000);
       this.groundMaterial.color.setHex(0xd3ddd5);
@@ -10435,7 +10503,7 @@ class CinematicRunnerRenderer {
       this.roadBatches.crosswalks.visible = !railRoute;
       this.roadBatches.roadPatches.visible = !railRoute;
       this.roadBatches.manholes.visible = !railRoute;
-      this.roadBatches.walks.visible = true;
+      this.roadBatches.walks.visible = this.stageIndex !== 0;
       this.roadBatches.themeBands.visible = true;
       this.roadBatches.themeMotifs.visible = true;
     }
@@ -10559,12 +10627,12 @@ class CinematicRunnerRenderer {
     this.roadMarkMaterial.opacity = 0.46 + nextPhase * 0.08;
     this.routeBandMaterial.opacity = 0.42 + nextPhase * 0.05;
     if (this.stageIndex === 0) {
-      this.roadMaterial.color.setHex(0x929da0);
+      this.roadMaterial.color.setHex(0xffffff);
       this.curbMaterial.color.setHex(0xc7d0cc);
       this.platformMaterial.color.setHex(0xe0e4e1);
       this.laneGuideMaterial.color.setHex(0xf7f8f2);
       this.laneGuideMaterial.emissive.setHex(0x000000);
-      this.laneGuideMaterial.opacity = 0.84;
+      this.laneGuideMaterial.opacity = 0.72;
     }
     this.routeBandMaterial.emissiveIntensity = 0.28 + nextPhase * 0.13;
     this.routeMotifMaterial.opacity = 0.28 + nextPhase * 0.045;
@@ -10800,7 +10868,7 @@ class CinematicRunnerRenderer {
       const detail = profile.roadDetail;
       const campusStage = this.stageIndex === 0;
       this.roadBatches.ballast.visible = !arriving;
-      this.roadBatches.walks.visible = !arriving;
+      this.roadBatches.walks.visible = !campusStage && !arriving;
       this.roadBatches.sleepers.visible = !arriving && railRoute && detail > 0;
       this.roadBatches.rails.visible = !arriving && railRoute;
       this.roadBatches.thirdRails.visible = !arriving && railRoute && detail > 0;

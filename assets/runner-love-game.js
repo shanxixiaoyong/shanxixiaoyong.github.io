@@ -968,7 +968,7 @@
     return snapshot();
   }
 
-  function start(saved) {
+  function start(saved, immediate = false) {
     audio.start();
     if (saved?.run?.status === "playing") runState = saved.run;
     const savedStory = storyEnvelope(runState);
@@ -987,6 +987,7 @@
     updateRunFeedback();
     syncCarryFromState();
     beginStageIntro(saved?.run?.status === "playing" ? "resume" : "start");
+    if (immediate) finishStageIntro();
   }
 
   function updateArrivalPrompt() {
@@ -1824,15 +1825,15 @@
     const node = $(selector);
     if (node) node.addEventListener(event, handler);
   };
-  bind("[data-start]", "click", () => start());
-  bind("[data-continue]", "click", () => start(safeLoad()));
-  bind("[data-new-run]", "click", () => { reset(); start(); });
-  bind("[data-restart]", "click", () => { reset(Boolean(safeLoad()?.profile?.newGamePlusUnlocked)); start(); });
+  bind("[data-start]", "click", () => start(undefined, true));
+  bind("[data-continue]", "click", () => start(safeLoad(), true));
+  bind("[data-new-run]", "click", () => { reset(); start(undefined, true); });
+  bind("[data-restart]", "click", () => { reset(Boolean(safeLoad()?.profile?.newGamePlusUnlocked)); start(undefined, true); });
   bind("[data-retry]", "click", retryStage);
   bind("[data-failure-retry]", "click", retryStage);
   bind("[data-failure-restart]", "click", restartStage);
   bind("[data-stage-intro-skip]", "click", finishStageIntro);
-  bind("[data-new-game-plus]", "click", () => { const save = safeLoad(); if (save && rules.canStartNewGamePlus(save)) { reset(true); start(); } });
+  bind("[data-new-game-plus]", "click", () => { const save = safeLoad(); if (save && rules.canStartNewGamePlus(save)) { reset(true); start(undefined, true); } });
   bind("[data-sound]", "click", (event) => {
     const muted = audio.toggle();
     event.currentTarget.textContent = muted ? "♩" : "♪";
@@ -1972,9 +1973,8 @@
   }
 
   const saved = safeLoad();
-  if (saved?.run?.status === "playing") show(ui.savedRun, true);
   configureCanvas();
-  updateHud();
+  start(saved?.run?.status === "playing" ? saved : undefined, true);
   render();
   frameHandle = requestAnimationFrame(frame);
 })();

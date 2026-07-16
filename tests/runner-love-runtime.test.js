@@ -85,10 +85,10 @@ function boot() {
   return { debug: window.__runnerLoveDebug, nodes, setNow(value) { now = value; } };
 }
 
-test("boots the real runtime in intro mode with the long-form seven-stage state", () => {
+test("boots straight into the first run with the long-form seven-stage state", () => {
   const { debug } = boot();
   const state = debug.snapshot();
-  assert.equal(state.mode, "intro");
+  assert.equal(state.mode, "playing");
   assert.equal(state.runState.stageIndex, 0);
   assert.equal(state.runState.condition, 100);
   assert.equal(state.runState.stage.expectedSeconds, 180);

@@ -72,9 +72,9 @@ test("provides restrained danger feedback and a dedicated checkpoint failure sur
   assert.match(game, /bind\("\[data-failure-restart\]", "click", restartStage\)/);
 });
 
-test("starts with a believable message and lets destination scenes play without a continue dialog", () => {
-  assert.match(html, /刚才是不是在香樟路看见你了/);
-  assert.match(html, /去见她/);
+test("starts the first run immediately and lets destination scenes play without a continue dialog", () => {
+  assert.doesNotMatch(html, /data-intro|data-start|去见她/);
+  assert.match(game, /start\(saved\?\.run\?\.status === "playing" \? saved : undefined, true\)/);
   assert.match(html, /class="arrival-caption" data-arrival hidden/);
   assert.match(html, /data-arrival-action hidden/);
   assert.doesNotMatch(html, /data-arrival-continue|data-performance-continue|点击继续/);
@@ -104,7 +104,7 @@ test("uses local cinematic scene art, local 3D models, and a cache-consistent re
   const versions = [...html.matchAll(/runner-love-[^"?]+\?v=([^"']+)/g)].map((match) => match[1]);
   assert.ok(versions.length >= 5);
   assert.equal(new Set(versions).size, 1);
-  assert.equal(versions[0], "runner-love-campus-20260716v");
+  assert.equal(versions[0], "runner-love-campus-20260716w");
 });
 
 test("result and checkpoint surfaces preserve route stats and immediate replay", () => {
