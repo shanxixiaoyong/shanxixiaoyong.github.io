@@ -204,6 +204,22 @@ test("multiplier scales score and overdrive accelerates temporarily", () => {
   assert.equal(run.state.speed, 10);
 });
 
+test("overdrive clears hazards and sweeps elevated pickups while the rush is active", () => {
+  const run = game({ startSpeed: 10, maxSpeed: 10, acceleration: 0 });
+  run.activatePowerup("overdrive", { duration: 0.4, speedBoost: 4 });
+  run.drainEvents();
+  const obstacle = run.spawn({ type: "obstacle", lane: 0, z: 1.5, avoid: "slide" });
+  const elevated = run.spawn({ type: "collectible", lane: 0, z: 1.5, height: 1.2, points: 3 });
+  run.step(0.1);
+  assert.equal(obstacle.active, false);
+  assert.equal(run.state.hits, 0);
+  assert.equal(run.state.dodges, 1);
+  assert.equal(elevated.collected, true);
+  const events = run.drainEvents();
+  assert.ok(events.some((event) => event.type === "dodge"));
+  assert.ok(events.some((event) => event.type === "collect" && event.entity.id === elevated.id));
+});
+
 test("powerup state is JSON serializable and deterministic across fixed updates", () => {
   const original = engine.createState({ fixedStep: 0.1, seed: "powerup-snapshot", duration: 10, finaleSeconds: 0 });
   engine.activatePowerup(original, "magnet", { duration: 0.4 });

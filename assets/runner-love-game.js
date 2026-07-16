@@ -88,11 +88,13 @@
   ]);
 
   const POWERUP_META = Object.freeze({
-    magnet: Object.freeze({ glyph: "◎", label: "牵引", color: "#66e5ff" }),
-    shield: Object.freeze({ glyph: "◇", label: "守护", color: "#9fffc8" }),
-    multiplier: Object.freeze({ glyph: "×2", label: "共振", color: "#ffd36b" }),
-    overdrive: Object.freeze({ glyph: "»", label: "奔赴", color: "#ff7f6b" })
+    magnet: Object.freeze({ glyph: "◎", label: "磁吸", color: "#66e5ff" }),
+    shield: Object.freeze({ glyph: "▱", label: "护跑", color: "#9fffc8" }),
+    multiplier: Object.freeze({ glyph: "×2", label: "双倍", color: "#ffd36b" }),
+    overdrive: Object.freeze({ glyph: "»", label: "跃迁", color: "#ff7f6b" })
   });
+  const ARCADE_POWERUP_ORDER = Object.freeze(["magnet", "shield", "multiplier", "overdrive"]);
+  const ONBOARDING_ACTIONS = Object.freeze(["jump", "switch", "slide"]);
   const SPEED_LABELS = Object.freeze(["起跑", "加速", "疾行", "冲刺", "极速"]);
   const STAGE_RUNTIME_FALLBACKS = Object.freeze([
     Object.freeze({ chapter: "第一章 · 雨后再遇", introTitle: "香樟路尽头，她也停下了脚步", tone: "雨后校园", phases: Object.freeze([
@@ -366,6 +368,10 @@
   let routePhase = -1;
   let flowEnergy = 0;
   let flowPeak = 0;
+  let arcadeCombo = 0;
+  let arcadeBest = 0;
+  let arcadePickupChain = 0;
+  let arcadeRewardTier = 0;
   let storyEchoes = [];
   let lastSpeedTier = -1;
   let lastConditionBand = "steady";
@@ -383,16 +389,16 @@
       duration: 3600,
       finaleSeconds: 0,
       manualStages: true,
-      startSpeed: 14.8,
-      maxSpeed: 31.5,
-      acceleration: 0.018,
+      startSpeed: 17.2,
+      maxSpeed: 36,
+      acceleration: 0.082,
       laneChangeDuration: 0.11,
       jumpDuration: 0.66,
       jumpHeight: 2,
       slideDuration: 0.52,
-      collisionSpeedLoss: 2.4,
+      collisionSpeedLoss: 2.8,
       moduleLength: 42,
-      spawnAhead: 105,
+      spawnAhead: 120,
       stages: content.STAGES.map((stage, index) => ({
         id: stage.id,
         from: index / 7,
@@ -467,6 +473,10 @@
       routePhase,
       flowEnergy,
       flowPeak,
+      arcadeCombo,
+      arcadeBest,
+      arcadePickupChain,
+      arcadeRewardTier,
       storyEchoes: clone(storyEchoes),
       lastSpeedTier,
       runPrimed
@@ -480,6 +490,10 @@
     routePhase = Math.max(-1, Math.min(2, Math.trunc(Number(saved.routePhase) || 0)));
     flowEnergy = Math.max(0, Math.min(100, Number(saved.flowEnergy) || 0));
     flowPeak = Math.max(flowEnergy, Number(saved.flowPeak) || 0);
+    arcadeCombo = Math.max(0, Math.trunc(Number(saved.arcadeCombo) || 0));
+    arcadeBest = Math.max(arcadeCombo, Math.trunc(Number(saved.arcadeBest) || 0));
+    arcadePickupChain = Math.max(0, Math.trunc(Number(saved.arcadePickupChain) || 0));
+    arcadeRewardTier = Math.max(0, Math.trunc(Number(saved.arcadeRewardTier) || 0));
     storyEchoes = Array.isArray(saved.storyEchoes) ? clone(saved.storyEchoes) : [];
     lastSpeedTier = Number.isFinite(Number(saved.lastSpeedTier)) ? Number(saved.lastSpeedTier) : -1;
     runPrimed = Boolean(saved.runPrimed);
@@ -549,6 +563,51 @@
     flowEnergy = Math.max(0, Math.min(100, flowEnergy + amount));
     flowPeak = Math.max(flowPeak, flowEnergy);
     audio.setFlow?.(flowEnergy / 100);
+  }
+
+  function effectiveCombo() {
+    return Math.max(Number(runState.combo) || 0, arcadeCombo);
+  }
+
+  function updateComboHud() {
+    const combo = effectiveCombo();
+    if (ui.combo) ui.combo.textContent = combo > 1 ? `连贯 ×${combo}` : "";
+    root?.setAttribute("data-arcade-combo", String(arcadeCombo));
+  }
+
+  function powerupOptions(type) {
+    if (type === "magnet") return { duration: 7.5, laneRange: 1 };
+    if (type === "shield") return { duration: 10 };
+    if (type === "multiplier") return { duration: 7.5, factor: 2 };
+    return { duration: 3.4, speedBoost: 8.5 };
+  }
+
+  function activateArcadePowerup(type, earned = false) {
+    const meta = POWERUP_META[type];
+    if (!meta) return;
+    motion.activatePowerup?.(type, powerupOptions(type));
+    addFlow(type === "overdrive" ? 24 : 16);
+    visualRuntime?.effect("perfect", { lane: motion.state.lane, z: 1.2, powerup: type });
+    toast(earned ? `连贯奖励 · ${meta.label}` : `${meta.label}已启动`, 1250);
+    haptic(type === "overdrive" ? [12, 18, 12, 24, 18] : [9, 16, 10]);
+  }
+
+  function addArcadeCombo(amount = 1) {
+    arcadeCombo = Math.min(99, arcadeCombo + Math.max(0, Math.trunc(Number(amount) || 0)));
+    arcadeBest = Math.max(arcadeBest, arcadeCombo);
+    const rewardTier = Math.floor(arcadeCombo / 8);
+    if (rewardTier > arcadeRewardTier) {
+      arcadeRewardTier = rewardTier;
+      activateArcadePowerup(ARCADE_POWERUP_ORDER[(rewardTier - 1) % ARCADE_POWERUP_ORDER.length], true);
+    }
+    updateComboHud();
+  }
+
+  function breakArcadeCombo() {
+    arcadeCombo = 0;
+    arcadePickupChain = 0;
+    arcadeRewardTier = 0;
+    updateComboHud();
   }
 
   function toast(text, duration = 1150) {
@@ -828,6 +887,7 @@
     if (ui.speedState) ui.speedState.setAttribute("data-tier", String(speedTier));
     if (ui.speedLabel) ui.speedLabel.textContent = SPEED_LABELS[speedTier];
     if (ui.speedFill) ui.speedFill.style.transform = `scaleX(${speedProgress})`;
+    updateComboHud();
 
     const activePowerups = Object.entries(motion.state.powerups || {})
       .filter(([, powerup]) => powerup?.active && Number(powerup.remaining) > 0)
@@ -914,7 +974,7 @@
     const current = runState.status === "completed" ? definition.target : runState.stage.progress;
     if (ui.progress) ui.progress.textContent = `${current} / ${definition.target}`;
     if (ui.progressFill) ui.progressFill.style.transform = `scaleX(${Math.min(1, current / definition.target)})`;
-    if (ui.combo) ui.combo.textContent = runState.combo > 1 ? `连贯 ×${runState.combo}` : "";
+    updateComboHud();
     if (ui.stageTrack) Array.from(ui.stageTrack.children).forEach((item, itemIndex) => {
       item.classList.toggle("is-done", itemIndex < runState.stageIndex);
       item.classList.toggle("is-current", itemIndex === index);
@@ -923,7 +983,7 @@
     show(ui.newGamePlus, Boolean(save?.profile?.newGamePlusUnlocked));
     updateCargoHud();
     updateRoutePhase(routePhase < 0);
-    audio.setStage(index + 1, runState.condition, runState.combo);
+    audio.setStage(index + 1, runState.condition, effectiveCombo());
   }
 
   function reset(newGamePlus) {
@@ -946,6 +1006,10 @@
     routePhase = -1;
     flowEnergy = 0;
     flowPeak = 0;
+    arcadeCombo = 0;
+    arcadeBest = 0;
+    arcadePickupChain = 0;
+    arcadeRewardTier = 0;
     storyEchoes = [];
     lastSpeedTier = -1;
     lastConditionBand = "steady";
@@ -1055,9 +1119,9 @@
   function spawnPattern() {
     if (mode !== "playing") return false;
     const activeAhead = motion.state.entities.filter((entity) => entity.active && entity.z > 8);
-    if (activeAhead.length > 36) return false;
+    if (activeAhead.length > 72) return false;
     const farthest = activeAhead.reduce((maximum, entity) => Math.max(maximum, entity.z), 0);
-    if (farthest > 58) return false;
+    if (farthest > 92) return false;
     const stageIndex = currentStageIndex();
     const phaseIndex = Math.max(0, routePhase);
     const experience = getStageExperience(stageIndex);
@@ -1088,13 +1152,17 @@
       : Array.isArray(experience.patterns?.[phaseIndex]) ? experience.patterns[phaseIndex] : semanticBlueprints;
     const candidates = authoredPatterns?.filter((entry) => Array.isArray(entry?.obstacles) && entry.obstacles.length) || PATTERN_BLUEPRINTS;
     const blueprint = candidates[(patternCursor + stageIndex * 2 + phaseIndex) % candidates.length];
-    const baseZ = Math.max(28, motion.state.speed * 1.18, farthest + 12);
-    const rowSpacing = Math.max(14.5, motion.state.speed * 0.78);
+    const onboardingAction = stageIndex === 0 && patternCursor < ONBOARDING_ACTIONS.length
+      ? ONBOARDING_ACTIONS[patternCursor]
+      : null;
+    const firstAction = onboardingAction || directorPlan.action;
+    const baseZ = Math.max(onboardingAction ? 36 : 31, motion.state.speed * 1.42, farthest + 10);
+    const rowSpacing = Math.max(11.8, motion.state.speed * 0.62);
     const zRows = [...new Set(blueprint.obstacles.map((entry) => Number(entry.z) || 0))].sort((left, right) => left - right);
     const patternId = `${content.STAGES[stageIndex].id}-${blueprint.id}-${patternCursor}`;
     blueprint.obstacles.forEach((spec, row) => {
       const rowOrdinal = Math.max(0, zRows.indexOf(Number(spec.z) || 0));
-      const requiredAction = rowOrdinal === 0 ? directorPlan.action : spec.avoid;
+      const requiredAction = rowOrdinal === 0 ? firstAction : spec.avoid;
       const matchingRow = blueprint.obstacles.filter((entry) => entry.z === spec.z);
       if (rowOrdinal === 0 && matchingRow[0] !== spec) return;
       const occupiedLanes = new Set(matchingRow.map((entry) => entry.lane));
@@ -1139,18 +1207,26 @@
       });
     });
 
-    const tokenLanes = [...directorPlan.collectibleLanes, ...directorPlan.collectibleLanes.slice(1), motion.state.lane];
     const collectibleKinds = phase.collectibleKinds || phase.collectibles || ["stage-token"];
-    tokenLanes.forEach((lane, tokenIndex) => {
+    const switchLane = directorPlan.collectibleLanes.find((lane) => lane !== motion.state.lane)
+      ?? (motion.state.lane === 0 ? (patternCursor % 2 ? -1 : 1) : 0);
+    const tokenCount = 12;
+    for (let tokenIndex = 0; tokenIndex < tokenCount; tokenIndex += 1) {
+      const guideProgress = tokenIndex / (tokenCount - 1);
+      const lane = firstAction === "switch" && tokenIndex >= 4 ? switchLane : motion.state.lane;
+      const jumpArc = firstAction === "jump"
+        ? Math.max(0, Math.sin(Math.PI * Math.max(0, Math.min(1, (guideProgress - 0.16) / 0.72)))) * 1.12
+        : 0;
       const collectibleKind = collectibleKinds[(patternCursor + tokenIndex) % collectibleKinds.length];
       motion.spawn({
         type: "collectible",
         lane,
-        z: baseZ + 3.2 + tokenIndex * 3.25,
+        z: baseZ - 13 + tokenIndex * 2.15,
         points: 4 + stageIndex,
         patternId,
         row: tokenIndex,
-        arc: Math.sin(tokenIndex / (tokenLanes.length - 1) * Math.PI) * (phaseIndex === 1 ? 0.42 : 0.26),
+        height: jumpArc,
+        arc: jumpArc,
         data: {
           collectibleKind,
           stageId: content.STAGES[stageIndex].id,
@@ -1161,7 +1237,7 @@
           color: phase.collectibleColor || experience.collectibleColor || null
         }
       });
-    });
+    }
 
     const allItemIds = content.STAGE_ITEM_IDS[stageIndex];
     const authoredItemIds = phase.itemIds || phase.storyItemIds;
@@ -1169,7 +1245,26 @@
     const phaseItemIds = allItemIds.slice(phaseIndex * third, Math.min(allItemIds.length, (phaseIndex + 1) * third));
     const itemIds = Array.isArray(authoredItemIds) && authoredItemIds.length ? authoredItemIds : phaseItemIds.length ? phaseItemIds : allItemIds;
     const choiceGroup = `${patternId}-route`;
-    const choiceZ = baseZ + Math.max(1, zRows.length) * rowSpacing + 13;
+    const obstacleExitZ = baseZ + Math.max(1, zRows.length) * rowSpacing;
+    if ((patternCursor + 1) % 4 === 0) {
+      const powerupType = ARCADE_POWERUP_ORDER[Math.floor(patternCursor / 4) % ARCADE_POWERUP_ORDER.length];
+      const powerupLane = directorPlan.collectibleLanes[(patternCursor + stageIndex) % directorPlan.collectibleLanes.length] ?? motion.state.lane;
+      motion.spawn({
+        type: "powerup",
+        lane: powerupLane,
+        z: obstacleExitZ + 6,
+        points: 20,
+        patternId,
+        label: POWERUP_META[powerupType].label,
+        data: {
+          powerupPickup: powerupType,
+          stageIndex,
+          phase: phaseIndex,
+          venue: phase.venue
+        }
+      });
+    }
+    const choiceZ = obstacleExitZ + 17;
     directorPlan.choiceLanes.forEach((lane, laneOffset) => {
       const itemId = itemIds[(patternCursor + laneOffset + stageIndex) % itemIds.length];
       const item = content.getItem(itemId);
@@ -1294,6 +1389,7 @@
     }
     spawnInteractionTrail(effect, interaction.gameplay.strength);
     scheduleStoryEchoes(interaction, item);
+    addArcadeCombo(2);
     addFlow(outcome === "perfect" ? 24 : 17);
     haptic(outcome === "perfect" ? [12, 22, 16] : 12);
     announce(interaction.narrative.currentEvent);
@@ -1373,8 +1469,17 @@
     events.forEach((event) => {
       if (event.type === "collect") {
         if (["story-item", "route-choice"].includes(event.entity.type)) collectStoryItem(event.entity);
+        else if (event.entity.type === "powerup") {
+          const type = event.entity.data?.powerupPickup;
+          activateArcadePowerup(type, false);
+          addArcadeCombo(2);
+          visualRuntime?.effect("story-pickup", { ...event.entity, powerup: type });
+          audio.cue("perfect");
+        }
         else if (event.entity.type === "collectible") {
           const magnetPickup = event.source === "magnet";
+          arcadePickupChain += 1;
+          if (arcadePickupChain % 4 === 0) addArcadeCombo(1);
           addFlow((magnetPickup ? 10 : 7) + Math.min(5, runState.combo));
           motion.boost?.(0.7, 0.72);
           visualRuntime?.effect("energy", { ...event.entity, source: event.source, multiplier: event.multiplier });
@@ -1400,6 +1505,7 @@
         haptic([18, 24, 9]);
         toast("守护替你接住了这次碰撞", 1300);
       } else if (event.type === "collision") {
+        breakArcadeCombo();
         visualRuntime?.effect("miss", event.entity);
         audio.cue("miss");
         addFlow(-42);
@@ -1418,6 +1524,7 @@
         });
         applyMoment({ outcome: "miss", kind: "collision" });
       } else if (event.type === "dodge") {
+        addArcadeCombo(1);
         visualRuntime?.effect("dodge", event.entity);
         audio.cue("good");
         addFlow(9);
@@ -1435,6 +1542,7 @@
           choicePending: Boolean(event.entity.data?.choicePending)
         });
       } else if (event.type === "near-miss") {
+        addArcadeCombo(2);
         visualRuntime?.effect("near-miss", event.entity);
         audio.cue("near-miss");
         addFlow(15);
@@ -1635,6 +1743,9 @@
       beatClock = 0;
       flowEnergy = 0;
       flowPeak = 0;
+      arcadeCombo = 0;
+      arcadePickupChain = 0;
+      arcadeRewardTier = 0;
       storyEchoes = [];
       lastSpeedTier = -1;
     }
@@ -1696,7 +1807,12 @@
     spawnClock -= seconds;
     if (spawnClock <= 0) {
       const spawned = spawnPattern();
-      spawnClock = spawned ? 5.45 + (patternCursor % 3) * 0.22 : 0.24;
+      const speedRatio = Math.max(0, Math.min(1,
+        (motion.state.speed - motion.state.config.startSpeed)
+        / Math.max(1, motion.state.config.maxSpeed - motion.state.config.startSpeed)));
+      spawnClock = spawned
+        ? Math.max(1.72, 2.82 - speedRatio * 1.02 + (patternCursor % 3) * 0.08)
+        : 0.12;
     }
     motion.step(seconds);
     handleMotionEvents(motion.drainEvents());
@@ -1897,6 +2013,12 @@
           director: clone(director.snapshot()),
           routePhase,
           scheduler: schedulerSnapshot(),
+      arcade: {
+        combo: arcadeCombo,
+        best: arcadeBest,
+        pickupChain: arcadePickupChain,
+        rewardTier: arcadeRewardTier
+      },
       motion: {
         stageIndex: motion.state.stageIndex,
         stage: motion.state.stage,

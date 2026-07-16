@@ -42,9 +42,23 @@ test("connects swipe and keyboard controls to the classic three-lane action set"
 test("paces each route around three minutes without a hard timer gate", () => {
   assert.equal((rules.match(/expectedSeconds:\s*180/g) || []).length, 7);
   assert.doesNotMatch(rules, /progress >= definition\.target && next\.stage\.elapsed/);
-  assert.match(source, /spawnClock = spawned \? 5\.45 \+ \(patternCursor % 3\) \* 0\.22 : 0\.24/);
+  assert.match(source, /Math\.max\(1\.72, 2\.82 - speedRatio \* 1\.02/);
+  assert.match(source, /startSpeed:\s*17\.2/);
+  assert.match(source, /maxSpeed:\s*36/);
   assert.doesNotMatch(source, /Math\.max\(progressRatio, timeRatio\)/);
   assert.match(source, /director\.planPattern/);
+});
+
+test("builds a readable arcade loop with onboarding trails, pickups, streak rewards, and rising pressure", () => {
+  assert.match(source, /ONBOARDING_ACTIONS = Object\.freeze\(\["jump", "switch", "slide"\]\)/);
+  assert.match(source, /const tokenCount = 12/);
+  assert.match(source, /height: jumpArc/);
+  assert.match(source, /type: "powerup"/);
+  assert.match(source, /powerupPickup: powerupType/);
+  assert.match(source, /function addArcadeCombo/);
+  assert.match(source, /Math\.floor\(arcadeCombo \/ 8\)/);
+  assert.match(source, /activateArcadePowerup/);
+  assert.match(source, /breakArcadeCombo\(\)/);
 });
 
 test("rotates solvable obstacle patterns and offers sparse intentional two-lane story choices", () => {
@@ -116,7 +130,7 @@ test("turns story collections into gameplay powerups, world changes, and later n
 });
 
 test("surfaces progressive speed tiers and the active powerup lifecycle", () => {
-  assert.match(source, /acceleration:\s*0\.018/);
+  assert.match(source, /acceleration:\s*0\.082/);
   assert.match(source, /motion\.state\.speedProgress/);
   assert.match(source, /motion\.state\.speedTier/);
   assert.match(source, /function signalSpeedTier\(\)/);

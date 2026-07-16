@@ -3421,7 +3421,25 @@ function createPowerupVisualRig(particleTexture, accent) {
     shield.add(ring);
     return ring;
   });
-  shield.add(shieldShell);
+  const shieldBoardMaterial = powerupMaterial(POWERUP_COLORS.shield);
+  const shieldBoard = mesh(
+    powerupGeometry("shield-hoverboard", () => new THREE.BoxGeometry(1.22, 0.1, 0.42)),
+    shieldBoardMaterial
+  );
+  shieldBoard.position.y = 0.08;
+  shieldBoard.renderOrder = 4;
+  const shieldBoardRailMaterial = powerupMaterial(0xeaffff);
+  const shieldBoardRails = [-0.45, 0.45].map((x) => {
+    const rail = mesh(
+      powerupGeometry("shield-hoverboard-rail", () => new THREE.CylinderGeometry(0.055, 0.055, 0.32, 10)),
+      shieldBoardRailMaterial
+    );
+    rail.position.set(x, 0.035, 0);
+    rail.rotation.x = Math.PI / 2;
+    shield.add(rail);
+    return rail;
+  });
+  shield.add(shieldShell, shieldBoard);
   shield.visible = false;
   root.add(shield);
 
@@ -3568,7 +3586,17 @@ function createPowerupVisualRig(particleTexture, accent) {
   return {
     root,
     magnet: { group: magnet, arcs: magnetArcs, material: magnetMaterial },
-    shield: { group: shield, shell: shieldShell, shellMaterial: shieldMaterial, rings: shieldRings, ringMaterial: shieldRingMaterial },
+    shield: {
+      group: shield,
+      shell: shieldShell,
+      shellMaterial: shieldMaterial,
+      rings: shieldRings,
+      ringMaterial: shieldRingMaterial,
+      board: shieldBoard,
+      boardMaterial: shieldBoardMaterial,
+      boardRails: shieldBoardRails,
+      boardRailMaterial: shieldBoardRailMaterial
+    },
     multiplier: { group: multiplier, afterimages, scorePulses, scorePulseMaterial },
     overdrive: { group: overdrive, speedWaves, speedWaveMaterial, edgeFlow, edgeFlowMaterial },
     storyWorld: { group: storyWorld, roadPatches: storyRoadPatches, roadMaterial: storyRoadMaterial, localWeather, localWeatherMaterial, light: storyLight },
@@ -6823,6 +6851,125 @@ function animateRiggedRunner(character, delta, action, vertical, intensity, late
   }
 }
 
+function createPowerupPickup(type = "magnet", particleTexture = null) {
+  const group = new THREE.Group();
+  const color = POWERUP_COLORS[type] || POWERUP_COLORS.magnet;
+  const coreMaterial = material(color, {
+    emissive: color,
+    emissiveIntensity: 0.82,
+    roughness: 0.16,
+    metalness: 0.62
+  });
+  const paleMaterial = material(0xf8ffff, {
+    emissive: color,
+    emissiveIntensity: 0.28,
+    roughness: 0.2,
+    metalness: 0.72
+  });
+  const orbitMaterial = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false
+  });
+  const orbit = mesh(
+    powerupGeometry("pickup-orbit", () => new THREE.TorusGeometry(0.72, 0.025, 7, 38)),
+    orbitMaterial
+  );
+  orbit.rotation.x = Math.PI / 2;
+  group.add(orbit);
+
+  const core = mesh(
+    powerupGeometry("pickup-core", () => new THREE.SphereGeometry(0.2, 18, 12)),
+    coreMaterial
+  );
+  core.scale.set(1.08, 1.08, 0.72);
+  group.add(core);
+
+  if (type === "magnet") {
+    const arc = mesh(
+      powerupGeometry("pickup-magnet", () => new THREE.TorusGeometry(0.34, 0.11, 10, 30, Math.PI * 1.52)),
+      coreMaterial
+    );
+    arc.rotation.z = -Math.PI * 0.76;
+    arc.position.y = 0.05;
+    const tips = [-1, 1].map((side) => {
+      const tip = mesh(powerupGeometry("pickup-magnet-tip", () => new THREE.BoxGeometry(0.18, 0.2, 0.18)), paleMaterial);
+      tip.position.set(side * 0.25, -0.2, 0);
+      return tip;
+    });
+    group.add(arc, ...tips);
+  } else if (type === "shield") {
+    const board = mesh(
+      powerupGeometry("pickup-board", () => new THREE.BoxGeometry(0.94, 0.14, 0.36)),
+      coreMaterial
+    );
+    board.rotation.z = -0.12;
+    const rails = [-0.32, 0.32].map((x) => {
+      const rail = mesh(powerupGeometry("pickup-board-rail", () => new THREE.CylinderGeometry(0.06, 0.06, 0.3, 10)), paleMaterial);
+      rail.position.set(x, -0.12, 0);
+      rail.rotation.x = Math.PI / 2;
+      return rail;
+    });
+    group.add(board, ...rails);
+  } else if (type === "multiplier") {
+    [-0.2, 0.2].forEach((x, index) => {
+      const loop = mesh(
+        powerupGeometry("pickup-multiplier-loop", () => new THREE.TorusGeometry(0.3, 0.075, 9, 28)),
+        index ? paleMaterial : coreMaterial
+      );
+      loop.position.x = x;
+      loop.rotation.z = index ? -0.28 : 0.28;
+      group.add(loop);
+    });
+    [-1, 1].forEach((side) => {
+      const bar = mesh(powerupGeometry("pickup-multiplier-bar", () => new THREE.BoxGeometry(0.09, 0.62, 0.1)), paleMaterial);
+      bar.rotation.z = side * 0.72;
+      group.add(bar);
+    });
+  } else {
+    const boltShape = new THREE.Shape();
+    boltShape.moveTo(-0.08, 0.56);
+    boltShape.lineTo(0.34, 0.12);
+    boltShape.lineTo(0.1, 0.08);
+    boltShape.lineTo(0.22, -0.56);
+    boltShape.lineTo(-0.34, 0.02);
+    boltShape.lineTo(-0.08, 0.05);
+    boltShape.closePath();
+    const bolt = mesh(powerupGeometry("pickup-overdrive-bolt", () => new THREE.ShapeGeometry(boltShape)), coreMaterial);
+    bolt.scale.setScalar(1.08);
+    group.add(bolt);
+    [-1, 1].forEach((side) => {
+      const wing = mesh(powerupGeometry("pickup-overdrive-wing", () => new THREE.ConeGeometry(0.12, 0.56, 8)), paleMaterial);
+      wing.position.set(side * 0.42, 0, -0.02);
+      wing.rotation.z = side * -Math.PI / 2;
+      group.add(wing);
+    });
+  }
+
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: particleTexture,
+    color,
+    transparent: true,
+    opacity: 0.74,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false
+  }));
+  halo.scale.set(2.05, 2.05, 1);
+  halo.position.z = -0.12;
+  group.add(halo);
+  group.userData.kind = "powerup";
+  group.userData.pickupType = type;
+  group.userData.halo = halo;
+  group.userData.orbit = orbit;
+  group.userData.core = core;
+  group.userData.sharedTexture = particleTexture;
+  return group;
+}
+
 function createCollectible(stageIndex, accent, particleTexture) {
   const group = new THREE.Group();
   const heartColor = STAGE_COLLECTIBLE_COLORS[stageIndex] || accent;
@@ -6877,7 +7024,7 @@ function createCollectible(stageIndex, accent, particleTexture) {
 }
 
 function createCollectibleBatches(particleTexture, accent) {
-  const capacity = 48;
+  const capacity = 72;
   const rimMaterial = material(new THREE.Color(accent).lerp(new THREE.Color(0xffffff), 0.26), {
     emissive: accent,
     emissiveIntensity: 0.42,
@@ -9785,6 +9932,8 @@ class CinematicRunnerRenderer {
     visuals.magnet.material.color.setHex(POWERUP_COLORS.magnet);
     visuals.shield.shellMaterial.color.setHex(POWERUP_COLORS.shield);
     visuals.shield.ringMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xe9fbff), 0.78));
+    visuals.shield.boardMaterial.color.setHex(POWERUP_COLORS.shield);
+    visuals.shield.boardRailMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(0xffffff), 0.84));
     visuals.multiplier.afterimages[0].material.color.setHex(POWERUP_COLORS.multiplier);
     visuals.multiplier.afterimages[1].material.color.setHex(config.accent);
     visuals.multiplier.scorePulseMaterial.color.copy(new THREE.Color(config.accent).lerp(new THREE.Color(POWERUP_COLORS.multiplier), 0.58));
@@ -9953,7 +10102,7 @@ class CinematicRunnerRenderer {
     const overdriveStrength = this.powerupStrengths.overdrive * enabled;
 
     const magnetActive = magnetStrength > 0.01;
-    visuals.magnet.group.visible = magnetActive && !cinematicPov;
+    visuals.magnet.group.visible = magnetActive;
     if (magnetActive) {
       visuals.magnet.group.position.set(this.currentLaneX, 1.05, PLAYER_Z - 0.16);
       visuals.magnet.material.opacity = magnetStrength * (0.18 + Math.sin(time * 8) * 0.035);
@@ -9964,13 +10113,17 @@ class CinematicRunnerRenderer {
     }
 
     const shieldActive = shieldStrength > 0.01;
-    visuals.shield.group.visible = shieldActive && !cinematicPov;
+    visuals.shield.group.visible = shieldActive;
     if (shieldActive) {
       visuals.shield.group.position.set(this.currentLaneX, 0, PLAYER_Z - 0.02);
       const shieldPulse = 1 + Math.sin(time * 5.4) * 0.018 * shieldStrength;
       visuals.shield.shell.scale.set(0.84 * shieldPulse, 1.42 * shieldPulse, 0.68 * shieldPulse);
       visuals.shield.shellMaterial.opacity = shieldStrength * 0.12;
       visuals.shield.ringMaterial.opacity = shieldStrength * (0.28 + Math.sin(time * 7.2) * 0.055);
+      visuals.shield.boardMaterial.opacity = shieldStrength * 0.72;
+      visuals.shield.boardRailMaterial.opacity = shieldStrength * 0.82;
+      visuals.shield.board.position.y = 0.08 + Math.sin(time * 8.2) * 0.018;
+      visuals.shield.board.rotation.y = this.lateralVelocity * -0.035;
       visuals.shield.rings.forEach((ring, index) => {
         ring.rotation.z = time * (index ? -0.72 : 0.82);
       });
@@ -9978,7 +10131,7 @@ class CinematicRunnerRenderer {
 
     this.scorePulse = Math.max(0, this.scorePulse - delta * 2.5);
     const multiplierActive = multiplierStrength > 0.01;
-    visuals.multiplier.group.visible = multiplierActive && !cinematicPov;
+    visuals.multiplier.group.visible = multiplierActive;
     if (multiplierActive) {
       visuals.multiplier.afterimages.forEach((afterimage, index) => {
         afterimage.position.set(
@@ -10000,11 +10153,11 @@ class CinematicRunnerRenderer {
     }
 
     const overdriveActive = overdriveStrength > 0.01;
-    visuals.overdrive.group.visible = overdriveActive && !cinematicPov;
+    visuals.overdrive.group.visible = overdriveActive;
     visuals.overdrive.speedWaveMaterial.opacity = overdriveStrength * 0.24;
     visuals.overdrive.edgeFlowMaterial.opacity = overdriveStrength * 0.62;
-    visuals.overdrive.speedWaves.count = overdriveActive && !cinematicPov ? 6 : 0;
-    visuals.overdrive.edgeFlow.count = overdriveActive && !cinematicPov ? 20 : 0;
+    visuals.overdrive.speedWaves.count = overdriveActive ? 6 : 0;
+    visuals.overdrive.edgeFlow.count = overdriveActive ? 20 : 0;
     if (overdriveActive) {
       scratch.euler.set(-Math.PI / 2, 0, 0);
       scratch.quaternion.setFromEuler(scratch.euler);
@@ -10077,7 +10230,6 @@ class CinematicRunnerRenderer {
 
     this.powerupEffectPool.forEach((slot, slotIndex) => {
       if (slot.life <= 0) return;
-      if (cinematicPov) slot.group.visible = false;
       slot.life = Math.max(0, slot.life - delta);
       const progress = 1 - slot.life / slot.duration;
       slot.ripple.scale.setScalar(0.72 + progress * 3.2);
@@ -11089,7 +11241,7 @@ class CinematicRunnerRenderer {
   }
 
   acquireEntity(entity, config) {
-    const signature = `${this.stageIndex}:${entity.type}:${entity.itemId || entity.data?.itemId || entity.subtype || entity.avoid || entity.cue || "default"}:${Number(entity.variant) % 2}`;
+    const signature = `${this.stageIndex}:${entity.type}:${entity.itemId || entity.data?.itemId || entity.data?.powerupPickup || entity.subtype || entity.avoid || entity.cue || "default"}:${Number(entity.variant) % 2}`;
     const bucket = this.entityPool.get(signature);
     let object = bucket?.pop();
     while (object && (object.userData.poolStage !== this.stageIndex || object.userData.poolGeneration !== this.poolGeneration)) {
@@ -11098,6 +11250,7 @@ class CinematicRunnerRenderer {
     }
     if (!object) {
       if (entity.type === "collectible") object = createCollectible(this.stageIndex, config.accent, this.particleTexture);
+      else if (entity.type === "powerup") object = createPowerupPickup(entity.data?.powerupPickup, this.particleTexture);
       else if (entity.type === "story-item" || entity.type === "route-choice") {
         const storyItem = {
           id: entity.itemId || entity.data?.itemId,
@@ -11225,7 +11378,8 @@ class CinematicRunnerRenderer {
       object.position.x = entity.lane * LANE_WIDTH;
       object.position.z = PLAYER_Z + (COLLISION_Z - entity.z) * WORLD_Z_SCALE;
       const storyItem = entity.type === "story-item" || entity.type === "route-choice";
-      const inRenderRange = storyItem || (object.position.z >= -this.qualityProfile.entityRange && object.position.z <= 11);
+      const powerupItem = entity.type === "powerup";
+      const inRenderRange = storyItem || powerupItem || (object.position.z >= -this.qualityProfile.entityRange && object.position.z <= 11);
       object.visible = inRenderRange;
       if (entity.type === "obstacle") {
         const sideDistance = Math.abs(object.position.x - companionSafetyX);
@@ -11235,8 +11389,23 @@ class CinematicRunnerRenderer {
         }
       }
       if (!inRenderRange) continue;
-      object.position.y = storyItem ? 1.06 + (Number(entity.height) || 0) + Math.sin(time * 4.2 + entity.id) * 0.09 : 0;
-      if (storyItem) {
+      object.position.y = storyItem
+        ? 1.06 + (Number(entity.height) || 0) + Math.sin(time * 4.2 + entity.id) * 0.09
+        : powerupItem ? 1.32 + Math.sin(time * 4.8 + entity.id) * 0.13 : 0;
+      if (powerupItem) {
+        object.rotation.y = time * 1.45 + entity.id * 0.37;
+        object.rotation.z = Math.sin(time * 2.2 + entity.id) * 0.06;
+        object.scale.setScalar(1.05 + Math.sin(time * 5.4 + entity.id) * 0.055);
+        if (object.userData.orbit) {
+          object.userData.orbit.rotation.z = time * 1.8 + entity.id;
+          object.userData.orbit.rotation.x = Math.PI / 2 + Math.sin(time * 1.3 + entity.id) * 0.25;
+          object.userData.orbit.material.opacity = 0.58 + Math.sin(time * 5 + entity.id) * 0.2;
+        }
+        if (object.userData.halo) {
+          object.userData.halo.material.opacity = 0.58 + Math.sin(time * 4.6 + entity.id) * 0.16;
+          object.userData.halo.scale.setScalar(1.8 + Math.sin(time * 3.7 + entity.id) * 0.18);
+        }
+      } else if (storyItem) {
         const proximity = clamp((object.position.z + 9.5) / (PLAYER_Z + 9.5), 0, 1);
         const alignment = clamp(1 - Math.abs(object.position.x - this.currentLaneX) / (LANE_WIDTH * 0.72), 0, 1);
         const focus = proximity * (0.22 + alignment * 0.78);
@@ -11962,6 +12131,7 @@ class CinematicRunnerRenderer {
     this.updateStatusVisual(delta, time, arriving);
     const stumble = clamp((Number(motion.stumbleTime) || 0) / 0.62, 0, 1);
     const vertical = Number(motion.vertical) || 0;
+    const displayVertical = vertical + (arriving ? 0 : this.powerupStrengths.overdrive * 0.62);
     if (this.previousVertical > 0.16 && vertical <= 0.025 && motion.action !== "jump") {
       this.landingPulse = 1;
       this.shake = Math.max(this.shake, 0.12);
@@ -11971,9 +12141,9 @@ class CinematicRunnerRenderer {
       ? "idle"
       : introActive ? this.stageIntroState.actionCue || introCue.action : motion.action || "run";
     if (this.player.userData.modelRunner) {
-      animateRiggedRunner(this.player, delta, playerAction, arriving ? 0 : vertical, arriving ? 0.12 : speed / 17, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
+      animateRiggedRunner(this.player, delta, playerAction, arriving ? 0 : displayVertical, arriving ? 0.12 : speed / 17, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
     } else {
-      animateCharacter(this.player, time, playerAction, arriving ? 0 : vertical, arriving ? 0.05 : speed / 17, 0, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
+      animateCharacter(this.player, time, playerAction, arriving ? 0 : displayVertical, arriving ? 0.05 : speed / 17, 0, arriving ? 0 : this.lateralVelocity, arriving ? 0 : stumble);
     }
     updateRunnerFootTrail(this.playerTrail, this.player, time, arriving ? Math.max(1, speed * (1 - arrivalProgress * 1.2)) : speed, delta);
     this.playerTrail.material.opacity = damp(this.playerTrail.material.opacity, arriving ? Math.max(0, 0.38 - arrivalProgress) : 0.5 + this.flow * 0.42, 6, delta);

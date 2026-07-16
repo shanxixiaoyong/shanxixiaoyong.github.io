@@ -195,12 +195,14 @@
     if (ratio >= 1) state.lanePosition = state.lane;
   }
   function isAvoided(state, entity) {
+    if (state.powerups?.overdrive?.active) return true;
     if (entity.avoid === "jump") return state.action === "jump" && state.vertical >= 0.48;
     if (entity.avoid === "slide") return state.action === "slide";
     if (entity.avoid === "either") return state.action === "slide" || (state.action === "jump" && state.vertical >= 0.48);
     return false;
   }
   function canCollect(state, entity) {
+    if (state.powerups?.overdrive?.active) return true;
     if (entity.height < 0.42) return true;
     return state.action === "jump" && state.vertical >= Math.max(0.42, entity.height * 0.5);
   }

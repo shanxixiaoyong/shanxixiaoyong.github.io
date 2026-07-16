@@ -518,13 +518,18 @@ test("accepts event and render-state powerup contracts with missing-field fallba
 test("renders each powerup as a lane-readable persistent visual", () => {
   for (const token of [
     "createPowerupVisualRig", "magnetArcs", "magnetBend", "shieldShell", "shieldRings",
-    "afterimages", "scorePulses", "ground-speed-wave", "speedWaves", "edgeFlow"
+    "afterimages", "scorePulses", "ground-speed-wave", "speedWaves", "edgeFlow",
+    "createPowerupPickup", "pickup-magnet", "pickup-board", "pickup-multiplier-loop", "pickup-overdrive-bolt"
   ]) assert.ok(source.includes(token), token);
   assert.match(source, /x = THREE\.MathUtils\.lerp\(baseX, this\.currentLaneX, magnetBend\)/);
   assert.match(source, /this\.camera\.position\.z[\s\S]*this\.powerupStrengths\.overdrive \* 0\.42/);
   assert.match(source, /this\.edgeLight\.intensity = config\.world\.lighting\.edgeIntensity \+ overdriveStrength/);
   assert.match(source, /new THREE\.InstancedMesh\(speedWaveGeometry, speedWaveMaterial, 6\)/);
   assert.match(source, /new THREE\.InstancedMesh\(edgeFlowGeometry, edgeFlowMaterial, 20\)/);
+  assert.match(source, /else if \(entity\.type === "powerup"\) object = createPowerupPickup/);
+  const updatePowerups = sourceBlock("  updatePowerupVisuals(delta, time, speed, arriving) {", "\n  preloadBackdrops()");
+  assert.doesNotMatch(updatePowerups, /magnetActive && !cinematicPov/);
+  assert.doesNotMatch(updatePowerups, /shieldActive && !cinematicPov/);
 });
 
 test("exposes stage-intro beats plus low-state and failure visual APIs", () => {

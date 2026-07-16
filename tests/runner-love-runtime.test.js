@@ -123,6 +123,25 @@ test("accepts swipe-equivalent actions through the fixed-step three-lane engine"
   assert.equal(state.motion.action, "jump");
 });
 
+test("teaches the three gestures through play and reaches the first arcade pickup", () => {
+  const { debug } = boot();
+  debug.powerup("overdrive", { duration: 14, speedBoost: 6 });
+  let state = debug.step(50);
+  const requiredAction = (pattern) => state.motion.entities
+    .find((entity) => entity.type === "obstacle" && entity.patternId?.endsWith(`-${pattern}`))?.data?.requiredAction;
+  assert.equal(requiredAction(0), "jump");
+  assert.ok(state.motion.entities.some((entity) => entity.type === "collectible" && entity.height > 0.8));
+
+  state = debug.step(3100);
+  assert.equal(requiredAction(1), "switch");
+  state = debug.step(3100);
+  assert.equal(requiredAction(2), "slide");
+  state = debug.step(3100);
+  assert.ok(state.scheduler.patternCursor >= 4);
+  assert.ok(state.motion.entities.some((entity) => entity.type === "powerup" && entity.data?.powerupPickup === "magnet"));
+  assert.ok(state.arcade.combo > 0);
+});
+
 test("starts a genuinely fresh run without checkpoint-only variables or stale motion", () => {
   const { debug } = boot();
   debug.start();
