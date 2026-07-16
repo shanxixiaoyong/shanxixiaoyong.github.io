@@ -24,6 +24,18 @@
         chapterTurn: "曾经只在走廊擦肩的人，第一次为彼此停在同一个路口。",
         toNext: "她把伞柄递回来，又提起桥下那家刚开门的旧书店。"
       },
+      screenplay: {
+        premise: "一条迟疑的确认消息，让主角在雨后校园里沿着她刚刚留下的痕迹赶往图书馆路口。",
+        externalGoal: "在17:16红灯亮起前抵达图书馆屋檐。",
+        innerMovement: "从不确定是否该追上去，变成主动带上一份可以分享的温度，最后愿意先叫出她的名字。",
+        visualQuestion: "她是否真的还在前面，还是雨后倒影制造的错觉？",
+        propRule: "每个可收集物必须证明她刚经过、帮助主角准备见面，或在见面时完成一次自然互动。",
+        beats: [
+          { id: "leave-the-room", desire: "确认那条消息不是误会", sceneTurn: "空教室的迟疑被走廊尽头正在熄灭的灯催成行动", playableEvidence: ["familiar-avatar", "campus-bell-rope", "dropped-photo"] },
+          { id: "follow-the-rain-line", desire: "沿她刚走过的香樟路追上去", sceneTurn: "捡到的书签与售货机旁第二罐饮料，让寻找变成主动准备", playableEvidence: ["library-bookmark", "vending-change-slot", "warm-can"] },
+          { id: "recognize-at-crossing", desire: "在人群与红灯之间认出彼此", sceneTurn: "倒计时归零时不再继续冲刺，而是停在同一片屋檐下", playableEvidence: ["crossing-countdown", "shared-umbrella", "pocket-candy"] }
+        ]
+      },
       openingPerformance: {
         id: "message-after-rain", durationMs: 6200, trigger: "放学铃停下，手机在空教室里轻震。",
         beats: [
@@ -1168,6 +1180,7 @@
       story: {
         openingLine: stage.opening,
         arrivalLine: stage.arrival,
+        screenplay: stage.screenplay || null,
         continuity: {
           previousStageId: index > 0 ? STAGES[index - 1].id : null,
           nextStageId: index < STAGES.length - 1 ? STAGES[index + 1].id : null,

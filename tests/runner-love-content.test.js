@@ -87,6 +87,28 @@ test("gives every stage a distinct route, destination performance, and at least 
   }
 });
 
+test("treats the opening stage as a playable three-beat screenplay", () => {
+  const stage = Content.STAGES[0];
+  const screenplay = Content.STAGE_BLUEPRINTS[0].story.screenplay;
+  assert.strictEqual(screenplay, stage.screenplay);
+  assert.equal(screenplay.beats.length, 3);
+  assert.deepEqual(screenplay.beats.map((beat) => beat.id), [
+    "leave-the-room",
+    "follow-the-rain-line",
+    "recognize-at-crossing"
+  ]);
+  assert.ok(screenplay.premise.length >= 16);
+  assert.ok(screenplay.externalGoal.length >= 10);
+  assert.ok(screenplay.innerMovement.length >= 12);
+  assert.ok(screenplay.visualQuestion.length >= 12);
+  assert.ok(screenplay.propRule.length >= 12);
+  screenplay.beats.forEach((beat) => {
+    assert.ok(beat.desire.length >= 8, beat.id);
+    assert.ok(beat.sceneTurn.length >= 16, beat.id);
+    assert.equal(beat.playableEvidence.length, 3, beat.id);
+  });
+});
+
 test("models seven materially distinct, linked, and directly consumable stage blueprints", () => {
   const roadIdentities = new Set();
   const roadMaterials = new Set();

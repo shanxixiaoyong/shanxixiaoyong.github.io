@@ -70,46 +70,48 @@ test("authors seven visually distinct districts and a fully modeled opening camp
     assert.match(source, new RegExp(`function ${modelLayer}\\(`));
   }
   for (const campusModel of [
-    "createCampusSurfaceRibbon", "createCampusCloudField", "createCampusTreeAvenue", "createCampusBuildingRow",
-    "createCampusGlassElevator", "createCampusCurvedPavilion", "createCampusGateway", "createCampusStreetFurniture",
-    "createCampusDistantCity", "createCampusAuthoredStreetscape"
+    "createCampusToonSurfaceRibbon", "createCampusCloudField", "createCampusToonTreeAvenue", "createCampusToonBuildingRow",
+    "createCampusToonStreetDetails", "createCampusArcadeLandmark", "createCampusVendingLandmark",
+    "createCampusLibraryCrossingLandmark", "createCampusNarrativeLandmarks", "createCampusToonHorizon"
   ]) assert.match(source, new RegExp(`function ${campusModel}\\(`));
   const campusWorld = sourceBlock("function createRainCampusWorld(config) {", "\nfunction createRiverBookstoreWorld(config) {");
-  assert.match(campusWorld, /world-rain-campus-full-3d/);
+  assert.match(campusWorld, /world-rain-campus-ink-toon/);
   assert.match(campusWorld, /fullThreeDimensional = true/);
+  assert.match(campusWorld, /renderStyle = "ink-toon-baked"/);
   assert.match(campusWorld, /parallax: 1/);
-  assert.doesNotMatch(campusWorld, /createCampusSkyLayer|setCampusTravel/);
-  assert.match(source, /data-campus-world", this\.stageIndex === 0 \? "full-3d"/);
+  assert.match(campusWorld, /setCampusPhase/);
+  assert.match(campusWorld, /campusPhaseMask = \[0, 1\]/);
+  assert.match(source, /data-campus-world", this\.stageIndex === 0 \? "authored-toon-3d"/);
   assert.match(source, /data-campus-backdrop-sampling", this\.stageIndex === 0 \? "off"/);
-  for (const map of ["asphalt-diffuse.jpg", "asphalt-normal.jpg", "asphalt-roughness.jpg"]) assert.ok(source.includes(map), map);
-  assert.match(source, /data-campus-material", "poly-haven-pbr"/);
+  assert.match(source, /data-campus-render-style", this\.stageIndex === 0 \? "ink-toon-baked"/);
+  assert.match(source, /data-campus-art-pipeline", "3d-form-handpainted-surface"/);
+  assert.match(source, /this\.campusRoadMaterial = campusToonMaterial/);
+  assert.match(source, /this\.loadCampusArtMaterials\(\)/);
   assert.match(source, /const stageShadows = profile\.shadows && this\.stageIndex !== 0 && !this\.mobilePerformance/);
   assert.match(source, /this\.stageIndex === 0 \? 1\.06/);
 });
 
 test("rebuilds the opening run as a third-person campus with authored environmental art", () => {
-  const canopyAsset = path.join(root, "assets/runner-scenes/props/camphor-bough.png");
-  assert.equal(fs.existsSync(canopyAsset), true);
-  assert.ok(fs.statSync(canopyAsset).size > 400000);
   for (const builder of [
-    "createCampusPuddleObstacle", "createCampusLeafGustObstacle", "createCampusCanopyObstacle",
+    "createCampusStudentStreamObstacle", "createCampusRootPuddleObstacle", "createCampusDeliveryRailObstacle",
     "createCampusEnvironmentObstacle", "createCampusStoryToken"
   ]) assert.match(source, new RegExp(`function ${builder}\\(`));
   for (const contract of [
-    "camphor-bough.png", "campus-puddle", "campus-leaf-gust", "low-camphor-canopy",
+    "departing-student-stream", "camphor-root-puddle", "library-delivery-rail",
     "campus-character-follow", "data-camera-language", "campusWisps",
     "camphor-canopy.png", "summer-sky.png", "academic-facade.png", "flowerbed.png",
-    "streetscape-left.png", "streetscape-right.png",
-    "data-campus-canopy", "data-campus-sky", "data-campus-facade", "data-campus-flowerbed", "data-campus-streetscape"
+    "data-campus-canopy", "data-campus-sky", "data-campus-facade", "data-campus-flowerbed"
   ]) assert.ok(source.includes(contract), contract);
-  for (const asset of ["streetscape-left.png", "streetscape-right.png"]) {
-    const streetscape = path.join(root, "assets/runner-textures/campus", asset);
-    assert.equal(fs.existsSync(streetscape), true, asset);
-    assert.ok(fs.statSync(streetscape).size > 1000000, asset);
+  for (const asset of ["camphor-canopy.png", "summer-sky.png", "academic-facade.png", "flowerbed.png"]) {
+    const texture = path.join(root, "assets/runner-textures/campus", asset);
+    assert.equal(fs.existsSync(texture), true, asset);
+    assert.ok(fs.statSync(texture).size > 1000000, asset);
   }
   assert.match(source, /this\.player\.visible = true/);
   assert.match(source, /visuals\.root\.visible = stageIndex !== 0/);
   assert.match(source, /setCampusDepthFade\(depthMaterial, false\)/);
+  assert.match(source, /cross-card-handpainted/);
+  assert.match(source, /baked-facade-on-3d/);
 });
 
 test("gives every chapter a distinct world, road, obstacle, particle, and depth identity", () => {
@@ -255,7 +257,9 @@ test("lazily builds and selects all twenty-one phase road textures within a boun
   assert.match(setRoutePhase, /this\.roadTexture = this\.ensureRoadTexture\(this\.stageIndex, nextPhase\)/);
   assert.match(setRoutePhase, /this\.applyStageRoadSurfaceMaps\(\)/);
   const surfaceMaps = sourceBlock("  applyStageRoadSurfaceMaps() {", "\n  buildRoad()");
-  assert.match(surfaceMaps, /this\.roadMaterial\.map = useCampusPbr \? this\.campusRoadMaps\.diffuse : this\.roadTexture/);
+  assert.match(surfaceMaps, /this\.selectStageRoadMaterials\(\)/);
+  assert.match(surfaceMaps, /this\.roadMaterial\.map = this\.roadTexture/);
+  assert.match(surfaceMaps, /this\.roadMaterial\.normalMap = null/);
   assert.match(surfaceMaps, /this\.roadMaterial\.needsUpdate = true/);
 });
 

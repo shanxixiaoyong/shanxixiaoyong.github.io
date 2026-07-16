@@ -96,9 +96,9 @@
   const SPEED_LABELS = Object.freeze(["起跑", "加速", "疾行", "冲刺", "极速"]);
   const STAGE_RUNTIME_FALLBACKS = Object.freeze([
     Object.freeze({ chapter: "第一章 · 雨后再遇", introTitle: "香樟路尽头，她也停下了脚步", tone: "雨后校园", phases: Object.freeze([
-      Object.freeze({ venue: "香樟道", worldCue: "湿润树荫与放学人潮", collectibleKinds: Object.freeze(["rain-glint", "ginkgo-note", "courage-spark"]), obstacleForms: Object.freeze(["crowd", "puddle", "barrier"]) }),
-      Object.freeze({ venue: "玻璃连廊", worldCue: "雨滴玻璃与倒映长廊", collectibleKinds: Object.freeze(["photo-corner", "window-light", "umbrella-drop"]), obstacleForms: Object.freeze(["umbrella-rack", "puddle", "signal-gate"]) }),
-      Object.freeze({ venue: "图书馆路口", worldCue: "红灯、屋檐与晚风", collectibleKinds: Object.freeze(["warm-can", "bookmark", "crosswalk-light"]), obstacleForms: Object.freeze(["crowd", "barrier", "service-cart"]) })
+      Object.freeze({ venue: "旧教学楼雨廊", worldCue: "下课铃、逐间熄灭的教室与散开的放学人潮", collectibleKinds: Object.freeze(["message-pulse", "photo-corner", "bell-echo"]), obstacleForms: Object.freeze(["departing-student-stream", "umbrella-rack", "corridor-column"]) }),
+      Object.freeze({ venue: "香樟太阳雨", worldCue: "叶尖滴水、树根积水与售货机冷白灯", collectibleKinds: Object.freeze(["ginkgo-note", "rain-glint", "warm-can"]), obstacleForms: Object.freeze(["camphor-root-puddle", "bicycle", "low-canopy"]) }),
+      Object.freeze({ venue: "图书馆路口", worldCue: "钟楼、红灯倒计时、送书车与屋檐下的人影", collectibleKinds: Object.freeze(["crosswalk-light", "umbrella-drop", "citrus-spark"]), obstacleForms: Object.freeze(["departing-student-stream", "library-delivery-rail", "bicycle"]) })
     ]) }),
     Object.freeze({ chapter: "第二章 · 话题有了回声", introTitle: "沿着河堤，把昨晚没聊完的话继续下去", tone: "晨雾书店", phases: Object.freeze([
       Object.freeze({ venue: "河堤", worldCue: "薄雾河面与晨跑步道", collectibleKinds: Object.freeze(["music-note", "river-postcard", "soda-bubble"]), obstacleForms: Object.freeze(["bicycle", "bench", "puddle"]) }),
