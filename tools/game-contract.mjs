@@ -6,8 +6,7 @@ export const GAME_CONTRACTS = [
   {
     file: HEARTBEAT_GAME_PAGE,
     name: "心动2048",
-    portalAsset: "assets/portal/heartbeat-2048-portrait-hd.jpg",
-    portalDesktopAsset: "assets/portal/heartbeat-2048-hd.jpg",
+    portalAsset: "assets/portal/heartbeat-2048-cover-v2.jpg",
     styles: ["assets/world.css", "assets/love-2048.css"],
     scripts: [
       "assets/love-2048-engine.js",
@@ -20,8 +19,7 @@ export const GAME_CONTRACTS = [
   {
     file: BILLIARDS_GAME_PAGE,
     name: "幻彩桌球",
-    portalAsset: "assets/portal/billiards-chroma-portrait-hd.jpg",
-    portalDesktopAsset: "assets/portal/billiards-chroma-hd.jpg",
+    portalAsset: "assets/portal/billiards-chroma-cover-v2.jpg",
     cacheVersion: "billiards-performance-cache-20260714f",
     pendingFiles: ["assets/billiards-ball-renderer.js", "assets/billiards-surface-renderer.js"],
     styles: ["assets/billiards-love.css"],
@@ -37,7 +35,7 @@ export const GAME_CONTRACTS = [
   {
     file: RUNNER_GAME_PAGE,
     name: "心动跑酷",
-    portalAsset: "assets/portal/heartbeat-runner-hd.jpg",
+    portalAsset: "assets/portal/heartbeat-runner-cover-v2.jpg",
     cacheVersion: "runner-love-campus-20260716y",
     styles: ["assets/runner-love.css"],
     scripts: [

@@ -1,107 +1,30 @@
 (() => {
-  const rail = document.querySelector("[data-portal-rail]");
-  const doors = Array.from(document.querySelectorAll("[data-portal-index]"));
-  const currentNumber = document.querySelector("[data-portal-current]");
-  const currentName = document.querySelector("[data-portal-current-name]");
-  const nextName = document.querySelector("[data-portal-next]");
-  const progress = document.querySelector("[data-portal-progress]");
   const year = document.querySelector("[data-portal-year]");
-  const labels = doors.map((door) => door.querySelector(".portal-door-copy strong")?.textContent.trim() || "");
+  const doors = Array.from(document.querySelectorAll(".portal-door"));
+  const canHover = window.matchMedia("(hover: hover) and (pointer: fine)");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const desktopGallery = window.matchMedia("(min-width: 760px)");
-  let activeIndex = 0;
-  let frame = 0;
 
   if (year) year.textContent = String(new Date().getFullYear());
-  if (!rail || !doors.length) return;
-
-  function setActive(index) {
-    const nextIndex = Math.max(0, Math.min(doors.length - 1, index));
-    activeIndex = nextIndex;
-    doors.forEach((door, doorIndex) => {
-      const current = doorIndex === nextIndex;
-      door.classList.toggle("is-active", current);
-      if (current) door.setAttribute("aria-current", "true");
-      else door.removeAttribute("aria-current");
-    });
-    const accent = doors[nextIndex].dataset.portalAccent;
-    if (accent) document.documentElement.style.setProperty("--portal-active", accent);
-    if (currentNumber) currentNumber.textContent = String(nextIndex + 1).padStart(2, "0");
-    if (currentName) currentName.textContent = labels[nextIndex];
-    if (nextName) nextName.textContent = labels[(nextIndex + 1) % labels.length];
-    if (progress) progress.style.width = `${((nextIndex + 1) / doors.length) * 100}%`;
-  }
-
-  function nearestDoor() {
-    const railBounds = rail.getBoundingClientRect();
-    const railCenter = railBounds.left + railBounds.width / 2;
-    let nearestIndex = 0;
-    let nearestDistance = Number.POSITIVE_INFINITY;
-    doors.forEach((door, index) => {
-      const bounds = door.getBoundingClientRect();
-      const distance = Math.abs(bounds.left + bounds.width / 2 - railCenter);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = index;
-      }
-    });
-    setActive(nearestIndex);
-  }
-
-  function scheduleMeasure() {
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(nearestDoor);
-  }
-
-  function scrollToDoor(index) {
-    const nextIndex = Math.max(0, Math.min(doors.length - 1, index));
-    const door = doors[nextIndex];
-    if (desktopGallery.matches) {
-      setActive(nextIndex);
-      door.focus({ preventScroll: true });
-      return;
-    }
-    const railBounds = rail.getBoundingClientRect();
-    const doorBounds = door.getBoundingClientRect();
-    const centeredLeft = rail.scrollLeft
-      + doorBounds.left + doorBounds.width / 2
-      - railBounds.left - railBounds.width / 2;
-    rail.scrollTo({
-      left: Math.max(0, centeredLeft),
-      behavior: reducedMotion.matches ? "auto" : "smooth"
-    });
-    setActive(nextIndex);
-  }
-
-  rail.addEventListener("scroll", scheduleMeasure, { passive: true });
-  rail.addEventListener("keydown", (event) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    if (event.key === "Home") scrollToDoor(0);
-    else if (event.key === "End") scrollToDoor(doors.length - 1);
-    else scrollToDoor(activeIndex + (event.key === "ArrowRight" ? 1 : -1));
-  });
+  if (!canHover.matches || reducedMotion.matches) return;
 
   doors.forEach((door) => {
-    door.addEventListener("pointerenter", (event) => {
-      if (event.pointerType === "touch" || !desktopGallery.matches) return;
-      setActive(Number(door.dataset.portalIndex));
-    });
-    door.addEventListener("focus", () => setActive(Number(door.dataset.portalIndex)));
-    door.addEventListener("pointermove", (event) => {
-      if (event.pointerType === "touch") return;
-      const bounds = door.getBoundingClientRect();
-      const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
-      const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
-      door.style.setProperty("--portal-x", x.toFixed(3));
-      door.style.setProperty("--portal-y", y.toFixed(3));
-    });
-    door.addEventListener("pointerleave", () => {
-      door.style.removeProperty("--portal-x");
-      door.style.removeProperty("--portal-y");
-    });
-  });
+    let frame = 0;
 
-  window.addEventListener("resize", scheduleMeasure, { passive: true });
-  setActive(0);
+    door.addEventListener("pointermove", (event) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const bounds = door.getBoundingClientRect();
+        const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * -10;
+        const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * -10;
+        door.style.setProperty("--portal-media-x", `${x.toFixed(2)}px`);
+        door.style.setProperty("--portal-media-y", `${y.toFixed(2)}px`);
+      });
+    }, { passive: true });
+
+    door.addEventListener("pointerleave", () => {
+      cancelAnimationFrame(frame);
+      door.style.removeProperty("--portal-media-x");
+      door.style.removeProperty("--portal-media-y");
+    }, { passive: true });
+  });
 })();

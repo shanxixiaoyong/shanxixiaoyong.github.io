@@ -86,11 +86,9 @@ const required = [
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
-  "assets/portal/heartbeat-2048-portrait-hd.jpg",
-  "assets/portal/heartbeat-2048-hd.jpg",
-  "assets/portal/billiards-chroma-portrait-hd.jpg",
-  "assets/portal/billiards-chroma-hd.jpg",
-  "assets/portal/heartbeat-runner-hd.jpg",
+  "assets/portal/heartbeat-2048-cover-v2.jpg",
+  "assets/portal/billiards-chroma-cover-v2.jpg",
+  "assets/portal/heartbeat-runner-cover-v2.jpg",
   "assets/games.js",
   "0000-0002-7584-2953",
   "Diagnosis of Multiple Fundus Disorders",
@@ -255,10 +253,9 @@ const requiredAssets = [
   "assets/portal/academic-workspace.webp",
   "assets/portal/knowledge-archive.webp",
   "assets/portal/tool-workbench.webp",
-  "assets/portal/heartbeat-2048-portrait-hd.jpg",
-  "assets/portal/heartbeat-2048-hd.jpg",
-  "assets/portal/billiards-chroma-portrait-hd.jpg",
-  "assets/portal/billiards-chroma-hd.jpg",
+  "assets/portal/heartbeat-2048-cover-v2.jpg",
+  "assets/portal/billiards-chroma-cover-v2.jpg",
+  "assets/portal/heartbeat-runner-cover-v2.jpg",
   "assets/academic-v2.css",
   "assets/academic.js",
   "assets/world/workspace-grid.svg",
@@ -328,19 +325,19 @@ const academicThemeContracts = [
 ];
 
 const portalContracts = [
-  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-gallery-20260714a">'],
-  [indexHtml, '<script src="assets/portal.js?v=portal-gallery-20260714a" defer></script>'],
+  [indexHtml, '<link rel="stylesheet" href="assets/portal.css?v=portal-index-20260717a">'],
+  [indexHtml, '<script src="assets/portal.js?v=portal-index-20260717a" defer></script>'],
   [indexHtml, 'class="portal-rail"'],
   [indexHtml, 'class="portal-door portal-game"'],
   [indexHtml, 'class="portal-door portal-billiards"'],
   [indexHtml, 'class="portal-door portal-runner"'],
-  [portalCss, "scroll-snap-type: inline mandatory"],
-  [portalCss, "scroll-snap-align: center"],
-  [portalCss, "width: calc(100% / 6)"],
-  [portalCss, ".portal-door.is-active"],
-  [portalScript, "function setActive(index)"],
-  [portalScript, "const railCenter = railBounds.left + railBounds.width / 2"],
-  [portalScript, 'rail.addEventListener("scroll"']
+  [portalCss, "grid-template-columns: repeat(2, minmax(0, 1fr))"],
+  [portalCss, "grid-template-columns: repeat(12, minmax(0, 1fr))"],
+  [portalCss, ".portal-academic"],
+  [portalCss, ".portal-game-grid"],
+  [portalScript, 'document.querySelectorAll(".portal-door")'],
+  [portalScript, 'door.addEventListener("pointermove"'],
+  [portalScript, "data-portal-year"]
 ];
 
 for (const [source, token] of portalContracts) {
